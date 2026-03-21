@@ -1,0 +1,265 @@
+# Building + Heat Pump + PID Controller + Weather Reader Co-simulation Scenario
+#
+# Data flow:
+#   weather_federate  → T_ext          → heatpump_federate, building_federate
+#   pid_federate      → modulation     → heatpump_federate
+#   heatpump_federate → Q_heat         → building_federate
+#   building_federate → T_indoor       → pid_federate
+#
+#   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
+
+version: "1.0.0"
+scenario_name: "bui_hp_test_base"
+scenario_description: "Building thermal model controlled by a PID-driven heat pump, with real weather data from CSV."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-02T00:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: ["T_indoor", "T_ext", "Q_heat", "P_elec", "COP", "modulation"]
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23404
+      host: "localhost"
+      federates: 4
+      log_level: DEBUG
+
+    federate_configs:
+
+      # -----------------------------------------------------------------------
+      # Weather federate – streams T_ext from CSV
+      # -----------------------------------------------------------------------
+      weather_federate:
+        name: "weather_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60   # one CSV row per 60 s sim-step
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "weather_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "resources/weather_TO.csv"  # relative to model script dir
+            column: "T_ext"
+            skip_rows: 0
+
+          init_state:
+            T_ext: 3.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # PID federate – regulates T_indoor by adjusting heat-pump modulation
+      # -----------------------------------------------------------------------
+      pid_federate:
+        name: "pid_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.1
+
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [building_federate.0/T_indoor]
+              causality: "next_step"
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid"
+            parallel_execution: false
+
+          parameters:
+            T_setpoint: 20.0   # target indoor temperature [°C]
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # Heat-pump federate
+      # -----------------------------------------------------------------------
+      heatpump_federate:
+        name: "heatpump_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.2
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/T_ext]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_federate.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp"
+            parallel_execution: false
+
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+            Q_heat: 0.0
+            P_elec: 0.0
+            COP: 0.0
+
+          user_defined:
+            integrator: "fixed-step"
+
+      # -----------------------------------------------------------------------
+      # Building federate
+      # -----------------------------------------------------------------------
+      building_federate:
+        name: "building_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.3
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/T_ext]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump_federate.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg"
+            parallel_execution: false
+
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+          user_defined:
+            integrator: "euler"

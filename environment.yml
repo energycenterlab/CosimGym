@@ -1,0 +1,47 @@
+name: cosim_gym
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Core Python
+  - python=3.11
+  - pip>=24.0
+  
+  # Essential system packages
+  - pyyaml
+  - psutil
+  
+  # Scientific Computing (from conda for better compatibility)
+  - numpy
+  - pandas
+  - matplotlib
+  - scipy
+  
+  # Pip packages (faster resolution and better for high-level packages)
+  - pip:
+    # RL and Environment
+    - gymnasium>=0.28.0
+    - stable-baselines3>=2.0.0
+    
+    # Simulation and Control
+    - fmpy>=0.3.0
+    - helics>=3.5.0
+    
+    # UI and Visualization
+    - streamlit>=1.30.0
+    - plotly>=5.18.0
+    
+    # Data and APIs
+    - redis>=7.0.0
+    - requests>=2.31.0
+    - influxdb-client>=1.40.0
+    - python-dotenv>=1.0.0
+    
+    # Utilities and Configuration
+    - pydantic>=2.0.0
+    - pyyaml-env-tag>=1.0.0
+    - lxml>=4.9.0
+    
+    # Documentation
+    - mkdocs>=1.5.0
+    - mkdocs-material>=9.0.0

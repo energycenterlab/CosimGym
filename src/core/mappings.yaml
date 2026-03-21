@@ -1,0 +1,4 @@
+federate_types:
+  base: BaseFederate:BaseFederate
+  rl: RL_Federate:RL_Federate
+

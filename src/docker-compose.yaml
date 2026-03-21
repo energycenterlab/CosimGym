@@ -1,0 +1,36 @@
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: cosim_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-stack-server --save 60 1 --loglevel verbose
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  catalog-loader:
+    image: python:3.11-slim
+    container_name: cosim_catalog_loader
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../:/app
+    working_dir: /app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379/0
+    command: >
+      sh -c "pip install --quiet --no-cache-dir redis pyyaml &&
+             python src/models/model_catalog/catalog_loader.py"
+    restart: "no"
+
+volumes:
+  redis_data:

@@ -1,0 +1,132 @@
+# Example Federation Configuration YAML
+# This file demonstrates the structure needed to instantiate a FederationConfig object
+
+
+
+version: "1.0.0"
+scenario_name: "simple_test_SACsb3"
+scenario_description: test using integration of SB3 SAC algorithm.
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T01:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 100
+  attrs: ["position", "velocity", "acceleration", "force", "disturbance"]
+
+
+# TODO: add influxdb configs
+
+reinforcement_learning_config:
+  seed: 42
+  # RLAgentConfig – which agent class to load
+  agent:
+    model_name: "rl_simple_SACsb3"             # class inside that module
+    env:
+      observations: [federation_1.spring_federate.0.position, federation_1.spring_federate.0.velocity, federation_1.spring_federate.0.acceleration]  # list of keys to use as observations
+      actions: [federation_1.spring_federate.0.force ]  # list of actions
+      action_spaces_type: ["box"] # list of action space types corresponding to the actions (only discrete, box) MUST have same lenght of actions for now discrete does not select the bin it is all integer bins betwen min and max
+      
+      # action_space_remapping: [[-10,10]] # list of action space remapping corresponding to the actions (for discrete only)
+      include_prev_obs: [0,0,0]  # TODO not implementedhow many previous observations to include in the state representation (0 for none) must be None or same lenght of observations
+    
+    # RLHyperparametersConfig – DQN-relevant hyperparameters
+    hyperparameters:
+      gamma: 0.99
+      learning_rate: 0.001
+      batch_size: 64
+      gradient_clip: 10.0
+      target_update_interval: 5
+
+  checkpointing:
+    single_best_checkpoint: "best_sac_sb3_model.pth"
+
+  test:
+    checkpoint_path: None
+    total_steps: 10
+    deterministic: True
+
+  # RLTrainingConfig – core training loop settings
+  training:
+    mode:                 "online"   # online | offline | mixed
+    episode_length:       10       # total simulation steps per episode
+    n_episodes: 10       # max agent steps before forced reset
+    train_frequency: 1           # how often to perform a training step (in environment steps)
+    gradient_steps: 1       # how many gradient steps to perform at each training step
+
+
+    # RLReplayBufferConfig – experience replay for off-policy DQN
+    replay_buffer:
+      buffer_size: 100000
+      prefill_steps: 5
+
+
+# WHEN doing RL the controlled federate will not specify targets,
+#  these will be filled by the Scenario manager
+  
+federations:
+  federation_1:
+    broker_config:
+      core_type: "tcp"
+      port: 23404
+      federates: 1
+      log_level: DEBUG
+
+    federate_configs:
+      spring_federate:
+          name: "spring_federate"
+          type: "base"
+          log_level: DEBUG
+          core_name: "fed1"
+          core_type: "zmq"  
+          
+          timing_configs:
+            real_period: 1  
+            
+          flags:
+            terminate_on_error: true
+            wait_for_current_time_update: true
+        
+          connections:
+            endpoints: []
+            subscribes:
+              - key: "force"
+                type: "double"
+                units: "N"
+             
+            publishes:
+              - key: "position"
+                type: "double"
+                units: "m"
+              - key: "velocity"
+                type: "double"
+                units: "m/s"
+              - key: "acceleration"
+                type: "double"
+                units: "m/s^2"
+
+          model_configs:
+            instantiation:
+              model_name: "spring_mass_damper"
+              n_instances: 1
+              prefix: "spring"
+              parallel_execution: false
+            
+            parameters:
+              mass: 5.0
+              damping: 2.0
+              stiffness: 10.0
+            
+            init_state:
+              force: 0.0
+              disturbance: 0.0
+              position: 0.0
+              velocity: 0.0
+              acceleration: 0.0
+            
+            user_defined:
+              solver: "euler"
+              integrator: "fixed-step"
+  
+   

@@ -1,0 +1,343 @@
+# Electric Load + Weather + RB controller + PV + Battery Co-simulation Scenario
+#
+# Data flow:
+#   weather_federate  → GHI, T_ext, DHR   → PV
+#   Electric load      → P     → controller
+#   PV → P_PV        → controller
+#   controller → P_carg/dis       → battery
+#
+#   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
+
+version: "1.0.0"
+scenario_name: "pv_batt_test_base"
+scenario_description: "Simple test case with PV, Battery, Weather, Rule-based controller, and electric Load"
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-03T00:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: "all"
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23404
+      host: "localhost"
+      federates: 5
+
+    federate_configs:
+
+      # -----------------------------------------------------------------------
+      # Weather federate – streams T_ext from CSV
+      # -----------------------------------------------------------------------
+      weather_federate:
+        name: "weather_federate"
+        log_level: DEBUG
+        type: "base"
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 3600   # one CSV row per 60 s sim-step
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "DryBulb"
+              type: "double"
+              units: "°C"
+            - key: "GloHorzRad"
+              type: "double"
+              units: "W/m²"
+            - key: "DifHorzRad"
+              type: "double"
+              units: "W/m²"
+
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_data_bj.csv"  # relative to model script dir
+            skip_rows: 0
+
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # PID federate – regulates T_indoor by adjusting heat-pump modulation
+      # -----------------------------------------------------------------------
+      rb_controller:
+        name: "rb_controller"
+        type: "base"
+        core_name: "fed2"
+        core_type: "zmq"
+        log_level: DEBUG
+
+
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.3
+
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "P_gen"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [pv_federate.0/PV_power]
+            
+            - key: "P_load"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [load_federate.0/P_load]
+            
+            - key: "SOC"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [battery_federate.0/SOC]
+              causality: "next_step"
+          publishes:
+            - key: "Battery_power"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "rb_bems"
+            n_instances: 1
+            parallel_execution: false
+
+          parameters:
+            SOC_min: 0.40
+            SOC_max: 0.65
+          
+          init_state:
+            Battery_power: 0.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # Heat-pump federate
+      # -----------------------------------------------------------------------
+      pv_federate:
+        name: "pv_federate"
+        type: "base"
+        core_name: "fed3"
+        core_type: "zmq"
+        log_level: DEBUG
+
+
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.2
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_federate.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_federate.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+           
+
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv"
+            parallel_execution: false
+
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+
+          init_state: {}
+
+          user_defined:
+            integrator: "fixed-step"
+
+      # -----------------------------------------------------------------------
+      # Battery federate
+      # -----------------------------------------------------------------------
+      battery_federate:
+        name: "battery_federate"
+        type: "base"
+        core_name: "fed4"
+        core_type: "zmq"
+        log_level: DEBUG
+        startup_sync:
+          required_inputs: ["Battery_power", "P_load", "PV_power"]
+          missing_inputs_policy: "warn"
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.4
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "Battery_power"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [rb_controller.0/Battery_power]
+            - key: "P_load"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [load_federate.0/P_load]
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [pv_federate.0/PV_power]
+      
+          publishes:
+            - key: "SOC"
+              type: "double"
+              units: "-"
+            - key: "P_net"
+              type: "double"
+              units: "W"
+            - key: "P_clipped"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "battery_dest"
+            n_instances: 1
+            parallel_execution: false
+
+          parameters:
+            rated_capacity: 40000
+            maximum_charge_power: 8000
+            maximum_discharge_power: 8000
+            SOC_upper_limit: 0.95
+            SOC_lower_limit: 0.25
+            charge_efficiency: 1
+            discharge_efficiency: 1
+            self_discharge_rate: 0
+            SOC: 0.75
+      
+
+          init_state: 
+            SOC: 0.75
+
+          user_defined:
+            integrator: "euler"
+
+      load_federate:
+        name: "load_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed5"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "P_load"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "load"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/electric_load_profile_hour.csv"  # relative to model script dir
+            skip_rows: 0
+
+          init_state:
+            P_load: 0.0
+
+          user_defined:
+            integrator: "fixed-step"

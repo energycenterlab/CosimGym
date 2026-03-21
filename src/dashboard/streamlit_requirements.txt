@@ -1,0 +1,8 @@
+# Streamlit Dashboard Requirements
+# Install with: pip install -r streamlit_requirements.txt
+
+streamlit>=1.30.0
+plotly>=5.18.0
+pandas>=2.0.0
+ijson>=3.2.3
+pyarrow>=12.0.0

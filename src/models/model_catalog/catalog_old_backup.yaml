@@ -1,0 +1,241 @@
+models:
+  exampleA:
+    class_name: "exampleA"
+    module_path: "models.model_catalog.ModA"
+    version: "1.0.0"
+    description: "Example Model for easy testing and demonstration purposes."
+    author: "Pietro Rando Mazzarino"
+    domain: "none"
+    category: "none"
+    tags: ["example"]
+    dependencies: []
+    time_step: 60  # default time step in seconds
+    max_time_step: 3600  # default max time step in seconds
+    min_time_step: 1  # default min time step in seconds
+    user_defined: {}
+    
+    parameters: {}
+    
+    inputs:
+      inpA:
+        type: "float"
+        default_value: 0.0
+        description: "nothing"
+        unit: ""
+        required: true
+        tags: []
+    
+    outputs:
+      outA:
+        type: "float"
+        default_value: 0.0
+        description: "nothing"
+        unit: ""
+        required: true
+        tags: []
+
+  exampleB:
+    class_name: "exampleB"
+    module_path: "models.model_catalog.ModB"
+    version: "1.0.0"
+    description: "Example Model for easy testing and demonstration purposes."
+    author: "Pietro Rando Mazzarino"
+    domain: "none"
+    category: "none"
+    tags: ["example"]
+    dependencies: []
+    time_step: 60  # default time step in seconds
+    max_time_step: 3600  # default max time step in seconds
+    min_time_step: 1  # default min time step in seconds
+    user_defined: {}
+    
+    parameters: {}
+    
+    inputs:
+      inpB:
+        type: "float"
+        default_value: 0.0
+        description: "nothing"
+        unit: ""
+        required: true
+        tags: []
+    
+    outputs:
+      outB:
+        type: "float"
+        default_value: 0.0
+        description: "nothing"
+        unit: ""
+        required: true
+        tags: []     
+      
+
+  
+  spring_mass_damper:
+    class_name: "SpringMassDamper"
+    module_path: "models.model_catalog.SpringMassDamper"
+    version: "1.0.0"
+    description: "Spring-Mass-Damper model for simulating dynamics of a mass attached to a spring and damper."
+    author: "Pietro Rando Mazzarino"
+    domain: "none"
+    category: "physical_model"
+    tags: ["example"]
+    dependencies: []
+    time_step: 60  # default time step in seconds
+    max_time_step: 3600  # default max time step in seconds
+    min_time_step: 1  # default min time step in seconds
+    user_defined: { 
+      solver: "euler",
+      integrator: "fixed-step"
+    }
+    
+    parameters:
+      mass:
+        type: "float"
+        default_value: 1.0
+        description: "mass of the object"
+        unit: "kg"
+        min_value: 0.001
+        max_value: 1000.0
+        required: true
+        tags: ["physical", "inertia"]
+      
+      stiffness:
+        type: "float"
+        default_value: 100.0
+        description: "Spring stiffness coefficient"
+        unit: "N/m"
+        min_value: 0.1
+        max_value: 10000.0
+        tags: ["physical", "spring"]
+      
+      damping:
+        type: "float"
+        default_value: 0.1
+        description: "Damping coefficient"
+        unit: "N⋅s/m"
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags: ["physical", "damping"]
+    
+    inputs:
+      force:
+        type: "float"
+        default_value: 0.0
+        description: "External force applied to the mass"
+        unit: "N"
+        min_value: 0.0
+        max_value: 30
+        required: true
+        tags: ["control", "external"]
+      
+      disturbance:
+        type: "float"
+        default_value: 0.0
+        description: "Disturbance force"
+        unit: "N"
+        min_value: 0.0
+        max_value: 30
+        required: false
+        tags: ["disturbance"]
+    
+    outputs:
+      position:
+        type: "float"
+        default_value: 0.0
+        description: "Position of the mass"
+        unit: "m"
+        min_value: -100.0
+        max_value: 100.0
+        required: true
+        tags: ["state", "measurement"]
+      
+      velocity:
+        type: "float"
+        default_value: 0.0
+        description: "Velocity of the mass"
+        unit: "m/s"
+        min_value: -100.0
+        max_value: 100.0
+        required: true
+        tags: ["state", "measurement"]
+      
+      acceleration:
+        type: "float"
+        default_value: 0.0
+        description: "Acceleration of the mass"
+        unit: "m/s²"
+        min_value: -100.0
+        max_value: 100.0
+        required: false
+        tags: ["state", "derived"]
+  
+
+  inputs4spring:
+    class_name: "Inputs4Spring"
+    module_path: "models.model_catalog.inputs4spring"
+    version: "1.0.0"
+    description: "Spring-Mass-Damper model for simulating dynamics of a mass attached to a spring and damper."
+    author: "Pietro Rando Mazzarino"
+    domain: "none"
+    category: "physical_model"
+    tags: ["example"]
+    dependencies: []
+    time_step: 60  # default time step in seconds
+    max_time_step: 3600  # default max time step in seconds
+    min_time_step: 1  # default min time step in seconds
+    user_defined: { 
+      solver: "euler",
+      integrator: "fixed-step"
+    }
+    
+    parameters:
+      mass:
+        type: "float"
+        default_value: 1.0
+        description: "mass of the object"
+        unit: "kg"
+        min_value: 0.001
+        max_value: 1000.0
+        required: true
+        tags: ["physical", "inertia"]
+      
+      stiffness:
+        type: "float"
+        default_value: 100.0
+        description: "Spring stiffness coefficient"
+        unit: "N/m"
+        min_value: 0.1
+        required: true
+        tags: ["physical", "spring"]
+      
+      damping:
+        type: "float"
+        default_value: 0.1
+        description: "Damping coefficient"
+        unit: "N⋅s/m"
+        min_value: 0.0
+        required: false
+        tags: ["physical", "damping"]
+    
+    inputs: {}
+      
+
+    outputs:
+      force:
+        type: "float"
+        default_value: 0.0
+        description: "External force applied to the mass"
+        unit: "N"
+        required: true
+        tags: ["control", "external"]
+      
+      disturbance:
+        type: "float"
+        default_value: 0.0
+        description: "Disturbance force"
+        unit: "N"
+        required: false
+        tags: ["disturbance"]
+ 

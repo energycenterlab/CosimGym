@@ -1,0 +1,246 @@
+# Building + Heat Pump + PID Controller + Weather Reader Co-simulation Scenario
+#
+# Data flow:
+#   weather_federate  → T_ext          → heatpump_federate, building_federate
+#   pid_federate      → modulation     → heatpump_federate
+#   heatpump_federate → Q_heat         → building_federate
+#   building_federate → T_indoor       → pid_federate
+#
+#   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
+
+version: "1.0.0"
+scenario_name: "bui_hp_SAC_rollingreset"
+scenario_description: "Building thermal model controlled by a SAC RL agent from stablebaseline, with real weather data from CSV."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-02T00:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: "all"
+
+reinforcement_learning_config:
+  seed: 42
+  # RLAgentConfig – which agent class to load
+  agent:
+    model_name: "rl_simple_SACsb3"             # class inside that module
+    reward_function: "models.model_catalog.RL_agents.reward_functions.building_heatpump_comfort"
+
+    env:
+      observations: [federation_1.weather.0.T_ext, federation_1.building.0.T_indoor]  # list of keys to use as observations
+      observation_causality: ["same_step", "next_step"]
+      reset_observation_defaults:
+        federation_1.weather.0.T_ext: 3.0
+        federation_1.building.0.T_indoor: 18.0
+      force_reset_observation_defaults: false
+      actions: [federation_1.heatpump.0.modulation]  # list of actions
+      action_spaces_type: ["box"] # list of action space types corresponding to the actions (only discrete, box) MUST have same lenght of actions for now discrete does not select the bin it is all integer bins betwen min and max
+      
+      # action_space_remapping: [[-10,10]] # list of action space remapping corresponding to the actions (for discrete only)
+      include_prev_obs: [0,0]  # TODO not implementedhow many previous observations to include in the state representation (0 for none) must be None or same lenght of observations
+    
+    # RLHyperparametersConfig – DQN-relevant hyperparameters
+    hyperparameters:
+      gamma: 0.99
+      learning_rate: 0.001
+      batch_size: 64
+      gradient_clip: 10.0
+      target_update_interval: 5
+
+  checkpointing:
+    single_best_checkpoint: "best_sac_sb3_model.pth"
+
+  test:
+    checkpoint_path: null
+    total_steps: 2880
+    deterministic: True
+
+  # RLTrainingConfig – core training loop settings
+  training:
+    mode:                 "online"   # online | offline | mixed
+    episode_length:       2880       # total simulation steps per episode
+    n_episodes: 100       # max agent steps before forced reset
+    train_frequency: 1           # how often to perform a training step (in environment steps)
+    gradient_steps: 1       # how many gradient steps to perform at each training step
+    reset_mode: "rolling"  # episode reset mode: "full" (reset all to initial conditions), "soft" (keep current state), "rolling" (shift starting point forward by a specified window), "random" (reset to random conditions within defined boundaries)
+    rolling_window: 10    # number of steps to shift forward for rolling reset (
+
+    # RLReplayBufferConfig – experience replay for off-policy DQN
+    replay_buffer:
+      buffer_size: 100000
+      prefill_steps: 1000
+
+
+
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23404
+      host: "localhost"
+      federates: 3
+      log_level: DEBUG
+
+    federate_configs:
+
+      # -----------------------------------------------------------------------
+      # Weather federate – streams T_ext from CSV
+      # -----------------------------------------------------------------------
+      weather:
+        name: "weather"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60   # one CSV row per 60 s sim-step
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_TO.csv"  # relative to model script dir
+            skip_rows: 0
+
+          init_state:
+            T_ext: 3.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # Heat-pump federate
+      # -----------------------------------------------------------------------
+      heatpump:
+        name: "heatpump"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.2
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather.0/T_ext]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp"
+            parallel_execution: false
+
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+            Q_heat: 0.0
+            P_elec: 0.0
+            COP: 0.0
+
+          user_defined:
+            integrator: "fixed-step"
+
+      # -----------------------------------------------------------------------
+      # Building federate
+      # -----------------------------------------------------------------------
+      building:
+        name: "building"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.3
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather.0/T_ext]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg"
+            parallel_execution: false
+
+          parameters:
+            thermal_capacitance: 5000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+          user_defined:
+            integrator: "euler"

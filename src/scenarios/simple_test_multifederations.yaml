@@ -1,0 +1,134 @@
+# Example Federation Configuration YAML
+# This file demonstrates the structure needed to instantiate a FederationConfig object
+
+
+
+version: "1.0.0"
+scenario_name: "simple_test_multifederations"
+scenario_description: A simple test, only one federation but using a yaml with open config for multiple.
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T01:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: ["position", "velocity", "acceleration", "force", "disturbance"]
+
+
+  
+federations:
+  federation_1:
+    broker_config:
+      core_type: "tcp"
+      port: 23404
+      federates: 1
+      log_level: DEBUG
+
+    federate_configs:
+      spring_federate:
+          name: "spring_federate"
+          type: "base"
+          log_level: DEBUG
+          
+          timing_configs:
+            real_period: 1  
+            
+          flags:
+            terminate_on_error: true
+            wait_for_current_time_update: true
+        
+          connections:
+            endpoints: []
+            subscribes:
+              - key: "force"
+                type: "double"
+                units: "N"
+                targets: 
+                  '0': [input_federate.0/force]
+                  '1': [input_federate.1/force]
+              - key: "disturbance"
+                type: "double"
+                units: "N"
+                targets: 
+                  '0': [input_federate.0/disturbance]
+                  '1': [input_federate.1/disturbance]
+
+            publishes:
+              - key: "position"
+                type: "double"
+                units: "N"
+              - key: "velocity"
+                type: "double"
+                units: "N"
+              - key: "acceleration"
+                type: "double"
+                units: "N"
+
+          model_configs:
+            instantiation:
+              model_name: "spring_mass_damper"
+              n_instances: 2
+              prefix: "spring"
+              parallel_execution: false
+            
+            parameters:
+              mass: [5, 5]
+              damping: [2.0,3.0]
+              stiffness: [10.0, 20]
+            
+            init_state:
+              force: [10.0, 5.0]
+              disturbance: 0.0
+              position: [0.0, 100.0]
+              velocity: 0.0
+              acceleration: 0.0
+            
+            user_defined:
+              solver: "euler"
+              integrator: "fixed-step"
+  
+      
+  federation_2:
+    broker_config:
+      core_type: "tcp"
+      port: 23405
+      federates: 1
+      log_level: DEBUG
+
+    federate_configs:
+             
+      input_federate:
+        name: "input_federate"
+        type: "base"
+        log_level: DEBUG
+        
+        timing_configs:
+          real_period: 1  
+          
+        flags:
+          terminate_on_error: true
+       
+        connections:
+          endpoints: []
+          subscribes: []
+              
+          publishes:
+            - key: "force"
+              type: "double"
+              units: "N"
+            - key: "disturbance"
+              type: "double"
+              units: "N"
+        #  TODO all the model aspect must be designed for now not used
+        model_configs:
+          instantiation:
+            model_name: "inputs4spring"
+            n_instances: 2
+            prefix: "input"
+            parallel_execution: false
+
+          init_state: 
+            disturbance: [2.3,1.0]
+          
+          params: {}

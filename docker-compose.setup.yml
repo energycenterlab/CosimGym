@@ -1,0 +1,99 @@
+version: '3.9'
+
+# Docker Compose for Option 4 - Complete Docker-based Setup
+# This file sets up everything in containers, including conda environment management
+# 
+# Usage:
+#   docker compose -f docker-compose.setup.yml up
+#   docker compose -f docker-compose.setup.yml down
+#
+# Notes:
+#   - All services are containerized
+#   - Volume mounts allow code editing on host
+#   - Redis persists data to named volume
+
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: cosim_redis_setup
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis_data_setup:/data
+    command: redis-stack-server --save 60 1 --loglevel verbose
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cosim_network
+
+  catalog-loader:
+    image: python:3.12-slim
+    container_name: cosim_catalog_loader_setup
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: >
+      sh -c "pip install --quiet --no-cache-dir redis pyyaml &&
+             python src/models/model_catalog/catalog_loader.py"
+    restart: "no"
+    networks:
+      - cosim_network
+
+  # Python environment with all dependencies pre-installed
+  cosim-env:
+    image: python:3.12-slim
+    container_name: cosim_env_setup
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
+      - PATH=/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - CONDA_PLUGINS_AUTO_ACCEPT_TOS=true
+    # Install conda and dependencies
+    command: >
+      bash -c "
+        echo 'Installing Miniconda...' &&
+        apt-get update && apt-get install -y --no-install-recommends wget bash ca-certificates &&
+        wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh &&
+        bash /tmp/miniconda.sh -b -p /opt/conda &&
+        ln -sf /opt/conda/bin/conda /usr/local/bin/conda &&
+        /opt/conda/bin/conda init bash &&
+        /opt/conda/bin/conda config --set always_yes yes &&
+        /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main || true &&
+        /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r || true &&
+        echo 'Creating environment from environment.yml...' &&
+        /opt/conda/bin/conda env create -y -f environment.yml &&
+        touch /tmp/cosim_env_ready &&
+        apt-get clean && rm -rf /var/lib/apt/lists/* &&
+        echo 'Installation complete. Keep container running...' &&
+        sleep infinity
+      "
+    stdin_open: true
+    tty: true
+    networks:
+      - cosim_network
+
+volumes:
+  redis_data_setup:
+    driver: local
+
+networks:
+  cosim_network:
+    driver: bridge

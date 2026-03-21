@@ -1,0 +1,991 @@
+models:
+
+#  PYTHON PHYSICAL MODELS
+  spring_mass_damper:
+    class_name: "SpringMassDamper"
+    module_path: "models.model_catalog.physical_models.spring_mass_damper"
+    version: "1.0.0"
+    description: "Spring-Mass-Damper model for simulating dynamics of a mass attached to a spring and damper."
+    author: "Pietro Rando Mazzarino"
+    domain: "none"
+    category: "physical_model"
+    tags: ["example"]
+    dependencies: []
+    time_step: 60  # default time step in seconds
+    max_time_step: 3600  # default max time step in seconds
+    min_time_step: 1  # default min time step in seconds
+    user_defined: { 
+      solver: "euler",
+      integrator: "fixed-step"
+    }
+    
+    parameters:
+      mass:
+        type: "float"
+        default_value: 1.0
+        description: "mass of the object"
+        unit: "kg"
+        min_value: 0.001
+        max_value: 1000.0
+        required: true
+        tags: ["physical", "inertia"]
+      
+      stiffness:
+        type: "float"
+        default_value: 100.0
+        description: "Spring stiffness coefficient"
+        unit: "N/m"
+        min_value: 0.1
+        max_value: 10000.0
+        tags: ["physical", "spring"]
+      
+      damping:
+        type: "float"
+        default_value: 0.1
+        description: "Damping coefficient"
+        unit: "N⋅s/m"
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags: ["physical", "damping"]
+    
+    inputs:
+      force:
+        type: "float"
+        default_value: 0.0
+        description: "External force applied to the mass"
+        unit: "N"
+        min_value: 0.0
+        max_value: 30
+        required: true
+        tags: ["control", "external"]
+      
+      disturbance:
+        type: "float"
+        default_value: 0.0
+        description: "Disturbance force"
+        unit: "N"
+        min_value: 0.0
+        max_value: 30
+        required: false
+        tags: ["disturbance"]
+    
+    outputs:
+      position:
+        type: "float"
+        default_value: 0.0
+        description: "Position of the mass"
+        unit: "m"
+        min_value: -100.0
+        max_value: 100.0
+        required: true
+        tags: ["state", "measurement"]
+      
+      velocity:
+        type: "float"
+        default_value: 0.0
+        description: "Velocity of the mass"
+        unit: "m/s"
+        min_value: -100.0
+        max_value: 100.0
+        required: true
+        tags: ["state", "measurement"]
+      
+      acceleration:
+        type: "float"
+        default_value: 0.0
+        description: "Acceleration of the mass"
+        unit: "m/s²"
+        min_value: -100.0
+        max_value: 100.0
+        required: false
+        tags: ["state", "derived"]
+  
+  inputs4spring:
+    class_name: "Inputs4Spring"
+    module_path: "models.model_catalog.physical_models.inputs4spring"
+    version: "1.0.0"
+    description: "Spring-Mass-Damper model for simulating dynamics of a mass attached to a spring and damper."
+    author: "Pietro Rando Mazzarino"
+    domain: "none"
+    category: "physical_model"
+    tags: ["example"]
+    dependencies: []
+    time_step: 60  # default time step in seconds
+    max_time_step: 3600  # default max time step in seconds
+    min_time_step: 1  # default min time step in seconds
+    user_defined: { 
+      solver: "euler",
+      integrator: "fixed-step"
+    }
+    
+    parameters:
+      mass:
+        type: "float"
+        default_value: 1.0
+        description: "mass of the object"
+        unit: "kg"
+        min_value: 0.001
+        max_value: 1000.0
+        required: true
+        tags: ["physical", "inertia"]
+      
+      stiffness:
+        type: "float"
+        default_value: 100.0
+        description: "Spring stiffness coefficient"
+        unit: "N/m"
+        min_value: 0.1
+        required: true
+        tags: ["physical", "spring"]
+      
+      damping:
+        type: "float"
+        default_value: 0.1
+        description: "Damping coefficient"
+        unit: "N⋅s/m"
+        min_value: 0.0
+        required: false
+        tags: ["physical", "damping"]
+    
+    inputs: {}
+      
+
+    outputs:
+      force:
+        type: "float"
+        default_value: 0.0
+        description: "External force applied to the mass"
+        unit: "N"
+        required: true
+        tags: ["control", "external"]
+      
+      disturbance:
+        type: "float"
+        default_value: 0.0
+        description: "Disturbance force"
+        unit: "N"
+        required: false
+        tags: ["disturbance"]
+ 
+  simple_building:
+    class_name: "SimpleBuilding"
+    module_path: "models.model_catalog.physical_models.simple_building"
+    version: "1.0.0"
+    description: "Simple 1R1C lumped-parameter building thermal model. Tracks indoor air temperature based on envelope heat exchange and an injected heating load."
+    author: "Pietro Rando Mazzarino"
+    domain: "building_energy"
+    category: "physical_model"
+    tags: ["building", "thermal", "energy"]
+    dependencies: []
+    time_step: 60          # default time step in seconds
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined:
+      integrator: "euler"
+
+    parameters:
+      thermal_capacitance:
+        type: "float"
+        default_value: 5000000.0
+        description: "Effective thermal mass of the building air volume and furniture"
+        unit: "J/K"
+        min_value: 1000.0
+        max_value: 1.0e10
+        required: true
+        tags: ["thermal", "mass"]
+
+      thermal_resistance:
+        type: "float"
+        default_value: 0.005
+        description: "Thermal resistance of the building envelope (walls, windows, roof)"
+        unit: "K/W"
+        min_value: 1.0e-6
+        max_value: 1.0
+        required: true
+        tags: ["thermal", "envelope"]
+
+      T_initial:
+        type: "float"
+        default_value: 20.0
+        description: "Initial indoor air temperature at start of simulation"
+        unit: "°C"
+        min_value: -30.0
+        max_value: 50.0
+        required: false
+        tags: ["initial_condition"]
+
+    inputs:
+      T_ext:
+        type: "float"
+        default_value: 10.0
+        description: "Outdoor (external) air temperature"
+        unit: "°C"
+        min_value: -40.0
+        max_value: 60.0
+        required: true
+        tags: ["weather", "external"]
+
+      Q_heat:
+        type: "float"
+        default_value: 0.0
+        description: "Heating load supplied to the building zone (e.g. from a heat pump)"
+        unit: "W"
+        min_value: 0.0
+        max_value: 1.0e6
+        required: true
+        tags: ["hvac", "heating"]
+
+    outputs:
+      T_indoor:
+        type: "float"
+        default_value: 20.0
+        description: "Indoor air temperature"
+        unit: "°C"
+        min_value: -30.0
+        max_value: 60.0
+        required: true
+        tags: ["state", "measurement"]
+
+  simple_heatpump:
+    class_name: "SimpleHeatPump"
+    module_path: "models.model_catalog.physical_models.simple_heatpump"
+    version: "1.0.0"
+    description: "Simple air-source heat pump model. Estimates COP via a Carnot-fraction approach and outputs thermal heating load and electrical consumption."
+    author: "Pietro Rando Mazzarino"
+    domain: "building_energy"
+    category: "physical_model"
+    tags: ["heatpump", "hvac", "energy"]
+    dependencies: []
+    time_step: 60
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined:
+      integrator: "fixed-step"
+
+    parameters:
+      P_rated:
+        type: "float"
+        default_value: 5000.0
+        description: "Rated (maximum) electrical power input to the compressor"
+        unit: "W"
+        min_value: 100.0
+        max_value: 1.0e6
+        required: true
+        tags: ["electrical", "sizing"]
+
+      eta_carnot:
+        type: "float"
+        default_value: 0.45
+        description: "Carnot efficiency fraction; accounts for real-world irreversibilities"
+        unit: "-"
+        min_value: 0.1
+        max_value: 1.0
+        required: false
+        tags: ["efficiency", "thermodynamics"]
+
+      T_supply:
+        type: "float"
+        default_value: 45.0
+        description: "Fixed supply temperature (water or air) on the condenser side"
+        unit: "°C"
+        min_value: 20.0
+        max_value: 80.0
+        required: false
+        tags: ["thermal", "setpoint"]
+
+      COP_min:
+        type: "float"
+        default_value: 1.0
+        description: "Minimum plausible COP (safety clip for extreme conditions)"
+        unit: "-"
+        min_value: 1.0
+        max_value: 3.0
+        required: false
+        tags: ["efficiency", "safety"]
+
+      COP_max:
+        type: "float"
+        default_value: 6.0
+        description: "Maximum plausible COP (safety clip to avoid unrealistic values)"
+        unit: "-"
+        min_value: 2.0
+        max_value: 15.0
+        required: false
+        tags: ["efficiency", "safety"]
+
+    inputs:
+      T_ext:
+        type: "float"
+        default_value: 5.0
+        description: "Outdoor (external) air temperature used as heat-pump source"
+        unit: "°C"
+        min_value: -20.0
+        max_value: 40.0
+        required: true
+        tags: ["weather", "external"]
+
+      modulation:
+        type: "float"
+        default_value: 0.0
+        description: "Compressor modulation signal: 0 = off, 1 = full-load"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: true
+        tags: ["control", "setpoint"]
+
+    outputs:
+      Q_heat:
+        type: "float"
+        default_value: 0.0
+        description: "Thermal heating power delivered to the building"
+        unit: "W"
+        min_value: 0.0
+        max_value: 1.0e6
+        required: true
+        tags: ["thermal", "output"]
+
+      P_elec:
+        type: "float"
+        default_value: 0.0
+        description: "Electrical power consumed by the heat pump"
+        unit: "W"
+        min_value: 0.0
+        max_value: 1.0e6
+        required: true
+        tags: ["electrical", "consumption"]
+
+      COP:
+        type: "float"
+        default_value: 0.0
+        description: "Instantaneous coefficient of performance"
+        unit: "-"
+        min_value: 0.0
+        max_value: 15.0
+        required: false
+        tags: ["efficiency", "derived"]
+
+  pv_dest:
+    class_name: "PV_dest"
+    module_path: "models.model_catalog.physical_models.pv_dest"
+    version: "1.0.0"
+    description: "PV model that calculates PV production based on weather data"
+    author: "Xuyuan Kang"
+    domain: "energy_generation"
+    category: "physical_model"
+    tags: ["PV", "generator", "electric energy"]
+    dependencies: []
+    time_step: 60
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined:
+      integrator: "fixed-step"
+    
+    parameters:
+      lat:
+        type: "float"
+        default_value: 39.8
+        description: "latitiude of the location in WGS84 coordinates"
+        unit: ""
+        min_value: -90.0
+        max_value: 90.0
+        required: true
+        tags: ["geo", "location", "latitude"]
+      long:
+        type: "float"
+        default_value: 116.467
+        description: "longitude of the location in WGS84 coordinates"
+        unit: ""
+        min_value: -180.0
+        max_value: 180.0
+        required: true
+        tags: ["geo", "location", "longitude"]
+      calc_area:
+          type: "float"
+          default_value: 50.0
+          description: "calculated area of PV array (m^2)"
+          unit: "m^2"
+          min_value: 0.0
+          max_value: 10000.0
+          required: true
+          tags: ["geometry", "area"]
+      Tilt_angle:
+        type: "float"
+        default_value: 0.6981317010
+        description: "tilt angle of PV array (radians)"
+        unit: "rad"
+        min_value: 0.0
+        max_value: 1.57
+        required: true
+        tags: ["geometry", "tilt"]
+      Azimuth_angle:
+        type: "float"
+        default_value: 0.9
+        description: "azimuth angle of PV array (radians)"
+        unit: "rad"
+        min_value: 0.0
+        max_value: 2*3.1416
+        required: true
+        tags: ["geometry", "azimuth"]
+      area_ratio:
+        type: "float"
+        default_value: 1.0
+        description: "area ratio for PV calculation"
+        unit: "-"
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags: ["geometry", "ratio"]
+      SVF_hori:
+        type: "float"
+        default_value: 1.0
+        description: "sky view factor horizontal"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["environment", "skyview"]
+      Reflectance:
+        type: "float"
+        default_value: 0.2
+        description: "ground reflectance"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["environment", "reflectance"]
+      eta_pv_stc:
+        type: "float"
+        default_value: 0.21
+        description: "PV module efficiency at standard test conditions (not used)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["performance", "deprecated"]
+      NOCT:
+        type: "float"
+        default_value: 45.0
+        description: "Nominal Operating Cell Temperature (°C)"
+        unit: "°C"
+        min_value: -20.0
+        max_value: 100.0
+        required: false
+        tags: ["performance", "temperature"]
+      Power_rated_pv:
+        type: "float"
+        default_value: 410.0
+        description: "Rated power of PV module (W)"
+        unit: "W"
+        min_value: 0.0
+        max_value: 10000.0
+        required: true
+        tags: ["performance", "power"]
+      length:
+        type: "float"
+        default_value: 2.05
+        description: "length of PV module (m)"
+        unit: "m"
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags: ["geometry", "length"]
+      width:
+        type: "float"
+        default_value: 1.02
+        description: "width of PV module (m)"
+        unit: "m"
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags: ["geometry", "width"]
+      solar_constant:
+        type: "float"
+        default_value: 1353.0
+        description: "solar constant (W/m^2)"
+        unit: "W/m^2"
+        min_value: 1000.0
+        max_value: 1500.0
+        required: false
+        tags: ["environment", "solar"]
+      std_long:
+        type: "float"
+        default_value: 120.0
+        description: "standard longitude for timezone calculation"
+        unit: "deg"
+        min_value: -180.0
+        max_value: 180.0
+        required: false
+        tags: ["geo", "timezone"]
+    
+    inputs:
+      GHI:
+        type: "float"
+        default_value: 0.0
+        description: "Global horizontal irradiance"
+        unit: "W/m^2"
+        min_value: 0.0
+        max_value: 2000.0
+        required: true
+        tags: ["weather", "irradiance", "glohorzrad"]
+      DHI:
+        type: "float"
+        default_value: 0.0
+        description: "Diffuse horizontal irradiance"
+        unit: "W/m^2"
+        min_value: 0.0
+        max_value: 2000.0
+        required: true
+        tags: ["weather", "irradiance", "difhorzrad"]
+      T_ext:
+        type: "float"
+        default_value: 25.0
+        description: "Ambient dry bulb temperature"
+        unit: "°C"
+        min_value: -50.0
+        max_value: 60.0
+        required: true
+        tags: ["weather", "temperature", "drybulb"]
+  
+    outputs:
+      PV_power:
+        type: "float"
+        default_value: 0.0
+        description: "Electrical power output from the PV array"
+        unit: "W"
+        min_value: 0.0
+        max_value: 1.0e6
+        required: true
+        tags: ["electric", "power", "output"]
+
+  battery_dest:
+    class_name: "battery_dest"
+    module_path: "models.model_catalog.physical_models.battery_dest"
+    version: "1.0.0"
+    description: "Battery model that calculates battery state based on charge and discharge power" 
+    author: "Xuyuan Kang, Pietro Rando Mazzarino"
+    domain: "energy_storage"
+    category: "physical_model"
+    tags: ["battery", "storage", "electric energy"]
+    dependencies: []
+    time_step: 60
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined:
+      integrator: "fixed-step"
+    parameters:
+      rated_capacity:
+        type: "float"
+        default_value: 40000.0
+        description: "Rated energy capacity of the battery"
+        unit: "Wh"
+        min_value: 0.0
+        max_value: 1.0e7
+        required: true
+        tags: ["capacity", "energy"]
+      maximum_charge_power:
+        type: "float"
+        default_value: 8000.0
+        description: "Maximum charging power"
+        unit: "W"
+        min_value: 0.0
+        max_value: 1.0e6
+        required: true
+        tags: ["power", "charge"]
+      maximum_discharge_power:
+        type: "float"
+        default_value: 8000.0
+        description: "Maximum discharging power"
+        unit: "W"
+        min_value: 0.0
+        max_value: 1.0e6
+        required: true
+        tags: ["power", "discharge"]
+      SOC_upper_limit:
+        type: "float"
+        default_value: 0.95
+        description: "State of charge upper limit (fraction)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["SOC", "limit"]
+      SOC_lower_limit:
+        type: "float"
+        default_value: 0.25
+        description: "State of charge lower limit (fraction)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["SOC", "limit"]
+      charge_efficiency:
+        type: "float"
+        default_value: 1.0
+        description: "Charging efficiency"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["efficiency", "charge"]
+      discharge_efficiency:
+        type: "float"
+        default_value: 1.0
+        description: "Discharging efficiency"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["efficiency", "discharge"]
+      self_discharge_rate:
+        type: "float"
+        default_value: 0.0
+        description: "Self-discharge rate per time step"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["self_discharge", "rate"]
+      SOC:
+        type: "float"
+        default_value: 0.75
+        description: "Initial state of charge (fraction)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["SOC", "initial"]
+    inputs:
+      Battery_power:
+        type: "float"
+        default_value: 0.0
+        description: "Input power to the battery (positive for charging, negative for discharging)"
+        unit: "W"
+        min_value: -1.0e6
+        max_value: 1.0e6
+        required: true
+        tags: ["power", "input", "sum"]
+    outputs:
+      SOC:
+        type: "float"
+        default_value: 0.75
+        description: "State of charge (fraction)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: true
+        tags: ["SOC", "state"]
+      energy:
+        type: "float"
+        default_value: 30000.0
+        description: "Energy stored in the battery (Wh)"
+        unit: "Wh"
+        min_value: 0.0
+        max_value: 1.0e7
+        required: true
+        tags: ["energy", "state"] 
+      P_net:
+        type: "float"
+        default_value: 0.0
+        description: "Net power flow into the battery (positive for charging, negative for discharging)"
+        unit: "W"
+        min_value: -1.0e6
+        max_value: 1.0e6
+        required: true
+        tags: ["power", "net", "output"]
+      P_clipped:
+        type: "float"
+        default_value: 0.0
+        description: "Clipped power flow into the battery (positive for charging, negative for discharging)"
+        unit: "W"
+        min_value: -1.0e6
+        max_value: 1.0e6
+        required: true
+        tags: ["power", "net", "output"]
+      efficiency:
+        type: "float"
+        default_value: 1.0
+        description: "Effective efficiency based on charge/discharge direction"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["efficiency", "derived"]
+  
+  rb_bems:
+    class_name: "rb_bems"
+    module_path: "models.model_catalog.physical_models.rb_bems"
+    version: "1.0.0"
+    description: "Rule-based battery energy management system (BEMS) controller that manages charging and discharging based on state of charge (SOC) thresholds. It works with DEST PV and battery models"
+    inputs:
+      SOC:
+        type: "float"
+        default_value: 0.75
+        description: "State of charge (fraction) input from the battery model"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: true
+        tags: ["SOC", "input", "battery"]
+      P_gen:
+        type: "float"
+        default_value: 0.0
+        description: "Power generation input (e.g. from PV) that can be used to charge the battery"
+        unit: "W"
+        min_value: -1.0e6
+        max_value: 1.0e6
+        required: true
+        tags: ["power", "input", "generation"]
+      P_load:
+        type: "float"
+        default_value: 0.0
+        description: "Power load input that the battery can discharge to support"
+        unit: "W"
+        min_value: -1.0e6
+        max_value: 1.0e6
+        required: true
+        tags: ["power", "input", "load"]
+    outputs:
+      Battery_power:
+        type: "float"
+        default_value: 0.0
+        description: "Control signal for battery power: positive for charging, negative for discharging"
+        unit: "W"   
+
+      Grid_power:
+        type: "float"
+        default_value: 0.0
+        description: "Power drawn from or supplied to the grid after accounting for battery action"
+        unit: "W"
+
+    parameters:
+      SOC_max:
+        type: "float"
+        default_value: 0.95
+        description: "Upper SOC threshold for charging (fraction)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: true
+        tags: ["SOC", "threshold", "charge"]
+      SOC_min:
+        type: "float"
+        default_value: 0.25
+        description: "Lower SOC threshold for discharging (fraction)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: true
+        tags: ["SOC", "threshold", "discharge"]
+
+# FMU SPECIFIC MODELS 
+  base_fmu_model:
+    class_name: "BaseFMUModel"
+    module_path: "models.base_FMU_model"
+    version: "1.0.0"
+    description: "Base FMU model for HELICS co-simulation framework. It act as an interface to any FMU"
+    category: "base_model"
+
+
+# DATA READERS
+  base_csv_reader:
+    class_name: "BaseCSVReader"
+    module_path: "models.base_csv_reader"
+    version: "1.0.0"
+    description: "Base CSV reader model for reading data from CSV files and providing it as outputs in the co-simulation framework."
+    category: "data_model"
+    author: "Pietro Rando Mazzarino"
+    domain: "data_reader"
+    category: "data_model"
+    tags: ["data", "csv"]
+    dependencies: ["pandas"]
+    time_step: 60
+    max_time_step: int(1e6)
+    min_time_step: int(1e-6)
+    user_defined: {}
+    parameters:
+      csv_path:
+        type: "string"
+        default_value: ""
+        description: "Path to generic csv files should be in resources inside physical models folder(absolute or relative to the model script directory)"
+        unit: "-"
+        required: true
+        tags: ["data", "path"]
+      
+      skip_rows:
+        type: "int"
+        default_value: 0
+        description: "Number of data rows to skip at the start of the file"
+        unit: "-"
+        min_value: 0
+        required: false
+        tags: ["data"]
+
+      resource_folder:
+        type: "string"
+        default_value: "model_catalog/physical_models/resources"
+        description: "Folder where the csv file is located, relative to the model script directory"
+        unit: "-"
+        required: false
+        tags: ["data", "path"]
+
+    inputs: {}
+    outputs: {}
+
+  weather_csv_reader:
+    class_name: "WeatherCSVReader"
+    module_path: "models.model_catalog.physical_models.weather_csv_reader"
+    version: "1.0.0"
+    description: "Streams outdoor temperature from a CSV weather file, advancing one row per simulation step and wrapping around cyclically."
+    author: "Pietro Rando Mazzarino"
+    domain: "weather"
+    category: "data_model"
+    tags: ["weather", "data", "csv"]
+    dependencies: []
+    time_step: 60
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+
+    parameters:
+      csv_path:
+        type: "string"
+        default_value: "resources/weather_TO.csv"
+        description: "Path to the CSV weather file (absolute or relative to the model script directory)"
+        unit: "-"
+        required: true
+        tags: ["data", "path"]
+
+      column:
+        type: "string"
+        default_value: "T_ext"
+        description: "Name of the CSV column to read as outdoor temperature"
+        unit: "-"
+        required: false
+        tags: ["data", "column"]
+
+      skip_rows:
+        type: "int"
+        default_value: 0
+        description: "Number of data rows to skip at the start of the file"
+        unit: "-"
+        min_value: 0
+        required: false
+        tags: ["data"]
+
+    inputs: {}
+
+    outputs:
+      T_ext:
+        type: "float"
+        default_value: 10.0
+        description: "Outdoor air temperature read from the CSV file"
+        unit: "°C"
+        min_value: -50.0
+        max_value: 60.0
+        required: true
+        tags: ["weather", "measurement"]
+
+# CONTROLLERS
+  simple_pid_controller:
+    class_name: "SimplePIDController"
+    module_path: "models.model_catalog.physical_models.simple_pid_controller"
+    version: "1.0.0"
+    description: "Discrete-time PID controller that tracks a temperature setpoint and outputs a modulation signal (0–1) for a heat pump."
+    author: "Pietro Rando Mazzarino"
+    domain: "building_energy"
+    category: "physical_model"
+    tags: ["control", "pid", "hvac"]
+    dependencies: []
+    time_step: 60
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+
+    parameters:
+      T_setpoint:
+        type: "float"
+        default_value: 20.0
+        description: "Desired indoor temperature setpoint"
+        unit: "°C"
+        min_value: 10.0
+        max_value: 30.0
+        required: true
+        tags: ["setpoint", "control"]
+
+      Kp:
+        type: "float"
+        default_value: 0.05
+        description: "Proportional gain"
+        unit: "-/°C"
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags: ["tuning"]
+
+      Ki:
+        type: "float"
+        default_value: 0.001
+        description: "Integral gain"
+        unit: "-/(°C·s)"
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags: ["tuning"]
+
+      Kd:
+        type: "float"
+        default_value: 0.0
+        description: "Derivative gain"
+        unit: "-·s/°C"
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags: ["tuning"]
+
+    inputs:
+      T_indoor:
+        type: "float"
+        default_value: 20.0
+        description: "Measured indoor air temperature from the building"
+        unit: "°C"
+        min_value: -30.0
+        max_value: 60.0
+        required: true
+        tags: ["measurement", "feedback"]
+
+    outputs:
+      modulation:
+        type: "float"
+        default_value: 0.0
+        description: "Compressor modulation command sent to the heat pump (0=off, 1=full)"
+        unit: "-"
+        min_value: 0.0
+        max_value: 1.0
+        required: true
+        tags: ["control", "command"]
+
+
+# RL AGENTS
+  rl_simple_agent:
+    class_name: "RL_Simple_Agent"
+    module_path: "models.model_catalog.RL_agents.rl_simple_agent"
+    version: "1.0.0"
+    description: "simply replicate the base rl agent behaviour just a testing agent"
+    category: "rl_agent"
+    
+  rl_simple_DQN:
+    class_name: "RL_Simple_DQN"
+    module_path: "models.model_catalog.RL_agents.rl_simple_DQN"
+    version: "1.0.0"
+    description: "simple Pytrorch DQN agent for testing"
+    category: "rl_agent"  
+
+  rl_simple_SACsb3:
+    class_name: "RL_Simple_SACsb3"
+    module_path: "models.model_catalog.RL_agents.rl_simple_SACsb3"
+    version: "1.0.0"  
+    description: "simple stablebaseline SAC intergation agent for testing"
+    category: "rl_agent"
+
