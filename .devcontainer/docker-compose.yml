@@ -1,0 +1,24 @@
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    
+    # Keep the container running for VS Code to attach
+    command: sleep infinity
+    
+    # Configurations suitable for the container environment
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/workspace/src
+
+    # Ensure Redis is started first
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
