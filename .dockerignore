@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Logs and results
+logs/
+results/
+
+# Python cache and artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.coverage
+.eggs/
+
+# IDE and editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build and dist
+build/
+dist/
+.tox/
+
+# Documentation
+docs/
+
+# Models (if very large)
+*.pth
+*.pt
+
+# Environment and virtualenv
+venv/
+env/
+.env
+
+# Node dependencies (if any frontend)
+node_modules/
