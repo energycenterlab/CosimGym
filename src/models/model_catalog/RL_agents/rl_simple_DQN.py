@@ -14,6 +14,7 @@ from ...base_agent_rl import RLAgent
 
 
 import random
+import os
 from collections import deque
 from dataclasses import dataclass
 
@@ -154,6 +155,8 @@ class DQNAgent:
         self.q_target.load_state_dict(self.q.state_dict())
     
     def save_model(self, path):
+        # 
+        os.makedirs(os.path.dirname(path), exist_ok=True) #  this is just a patch TODO must create teh folder in R federate when checkpoint is present
         torch.save(self.q.state_dict(), path)
 
 
