@@ -381,7 +381,7 @@ class RL_Federate(BaseFederate):
             filename = f"{self.name}_{mode_key}_rl_storage.json"
             file_path = os.path.join(base_dir, filename)
             with open(file_path, 'w') as f:
-                json.dump(partition, f, default=str, indent=4)
+                json.dump(partition, f, default=str)
             self.logger.info(f"RL storage data ({mode_key}) saved to {file_path}")
     
     def _register_entities(self):

@@ -478,7 +478,7 @@ class BaseFederate():
             filename = f"{self.name}_{mode_key}_storage.json"
             file_path = os.path.join(base_dir, filename)
             with open(file_path, 'w') as f:
-                json.dump(partition, f, default=str, indent=4)
+                json.dump(partition, f, default=str)
             self.logger.info(f"Storage data ({mode_key}) saved to {file_path}")
     
     def request_time_advance(self):
