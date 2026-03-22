@@ -61,7 +61,7 @@ reinforcement_learning_config:
     mode:                 "online"   # online | offline | mixed
     episode_length:       2880       # total simulation steps per episode
     n_episodes: 100       # max agent steps before forced reset
-    train_frequency: 1           # how often to perform a training step (in environment steps)
+    train_frequency: 100           # how often to perform a training step (in environment steps)
     gradient_steps: 1       # how many gradient steps to perform at each training step
 
 

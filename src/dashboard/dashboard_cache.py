@@ -68,12 +68,10 @@ class MetadataIndex:
 
         # If cache exists in memory, use it (fastest)
         if cached is not None:
-            return cached
-
-        # Check if persisted cache is still valid (compare mtimes)
-        if self._is_cache_fresh(results_path):
-            # Cache exists on disk and is fresh, re-use it
-            return cached or {}
+            # Check if persisted cache is still valid (compare mtimes)
+            if self._is_cache_fresh(results_path):
+                # Cache exists on disk and is fresh, re-use it
+                return cached
         
         # Cache is stale or doesn't exist - scan directory
         cached = self._scan_scenarios(results_path)
