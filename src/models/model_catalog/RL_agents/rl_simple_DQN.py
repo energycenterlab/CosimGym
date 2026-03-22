@@ -13,8 +13,8 @@ created: 2026-03-17
 from ...base_agent_rl import RLAgent
 
 
-import random
 import os
+import random
 from collections import deque
 from dataclasses import dataclass
 
@@ -96,6 +96,7 @@ class DQNAgent:
         self.optim = optim.Adam(self.q.parameters(), lr=cfg.lr)
         self.replay = ReplayBuffer(cfg.buffer_size)
 
+        self.best_model = None
         self.step_count = 0
 
     def epsilon(self):
@@ -154,10 +155,12 @@ class DQNAgent:
         self.q.load_state_dict(torch.load(path, map_location=self.device))
         self.q_target.load_state_dict(self.q.state_dict())
     
-    def save_model(self, path):
-        # 
-        os.makedirs(os.path.dirname(path), exist_ok=True) #  this is just a patch TODO must create teh folder in R federate when checkpoint is present
-        torch.save(self.q.state_dict(), path)
+    def save_model(self, path, last=False):
+        # Create parent directory if it doesn't exist
+        self.best_model = self.q.state_dict().copy()
+        if last:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            torch.save(self.q.state_dict(), path)
 
 
 
@@ -220,6 +223,7 @@ class RL_Simple_DQN(RLAgent):
 
         for step in range(self.rl_task.training.total_steps):
             self.model.step_count += 1
+            last = False
 
             # (flatten state if needed)
             s = np.array(self.obs, dtype=np.float32).reshape(-1)
@@ -241,10 +245,13 @@ class RL_Simple_DQN(RLAgent):
 
             if terminated:
                 # simple logging
+                if step == self.rl_task.training.total_steps - 1:
+                    last=True
+                              
                 if episode_reward > best_ep_reward:
                     best_ep_reward = episode_reward
                 self.logger.info(f"Episode finished at step {step} with return {episode_reward:.1f} (best so far: {best_ep_reward:.1f}), loss={loss}")
-                self.model.save_model(self.check_pointing_config.single_best_checkpoint)
+                self.model.save_model(self.check_pointing_config.single_best_checkpoint, last=last)
                 print(f"step={step:7d}  eps={self.model.epsilon():.3f}  ep_return={episode_reward:.1f}  loss={loss}")
                 self.obs, _ = self.env.reset()
                 episode_reward = 0.0

@@ -116,7 +116,6 @@ federations:
 
         timing_configs:
           real_period: 60   # one CSV row per 60 s sim-step
-          time_delta: 1.0   # optional HELICS override; if omitted defaults to time_period
         flags:
           terminate_on_error: true
           wait_for_current_time_update: false
