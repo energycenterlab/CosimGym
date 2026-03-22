@@ -2,9 +2,10 @@ name: cosim_gym
 channels:
   - conda-forge
   - defaults
+priority: flexible
 dependencies:
   # Core Python
-  - python=3.11
+  - python=3.12.11
   - pip>=24.0
   
   # Essential system packages
@@ -12,7 +13,7 @@ dependencies:
   - psutil
   
   # Scientific Computing (from conda for better compatibility)
-  - numpy
+  - numpy=2.4.2
   - pandas
   - matplotlib
   - scipy

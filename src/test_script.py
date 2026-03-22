@@ -26,7 +26,7 @@ from core.ScenarioManager import main, ScenarioManager
 
 # OSMSES26 - working examples
 main('bui_hp_test_base', enable_progress_bar=False) # Run without progress bar (maximum performance)
-# main('pv_batt_test_base', enable_progress_bar=False) # Run without progress bar (maximum performance)
+main('pv_batt_test_base', enable_progress_bar=False) # Run without progress bar (maximum performance)
 
 
 

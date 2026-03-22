@@ -14,7 +14,7 @@ scenario_description: "Building thermal model controlled by a DQN RL agent, with
 
 start_time: "2024-01-01T00:00:00"
 end_time: "2024-01-02T00:00:00"
-log_level: DEBUG
+log_level: ERROR
 
 memory_config:
   batch_size: 1000
@@ -86,7 +86,7 @@ reinforcement_learning_config:
 
     # RLReplayBufferConfig – experience replay for off-policy DQN
     replay_buffer:
-      buffer_size: 1000000
+      buffer_size: 100000
       prefill_steps: 10000
 
 
@@ -100,7 +100,7 @@ federations:
       port: 23404
       host: "localhost"
       federates: 3
-      log_level: DEBUG
+      log_level: ERROR
 
     federate_configs:
 
@@ -110,7 +110,7 @@ federations:
       weather:
         name: "weather"
         type: "base"
-        log_level: DEBUG
+        log_level: ERROR
         core_name: "fed1"
         core_type: "zmq"
 
@@ -151,7 +151,7 @@ federations:
       heatpump:
         name: "heatpump"
         type: "base"
-        log_level: DEBUG
+        log_level: ERROR
         core_name: "fed1"
         core_type: "zmq"
 
@@ -215,7 +215,7 @@ federations:
       building:
         name: "building"
         type: "base"
-        log_level: DEBUG
+        log_level: ERROR
         core_name: "fed1"
         core_type: "zmq"
 

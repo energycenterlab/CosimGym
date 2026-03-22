@@ -14,7 +14,7 @@ scenario_description: "Simple test case with PV, Battery, Weather, Rule-based co
 
 start_time: "2024-01-01T00:00:00"
 end_time: "2024-01-03T00:00:00"
-log_level: DEBUG
+log_level: ERROR
 
 memory_config:
   batch_size: 1000
@@ -52,7 +52,7 @@ federations:
       # -----------------------------------------------------------------------
       weather_federate:
         name: "weather_federate"
-        log_level: DEBUG
+        log_level: ERROR
         type: "base"
         core_name: "fed1"
         core_type: "zmq"
@@ -104,7 +104,7 @@ federations:
         type: "base"
         core_name: "fed2"
         core_type: "zmq"
-        log_level: DEBUG
+        log_level: ERROR
 
 
         timing_configs:
@@ -165,7 +165,7 @@ federations:
         type: "base"
         core_name: "fed3"
         core_type: "zmq"
-        log_level: DEBUG
+        log_level: ERROR
 
 
         timing_configs:
@@ -236,7 +236,7 @@ federations:
         type: "base"
         core_name: "fed4"
         core_type: "zmq"
-        log_level: DEBUG
+        log_level: ERROR
         startup_sync:
           required_inputs: ["Battery_power", "P_load", "PV_power"]
           missing_inputs_policy: "warn"
@@ -305,7 +305,7 @@ federations:
       load_federate:
         name: "load_federate"
         type: "base"
-        log_level: DEBUG
+        log_level: ERROR
         core_name: "fed5"
         core_type: "zmq"
 

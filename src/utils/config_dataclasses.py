@@ -911,18 +911,18 @@ class RLCheckpointingConfig:
         classname = self.__class__.__name__
         return f"{classname}({self.__dict__})"
     def __post_init__(self):
-        if self.single_best_checkpoint is None:
-            return
+        # if self.single_best_checkpoint is None:
+        #     return
 
-        # Avoid duplicating the checkpoint directory when configs are
-        # round-tripped through Redis and reconstructed multiple times.
-        if os.path.isabs(self.single_best_checkpoint):
-            return
+        # # Avoid duplicating the checkpoint directory when configs are
+        # # round-tripped through Redis and reconstructed multiple times.
+        # if os.path.isabs(self.single_best_checkpoint):
+        #     return
 
-        norm_directory = os.path.normpath(self.directory)
-        norm_checkpoint = os.path.normpath(self.single_best_checkpoint)
-        if norm_checkpoint == norm_directory or norm_checkpoint.startswith(norm_directory + os.sep):
-            return
+        # norm_directory = os.path.normpath(self.directory)
+        # norm_checkpoint = os.path.normpath(self.single_best_checkpoint)
+        # if norm_checkpoint == norm_directory or norm_checkpoint.startswith(norm_directory + os.sep):
+        #     return
 
         self.single_best_checkpoint = os.path.join(self.directory, self.single_best_checkpoint)
 

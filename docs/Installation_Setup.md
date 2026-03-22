@@ -9,6 +9,82 @@ git clone <repository-url>
 cd Cosim_gym
 ```
 
+
+##  Manual Setup Recomended for the tutorial
+
+#### pre-requisites
+- python 3.12 installed
+- docker installed
+
+1.  **Create Conda Environment**:
+    ```bash
+    conda env create -f environment.yml
+    conda activate cosim_gym
+    ```
+
+2.  **Start Infrastructure**:
+    ```bash
+    docker compose -f src/docker-compose.yaml up -d
+    ```
+
+3.  **Run Simulation**:
+    ```bash
+    python src/test_script.py
+    ```
+
+4.  **Run Dashboard**:
+    ```bash
+    streamlit run src/dashboard/streamlit_dashboard.py
+    ```
+    Access at http://localhost:8501
+
+
+##  Dev Container + VS Code
+
+#### pre-requisites
+- VSCode
+- docker
+- dev container plugin
+
+1. **Open repo folder in VSCode**
+2. **click on open inside container**
+
+
+
+##  Docker
+
+#### pre-requisites
+- docker
+
+```bash
+# Start all services (Redis + Python environment)
+docker compose -f docker-compose.setup.yml up -d
+
+# Verify services are running
+docker compose -f docker-compose.setup.yml ps
+
+# Wait until conda environment installation is finished
+docker compose -f docker-compose.setup.yml logs -f cosim-env
+# Stop following logs when you see:
+# "Installation complete. Keep container running..."
+
+# Access the Python environment
+docker compose -f docker-compose.setup.yml exec cosim-env bash
+
+# Inside the container:
+source /opt/conda/etc/profile.d/conda.sh
+conda activate cosim_gym
+python src/test_script.py
+
+# Or run simulation directly
+docker compose -f docker-compose.setup.yml exec cosim-env \
+  /opt/conda/bin/conda run -n cosim_gym python src/test_script.py
+```
+
+
+
+<!-- 
+
 All commands shown in the local setup sections, such as `make setup`, `python setup.py`, or `docker compose -f docker-compose.setup.yml ...`, assume you are already inside the cloned repository root.
 
 - [Local setup]()
@@ -451,3 +527,5 @@ Dev Containers are a **separate development workflow** managed by VS Code. They 
     - **Redis** is available at `redis:6379`
     - Run: `python src/test_script.py`
     - Dashboard: `streamlit run src/dashboard/streamlit_dashboard.py` → http://localhost:8501
+
+ -->

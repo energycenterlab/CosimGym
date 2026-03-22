@@ -14,7 +14,7 @@ scenario_description: "Building thermal model controlled by a SAC RL agent from 
 
 start_time: "2024-01-01T00:00:00"
 end_time: "2024-01-02T00:00:00"
-log_level: DEBUG
+log_level: ERROR
 
 memory_config:
   batch_size: 1000
@@ -80,7 +80,7 @@ federations:
       port: 23404
       host: "localhost"
       federates: 3
-      log_level: DEBUG
+      log_level: ERROR
 
     federate_configs:
 
@@ -90,7 +90,7 @@ federations:
       weather:
         name: "weather"
         type: "base"
-        log_level: DEBUG
+        log_level: ERROR
         core_name: "fed1"
         core_type: "zmq"
 
@@ -131,7 +131,7 @@ federations:
       heatpump:
         name: "heatpump"
         type: "base"
-        log_level: DEBUG
+        log_level: ERROR
         core_name: "fed1"
         core_type: "zmq"
 
@@ -195,7 +195,7 @@ federations:
       building:
         name: "building"
         type: "base"
-        log_level: DEBUG
+        log_level: ERROR
         core_name: "fed1"
         core_type: "zmq"
 

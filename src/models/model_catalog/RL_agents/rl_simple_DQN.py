@@ -157,7 +157,7 @@ class DQNAgent:
     
     def save_model(self, path, last=False):
         # Create parent directory if it doesn't exist
-        self.best_model = self.q.state_dict().copy()
+        self.best_model = self.q.state_dict()
         if last:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             torch.save(self.q.state_dict(), path)

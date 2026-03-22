@@ -20,5 +20,6 @@
 	"features": {
 		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
 	},
+	"postCreateCommand": "conda init bash && echo 'conda activate cosim_gym' >> ~/.bashrc",
 	"remoteUser": "vscode"
 }
