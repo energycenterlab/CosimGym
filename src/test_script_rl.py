@@ -9,6 +9,12 @@ Organization: EC-Lab Politecnico di Torino
 created: 2026-03-17
 
 """
+import os 
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
 from core.ScenarioManager import main
 import time
 

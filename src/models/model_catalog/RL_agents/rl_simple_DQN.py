@@ -20,6 +20,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import torch
+torch.set_num_threads(1)
 import torch.nn as nn
 import torch.optim as optim
 import pprint as pp
