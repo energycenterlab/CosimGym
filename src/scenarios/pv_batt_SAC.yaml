@@ -42,7 +42,7 @@ reinforcement_learning_config:
   # RLAgentConfig – which agent class to load
   agent:
     model_name: "rl_simple_SACsb3"             # class inside that module
-    reward_function: "models.model_catalog.RL_agents.reward_functions.soc_band_clip_simple"
+    reward_function: "models.model_catalog.RL_agents.reward_functions.soc_reward"
 
     env:
       observations: [federation_1.pv_federate.0.PV_power, federation_1.load_federate.0.P_load, federation_1.battery_federate.0.SOC, federation_1.battery_federate.0.P_clipped, federation_1.battery_federate.0.P_net]  # list of keys to use as observations
@@ -62,11 +62,11 @@ reinforcement_learning_config:
     
     # RLHyperparametersConfig – DQN-relevant hyperparameters
     hyperparameters:
-      gamma: 0.99
+      gamma: 0.90
       learning_rate: 0.0003
       batch_size: 256
       gradient_clip: 10.0
-      target_update_interval: 5
+      target_update_interval: 100
 
   checkpointing:
     single_best_checkpoint: "best_sac_pv_batt.pth"
@@ -80,11 +80,11 @@ reinforcement_learning_config:
   training:
     mode:                 "online"   # online | offline | mixed
     episode_length:       48       # total simulation steps per episode
-    n_episodes: 730       # max agent steps before forced reset
-    train_frequency: 1           # how often to perform a training step (in environment steps)
+    n_episodes: 1000       # max agent steps before forced reset
+    train_frequency: 100         # how often to perform a training step (in environment steps)
     gradient_steps: 1       # how many gradient steps to perform at each training step
     reset_mode: "rolling"  # episode reset mode: "full" (reset all to initial conditions), "soft" (keep current state), "rolling" (shift starting point forward by a specified window), "random" (reset to random conditions within defined boundaries)
-    rolling_window: 1    # number of steps to shift forward for rolling reset (
+    rolling_window: 10    # number of steps to shift forward for rolling reset (
 
 
     # RLReplayBufferConfig – experience replay for off-policy DQN

@@ -25,11 +25,11 @@ import time
 
 
 # OSMSES26 - working examples
-main('bui_hp_DQN', enable_progress_bar=False)
+# main('bui_hp_DQN', enable_progress_bar=False)
 # main ('bui_hp_SAC', enable_progress_bar=False)
-# main('bui_hp_SAC_rollingreset', enable_progress_bar=False)
+#main('bui_hp_SAC_rollingreset', enable_progress_bar=False)
 # main('bui_hp_DQN_rollingreset', enable_progress_bar=False)
-# main('pv_batt_SAC', enable_progress_bar=False)
+main('pv_batt_SAC', enable_progress_bar=False)
 
 # scenarios = ['bui_hp_SAC_rollingreset', 'bui_hp_DQN_rollingreset', 'pv_batt_SAC']
 
