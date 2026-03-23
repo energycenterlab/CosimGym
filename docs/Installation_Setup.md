@@ -5,7 +5,7 @@ To use this repository there are 4 option you could follows. The first 3 allows 
 Before following any of the **local setup** options below, you need to clone the repository and move into the project folder:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/energycenterlab/CosimGym.git
 cd Cosim_gym
 ```
 
