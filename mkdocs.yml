@@ -24,6 +24,7 @@ nav:
       - General Configuration: user_guide/scenario_configuration/general.md
       - Federation Configuration: user_guide/scenario_configuration/federation.md
       - Federate Configuration: user_guide/scenario_configuration/federate.md
+      - Synchronization & Causality: user_guide/scenario_configuration/synchronization.md
       - Reinforcement Learning Configuration: user_guide/scenario_configuration/rl.md
     - Custom Models & Catalog: user_guide/custom_models.md
     - Reinforcement Learning Integration: user_guide/rl_integration.md

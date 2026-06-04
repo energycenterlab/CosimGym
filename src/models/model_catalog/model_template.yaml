@@ -1,0 +1,165 @@
+# =============================================================================
+# MODEL CATALOG — ENTRY TEMPLATE
+# =============================================================================
+# Copy this block for each new model and fill in the fields.
+# Fields marked [REQUIRED] must always be present.
+# Fields marked [OPTIONAL] can be omitted if not applicable.
+# Fields marked [FMU ONLY] are only needed for FMU-based models.
+# =============================================================================
+
+models:
+
+  model_id:                        # [REQUIRED] unique snake_case identifier used as key in the catalog <model_name>_<version>
+
+    # -------------------------------------------------------------------------
+    # IDENTITY
+    # -------------------------------------------------------------------------
+    name: "Human Readable Model Name"   # [REQUIRED] display name
+    version: "1.0.0"                    # [REQUIRED] semantic version
+    description: "..."                  # [REQUIRED] what the model does and its physical meaning
+    author: "First Last"                # [OPTIONAL] author(s)
+    domain: ""           # [OPTIONAL] application domain (e.g. building_energy, weather, control, energy_storage) TODO: to be defined the domains
+    model_type: ""                 # [REQUIRED] one of:  source/... | collector/... | controller/rl_agent | sim_model/adapter/... | sim_model/ 
+    simulator_type: ""            # [REQUIRED] one of: how it evolves through time: [time-based, event-based, hybrid]
+    tags: ["tag1", "tag2"]              # [OPTIONAL] free-form searchable keywords
+
+    # -------------------------------------------------------------------------
+    # EXECUTION & DEPLOYMENT  (how the platform loads and runs this model)
+    # -------------------------------------------------------------------------
+    deployment_type: ""          # [REQUIRED] How the model will be deployed and registered ['docker_image', 'github_repo', 'local_script']
+    docker_image: ""              # [OPTIONAL] Docker image name (if deployment_type is 'docker_image') local/dockerhub either a lcokal path or dockerhub image name_tagged
+    github_repo: ""               # [OPTIONAL] GitHub repository URL (if deployment_type is 'github_repo') The github repos must have a fixed structure
+    local_script_path: ""         # [OPTIONAL] Local script path
+    setup_cmd: ""                 # [OPTIONAL] shell command template to set up the model environment, e.g. "pip install -r requirements.txt"
+    dependencies: []                    # [OPTIONAL] list of required Python packages not in the standard environment
+    hardware_requirements: {}        # [OPTIONAL] e.g. {cpu_cores: 4, gpu: "NVIDIA RTX 3080", memory_gb: 16}
+    os_requirements: []             # [OPTIONAL] e.g. ["linux", "windows"] (if empty, assume cross-platform)
+    simulator_names: []                # [FMU ONLY] list of compatible simulator script paths
+
+    # -------------------------------------------------------------------------
+    # SOLVER & INTEGRATION
+    # -------------------------------------------------------------------------
+    solver: "euler"                     # [OPTIONAL] solver algorithm (e.g. euler, RK4, DAE_Solver)
+    integrator: "fixed-step"           # [OPTIONAL] integration mode (fixed-step | variable-step)
+
+    # -------------------------------------------------------------------------
+    # TIME CONFIGURATION
+    # -------------------------------------------------------------------------
+    time_step: 60                       # [REQUIRED] default simulation step size in seconds
+    min_time_step: 1                    # [OPTIONAL] minimum allowed step size in seconds
+    max_time_step: 3600                 # [OPTIONAL] maximum allowed step size in seconds
+    stop_time: ~                        # [OPTIONAL] fixed simulation end time in seconds (e.g. 31536000 for 1 year, required by EnergyPlus FMUs)
+    start_time: ~                       # [OPTIONAL] default simulation start time (ISO 8601 format)
+
+  
+    # -------------------------------------------------------------------------
+    # USER-DEFINED EXTRAS  (arbitrary key-value pairs for platform-specific config)
+    # -------------------------------------------------------------------------
+    user_defined: {}                    # [OPTIONAL] e.g. {custom_flag: true, backend: "pyfmi"}
+
+    # -------------------------------------------------------------------------
+    # PARAMETERS  (tunable constants fixed before the simulation starts)
+    # -------------------------------------------------------------------------
+    parameters:
+      param_name:
+        type: "float"                   # [REQUIRED] float | int | string | bool
+        default_value: 1.0             # [REQUIRED] value used when not overridden by the user
+        description: "..."             # [REQUIRED] physical meaning and usage notes
+        unit: "kg"                     # [REQUIRED] SI unit string; use "-" for dimensionless, "~" if not applicable
+        min_value: 0.0                 # [OPTIONAL] lower bound for validation; omit if unbounded
+        max_value: 1000.0              # [OPTIONAL] upper bound for validation; omit if unbounded
+        required: true                 # [OPTIONAL] whether the platform must receive this before running (default: false)
+        hidden: false
+        commodity: ""
+        tags: ["physical"]             # [OPTIONAL] searchable labels
+
+    # -------------------------------------------------------------------------
+    # INPUTS  (signals consumed at each simulation step from other models)
+    # -------------------------------------------------------------------------
+    inputs:
+      input_name:
+        type: "float"                   # [REQUIRED]
+        default_value: 0.0             # [REQUIRED] value used when no connection is present
+        description: "..."             # [REQUIRED]
+        unit: "W"                      # [REQUIRED]
+        min_value: ~                   # [OPTIONAL]
+        max_value: ~                   # [OPTIONAL]
+        required: true                 # [OPTIONAL] whether a live connection is mandatory
+        hidden: false                  # [OPTIONAL]
+        commodity: ""
+        tags: []                       # [OPTIONAL]
+
+    # -------------------------------------------------------------------------
+    # OUTPUTS  (signals produced at each simulation step for other models)
+    # -------------------------------------------------------------------------
+    outputs:
+      output_name:
+        type: "float"                   # [REQUIRED]
+        default_value: 0.0             # [REQUIRED] value before first step
+        description: "..."             # [REQUIRED]
+        unit: "°C"                     # [REQUIRED]
+        min_value: ~                   # [OPTIONAL]
+        max_value: ~                   # [OPTIONAL]
+        required: false                # [OPTIONAL] whether downstream models depend on this output
+        hidden: false                  # [OPTIONAL]
+        commodity: ""
+        tags: []                       # [OPTIONAL]
+
+    # -------------------------------------------------------------------------
+    # CONNECTIONS  (internal wiring between sub-components, FMU / composite only)
+    # -------------------------------------------------------------------------
+    components: []                      # [FMU ONLY] list of sub-model identifiers inside this composite
+    connections: []                     # [FMU ONLY] list of {from: "comp.port", to: "comp.port"} signal routes
+
+
+
+# =============================================================================
+# FIELD REFERENCE SUMMARY
+# =============================================================================
+#
+# SECTION          FIELD                TYPE        APPLIES TO
+# ─────────────────────────────────────────────────────────────────────────────
+# Identity         name                 string      all
+#                  version              string      all
+#                  description          string      all
+#                  author               string      all
+#                  domain               string      all
+#                  category             string      all
+#                  tags                 list        all
+#                  dependencies         list        all
+#
+# Execution        class_name           string      all
+#                  module_path          string      all
+#                  model_type           string      all       python | fmu
+#                  model_execution_cmd  string      fmu only
+#                  simulator_names      list        fmu only
+#
+# Solver           solver               string      all
+#                  integrator           string      all
+#
+# Time             time_step            int (s)     all
+#                  min_time_step        int (s)     all
+#                  max_time_step        int (s)     all
+#                  stop_time            int (s)     fmu / fixed-horizon
+#
+# Logging          log_level            int 0-7     all (mainly fmu)
+#
+# Misc             user_defined         map         all
+#
+# Parameters       type                 string      all
+#                  default_value        any         all
+#                  description          string      all
+#                  unit                 string      all
+#                  min_value            number      all
+#                  max_value            number      all
+#                  required             bool        all
+#                  hidden               bool        all
+#                  tags                 list        all
+#
+# Inputs/Outputs   (same fields as Parameters, plus:)
+#                  hidden               bool        all
+#
+# Composite        components           list        fmu / composite
+#                  connections          list        fmu / composite
+#
+# =============================================================================
