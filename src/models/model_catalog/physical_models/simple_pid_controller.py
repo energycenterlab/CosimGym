@@ -63,8 +63,7 @@ class SimplePIDController(BaseModel):
 
         # Output clamped to valid modulation range
         modulation = max(0.0, min(1.0, P + self._integral + D))
-        modulation = 20  #TODO remove this line, just for testing
-
+        modulation = 20
         self.state.outputs["modulation"] = modulation
 
     def finalize(self):

@@ -103,17 +103,34 @@ federations:
 
        my_fmu_federate:
       
-      adelaide_test_fmu:
-        name: "adelaide_test_fmu"
-        type: base
-        timing_configs:
-          real_period: 60
-        model_configs:
-          instantiation:
-            model_name: adelaide_test   # the --name you used above
-            n_instances: 1
-          inputs: [SAT_SP]           # names from the FMU's modelDescription
-          outputs: [Indoor Temp.]
-          parameters: {}
+      my_fmu_federate:
+          name: "my_fmu_federate"
+          type: "base"
+          log_level: ERROR
+          core_name: "fed1"
+          core_type: "zmq"
+  
+          timing_configs:
+            real_period: 60
 
-      
+          connections:
+            endpoints: []
+            subscribes:
+              - key: "SAT_SP"          # must match FMU variable name
+                type: "double"
+                units: "°C"
+                targets:
+                  '0': [pid_federate.0/modulation]
+            publishes:
+              - key: "Indoor Temp."   # must match FMU variable name
+                type: "double"
+                units: "°C"
+
+          model_configs:
+            instantiation:
+              model_name: "adelaide_test"   # the --name used at registration
+              n_instances: 1
+
+            parameters: {}
+
+            init_state: {}
