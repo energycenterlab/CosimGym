@@ -779,13 +779,54 @@ models:
         required: true
         tags: ["SOC", "threshold", "discharge"]
 
-# FMU SPECIFIC MODELS 
+# FMU MODELS
+# Each FMU is registered here by fmu_catalog_register.py, which auto-populates
+# inputs/outputs/parameters from modelDescription.xml and uploads the .fmu binary
+# to MinIO. The class_name and module_path are always BaseFMUModel; the fmu_source
+# block inside user_defined tells the model where to fetch the binary at runtime.
+#
+# Example entry produced by the registration tool:
+#
+#   my_building_fmu:
+#     class_name: "BaseFMUModel"
+#     module_path: "models.base_FMU_model"
+#     version: "1.0.0"
+#     description: "..."
+#     author: "..."
+#     domain: "building_energy"
+#     category: "physical_model"
+#     tags: ["fmu"]
+#     user_defined:
+#       fmu_source:
+#         type: "minio"            # "local" | "minio" | "http"
+#         endpoint: "http://localhost:9000"
+#         bucket: "fmus"
+#         object_key: "my_building_fmu/1.0.0/MyBuilding.fmu"
+#         access_key: "cosimgym"
+#         secret_key: "cosimgym123"
+#     inputs:
+#       heat_flow: {type: float, unit: W, default_value: 0.0, description: "..."}
+#     outputs:
+#       room_temp: {type: float, unit: degC, default_value: 20.0, description: "..."}
+#     parameters:
+#       thermal_mass: {type: float, unit: "J/K", default_value: 1000.0, description: "..."}
+#
+# To register a new FMU run:
+#   python src/models/model_catalog/fmu_catalog_register.py \
+#       --fmu /path/to/Model.fmu --name my_model_name
   base_fmu_model:
     class_name: "BaseFMUModel"
     module_path: "models.base_FMU_model"
     version: "1.0.0"
-    description: "Base FMU model for HELICS co-simulation framework. It act as an interface to any FMU"
+    description: "Base FMU wrapper for the HELICS co-simulation framework. Not meant to be used directly — register specific FMUs via fmu_catalog_register.py."
+    author: "Pietro Rando Mazzarino"
+    domain: "generic"
     category: "base_model"
+    tags: ["fmu", "base"]
+    user_defined:
+      fmu_source:
+        type: "local"
+        path: ""
 
 
 # DATA READERS

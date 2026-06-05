@@ -37,6 +37,7 @@ dependencies:
     - requests>=2.31.0
     - influxdb-client>=1.40.0
     - python-dotenv>=1.0.0
+    - minio>=7.0.0
     
     # Utilities and Configuration
     - pydantic>=2.0.0

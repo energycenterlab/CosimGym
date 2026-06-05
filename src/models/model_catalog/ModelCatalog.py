@@ -83,6 +83,7 @@ class ModelMetadata:
     time_step: int = 1.0  # e.g., time step, solver options
     min_time_step: Optional[float] = 0.0
     max_time_step: Optional[float] = float('inf')
+    user_defined: Dict[str, Any] = field(default_factory=dict)
 
     def get_defaults(self, interface_type: InterfaceType) -> Dict[str, Any]:
         """Get default values for specified interface type."""
@@ -123,7 +124,8 @@ class ModelMetadata:
             'dependencies': self.dependencies,
             'time_step': self.time_step,
             'min_time_step': self.min_time_step,
-            'max_time_step': self.max_time_step
+            'max_time_step': self.max_time_step,
+            'user_defined': self.user_defined,
         }
 
 class ModelCatalog:

@@ -146,6 +146,7 @@ class RedisCatalog:
             outputs=_specs(data.get("outputs", {})),
             states=_specs(data.get("states", {})),
             dependencies=data.get("dependencies", []),
+            user_defined=data.get("user_defined", {}),
         )
 
     # ------------------------------------------------------------------
