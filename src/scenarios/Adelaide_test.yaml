@@ -1,0 +1,119 @@
+# Building + Heat Pump + PID Controller + Weather Reader Co-simulation Scenario
+#
+# Data flow:
+#   weather_federate  → T_ext          → heatpump_federate, building_federate
+#   pid_federate      → modulation     → heatpump_federate
+#   heatpump_federate → Q_heat         → building_federate
+#   building_federate → T_indoor       → pid_federate
+#
+#   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
+
+version: "1.0.0"
+scenario_name: "Adelaide_test"
+scenario_description: "fmu_test"
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-02T00:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: 'all'
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23404
+      host: "localhost"
+      federates: 4
+      log_level: ERROR
+
+    federate_configs:
+     
+      # -----------------------------------------------------------------------
+      # PID federate – regulates T_indoor by adjusting heat-pump modulation
+      # -----------------------------------------------------------------------
+      pid_federate:
+        name: "pid_federate"
+        type: "base"
+        log_level: ERROR
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.1
+
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [building_fmu.0/Indoor Temp.]
+              causality: "next_step"
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid"
+            parallel_execution: false
+
+          parameters:
+            T_setpoint: 20.0   # target indoor temperature [°C]
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+          user_defined: {}
+
+
+       my_fmu_federate:
+      
+      adelaide_test_fmu:
+        name: "adelaide_test_fmu"
+        type: base
+        timing_configs:
+          real_period: 60
+        model_configs:
+          instantiation:
+            model_name: adelaide_test   # the --name you used above
+            n_instances: 1
+          inputs: [SAT_SP]           # names from the FMU's modelDescription
+          outputs: [Indoor Temp.]
+          parameters: {}
+
+      
