@@ -377,13 +377,18 @@ def read_federation_config(name: str, federation_config: dict, memory_config: Me
     raw_config = federation_config
     federation_name = name
     
-    # Parse broker configuration
-    broker_data = raw_config['broker_config']
+    # Parse broker configuration. All fields are optional in the YAML: anything
+    # left out (core_type/port/host/federates/...) is resolved later by
+    # ScenarioManager._normalize_broker_and_core_configs(), which fills in
+    # consistent defaults (protocol defaults to "tcp", ports auto-assigned,
+    # federate count derived from federate_configs, ...).
+    broker_data = raw_config.get('broker_config') or {}
     broker_config = BrokerConfig(
-        core_type=broker_data['core_type'],
-        port=broker_data['port'],
-        federates=broker_data['federates'],
-        log_level=LogLevel(broker_data.get('log_level', 'INFO'))
+        core_type=broker_data.get('core_type'),
+        port=broker_data.get('port'),
+        federates=broker_data.get('federates'),
+        log_level=LogLevel(broker_data.get('log_level', 'INFO')),
+        host=broker_data.get('host'),
     )
     
     # Parse federate configurations
@@ -512,6 +517,13 @@ def _parse_federate_config(name, fed_data: Dict[str, Any], id_prefix: str, memor
         model_configs=model_config,
         memory_config=memory_config,
         startup_sync=startup_sync,
+        # Optional broker/core overrides. Left as None when omitted from the YAML;
+        # ScenarioManager._normalize_broker_and_core_configs() fills in consistent
+        # defaults (unique core_name, scenario-wide core_type, broker_address derived
+        # from the federation broker) and cross-checks any values given here.
+        core_name=fed_data.get('core_name'),
+        core_type=fed_data.get('core_type'),
+        broker_address=fed_data.get('broker_address'),
     )
     
     return federate_config
@@ -533,8 +545,10 @@ def validate_federation_config(config: FederationConfig) -> bool:
     Raises:
         ValueError: If validation fails with specific error message
     """
-    # Check if broker federate count matches actual federate count
-    if config.broker_config.federates != len(config.federate_configs.keys()):
+    # Check if broker federate count matches actual federate count.
+    # `federates` is optional in the YAML (ScenarioManager derives it when
+    # absent), so only validate it here when the user specified it explicitly.
+    if config.broker_config.federates is not None and config.broker_config.federates != len(config.federate_configs.keys()):
         raise ValueError(
             f"Broker expects {config.broker_config.federates} federates, "
             f"but {len(config.federate_configs)} are configured"

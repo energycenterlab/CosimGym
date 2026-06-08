@@ -120,6 +120,7 @@ class ScenarioManager:
         # HELICS query management
         self._broker_query_lock = threading.Lock()
         self._broker_federation_map = {}  # Maps broker process to federation name
+        self._hierarchy_broker_config = None  # Set by _normalize_broker_and_core_configs when >1 federation
         
         # InfluxDB client 
         # self.influx_client = self._set_influxdb_client()
@@ -764,10 +765,17 @@ class ScenarioManager:
         if self.config.multi_computer and self.config.multi_computer_config:
             self._setup_multi_computer_scenario() # TODO: multi computer must be implemented
         else:
-            # Automatically add a main broker when it spots multifederations (for now with this method only 2 level hierarchy is supported)
-            if len(self.config.federations) > 1:
-                main_broker = self._modify_config_for_broker_hierarchy()
-                self._start_local_hierarchy_broker(main_broker) # TODO: must be a generic call to fix broker inconsistencies in any case also single federation
+            # Resolve broker/core/protocol settings for every federation and propagate
+            # them to each federate's core, so the YAML can be minimal (defaults filled
+            # in) or fully explicit (validated for consistency) without ever producing
+            # a broken HELICS wiring (mismatched protocols, missing broker addresses,
+            # clashing ports/core names, wrong federate counts, ...).
+            self._normalize_broker_and_core_configs()
+            # Automatically add a main (hierarchy) broker when there is more than one
+            # federation, so federations can talk to each other (e.g. the RL case).
+            # (for now with this method only 2 level hierarchy is supported)
+            if self._hierarchy_broker_config is not None:
+                self._start_local_hierarchy_broker(self._hierarchy_broker_config)
             # uploading config for all federates
             self._upload_config_on_redis()
             self._enrich_dynamic_catalog_metadata()
@@ -1342,38 +1350,155 @@ class ScenarioManager:
 
         return available_ports
     
-    def _modify_config_for_broker_hierarchy(self):
-        ''' This method create and retunr config for the main broker
-        and modifies the existing federation broker adding broker address of the main one'''
+    def _normalize_broker_and_core_configs(self):
+        """
+        Resolve a fully-specified, internally-consistent broker/core/protocol
+        wiring for the whole scenario, supporting two authoring styles:
 
-        list_specified_ports = [fed_conf.broker_config.port for fed_conf in self.config.federations.values() if fed_conf.broker_config.port] 
-        available_ports = self._get_n_available_tcp_ports(len(self.config.federations)+1, exclude_ports=list_specified_ports)
+          1. Explicit  - the YAML specifies broker_config (core_type/port/host/
+             federates) and/or per-federate core_name/core_type/broker_address.
+             Those values are kept and cross-checked for consistency.
+          2. Minimal   - some or all of the above are omitted. Sensible defaults
+             are filled in (protocol defaults to "tcp", ports/addresses are
+             auto-assigned, federate counts are derived, core names are
+             generated, broker addresses are derived from the federation broker).
 
-        core_type = 'tcp' # TODO This is hardcoded IT is not possible to have different core types between cores and brokers!!
-        main_broker_port = available_ports.pop() 
-        main_broker_config = BrokerConfig(core_type=core_type, port=main_broker_port, 
-                                          log_level=self.config.log_level, sub_brokers=len(self.config.federations))
-        # Update each federation's broker config to point to the main broker
-        for federation_name, federation_conf in self.config.federations.items():
-            
-            if not self.config.multi_computer :
-                # updatting federation broker config
-                broker_port = federation_conf.broker_config.port if federation_conf.broker_config.port else available_ports.pop()                 
-                federation_conf.broker_config.broker_address = f'tcp://127.0.0.1:{main_broker_port}'
-                federation_conf.broker_config.core_type = core_type
-                federation_conf.broker_config.port = broker_port
-                federation_conf.broker_config.address = f'127.0.0.1:{broker_port}'
-                # adding broker address to federate configs
-                for federate_name, federate_conf in federation_conf.federate_configs.items():
-                    federate_conf.broker_address = federation_conf.broker_config.address
-                    federate_conf.core_type = core_type
+        HELICS constraints this enforces:
+          - Every broker and every federate core in the scenario must speak the
+            same wire protocol (core_type), including the hierarchy broker that
+            ties multiple federations together.
+          - Each federate must point at its own federation's broker address.
+          - Each federate's core_name must be globally unique.
+          - A federation broker's `federates` count must match the number of
+            federates that will actually connect to it.
+          - When more than one federation exists, a top-level hierarchy broker
+            is required so federations can see each other (e.g. the RL case).
+        """
+        federations = self.config.federations
+        n_federations = len(federations)
+
+        # ------------------------------------------------------------------
+        # 1. Resolve a single scenario-wide protocol (core_type).
+        #    HELICS brokers/cores cannot mix protocols, so rather than letting
+        #    each federation disagree we pick one value (first explicit one
+        #    found, defaulting to "tcp") and apply it everywhere.
+        # ------------------------------------------------------------------
+        explicit_core_types = {
+            federation_conf.broker_config.core_type
+            for federation_conf in federations.values()
+            if federation_conf.broker_config and federation_conf.broker_config.core_type
+        }
+        if len(explicit_core_types) > 1:
+            raise ValueError(
+                f"Inconsistent broker core_type across federations: {sorted(explicit_core_types)}. "
+                "HELICS requires every broker and federate core in a scenario to use the same protocol."
+            )
+        core_type = next(iter(explicit_core_types), 'tcp')
+        self.logger.info(f"Resolved scenario-wide HELICS protocol (core_type): '{core_type}'")
+
+        # ------------------------------------------------------------------
+        # 2. Reserve user-specified ports and pre-allocate enough free ones for
+        #    every broker that needs one (including the hierarchy broker).
+        # ------------------------------------------------------------------
+        reserved_ports = {
+            federation_conf.broker_config.port
+            for federation_conf in federations.values()
+            if federation_conf.broker_config and federation_conf.broker_config.port
+        }
+        n_to_assign = sum(
+            1 for federation_conf in federations.values()
+            if not (federation_conf.broker_config and federation_conf.broker_config.port)
+        )
+        if n_federations > 1:
+            n_to_assign += 1  # hierarchy (main) broker
+        auto_ports = deque(self._get_n_available_tcp_ports(n_to_assign, exclude_ports=reserved_ports))
+
+        def _next_free_port():
+            try:
+                port = auto_ports.popleft()
+            except IndexError:
+                raise RuntimeError("Could not find enough free local TCP ports to assign to HELICS brokers.")
+            reserved_ports.add(port)
+            return port
+
+        # ------------------------------------------------------------------
+        # 3. Normalize each federation's broker and propagate protocol, broker
+        #    address and a unique core name down to every federate it owns.
+        # ------------------------------------------------------------------
+        seen_core_names: Dict[str, str] = {}
+        for federation_name, federation_conf in federations.items():
+            broker_conf = federation_conf.broker_config
+
+            broker_conf.core_type = core_type
+            broker_conf.host = broker_conf.host or '127.0.0.1'
+            if not broker_conf.port:
+                broker_conf.port = _next_free_port()
+            broker_conf.address = f'{broker_conf.host}:{broker_conf.port}'
+
+            n_federates = len(federation_conf.federate_configs)
+            if broker_conf.federates is None:
+                broker_conf.federates = n_federates
+            elif broker_conf.federates != n_federates:
+                raise ValueError(
+                    f"Federation '{federation_name}': broker_config.federates={broker_conf.federates} "
+                    f"does not match the {n_federates} federate(s) configured under federate_configs."
+                )
+
+            for federate_name, federate_conf in federation_conf.federate_configs.items():
+                qualified_name = f'{federation_name}.{federate_name}'
+
+                if federate_conf.core_type and federate_conf.core_type != core_type:
+                    self.logger.warning(
+                        f"Federate '{qualified_name}' requested core_type '{federate_conf.core_type}' "
+                        f"but the scenario protocol is '{core_type}'. Overriding it for consistency "
+                        "(HELICS requires a single protocol for every broker/core in a scenario)."
+                    )
+                federate_conf.core_type = core_type
+
+                if not federate_conf.core_name:
+                    federate_conf.core_name = f'{federation_name}_{federate_name}_core'
+                if federate_conf.core_name in seen_core_names:
+                    raise ValueError(
+                        f"Duplicate HELICS core_name '{federate_conf.core_name}' used by both "
+                        f"'{seen_core_names[federate_conf.core_name]}' and '{qualified_name}'. "
+                        "Every federate core must have a unique name."
+                    )
+                seen_core_names[federate_conf.core_name] = qualified_name
+
+                # Each federate connects to its own federation's broker.
+                federate_conf.broker_address = broker_conf.address
+
+        # ------------------------------------------------------------------
+        # 4. Multiple federations need a hierarchy (main) broker above the
+        #    per-federation brokers so they can see each other (only a 2-level
+        #    hierarchy is supported for now).
+        # ------------------------------------------------------------------
+        self._hierarchy_broker_config = None
+        if n_federations > 1:
+            if self.config.multi_computer:
+                # TODO: localhost addresses won't be reachable from remote brokers;
+                # the hierarchy broker needs the host's public IP/hostname instead,
+                # and host:port combinations need their own validation.
+                self.logger.error("Broker hierarchy for multi-computer scenarios is not implemented yet.")
             else:
-                # TODO: i'm using localhost so this broker will not be reachable by remote brokers
-                # need to add the publich ip address instead of loaclhost
-                # need to add the assertion but for combination of ip:port
-                self.logger.error("MULTI-COMPUTER SCENARIO WITH BROKER HIERARCHY NOT IMPLEMENTED YET")
+                main_port = _next_free_port()
+                self._hierarchy_broker_config = BrokerConfig(
+                    core_type=core_type,
+                    port=main_port,
+                    log_level=self.config.log_level,
+                    host='127.0.0.1',
+                    address=f'127.0.0.1:{main_port}',
+                    sub_brokers=n_federations,
+                )
+                main_broker_address = f'{core_type}://127.0.0.1:{main_port}'
+                for federation_conf in federations.values():
+                    federation_conf.broker_config.broker_address = main_broker_address
 
-        return main_broker_config
+        self.logger.debug(
+            "Normalized broker/core configuration: "
+            f"protocol={core_type}, federations={ {name: fc.broker_config.address for name, fc in federations.items()} }, "
+            f"hierarchy_broker={self._hierarchy_broker_config.address if self._hierarchy_broker_config else None}"
+        )
 
     def _start_local_hierarchy_broker(self, broker_conf):
         """Start a hierarchy broker for multi-federation coordination."""
@@ -1689,7 +1814,10 @@ class ScenarioManager:
             
             if broker_process and federation_config.federate_configs:
                 # Get time_stop from first federate (they should all have same stop time)
-                time_stop = federation_config.federate_configs[0].timing_configs.time_stop
+                # federate_configs is a Dict[str, FederateConfig] keyed by federate name,
+                # so grab the first value rather than indexing it like a list.
+                first_federate_conf = next(iter(federation_config.federate_configs.values()))
+                time_stop = first_federate_conf.timing_configs.time_stop
                 
                 federation_params[federation_name] = {
                     'time_stop': time_stop,

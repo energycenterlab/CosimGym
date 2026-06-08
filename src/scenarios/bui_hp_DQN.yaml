@@ -67,14 +67,14 @@ reinforcement_learning_config:
     single_best_checkpoint: "best_dqn_model.pth"  # path to save the single best model checkpoint
 
   test:
-    total_steps: 2880
+    total_steps: 20
     deterministic: True
 
   # RLTrainingConfig – core training loop settings
   training:
     mode:                 "online"   # online | offline | mixed
-    episode_length:       2880      # total simulation steps per episode
-    n_episodes: 100     # max agent steps before forced reset
+    episode_length:       20      # total simulation steps per episode
+    n_episodes: 10     # max agent steps before forced reset
    
 
     # RLExplorationConfig – epsilon-greedy for DQN
