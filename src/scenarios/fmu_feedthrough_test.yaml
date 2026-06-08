@@ -1,0 +1,159 @@
+# FMU integration smoke-test scenario
+#
+# Data flow:
+#   input_federate (test_input_model, pure Python) → signal_float/int/bool
+#       → fmu_federate (test_feedthrough_fmi3, FMI 3.0 FMU via BaseFMUModel)
+#       → Float64_continuous_output / Int32_output / Boolean_output
+#
+# The Feedthrough FMU mirrors each input straight to its matching output one
+# step later, so this scenario is a minimal end-to-end check that BaseFMUModel
+# downloads/loads/steps an FMU correctly inside a real co-simulation.
+
+version: "1.0.0"
+scenario_name: "fmu_feedthrough_test"
+scenario_description: "Smoke test wiring a simple Python signal generator into an FMI 3.0 FMU through BaseFMUModel."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T00:10:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: ["signal_float", "signal_int", "signal_bool",
+          "Float64_continuous_output", "Int32_output", "Boolean_output"]
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "next_step"
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23405
+      host: "localhost"
+      federates: 2
+      log_level: DEBUG
+
+    federate_configs:
+
+      # -----------------------------------------------------------------
+      # Input federate – generates deterministic test signals
+      # -----------------------------------------------------------------
+      input_federate:
+        name: "input_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "signal_float"
+              type: "double"
+              units: "-"
+            - key: "signal_int"
+              type: "integer"
+              units: "-"
+            - key: "signal_bool"
+              type: "boolean"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "test_input_model"
+            n_instances: 1
+            prefix: "gen"
+            parallel_execution: false
+
+          parameters:
+            amplitude: 5.0
+            period: 10.0
+            bool_toggle_every: 3
+            int_max: 9
+
+          init_state:
+            signal_float: 0.0
+            signal_int: 0
+            signal_bool: true
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------
+      # FMU federate – feeds inputs through the Feedthrough FMU (FMI 3.0)
+      # -----------------------------------------------------------------
+      fmu_federate:
+        name: "fmu_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "Float64_continuous_input"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [input_federate.0/signal_float]
+            - key: "Int32_input"
+              type: "integer"
+              units: "-"
+              targets:
+                '0': [input_federate.0/signal_int]
+            - key: "Boolean_input"
+              type: "boolean"
+              units: "-"
+              targets:
+                '0': [input_federate.0/signal_bool]
+          publishes:
+            - key: "Float64_continuous_output"
+              type: "double"
+              units: "-"
+            - key: "Int32_output"
+              type: "integer"
+              units: "-"
+            - key: "Boolean_output"
+              type: "boolean"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "test_feedthrough_fmi3"
+            n_instances: 1
+            prefix: "ft"
+            parallel_execution: false
+
+          parameters:
+            Float64_fixed_parameter: 0.0
+            Float64_tunable_parameter: 0.0
+
+          init_state:
+            Float64_continuous_input: 0.0
+            Int32_input: 0
+            Boolean_input: true
+            Float64_continuous_output: 0.0
+            Int32_output: 0
+            Boolean_output: true
+
+          user_defined: {}

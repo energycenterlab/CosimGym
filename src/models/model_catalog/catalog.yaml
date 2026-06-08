@@ -1,4 +1,80 @@
 models:
+  test_input_model:
+    class_name: TestInputModel
+    module_path: models.model_catalog.physical_models.test_input_model
+    version: 1.0.0
+    description: Minimal deterministic signal generator (sinusoid, counter, toggling
+      bool) for feeding test inputs to other federates in co-simulation scenarios.
+    author: Pietro Rando Mazzarino
+    domain: testing
+    category: physical_model
+    tags:
+    - example
+    - test
+    dependencies: []
+    time_step: 60
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+    parameters:
+      amplitude:
+        type: float
+        default_value: 1.0
+        description: Amplitude of the sinusoidal float signal
+        unit: '-'
+        required: false
+        tags:
+        - signal
+      period:
+        type: float
+        default_value: 10.0
+        description: Period of the sinusoidal float signal, in simulation steps
+        unit: steps
+        required: false
+        tags:
+        - signal
+      bool_toggle_every:
+        type: int
+        default_value: 5
+        description: Number of simulation steps between boolean signal toggles
+        unit: steps
+        required: false
+        tags:
+        - signal
+      int_max:
+        type: int
+        default_value: 100
+        description: Wrap-around ceiling for the incrementing integer counter signal
+        unit: '-'
+        required: false
+        tags:
+        - signal
+    inputs: {}
+    outputs:
+      signal_float:
+        type: float
+        default_value: 0.0
+        description: Sinusoidal float signal oscillating between -amplitude and +amplitude
+        unit: '-'
+        required: true
+        tags:
+        - signal
+      signal_int:
+        type: int
+        default_value: 0
+        description: Incrementing integer counter that wraps at int_max
+        unit: '-'
+        required: true
+        tags:
+        - signal
+      signal_bool:
+        type: bool
+        default_value: true
+        description: Boolean signal that toggles every bool_toggle_every steps
+        unit: '-'
+        required: true
+        tags:
+        - signal
   spring_mass_damper:
     class_name: SpringMassDamper
     module_path: models.model_catalog.physical_models.spring_mass_damper
@@ -1328,6 +1404,303 @@ models:
         type: float
         default_value: 0.0
         description: IDF line 101
+        unit: ''
+        required: false
+        tags:
+        - fmu
+  test_feedthrough_fmi3:
+    class_name: BaseFMUModel
+    module_path: models.base_FMU_model
+    version: 1.0.0
+    description: A model to test different variable types, causalities, and variabilities
+    author: ''
+    domain: testing
+    category: physical_model
+    tags:
+    - feedthrough
+    - test
+    - fmi3.0
+    - fmu
+    dependencies:
+    - fmpy
+    time_step: 60
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined:
+      fmu_source:
+        type: local
+        path: /Users/pietrorandomazzarino/Documents/Projects/CosimGym/src/models/model_catalog/physical_models/resources/Feedthrough_FMI3.fmu
+    parameters:
+      Float64_fixed_parameter:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Float64_tunable_parameter:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+    inputs:
+      Float32_continuous_input:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Float32_discrete_input:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Float64_continuous_input:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Float64_discrete_input:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int8_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt8_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int16_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt16_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int32_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt32_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int64_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt64_input:
+        type: int
+        default_value: '0'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Boolean_input:
+        type: bool
+        default_value: 'false'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      String_input:
+        type: string
+        default_value: Set me!
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Binary_input:
+        type: string
+        default_value: 666f6f
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Enumeration_input:
+        type: int
+        default_value: '1'
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+    outputs:
+      Float32_continuous_output:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Float32_discrete_output:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Float64_continuous_output:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Float64_discrete_output:
+        type: float
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int8_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt8_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int16_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt16_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int32_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt32_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Int64_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      UInt64_output:
+        type: int
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Boolean_output:
+        type: bool
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      String_output:
+        type: string
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Binary_output:
+        type: string
+        default_value: 0.0
+        description: ''
+        unit: ''
+        required: false
+        tags:
+        - fmu
+      Enumeration_output:
+        type: int
+        default_value: 0.0
+        description: ''
         unit: ''
         required: false
         tags:

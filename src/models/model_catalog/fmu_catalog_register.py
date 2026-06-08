@@ -61,11 +61,24 @@ _CAUSALITY_SECTION = {
 
 # FMI type string → catalog type string
 _FMI_TO_CATALOG_TYPE = {
+    # FMI 1.0 / 2.0
     'Real':        'float',
     'Integer':     'int',
     'Boolean':     'bool',
     'String':      'string',
     'Enumeration': 'int',
+    # FMI 3.0
+    'Float32':     'float',
+    'Float64':     'float',
+    'Int8':        'int',
+    'UInt8':       'int',
+    'Int16':       'int',
+    'UInt16':      'int',
+    'Int32':       'int',
+    'UInt32':      'int',
+    'Int64':       'int',
+    'UInt64':      'int',
+    'Binary':      'string',
 }
 
 

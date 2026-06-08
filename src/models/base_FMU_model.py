@@ -1,8 +1,8 @@
 """
 base_FMU_model.py
 
-Wrapper that integrates any FMU (FMI 2.0 co-simulation, with partial FMI 1.0 support)
-into the CosimGym model framework.
+Wrapper that integrates any FMU (FMI 2.0 and FMI 3.0 co-simulation, with partial
+FMI 1.0 support) into the CosimGym model framework.
 
 At initialization the model resolves the FMU binary from one of three sources
 declared in the catalog entry's ``user_defined.fmu_source`` block:
@@ -29,24 +29,51 @@ from .base_model import BaseModel
 from fmpy import read_model_description, extract, dump
 from fmpy.fmi1 import FMU1Slave
 from fmpy.fmi2 import FMU2Slave
+from fmpy.fmi3 import FMU3Slave
 
 
-# Map FMI variable type strings to Python types for get/set dispatch
+# Map FMI variable type strings to fmpy get/set method names for dispatch
 _FMI_TYPE_GETSET = {
+    # FMI 1.0 / 2.0
     'Real':        ('getReal',    'setReal'),
     'Integer':     ('getInteger', 'setInteger'),
     'Boolean':     ('getBoolean', 'setBoolean'),
     'String':      ('getString',  'setString'),
     'Enumeration': ('getInteger', 'setInteger'),
+    # FMI 3.0 (Boolean/String/Enumeration share the FMI 1.0/2.0 entries above)
+    'Float32':     ('getFloat32', 'setFloat32'),
+    'Float64':     ('getFloat64', 'setFloat64'),
+    'Int8':        ('getInt8',    'setInt8'),
+    'UInt8':       ('getUInt8',   'setUInt8'),
+    'Int16':       ('getInt16',   'setInt16'),
+    'UInt16':      ('getUInt16',  'setUInt16'),
+    'Int32':       ('getInt32',   'setInt32'),
+    'UInt32':      ('getUInt32',  'setUInt32'),
+    'Int64':       ('getInt64',   'setInt64'),
+    'UInt64':      ('getUInt64',  'setUInt64'),
+    'Binary':      ('getBinary',  'setBinary'),
 }
 
 # Map FMI type strings to catalog schema type strings
 _FMI_TO_CATALOG_TYPE = {
+    # FMI 1.0 / 2.0
     'Real':        'float',
     'Integer':     'int',
     'Boolean':     'bool',
     'String':      'string',
     'Enumeration': 'int',
+    # FMI 3.0
+    'Float32':     'float',
+    'Float64':     'float',
+    'Int8':        'int',
+    'UInt8':       'int',
+    'Int16':       'int',
+    'UInt16':      'int',
+    'Int32':       'int',
+    'UInt32':      'int',
+    'Int64':       'int',
+    'UInt64':      'int',
+    'Binary':      'string',
 }
 
 
@@ -236,6 +263,15 @@ class BaseFMUModel(BaseModel):
             )
             self.fmu.instantiate()
 
+        elif self.fmiVersion == '3.0':
+            self.fmu = FMU3Slave(
+                guid=guid,
+                unzipDirectory=self.unzipdir,
+                modelIdentifier=model_id,
+                instanceName=self.name,
+            )
+            self.fmu.instantiate()
+
         else:
             raise RuntimeError(f"Unsupported FMI version: {self.fmiVersion}")
 
@@ -243,10 +279,13 @@ class BaseFMUModel(BaseModel):
         if self.fmiVersion == '2.0':
             self.fmu.setupExperiment(startTime=0.0, stopTime=None)
         # FMI 1.0 has no setupExperiment; initialization happens in _exit_initialization_mode
+        # FMI 3.0 folds setupExperiment into enterInitializationMode(startTime, stopTime)
 
     def _enter_initialization_mode(self) -> None:
         if self.fmiVersion == '2.0':
             self.fmu.enterInitializationMode()
+        elif self.fmiVersion == '3.0':
+            self.fmu.enterInitializationMode(startTime=0.0, stopTime=None)
 
     def _push_initial_state_to_fmu(self) -> None:
         for param_name, (vref, vtype) in self.params_vars.items():
@@ -266,6 +305,8 @@ class BaseFMUModel(BaseModel):
                 raise RuntimeError(f"FMU exitInitializationMode returned status {status}")
         elif self.fmiVersion == '1.0':
             self.fmu.initialize(tStart=0.0, stopTime=None)
+        elif self.fmiVersion == '3.0':
+            self.fmu.exitInitializationMode()  # raises FMICallException on non-OK status
 
     # ------------------------------------------------------------------
     # Per-step I/O transfer
