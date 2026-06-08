@@ -1814,6 +1814,7 @@ class ScenarioManager:
         self.enable_progress_bar(False)
 
     def _monitor_with_federation_progress(self):
+        #TODO probably remove this method and cascade ones that only deal with this progress monitoring aspect
         """
         Monitor federations with HELICS query-based progress tracking.
         Shows simulation time progress for each federation.

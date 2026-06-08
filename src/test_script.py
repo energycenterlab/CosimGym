@@ -30,7 +30,7 @@ from core.ScenarioManager import main, ScenarioManager
 
 
 #DEVELOPMENT TESTS - uncomment to run
-main('fmu_feedthrough_test')
+main('fmu_feedthrough_test',enable_progress_bar=False)
 
 
 
