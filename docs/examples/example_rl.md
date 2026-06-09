@@ -1,47 +1,74 @@
 # Example 2: Reinforcement Learning Training
 
-In this example, we examine how a YAML file transforms a static physics scenario into an active Deep Q-Network (DQN) training pipeline.
+This example shows how the same physics scenario becomes a Deep Q-Network (DQN) training pipeline by adding one YAML block.
 
 ## Scenario Source
 Found at `src/scenarios/simple_DQN_test.yaml`.
 
-## Key Differences from Base Case
+## Key Differences from the Base Case
 
-### 1. Removing the Static Controller
-Instead of hardcoding `inputs4spring` to drive the signal, the agent needs to provide the force. The `spring_mass_damper` input subscription is mutated:
+### 1. The controlled input omits its target
+In the base case, `spring_federate`'s `force` subscription pointed at `input_federate`. For RL, the agent supplies the force, so the subscription **omits `targets`** — `ScenarioManager` wires the RL agent's publication automatically:
+
 ```yaml
 subscribes:
-  - key: input_var
-    target: "rl_federation/rl_simple_DQN_1/action_0" 
+  - key: "force"
+    type: "double"
+    units: "N"
+    # no targets — filled at runtime with the rl_agent publication
 ```
-It is now "listening" for a publication coming from an `RL_Federate`.
 
-### 2. Injecting the RL Configuration
-At the top of the YAML, the `reinforcement_learning_config` defines the agent:
+### 2. The `reinforcement_learning_config` block
+Added at the top level of the YAML. The agent is referenced by its catalog `model_name`; observations and actions use dot notation `<federation>.<federate>.<instance>.<variable>`:
 
 ```yaml
 reinforcement_learning_config:
-  memory_config:
-    - type: "buffer" 
   agent:
-    class_name: "DQNAgent"
-    module: "src.models.RL_agents.rl_simple_DQN"
-    algorithm: "DQN"
+    model_name: "rl_simple_DQN"
+    reward_function: "models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward"
+    env:
+      observations:
+        - federation_1.spring_federate.0.position
+        - federation_1.spring_federate.0.velocity
+        - federation_1.spring_federate.0.acceleration
+      actions: [federation_1.spring_federate.0.force]
+      action_spaces_type: ["discrete"]
+    hyperparameters:
+      gamma: 0.99
+      learning_rate: 0.001
+      batch_size: 64
+      target_update_interval: 100
+
   training:
     mode: "online"
-    total_timesteps: 1000000 
-    episode_length: 500  # Number of HELICS steps before gym signals Terminated
+    episode_length: 100        # HELICS steps before the episode resets
+    n_episodes: 1000
+    exploration:
+      strategy: "epsilon_greedy"
+      initial_epsilon: 1.0
+      final_epsilon: 0.05
+      epsilon_decay_steps: 5000
+    replay_buffer:
+      buffer_size: 100000
+      prefill_steps: 1000
 ```
 
-### 3. The Objective (Reward Function)
-The agent needs a reward. In CosimGym, rewards are evaluated inside the agent's Python code or injected via mappings. In `rl_simple_DQN.py`, the `compute_reward()` function evaluates the current distance of the `spring_mass_damper_1_displacement` from zero (or a target).
-- **Goal:** Minimize spring oscillation.
-- **Action Space:** Discrete force variables applied to the damper.
+> Full reference for every RL field: [Reinforcement Learning Configuration](../user_guide/scenario_configuration/rl.md).
 
-## Execution and Analysis
+### 3. The reward
+The reward is computed by the function named in `agent.reward_function` (here `spring_oscillation_reward` in `src/models/model_catalog/RL_agents/reward_functions.py`). It penalizes spring oscillation, so the agent learns to apply a damping force.
+
+## Execution
+RL scenarios run from the dedicated entry point, which also sets thread-limiting env vars:
+
+```python
+# src/test_script_rl.py
+main('simple_DQN_test')
+```
+
 ```bash
-python src/test_script.py --scenario simple_DQN_test
+conda activate cosim_gym
+python src/test_script_rl.py
 ```
-You will notice the simulation taking significantly longer or resetting multiple times depending on the `rolling_reset` settings. HELICS will continuously fast-forward physics, pause, wait for Python Gymnasium `step()` logic to infer a neural network predict, and then resume.
 
-Check the dashboard **Learning Metrics** tab to visualize the moving average of Episode Rewards climbing towards zero as the SAC/DQN agent learns to synthesize perfect critical damping forces automatically.
+HELICS fast-forwards the physics, pauses for the Gymnasium `step()` to query the policy, then resumes. Open the dashboard's **Learning Metrics** tab to watch the episode-reward moving average improve as the agent learns.

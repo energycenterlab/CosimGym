@@ -19,19 +19,19 @@ import time
 
 
 # EXAMPLES base for debugging and development of new scenarios
-# main('simple_test_rlagent', enable_progress_bar=False)
-# main('simple_DQN_test', enable_progress_bar=False)
+# main('simple_test_rlagent')
+# main('simple_DQN_test')
 
 
 # OSMSES26 - working examples
-# main('bui_hp_DQN', enable_progress_bar=False)
-# main ('bui_hp_SAC', enable_progress_bar=False)
-#main('bui_hp_SAC_rollingreset', enable_progress_bar=False)
-# main('bui_hp_DQN_rollingreset', enable_progress_bar=False)
-main('pv_batt_SAC', enable_progress_bar=False)
+# main('bui_hp_DQN')
+# main ('bui_hp_SAC')
+#main('bui_hp_SAC_rollingreset')
+# main('bui_hp_DQN_rollingreset')
+main('pv_batt_SAC')
 
 # scenarios = ['bui_hp_SAC_rollingreset', 'bui_hp_DQN_rollingreset', 'pv_batt_SAC']
 
 # for scenario in scenarios:
-    # main(scenario, enable_progress_bar=False)
+    # main(scenario)
     # time.sleep(5)

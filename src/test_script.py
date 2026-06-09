@@ -70,9 +70,9 @@ if __name__ == "__main__":
     # Use for: development, debugging, demonstrations
     # Performance: ~3-8% overhead
     
-    # main('simple_test', enable_progress_bar=False)
-    # main('simple_test_multifederations', enable_progress_bar=False)
-    main('bui_hp_test_base', enable_progress_bar=False)
+    # main('simple_test')
+    # main('simple_test_multifederations')
+    main('bui_hp_test_base')
     
     
     # ─────────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     # Use for: production runs, performance testing, batch processing
     # Performance: 0% overhead (fastest execution)
     
-    # main('simple_test', enable_progress_bar=False)
+    # main('simple_test')
 
 
 # =====================================================================
@@ -147,13 +147,13 @@ def example_performance_comparison():
     # Test 1: With progress bar
     print("Test 1: WITH progress monitoring...")
     start_time = time.time()
-    main('simple_test', enable_progress_bar=True)
+    main('simple_test')
     with_progress_time = time.time() - start_time
     
     # Test 2: Without progress bar
     print("Test 2: WITHOUT progress monitoring...")
     start_time = time.time()
-    main('simple_test', enable_progress_bar=False)
+    main('simple_test')
     without_progress_time = time.time() - start_time
     
     # Analysis
@@ -174,7 +174,7 @@ def example_performance_comparison():
 📝 PROGRESS BAR CONFIGURATION OPTIONS:
 
 Basic Control:
-  main('scenario_name', enable_progress_bar=True/False)  # Simple on/off
+  main('scenario_name')  # Simple on/off
   manager.enable_progress_bar()     # Enable with defaults
   manager.disable_progress_bar()    # Disable completely
 
@@ -203,7 +203,7 @@ Example Scenarios:
   main('simple_test')
   
   # Production batch run
-  main('simple_test', enable_progress_bar=False)
+  main('simple_test')
   
   # Custom monitoring for long simulation
   with ScenarioManager('scenario') as manager:

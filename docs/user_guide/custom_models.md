@@ -1,58 +1,114 @@
 # Custom Models & Catalog
 
-CosimGym treats simulated environments as plug-and-play modules. To achieve this, it enforces an interface standard and manages deployments through a dynamic catalog.
+CosimGym treats simulated environments as plug-and-play modules. To achieve this, it enforces a single interface standard (`BaseModel`) and resolves models at runtime through a dynamic **Model Catalog**.
 
-## Extending BaseModel
+## 1. Extending `BaseModel`
 
-Any physical subsystem, controller, or data feed in CosimGym must extend the `BaseModel` class at `src/models/base_model.py`.
+Every physical subsystem, controller, or data feed must extend `BaseModel`, defined in `src/models/base_model.py`. You implement three lifecycle methods. You do **not** override `__init__` — the base class builds the model's `state` from the catalog metadata and your scenario config for you.
 
-A simplified lifecycle is defined by three strict overrides:
+All data lives on `self.state` (a `State` dataclass):
+
+| Attribute | Meaning |
+|---|---|
+| `self.state.parameters` | Static parameters (from catalog defaults, overridden by the scenario `parameters` block) |
+| `self.state.inputs` | Latest values received from subscriptions (filled by the federate before each `step()`) |
+| `self.state.outputs` | Values your model produces — published to HELICS after `step()` |
+| `self.state.time` | Current simulation `datetime` (maintained by the base class) |
+| `self.state.ts` | Current integer time step |
 
 ### `initialize(self)`
-This is called once before the simulation clock starts ticking. Use it to ingest `self.parameters`, establish data arrays, and initialize physical matrices.
+Called once before the simulation clock starts. Use it to set up internal arrays, matrices, or solver state. Parameters are already available in `self.state.parameters`.
 
 ### `step(self)`
-This method ticks every HELICS synchronous time step.
-- Internal simulation state is advanced.
-- All incoming values from the `self.inputs` dictionary should be read.
-- The resulting values must be pushed into the `self.outputs` dictionary.
+Called every HELICS time step. The base class has already updated the time state and copied incoming values into `self.state.inputs`. Your job:
+
+1. Read inputs from `self.state.inputs`.
+2. Advance your internal state.
+3. Write results into `self.state.outputs`.
 
 ### `finalize(self)`
-Triggered at simulation end for graceful teardown or plotting generation.
+Called once at simulation end for cleanup (close files, free resources).
+
+### Minimal example
+
+```python
+# src/models/model_catalog/physical_models/gain.py
+from models.base_model import BaseModel
+
+
+class Gain(BaseModel):
+    """Multiplies its input by a constant gain parameter."""
+
+    def initialize(self) -> None:
+        self.k = self.state.parameters['gain']
+
+    def step(self) -> None:
+        x = self.state.inputs.get('x', 0.0)
+        self.state.outputs['y'] = self.k * x
+
+    def finalize(self) -> None:
+        pass
+```
 
 ---
 
 ## 2. Registering in the Catalog
 
-To allow the `ScenarioManager` to spin up your model by simply referencing string names in the YAML, your model must be registered in the **Model Catalog**.
-
-1. Place your new python class (e.g. `src/models/physical_models/custom_hvac.py`).
-2. Open `src/models/model_catalog/catalog.yaml`.
-3. Add a mapping specifying the metadata of your model:
+For `ScenarioManager` to instantiate your model from a string name in the YAML, register it in `src/models/model_catalog/catalog.yaml`. Every entry lives under the top-level `models:` key. Use `model_template.yaml` in the same folder as a starting point.
 
 ```yaml
-Custom_HVAC:
-  metadata:
-    class_name: "CustomHVACModel"
-    module_path: "src.models.physical_models.custom_hvac"
-    description: "A custom HVAC simulation module"
-  parameters:
-    max_cooling_power:
-      type: "float"
-      default_value: 50.0
-      units: "kW"
-  inputs:
-    ambient_temp:
-      type: "float"
-      units: "C"
-  outputs:
-    power_consumed:
-      type: "float"
-      units: "kW"
+models:
+  # ... existing entries ...
+
+  gain:                                                    # ← model_name referenced in scenario YAML
+    class_name: Gain                                       # Python class name
+    module_path: models.model_catalog.physical_models.gain # import path (NB: no "src." prefix)
+    version: 1.0.0
+    description: Multiplies its input by a constant gain.
+    author: Your Name
+    domain: testing
+    category: physical_model
+    time_step: 60                                          # nominal step (seconds)
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+    parameters:
+      gain:
+        type: float
+        default_value: 2.0       # NB: default_value, and unit (singular)
+        unit: '-'
+        description: Multiplication factor
+        required: false
+    inputs:
+      x:
+        type: float
+        default_value: 0.0
+        unit: '-'
+        description: Input signal
+        required: true
+    outputs:
+      y:
+        type: float
+        default_value: 0.0
+        unit: '-'
+        description: Scaled output signal
+        required: true
 ```
 
-## How the Catalog is distributed
+> **Catalog vs. connections.** The `parameters` / `inputs` / `outputs` blocks in the catalog declare the model's interface schema and **default values**. The actual HELICS wiring (which variable subscribes to which publisher) is defined separately in the scenario's `connections.publishes` / `connections.subscribes`. The `key` of each publish/subscribe must match an `outputs` / `inputs` name here. See [Federate Configuration](scenario_configuration/federate.md).
 
-1. At simulation launch, `catalog_loader.py` reads `catalog.yaml`.
-2. It constructs a `ModelCatalog` instance and drops it into **Redis**.
-3. When the `ScenarioManager` spawns a disconnected `Federate` in a totally separate OS process, the federate queries Redis for the specific python module and parameters, instantiating your custom object without dealing with fragile local pathing dependencies.
+---
+
+## 3. How the Catalog is distributed
+
+1. At setup, `catalog_loader.py` reads `catalog.yaml` and loads every entry into **Redis**.
+2. When `ScenarioManager` spawns each federate in its own OS process, that federate queries Redis (via `RedisCatalog`) for the model's `module_path`, `class_name`, and interface defaults.
+3. The federate dynamically imports the class and instantiates it — no fragile local path dependencies between processes.
+
+Reload the catalog after editing `catalog.yaml`:
+
+```bash
+python src/models/model_catalog/catalog_loader.py
+```
+
+(The Docker / Makefile setups run this step for you.)

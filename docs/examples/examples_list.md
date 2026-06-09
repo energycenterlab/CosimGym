@@ -17,7 +17,19 @@ These are defined inside `src/scenarios/`.
 - **`bui_hp_DQN` / `bui_hp_SAC` (Cases 2 & 3):** Replaces the PID controller from Case 1 with stable-baselines3 agents learning optimal thermal setpoints based on ambient conditions. Includes "rolling reset" variations.
 - **`pv_batt_DQN` / `pv_batt_SAC` (Cases 5 & 6):** Replaces the Rule-Based manager from Case 4 with an algorithm learning deep policies to balance grid stability and storage degradation constraints. 
 
-All cases can be executed via:
-```bash
-python src/test_script.py --scenario <filename_without_yaml>
+To run any case, set the scenario name inside the entry-point script, then run it:
+
+```python
+# src/test_script.py        (base co-simulation cases)
+main('simple_test')
+
+# src/test_script_rl.py     (RL training cases)
+main('simple_DQN_test')
 ```
+
+```bash
+conda activate cosim_gym
+python src/test_script.py        # or: python src/test_script_rl.py
+```
+
+There is no `--scenario` command-line flag; the scenario is chosen by the `main('<name>')` call.

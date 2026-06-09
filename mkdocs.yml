@@ -19,6 +19,7 @@ nav:
     - Architecture: overview/architecture.md
   - User Guide:
     - Getting Started: user_guide/getting_started.md
+    - Running a Scenario: user_guide/running_scenarios.md
     - Scenario Configuration:
       - Overview: user_guide/scenario_configuration/overview.md
       - General Configuration: user_guide/scenario_configuration/general.md
@@ -27,8 +28,10 @@ nav:
       - Synchronization & Causality: user_guide/scenario_configuration/synchronization.md
       - Reinforcement Learning Configuration: user_guide/scenario_configuration/rl.md
     - Custom Models & Catalog: user_guide/custom_models.md
+    - FMU Models: user_guide/fmu_models.md
     - Reinforcement Learning Integration: user_guide/rl_integration.md
     - Dashboard & Analytics: user_guide/dashboard.md
+    - Troubleshooting: user_guide/troubleshooting.md
   - Examples: 
     - Examples List: examples/examples_list.md
     - Example 1 (Base Simulation): examples/example_base.md

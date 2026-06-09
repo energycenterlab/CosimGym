@@ -15,37 +15,38 @@ In CosimGym:
 
 ## Adding RL to your Scenario
 
-To execute a training loop, you do not write a python python pipeline. Instead, inject the `reinforcement_learning_config` block directly into the scenario YAML:
+To execute a training loop, you do not write a Python pipeline. Instead, inject the `reinforcement_learning_config` block directly into the scenario YAML. The agent is referenced by its catalog `model_name`; its observation and action spaces are wired from `env`:
 
 ```yaml
 reinforcement_learning_config:
   agent:
-    class_name: "StableBaselines3Agent"
-    module: "src.models.RL_agents.rl_simple_SACsb3"
-    algorithm: "SAC"
-    library: "stable_baselines3"
+    model_name: "rl_simple_SACsb3"     # key in catalog.yaml
+    reward_function: "models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward"
+    env:
+      observations: [federation_1.spring_federate.0.position, federation_1.spring_federate.0.velocity]
+      actions:      [federation_1.spring_federate.0.force]
+      action_spaces_type: ["box"]      # "discrete" | "box"
     hyperparameters:
       learning_rate: 0.0003
       gamma: 0.99
       batch_size: 256
   training:
     mode: "online"
-    episode_length: 96
-    max_steps_per_episode: 96
-    train_frequency: 1
-    eval_frequency: 10
-  # Checkpointing and Tracking
+    episode_length: 96                 # simulation steps per episode
+    n_episodes: 1000
   checkpointing:
     enabled: true
-    directory: "logs/"
-    save_frequency: 5
+    directory: "src/models/model_catalog/RL_agents/checkpoints"
+    save_frequency: 5000
 ```
+
+> For the complete field reference (training, exploration, replay buffer, test, logging), see [Reinforcement Learning Configuration](scenario_configuration/rl.md).
 
 ### Supported RL Libraries
 
 CosimGym includes out-of-the-box wrappers for:
 - **Stable-Baselines3** (e.g., DQN, SAC)
-- Example implementations: `rl_simple_DQN.py`, `rl_simple_SACsb3.py` located in `src/models/RL_agents/`.
+- Example implementations: `rl_simple_DQN.py`, `rl_simple_SACsb3.py` located in `src/models/model_catalog/RL_agents/`.
 
 Because the internal translation implements a standard `gymnasium.Env`, it is relatively trivial to bolt on libraries like **Ray RLlib** with minor modifications.
 

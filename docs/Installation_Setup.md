@@ -6,7 +6,7 @@ Before following any of the **local setup** options below, you need to clone the
 
 ```bash
 git clone https://github.com/energycenterlab/CosimGym.git
-cd Cosim_gym
+cd CosimGym
 ```
 
 
@@ -373,7 +373,7 @@ Installation complete. Keep container running...
 
 Tip:
 
-- This repository pins the Conda environment to `python=3.11` in `environment.yml` for better package compatibility across Linux servers.
+- This repository pins the Conda environment to `python=3.12` in `environment.yml`.
 
 ### Typical Workflow
 

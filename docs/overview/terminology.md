@@ -6,7 +6,7 @@ CosimGym leverages a defined set of hierarchical entities to map complex deploym
 A **Scenario** is the top-level orchestrating entity.
 - Represents the entire experiment.
 - Has a specific `start_time` and `end_time` (or an explicit number of steps for RL).
-- Holds multiple **Federations**, global backend settings (Redis, InfluxDB, memory mapping), and optional overarching **RL Agent Configurations**.
+- Holds multiple **Federations**, global settings (Redis state distribution, `memory_config` result storage), and an optional overarching **RL Agent Configuration**.
 
 ## Federation
 A **Federation** is a grouped hierarchy of models operating under a single HELICS broker.

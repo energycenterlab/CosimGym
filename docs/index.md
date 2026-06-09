@@ -1,5 +1,5 @@
 # CosimGym ⚠️ Under Developement
-![Python](https://img.shields.io/badge/python-3.11-blue)
+![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Docs](https://img.shields.io/badge/docs-mkdocs-blue)
 ![Status](https://img.shields.io/badge/status-prototype-red)
 <!-- ![License](https://img.shields.io/badge/license-MIT-green) -->

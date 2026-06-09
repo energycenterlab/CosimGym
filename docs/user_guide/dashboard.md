@@ -4,9 +4,9 @@ Co-simulation outputs high-frequency time-series data across dozens of models. T
 
 ## The Data Pipeline
 
-CosimGym utilizes a dual-path caching system defined in `ScenarioManager`:
-1. **InfluxDB Integration (Optional/Legacy):** True real-time metric pushes.
-2. **Parquet Caching (Default/Preferred):** At conclusion of the simulation run, federates dump internal logging tables into highly compressed `.parquet` formats stored inside `results/<scenario_run>`. 
+1. **JSON results (default):** At the end of a run, each federate writes its buffered timeseries to JSON files under `results/<scenario_name>/<sim_id>/<federation_name>/` (`<federate>_<train|test>_storage.json`).
+2. **Parquet cache:** The first time the dashboard opens a run, it converts those JSON files into a compressed `.parquet` cache for fast subsequent re-loading.
+3. **InfluxDB (optional/legacy):** A real-time metric-push path exists in `src/utils/influxdb_client.py`, but it is not part of the default Docker stack and is disabled unless explicitly configured.
 
 ## How To Use The Dashboard
 

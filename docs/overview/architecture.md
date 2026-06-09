@@ -26,6 +26,6 @@ When you run a simulation in CosimGym, here is what happens under the hood:
 Below is an illustration representing how the hierarchy of scenarios coordinates independent executable nodes.
 
 <div style="text-align: center;">
-<img src="../../images/cosimgymarchitecture.png" alt="Cosim-GYM Architecture" width="800">
+<img src="../images/overviewCosimGym.png" alt="Cosim-GYM Architecture" width="800">
 <p><i>The CosimGym distributed architecture utilizing HELICS Brokers.</i></p>
 </div>
