@@ -29,7 +29,6 @@ from .config_dataclasses import (
     ModelInstantiationConfig,
     ModelConfig,
     MemoryConfig,
-    InfluxDBConfig,
     FederateConfig,
     BrokerConfig,
     FederationConfig,
@@ -264,7 +263,6 @@ def read_scenario_config(file_path: str) -> ScenarioConfig:
                 for name, config in raw_config['federations'].items()
             },      
             memory_config=MemoryConfig(**raw_config.get('memory_config', {})),
-            influxdb_config=InfluxDBConfig(**raw_config.get('influxdb_config', {})),
             reinforcement_learning_config=parse_Rl_configs(raw_config.get('reinforcement_learning_config', {})),
             synchronization=synchronization_config,
             log_level=LogLevel(raw_config.get('log_level', 'INFO'))

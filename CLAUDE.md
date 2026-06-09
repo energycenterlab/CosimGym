@@ -12,25 +12,12 @@ CosimGym is a Python orchestration framework that bridges HELICS co-simulation w
 
 ```bash
 # Full setup
-make setup                          # creates cosim_gym conda env + starts Redis via Docker
-
-# Or step by step
-make setup-env                      # conda env from environment.yml
-make setup-docker                   # starts Redis container (src/docker-compose.yaml)
-make validate                       # checks all components are up
-
+docker compose -f src/docker-compose.yaml up -d
+conda activate cosim_gym
 # Run simulations (activate env first: conda activate cosim_gym)
 python src/test_script.py           # runs base co-simulation scenarios
 python src/test_script_rl.py        # runs RL training scenarios (sets OMP_NUM_THREADS=1 etc.)
-
-# Dashboard
-make run-dashboard                  # Streamlit at http://localhost:8501
-# or
-streamlit run src/dashboard/streamlit_dashboard.py
-
 # Docker management
-make clean                          # stop containers
-make teardown                       # full cleanup (env + containers)
 docker compose -f src/docker-compose.yaml logs -f redis
 ```
 

@@ -30,7 +30,6 @@ from typing import List, Dict, Any
 from utils.config_dataclasses import BrokerConfig, FederationConfig,FederateConfig,FedTimingConfig,FedFlags,FedConnections,MemoryConfig,FedPublication,FedSubscription,StartupSyncConfig
 from utils.config_reader import read_scenario_config
 from utils.logging_config import FederationLogger
-from utils.influxdb_client import InfluxClient
 from utils.redis_client import RedisClient
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -48,12 +47,6 @@ try:
 except ImportError:
     TQDM_AVAILABLE = False
 
-# HELICS import for broker queries
-try:
-    import helics as h
-    HELICS_AVAILABLE = True
-except ImportError:
-    HELICS_AVAILABLE = False
 
 
 
@@ -96,22 +89,9 @@ class ScenarioManager:
         self.duration_time = None
 
 
-        # entities datatsructures TODO find an intelligent way to use these datastructures
-        self.brokers = {}
-        self.federations = {}  # store federations by name for easy access
-        for federation_name, federation_conf in self.config.federations.items():
-            self.federations[federation_name] = {
-                'config': federation_conf,
-                'broker_process': None,
-                'federate_processes': []
-            }
-        self.rl_federates = {}
-
-        
         # Process management attributes
         self.broker_processes: List[subprocess.Popen] = []  # Fixed: plural and proper type
         self.federate_processes: List[subprocess.Popen] = []
-        self.temp_files: List[str] = []
         
         # Cleanup management
         self._cleanup_done = False
@@ -121,9 +101,6 @@ class ScenarioManager:
         self._broker_query_lock = threading.Lock()
         self._broker_federation_map = {}  # Maps broker process to federation name
         self._hierarchy_broker_config = None  # Set by _normalize_broker_and_core_configs when >1 federation
-        
-        # InfluxDB client 
-        # self.influx_client = self._set_influxdb_client()
         
         # Redis client & key (will be initialized during scenario setup)
         self.redis_client = None
@@ -281,14 +258,6 @@ class ScenarioManager:
                 except (ProcessLookupError, OSError):
                     pass
         
-        # Clean up temporary files
-        for temp_file in getattr(self, 'temp_files', []):
-            try:
-                if os.path.exists(temp_file):
-                    os.unlink(temp_file)
-            except OSError:
-                pass
-        
         self.metrics['cleanup_end'] = datetime.now()
         
         # Calculate cleanup phase duration
@@ -301,10 +270,6 @@ class ScenarioManager:
             end_time = self.metrics['cleanup_end']
             self.metrics['total_duration'] = (end_time - self.metrics['simulation_start']).total_seconds()
         
-        # Close InfluxDB connection
-        # if self.influx_client:
-            # self.influx_client.close()
-
         # Delete redis key for this simulation
         if self.redis_client and self.redis_key:
             self.redis_client.delete(self.redis_key)
@@ -328,35 +293,6 @@ class ScenarioManager:
         print(f"Broker logs: {paths['broker_logs']}")
         print(f"Federate logs: {paths['federate_logs']}")
 
-    def _set_influxdb_client(self):
-        '''old method no longer used influx was a huge bottleneck
-         Initialize InfluxDB client for metrics storage.'''
-        try:
-            influx_client = InfluxClient(
-                logger=self.logger,
-                auto_start=True  # Will auto-start if not running
-            )
-            
-            # Log health status
-            health = influx_client.get_health_status()
-            if health['overall_healthy']:
-                self.logger.info("✓ InfluxDB is healthy and ready")
-            else:
-                self.logger.warning(f"InfluxDB health issues: {health}")
-            
-            self.config.influxdb = {}
-            self.config.influxdb['url'] = os.getenv('INFLUXDB_URL', 'http://localhost:8086')
-            self.config.influxdb['token'] = os.getenv('INFLUXDB_TOKEN', 'mytoken123456')
-            self.config.influxdb['org'] = os.getenv('INFLUXDB_ORG', 'myorg')
-            self.config.influxdb['bucket'] = os.getenv('INFLUXDB_BUCKET', 'simulation_data')
-            return influx_client
-            
-        except Exception as e:
-            self.logger.error(f"Failed to initialize InfluxDB client: {e}")
-            influx_client = None
-        
-        return influx_client
-    
     def _setup_redis_client(self):
         """Initialize Redis client for configuration distribution."""
         try:
@@ -973,38 +909,6 @@ class ScenarioManager:
         """
         self.logger.info("Setting up multi-computer scenario...")
    
-    def _store_simulation_metadata(self):
-        """Store simulation metadata in InfluxDB. OLD method no longer used"""
-        
-        try:
-            tags = {
-                'simulation_id': self.simulation_id,
-            }
-            
-            # todo add information of possible training periods
-            fields = {
-                'start_time': int(self.start_time.timestamp() * 1_000_000_000),  # Store as nanoseconds
-                'end_time': int(self.end_time.timestamp() * 1_000_000_000),  # Store as nanoseconds
-            }
-            
-            # Log the metadata times for debugging
-            self.logger.info(f"📊 Storing metadata - Start: {self.start_time}, End: {self.end_time}")
-            self.logger.debug(f"   Start timestamp (ns): {fields['start_time']}")
-            self.logger.debug(f"   End timestamp (ns): {fields['end_time']}")
-            
-            bucket = self.config.influxdb['bucket']
-            measurement = 'sim_metadata'
-            
-            success = self.influx_client.write_metadata(bucket, measurement, tags, fields)
-            
-            if success:
-                self.logger.info("Simulation metadata stored in InfluxDB")
-            else:
-                self.logger.warning("Failed to store simulation metadata")
-                
-        except Exception as e:
-            self.logger.error(f"Error storing simulation metadata: {e}")
-    
     def _get_total_scenario_duration(self):
         duration_time = (self.end_time - self.start_time).total_seconds()
         return duration_time
@@ -1736,67 +1640,12 @@ class ScenarioManager:
 
 
     def get_federation_current_time(self, broker_process):
-        """
-        Query HELICS broker for current federation simulation time.
-        This is non-blocking and doesn't interfere with simulation.
-        
-        Args:
-            broker_process: The broker subprocess to query
-            
-        Returns:
-            float: Current simulation time or None if query fails
-        """
-        if not HELICS_AVAILABLE:
+        """Estimate current federation simulation time via wall-clock elapsed time."""
+        broker_info = self._broker_federation_map.get(broker_process)
+        if not broker_info or not hasattr(self, '_simulation_start_real_time'):
             return None
-            
-        try:
-            broker_info = self._broker_federation_map.get(broker_process)
-            if not broker_info:
-                self.logger.debug("No broker info found for process")
-                return None
-            
-            # Method 1: Try querying broker for global time
-            try:
-                query = h.helicsCreateQuery("broker", "time")
-                h.helicsQuerySetTarget(query, f"broker_{broker_info['federation_name']}")
-                result = h.helicsQueryExecute(query, self.query_config['timeout_ms'] / 1000.0)
-                h.helicsQueryFree(query)
-                
-                if result and result.strip():
-                    time_val = float(result)
-                    self.logger.debug(f"HELICS query returned time: {time_val}")
-                    return time_val
-            except Exception as e:
-                self.logger.debug(f"Broker time query failed: {e}")
-            
-            # Method 2: Try querying for federation status
-            try:
-                query = h.helicsCreateQuery("broker", "global_time")
-                result = h.helicsQueryExecute(query, self.query_config['timeout_ms'] / 1000.0)
-                h.helicsQueryFree(query)
-                
-                if result and result.strip():
-                    time_val = float(result)
-                    self.logger.debug(f"Global time query returned: {time_val}")
-                    return time_val
-            except Exception as e:
-                self.logger.debug(f"Global time query failed: {e}")
-            
-            # Method 3: Fallback - estimate based on elapsed time and expected time step
-            # This is not ideal but provides visual feedback
-            if hasattr(self, '_simulation_start_real_time'):
-                elapsed_real = time.time() - self._simulation_start_real_time
-                # Rough estimate: assume simulation runs in real-time initially
-                estimated_sim_time = min(elapsed_real * 60, broker_info.get('expected_time_stop', 3600))
-                self.logger.debug(f"Using time estimation: {estimated_sim_time:.1f}s")
-                return estimated_sim_time
-            
-            return None
-            
-        except Exception as e:
-            federation_name = broker_info.get('federation_name', 'unknown') if broker_info else 'unknown'
-            self.logger.debug(f"HELICS query failed for federation {federation_name}: {e}")
-            return None
+        elapsed_real = time.time() - self._simulation_start_real_time
+        return min(elapsed_real * 60, broker_info.get('expected_time_stop', 3600))
 
     def get_all_federation_parameters(self):
         """
@@ -1848,15 +1697,9 @@ class ScenarioManager:
         return None
 
     def _can_use_helics_queries(self):
-        """
-        Check if HELICS queries can be used for progress tracking.
-        
-        Returns:
-            bool: True if HELICS queries are available, enabled, and feasible
-        """
+        """Check if wall-clock based federation progress tracking is feasible."""
         return (self.query_config['enabled'] and
-                HELICS_AVAILABLE and 
-                self.broker_processes and 
+                self.broker_processes and
                 self._broker_federation_map)
 
     def get_adaptive_query_frequency(self):
@@ -2075,111 +1918,44 @@ class ScenarioManager:
             params = sim_params[federation_name]
             
             with tqdm(
-                total=params['time_stop'], 
-                desc=f"Federation {federation_name}", 
+                total=params['time_stop'],
+                desc=f"Federation {federation_name}",
                 unit="s",
                 bar_format='{l_bar}{bar}| {n:.1f}s/{total:.1f}s [{elapsed}, {rate_fmt}{postfix}]'
             ) as pbar:
-                
-                active_processes = list(self.federate_processes) + list(self.broker_processes)
+
+                active_federate_processes = list(self.federate_processes)
+                active_broker_processes = list(self.broker_processes)
                 last_time = 0.0
-                
+
                 # Give brokers time to initialize
                 time.sleep(self.query_config['init_delay_s'])
-                
+
                 # Use adaptive query frequency
                 query_interval = self.get_adaptive_query_frequency()
                 self.logger.info(f"Using query interval: {query_interval:.3f}s")
-                
-                while active_processes:
+
+                while active_federate_processes or active_broker_processes:
                     time.sleep(query_interval)
-                    
+
                     # Query current simulation time
                     current_time = self.get_federation_current_time(params['broker_process'])
-                    
+
                     if current_time is not None and current_time > last_time:
                         pbar.update(current_time - last_time)
                         pbar.set_postfix(sim_time=f"{current_time:.1f}s")
                         last_time = current_time
-                    
+
                     # Update process lists
-                    active_processes = self._update_process_lists_simple(active_processes)
-                
+                    active_federate_processes, active_broker_processes = self._update_process_lists(
+                        active_federate_processes, active_broker_processes
+                    )
+
                 pbar.update(params['time_stop'] - last_time)  # Complete the bar
         else:
             # Multiple federations - fall back to process-based monitoring
             self.logger.warning("Multiple federations detected, falling back to process monitoring")
             return self._monitor_processes_fallback()
-
-        self.logger.info("All processes completed!")
-        self._log_execution_summary()
-
-    def _monitor_processes_minimal(self):
-        """
-        Minimal overhead monitoring without progress bars.
-        Only logs basic status updates without any visual progress indicators.
-        """
-        active_federate_processes = list(self.federate_processes)
-        active_broker_processes = list(self.broker_processes)
-        self.logger.info(f"Monitoring {len(active_federate_processes)} federates and {len(active_broker_processes)} brokers (minimal mode)")
-
-        # Track peak memory usage during monitoring
-        peak_memory = self.metrics['memory_usage']['initial'] if self.metrics['memory_usage']['initial'] else {'rss': 0, 'vms': 0}
-        
-        while active_federate_processes or active_broker_processes:
-            time.sleep(1)  # Standard monitoring interval
-            
-            # Update peak memory usage if psutil is available
-            if PSUTIL_AVAILABLE:
-                try:
-                    process = psutil.Process()
-                    current_memory = process.memory_info()
-                    if current_memory.rss > peak_memory['rss']:
-                        peak_memory = {
-                            'rss': current_memory.rss,
-                            'vms': current_memory.vms,
-                            'system_available': psutil.virtual_memory().available
-                        }
-                        self.metrics['memory_usage']['peak'] = peak_memory
-                except Exception:
-                    pass
-            
-            # Check federate processes (without progress bar updates)
-            completed_federates = []
-            for i, process in enumerate(active_federate_processes):
-                if process.poll() is not None:  # Process finished
-                    if process.returncode == 0:
-                        self.logger.info("✓ Federate completed successfully")
-                        self.metrics['process_counts']['federates_completed'] += 1
-                    else:
-                        self.logger.error(f"✗ Federate failed with code {process.returncode}")
-                    completed_federates.append(i)
-            
-            # Remove completed federate processes
-            for i in reversed(completed_federates):
-                active_federate_processes.pop(i)
-            
-            # Check broker processes
-            completed_brokers = []
-            for i, process in enumerate(active_broker_processes):
-                if process.poll() is not None:  # Process finished
-                    if process.returncode == 0:
-                        self.logger.info("✓ Broker completed successfully")
-                        self.metrics['process_counts']['brokers_completed'] += 1
-                    else:
-                        self.logger.error(f"✗ Broker failed with code {process.returncode}")
-                    completed_brokers.append(i)
-            
-            # Remove completed broker processes
-            for i in reversed(completed_brokers):
-                active_broker_processes.pop(i)
-            
-            # Periodic status update (less frequent than with progress bar)
-            total_active = len(active_federate_processes) + len(active_broker_processes)
-            if total_active > 0:
-                # Only log status every few iterations to reduce overhead
-                if len(active_federate_processes) + len(active_broker_processes) != total_active:
-                    self.logger.info(f"Still running: {len(active_federate_processes)} federates, {len(active_broker_processes)} brokers")
 
         self.logger.info("All processes completed!")
         self._log_execution_summary()
@@ -2221,44 +1997,11 @@ class ScenarioManager:
         
         return active_federate_processes, active_broker_processes
 
-    def _update_process_lists_simple(self, active_processes):
-        """
-        Simple version that updates a single list of all processes.
-        Returns updated list of active processes.
-        """
-        completed_processes = []
-        for i, process in enumerate(active_processes):
-            if process.poll() is not None:  # Process finished
-                if process.returncode == 0:
-                    self.logger.info("✓ Process completed successfully")
-                else:
-                    self.logger.error(f"✗ Process failed with code {process.returncode}")
-                completed_processes.append(i)
-        
-        # Remove completed processes
-        for i in reversed(completed_processes):
-            active_processes.pop(i)
-        
-        return active_processes
-
     def _monitor_processes(self):
-        """
-        Monitor all running federate and broker processes.
-        
-        This method first tries HELICS query-based monitoring for simulation progress,
-        then falls back to process-based monitoring if queries are not available.
-        """
-        # Check if progress monitoring is enabled
-        if not self.query_config['enabled']:
-            self.logger.info("Progress bar monitoring disabled - using minimal overhead monitoring")
-            return self._monitor_processes_minimal()
-        
-        # Try HELICS query-based monitoring first
+        """Monitor all running federate and broker processes."""
         if self._can_use_helics_queries():
-            self.logger.info("Using HELICS query-based progress monitoring")
             return self._monitor_with_federation_progress()
         else:
-            self.logger.info("HELICS queries not available, using process-based monitoring")
             return self._monitor_processes_fallback()
 
     def _monitor_processes_fallback(self):
@@ -2598,16 +2341,16 @@ def main(scenario_name, enable_progress_bar=True):
             # manager.configure_query_frequency(frequency_ms=200, adaptive=True, timeout_ms=1000)
             
             manager.start_scenario()
-            
+
             # Debug: Check what's running
             status = manager.get_running_processes()
             print(f"\nCompleted! Final status: {len(status['brokers'])} brokers, {len(status['federates'])} federates")
-            
+
             # Show final metrics
             metrics = manager.get_execution_metrics()
             if metrics.get('total_duration'):
                 print(f"Federation completed in {metrics['total_duration']:.3f} seconds")
-            
+
             # Show phase durations if available
             phase_durations = metrics.get('phase_durations', {})
             if phase_durations:
@@ -2615,8 +2358,6 @@ def main(scenario_name, enable_progress_bar=True):
                 for phase, duration in phase_durations.items():
                     if duration:
                         print(f"   {phase}: {duration:.3f}s")
-            
-            manager.debug_cleanup()
 
     except Exception as e:
         print(f"Error: {e}")

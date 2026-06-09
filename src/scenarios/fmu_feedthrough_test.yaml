@@ -31,12 +31,6 @@ synchronization:
 
 federations:
   federation_1:
-    broker_config:
-      core_type: "tcp"
-      port: 23405
-      host: "localhost"
-      federates: 2
-      log_level: DEBUG
 
     federate_configs:
 
@@ -47,8 +41,6 @@ federations:
         name: "input_federate"
         type: "base"
         log_level: DEBUG
-        core_name: "fed0"
-        core_type: "tcp"
 
         timing_configs:
           real_period: 1
@@ -98,8 +90,7 @@ federations:
         name: "fmu_federate"
         type: "base"
         log_level: DEBUG
-        core_name: "fed1"
-        core_type: "tcp"
+
 
         timing_configs:
           real_period: 1

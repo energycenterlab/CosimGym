@@ -338,30 +338,6 @@ class MemoryConfig:
         return f"{classname}({self.__dict__})"
     
 @dataclass
-class InfluxDBConfig:
-    """
-    Configuration for InfluxDB connection and settings.
-    
-    Attributes:
-        url (str): InfluxDB server URL
-        token (str): Authentication token
-        org (str): Organization name
-        bucket (str): Bucket name for storing data
-        auto_start (bool): Automatically start InfluxDB if not running
-        health_check_timeout (int): Timeout for health checks in seconds
-    """
-    url: str = "http://localhost:8086"
-    token: str = "mytoken123456"
-    org: str = "myorg"
-    bucket: str = "cosim_data"
-    auto_start: bool = True
-    health_check_timeout: int = 30
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-
-@dataclass
 class FederateConfig:
     """
     Complete configuration for a HELICS federate.
@@ -404,47 +380,6 @@ class FederateConfig:
         classname = self.__class__.__name__
         return f"{classname}({self.__dict__})"
 
-
-# TODO: this class is still under development and may be modified significantly. It is currently used only for RL federates, but it may be necessary to add some of these fields to the general FederateConfig if they are relevant for non-RL federates as well (e.g., controlled_models and observed_models could be useful for non-RL federates that still need to specify which models they control and observe for data storage purposes, etc.)
-@dataclass
-class AgentConfig:
-    """
-    Configuration for a reinforcement learning agent.
-    
-    This class defines the settings for an RL agent, including the model it controls,
-    the attributes it observes, and the details of the RL task it is designed to solve.
-    
-    Attributes:
-        model_configs (ModelConfig): Configuration for the models used by the agent"""
-    instantiation: ModelInstantiationConfig
-    observations: Dict[str, str]  # {full_attr_id: model_name}
-    actions: Dict[str, str]  # {full_attr_id: model_name}
-    additonal_observations: Optional[Dict[str, str]] = None  # {full_attr_id: model_name}
-
-# TODO add this new dataclass in the generla workflow!
-@dataclass
-class RLfederateConfig(FederateConfig):
-    """
-    Configuration for a reinforcement learning federate.
-    
-    This class extends the base FederateConfig with additional settings specific
-    to RL federates, such as controlled and observed models, and RL task details.
-    
-    Attributes:
-        controlled_models (Dict[str, str]): Mapping of controlled attributes to model names
-        observed_models (Dict[str, str]): Mapping of observed attributes to model names
-        additional_observed_models (Dict[str, str]): Additional observed attributes
-        rl_task (Any): Details of the RL task (e.g., reward function, action space, etc.)
-    """
-    model_configs: AgentConfig
-    controlled_models: Dict[str, str] = field(default_factory=dict)   # {full_attr_id: model_name}
-    observed_models: Dict[str, str] = field(default_factory=dict)
-    additional_observed_models: Dict[str, str] = field(default_factory=dict)
-    rl_task: Optional[Any] = None
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
 @dataclass
 class BrokerConfig:
@@ -532,7 +467,6 @@ class ScenarioConfig:
     start_time: str
     end_time: str
     memory_config: MemoryConfig
-    influxdb_config: InfluxDBConfig
     reinforcement_learning_config: Optional['ReinforcementLearningConfig'] = None
     synchronization: SynchronizationConfig = field(default_factory=SynchronizationConfig)
     log_level: LogLevel = LogLevel.INFO
