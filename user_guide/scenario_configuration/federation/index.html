@@ -666,10 +666,93 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#broker-configuration" class="md-nav__link">
+  <a href="#structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Broker Configuration
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#broker_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        broker_config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#federate_configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        federate_configs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-federation-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-federation scenarios
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-federation-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-federation subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cross-federation subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#same-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Same federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
       
     </span>
   </a>
@@ -700,6 +783,34 @@
     
   
     Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
   
 
     
@@ -1005,10 +1116,93 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#broker-configuration" class="md-nav__link">
+  <a href="#structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Broker Configuration
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#broker_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        broker_config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#federate_configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        federate_configs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-federation-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-federation scenarios
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-federation-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-federation subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cross-federation subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#same-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Same federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
       
     </span>
   </a>
@@ -1033,66 +1227,158 @@
 
 
 <h1 id="federation-configuration">Federation Configuration</h1>
-<p>This is the config structure to define all the need information to build a single federation. There are two main Configuration blocks:
-- <a href="#Federate-Configuration">FederateConfiguration</a>
-- <a href="#Broker-Configuration">BrokerConfiguration</a></p>
-<p>A full examples is reported in the following and then each section is described later.</p>
-<pre><code class="language-yaml">    broker_config: BrokerConfiguration
-
-    federate_configs: 
-        fed_1: FederateConfiguration
-        fed_2: FederateConfiguration
-</code></pre>
-<h3 id="broker-configuration">Broker Configuration</h3>
-<p>Broker configuration file will be automatized leaving the possibility to reduce user inputs in the config file!</p>
-<pre><code class="language-yaml">broker_config:
+<p>A federation is a group of federates sharing one HELICS broker. Each entry under the top-level <code>federations:</code> dict is a <code>FederationConfig</code>.</p>
+<hr />
+<h2 id="structure">Structure</h2>
+<pre><code class="language-yaml">federations:
+  federation_1:                    # dict key becomes the federation name
+    broker_config:                 # optional — ScenarioManager fills missing values
       core_type: &quot;zmq&quot;
       port: 23404
-      host: &quot;localhost&quot;
-      federates: 5    
+      federates: 2
+      log_level: INFO
+    federate_configs:              # required — dict of federate name → FederateConfig
+      my_federate:
+        type: &quot;base&quot;
+        ...
+      another_federate:
+        type: &quot;base&quot;
+        ...
 </code></pre>
-<p>In the following all the fields for broker configuration:</p>
+<p>The federation name (dict key) is injected into the config automatically. Each federate's <code>name</code> and <code>id</code> are similarly injected from the dict key — you do not need to repeat them.</p>
+<hr />
+<h2 id="broker_config"><code>broker_config</code></h2>
+<p>All fields are optional. ScenarioManager auto-fills anything not specified.</p>
+<pre><code class="language-yaml">broker_config:
+  core_type: &quot;zmq&quot;       # transport: &quot;zmq&quot; (default) | &quot;tcp&quot; | &quot;ipc&quot;
+  port: 23404            # TCP port for the broker (auto-assigned if omitted)
+  federates: 2           # expected federate count (auto-counted if omitted)
+  log_level: INFO        # broker log verbosity
+  host: &quot;localhost&quot;      # broker host (single-machine default)
+  address: ~             # explicit broker address string (advanced)
+  broker_address: ~      # parent broker address for hierarchy (advanced, set by ScenarioManager)
+  sub_brokers: ~         # number of sub-brokers (multi-federation, set by ScenarioManager)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>core_type</code></td>
+<td>string</td>
+<td>auto</td>
+<td><code>"zmq"</code> for single-machine; <code>"tcp"</code> for multi-machine or multi-federation</td>
+</tr>
+<tr>
+<td><code>port</code></td>
+<td>int</td>
+<td>auto</td>
+<td>ScenarioManager assigns ports sequentially starting from a base port</td>
+</tr>
+<tr>
+<td><code>federates</code></td>
+<td>int</td>
+<td>auto</td>
+<td>If set, validated against the count of <code>federate_configs</code> entries</td>
+</tr>
+<tr>
+<td><code>log_level</code></td>
+<td>LogLevel</td>
+<td><code>INFO</code></td>
+<td>Broker-level log verbosity</td>
+</tr>
+<tr>
+<td><code>host</code></td>
+<td>string</td>
+<td><code>"localhost"</code></td>
+<td>Relevant for TCP core type</td>
+</tr>
+<tr>
+<td><code>broker_address</code></td>
+<td>string</td>
+<td>set at runtime</td>
+<td>Address of parent/hierarchy broker (multi-federation)</td>
+</tr>
+<tr>
+<td><code>sub_brokers</code></td>
+<td>int</td>
+<td>set at runtime</td>
+<td>Number of sub-brokers under a hierarchy broker</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Tip:</strong> You can leave <code>broker_config</code> entirely empty (or omit it). ScenarioManager will assign a <code>core_type</code> and <code>port</code> automatically based on the scenario topology.</p>
+</blockquote>
+<hr />
+<h2 id="federate_configs"><code>federate_configs</code></h2>
+<p>Dict of federate name → <code>FederateConfig</code>. The dict key is the federate name and is used to construct the federate's <code>id</code> (<code>&lt;federation_name&gt;_&lt;federate_name&gt;</code>).</p>
+<pre><code class="language-yaml">federate_configs:
+  spring_federate:          # dict key = federate name
+    type: &quot;base&quot;
+    timing_configs:
+      real_period: 60
+    ...
+
+  controller_federate:
+    type: &quot;base&quot;
+    timing_configs:
+      real_period: 60
+    ...
+</code></pre>
+<p>For full <code>FederateConfig</code> options, see <a href="../federate/">Federate</a>.</p>
+<hr />
+<h2 id="multi-federation-scenarios">Multi-federation scenarios</h2>
+<p>When <code>federations:</code> contains more than one entry, ScenarioManager automatically:</p>
+<ol>
+<li>Switches all federations to <code>core_type: "tcp"</code></li>
+<li>Assigns unique ports to each federation broker</li>
+<li>Starts a <strong>hierarchy broker</strong> (<code>helics_broker --sub_brokers=N</code>) that sits above all per-federation brokers</li>
+<li>Sets each federation broker's <code>broker_address</code> to connect to the hierarchy broker</li>
+</ol>
+<p>No extra YAML configuration is needed. Just define multiple federations:</p>
+<pre><code class="language-yaml">federations:
+  physics_federation:
+    federate_configs:
+      spring:
+        type: &quot;base&quot;
+        ...
+
+  control_federation:
+    federate_configs:
+      controller:
+        type: &quot;base&quot;
+        ...
+</code></pre>
+<hr />
+<h2 id="cross-federation-subscriptions">Cross-federation subscriptions</h2>
+<p>A subscription's <code>targets</code> field uses different formats depending on whether the publisher is in the same or a different federation.</p>
+<h3 id="same-federation">Same federation</h3>
+<pre><code class="language-yaml">targets:
+  '0': [other_federate.0/pub_key]
+  '1': [other_federate.1/pub_key]
+</code></pre>
+<p>Format: <code>&lt;federate_name&gt;.&lt;instance_id&gt;/&lt;pub_key&gt;</code></p>
+<h3 id="cross-federation">Cross-federation</h3>
+<pre><code class="language-yaml">targets:
+  '0': [physics_federation.spring.0/position]
+</code></pre>
+<p>Format: <code>&lt;federation_name&gt;.&lt;federate_name&gt;.&lt;instance_id&gt;/&lt;pub_key&gt;</code></p>
+<p>The instance ID is zero-based and matches the model instance number defined by <code>n_instances</code> in the publisher's <code>model_configs.instantiation</code>.</p>
+<hr />
+<h2 id="validation">Validation</h2>
+<p>At load time, the config is validated:</p>
 <ul>
-<li>
-<p><strong><code>core_type</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Integer</li>
-<li><strong>Required:</strong> No</li>
-<li><strong>Meaning:</strong> Random seed for reproducibility</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>port</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> String | List of strings</li>
-<li><strong>Required:</strong> No</li>
-<li><strong>Meaning:</strong> Random seed for reproducibility</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>host</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> String | List of strings</li>
-<li><strong>Required:</strong> No</li>
-<li><strong>Meaning:</strong> Random seed for reproducibility</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>federates</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Int</li>
-<li><strong>Required:</strong> Yes</li>
-<li><strong>Meaning:</strong> number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
+<li>If <code>broker_config.federates</code> is set, it must match the count of entries in <code>federate_configs</code></li>
+<li>All federate <code>id</code> values within a federation must be unique</li>
+<li>All federate <code>name</code> values within a federation must be unique</li>
+<li>For <code>type: "base"</code> federates, <code>model_configs.instantiation.n_instances</code> must be ≥ 1</li>
 </ul>
 
 

@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../federate/">
+        <link rel="prev" href="../synchronization/">
       
       
         <link rel="next" href="../../custom_models/">
@@ -659,6 +659,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -722,10 +750,143 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentenv-environment-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.env — Environment definition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="agent.env — Environment definition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key naming convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#action-spaces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Action Spaces:
+        Action spaces
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        training
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="training">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#derived-fields-set-automatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived fields (set automatically)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checkpointing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        checkpointing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logging
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperparameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hyperparameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-rl-scenario-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete RL scenario example
       
     </span>
   </a>
@@ -1005,10 +1166,143 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentenv-environment-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.env — Environment definition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="agent.env — Environment definition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key naming convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#action-spaces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Action Spaces:
+        Action spaces
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        training
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="training">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#derived-fields-set-automatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived fields (set automatically)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checkpointing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        checkpointing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logging
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperparameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hyperparameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-rl-scenario-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete RL scenario example
       
     </span>
   </a>
@@ -1033,26 +1327,329 @@
 
 
 <h1 id="reinforcement-learning-configuration">Reinforcement Learning Configuration</h1>
-<h3 id="action-spaces">Action Spaces:</h3>
-<p>Action spaces are configurable following a specific logic. First of all the RL federate only deals with Gym.Dict spaces (this hold for every spaces). so in the agent itself wrappers will be needed to convert to desired format (e.g. stablebaseline3 only accept box or discrete, flatten spaces).</p>
-<p>For each action in the scenario it is possible to specify the following keys:</p>
+<p>Add a <code>reinforcement_learning_config:</code> block to any scenario YAML to enable RL training or evaluation. When present, ScenarioManager injects a synthetic <code>rl_agent</code> federate at runtime and wires its pub/sub connections based on the <code>env.observations</code> and <code>env.actions</code> lists.</p>
+<p>At least one of <code>training</code> or <code>test</code> must be present.</p>
+<hr />
+<h2 id="structure">Structure</h2>
+<pre><code class="language-yaml">reinforcement_learning_config:
+  seed: 42                    # optional — global RNG seed
+
+  agent:                      # required
+    model_name: &quot;rl_simple_DQN&quot;
+    reward_function: &quot;models.model_catalog.RL_agents.reward_functions.my_reward&quot;
+    algorithm: &quot;DQN&quot;          # optional — passed to agent class
+    library: &quot;stable_baselines3&quot;  # optional
+    env:                      # required
+      observations: [...]
+      actions: [...]
+      action_spaces_type: [...]
+    hyperparameters:          # optional
+      learning_rate: 0.001
+
+  training:                   # optional (omit for test-only)
+    mode: &quot;online&quot;
+    episode_length: 100
+    n_episodes: 1000
+
+  test:                       # optional (omit for training-only)
+    enabled: true
+    checkpoint_path: &quot;src/models/model_catalog/RL_agents/checkpoints/best_model.pth&quot;
+    n_episodes: 10
+
+  checkpointing:              # optional
+    enabled: true
+    directory: &quot;src/models/model_catalog/RL_agents/checkpoints&quot;
+
+  logging:                    # optional
+    backend: &quot;tensorboard&quot;
+    log_dir: &quot;logs&quot;
+</code></pre>
+<hr />
+<h2 id="agent"><code>agent</code></h2>
+<pre><code class="language-yaml">agent:
+  model_name: &quot;rl_simple_DQN&quot;    # required — key in catalog.yaml pointing to the agent class
+  algorithm: &quot;DQN&quot;               # optional — algorithm name passed to the agent
+  library: &quot;stable_baselines3&quot;   # optional — RL library identifier
+  reward_function: &quot;models.model_catalog.RL_agents.reward_functions.spring_reward&quot;  # optional
+  hyperparameters:               # optional
+    learning_rate: 0.0003
+    gamma: 0.99
+    batch_size: 64
+  env:                           # required
+    ...
+</code></pre>
+<hr />
+<h2 id="agentenv-environment-definition"><code>agent.env</code> — Environment definition</h2>
+<p>Defines the observation and action spaces that the RL agent sees.</p>
+<pre><code class="language-yaml">env:
+  observations:                          # required — list of variable keys
+    - federation_1.spring_federate.0.position
+    - federation_1.spring_federate.0.velocity
+    - federation_1.spring_federate.0.acceleration
+
+  additional_observations: []            # optional — extra observations not used as RL inputs
+
+  actions:                               # required — list of variable keys the agent controls
+    - federation_1.spring_federate.0.force
+
+  action_spaces_type:                    # required — one entry per action
+    - &quot;discrete&quot;                         # &quot;discrete&quot; | &quot;box&quot;
+
+  action_bins: [21]                      # optional — number of bins for discrete actions
+  action_boundaries:                     # optional — [min, max] per action for box/discrete
+    - [-10.0, 10.0]
+
+  action_space_remapping: null           # optional — remap discrete index to physical value
+
+  observation_causality: null            # optional — &quot;same_step&quot;|&quot;next_step&quot; per observation
+  additional_observation_causality: null # optional — causality for additional_observations
+
+  reset_observation_defaults: null       # optional — default values to use at episode reset
+  force_reset_observation_defaults: false # optional — always use defaults even when valid values exist
+
+  include_prev_obs: null                 # optional — [n] previous obs to append to state per variable
+</code></pre>
+<h3 id="key-naming-convention">Key naming convention</h3>
+<p>All observation and action keys use dot notation:</p>
+<pre><code>&lt;federation_name&gt;.&lt;federate_name&gt;.&lt;instance_id&gt;.&lt;variable_name&gt;
+</code></pre>
+<p>Example: <code>federation_1.spring_federate.0.position</code></p>
 <ul>
-<li>
-<p>actions : (required) List of action variables</p>
+<li><code>federation_1</code> — federation name (dict key under <code>federations:</code>)</li>
+<li><code>spring_federate</code> — federate name (dict key under <code>federate_configs:</code>)</li>
+<li><code>0</code> — model instance index (zero-based)</li>
+<li><code>position</code> — variable name (must be in the model's <code>publishes</code> list)</li>
+</ul>
+<h3 id="action-spaces">Action spaces</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Meaning</th>
+<th>Related fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"discrete"</code></td>
+<td>Integer action space — agent picks an index</td>
+<td><code>action_bins</code> sets number of bins</td>
+</tr>
+<tr>
+<td><code>"box"</code></td>
+<td>Continuous action space</td>
+<td><code>action_boundaries</code> sets <code>[min, max]</code></td>
+</tr>
+</tbody>
+</table>
+<p>All action and observation spaces use <code>gym.Dict</code> internally. If your RL library requires <code>Box</code> or <code>Discrete</code>, wrap the environment in the agent class.</p>
+<hr />
+<h2 id="training"><code>training</code></h2>
+<pre><code class="language-yaml">training:
+  mode: &quot;online&quot;             # &quot;online&quot; | &quot;offline&quot; | &quot;mixed&quot; (default: &quot;online&quot;)
+  episode_length: 100        # required — simulation steps per episode
+  n_episodes: 1000           # required — total number of training episodes
+  reset_mode: &quot;full&quot;         # &quot;full&quot; | &quot;partial&quot; (default: &quot;full&quot;)
+  rolling_window: null       # optional — window size for rolling-reset mode
+  warmup_steps: 0            # steps before gradient updates start (default: 0)
+  train_frequency: 1         # environment steps between gradient updates (default: 1)
+  gradient_steps: 1          # gradient updates per training call (default: 1)
+  eval_frequency: 10000      # steps between evaluations (default: 10000)
+  n_eval_episodes: 10        # episodes per evaluation (default: 10)
+  eval_deterministic: true   # use deterministic policy for eval (default: true)
+  log_interval: 100          # steps between log prints (default: 100)
+  verbose: 1                 # verbosity level (default: 1)
+
+  exploration:               # optional — controls epsilon-greedy or noise-based exploration
+    strategy: &quot;epsilon_greedy&quot;
+    initial_epsilon: 1.0
+    final_epsilon: 0.05
+    epsilon_decay_steps: 100000
+    noise_std: 0.1
+    noise_std_decay: 0.9999
+    noise_std_min: 0.01
+    ou_theta: 0.15
+    ou_sigma: 0.2
+
+  replay_buffer:             # optional — experience replay settings
+    buffer_size: 1000000
+    prioritized: false
+    alpha: 0.6
+    beta: 0.4
+    beta_annealing_steps: 100000
+    n_step: 1
+    prefill_steps: 0
+
+  early_stopping:            # optional
+    enabled: false
+    metric: &quot;episode_reward&quot;
+    patience: 100
+    min_delta: 0.01
+    mode: &quot;max&quot;
+</code></pre>
+<h3 id="derived-fields-set-automatically">Derived fields (set automatically)</h3>
 <ul>
-<li>
-<p>rules: the action must be expressed with its complete id following a dot notation : <federation_name>.<federate_name>.<model_instance_number>.<attr_name></p>
-<ul>
-<li>example:</li>
+<li><code>reset_period</code>: set to <code>episode_length</code> if not specified</li>
+<li><code>total_steps</code>: set to <code>n_episodes × episode_length</code> if not specified</li>
 </ul>
-<p>```yaml
-action_name: [federation_1.battery_federate.0.Battery_power] </p>
-<p>```
-* action_spaces_type : (required) List of corresponding types for each action specified in the previous list</p>
-</li>
-</ul>
-</li>
-</ul>
+<hr />
+<h2 id="test"><code>test</code></h2>
+<pre><code class="language-yaml">test:
+  enabled: true                    # default: false
+  checkpoint_path: &quot;src/models/model_catalog/RL_agents/checkpoints/best_model.pth&quot;
+  n_episodes: 10                   # optional — number of test episodes
+  episode_length: 100              # optional — steps per test episode
+  total_steps: null                # optional — total test steps (overrides n_episodes × episode_length)
+  deterministic: true              # use deterministic policy (default: true)
+  render: false                    # optional — render environment (default: false)
+  save_trajectories: false         # save episode trajectories to disk (default: false)
+  trajectories_path: &quot;results/test_trajectories.pkl&quot;
+</code></pre>
+<p><code>checkpoint_path</code> accepts <code>"none"</code>, <code>"null"</code>, or <code>""</code> as equivalent to <code>null</code> (no checkpoint loaded).</p>
+<hr />
+<h2 id="checkpointing"><code>checkpointing</code></h2>
+<pre><code class="language-yaml">checkpointing:
+  enabled: true
+  directory: &quot;src/models/model_catalog/RL_agents/checkpoints&quot;
+  save_frequency: 10000      # steps between checkpoint saves
+  save_best: true            # always save the best model seen so far
+  best_metric: &quot;episode_reward&quot;
+  best_mode: &quot;max&quot;           # &quot;max&quot; or &quot;min&quot;
+  keep_last_n: 5             # number of recent checkpoints to keep
+  save_replay_buffer: false  # also save the replay buffer (large!)
+  single_best_checkpoint: &quot;best_sac_model.pth&quot;  # optional — filename for the single best checkpoint
+</code></pre>
+<p>If <code>single_best_checkpoint</code> is a relative path, it is automatically joined with <code>directory</code>.</p>
+<hr />
+<h2 id="logging"><code>logging</code></h2>
+<pre><code class="language-yaml">logging:
+  backend: &quot;tensorboard&quot;     # &quot;tensorboard&quot; | &quot;wandb&quot; (default: &quot;tensorboard&quot;)
+  log_dir: &quot;logs&quot;
+  experiment_name: null      # optional label for the run
+  project_name: &quot;cosim_gym&quot;
+  tags: []                   # optional list of tags
+  log_gradients: false
+  log_weights: false
+  wandb_entity: null         # W&amp;B entity/team name (for wandb backend)
+  wandb_mode: &quot;online&quot;       # &quot;online&quot; | &quot;offline&quot; | &quot;disabled&quot;
+</code></pre>
+<hr />
+<h2 id="hyperparameters"><code>hyperparameters</code></h2>
+<p>Common fields shared across algorithms:</p>
+<pre><code class="language-yaml">hyperparameters:
+  learning_rate: 0.0003
+  gamma: 0.99              # discount factor
+  batch_size: 64
+  net_arch: [64, 64]       # hidden layer sizes
+  activation_fn: &quot;relu&quot;    # &quot;relu&quot; | &quot;tanh&quot; | &quot;elu&quot;
+  optimizer: &quot;adam&quot;
+  gradient_clip: null      # gradient norm clipping threshold
+  # PPO-specific
+  n_epochs: null
+  gae_lambda: null
+  clip_range: null
+  normalize_advantages: true
+  vf_coef: null
+  ent_coef: null
+  # DQN-specific
+  target_update_interval: null
+  # SAC-specific
+  tau: null
+  use_sde: false           # use state-dependent exploration
+  algorithm_kwargs: {}     # pass-through dict for any other algorithm arguments
+</code></pre>
+<hr />
+<h2 id="complete-rl-scenario-example">Complete RL scenario example</h2>
+<pre><code class="language-yaml">name: &quot;spring_DQN&quot;
+start_time: &quot;2024-01-01T00:00:00&quot;
+end_time:   &quot;2024-01-01T01:00:00&quot;
+log_level: DEBUG
+
+memory_config:
+  batch_size: 100
+  attrs: [&quot;position&quot;, &quot;velocity&quot;, &quot;force&quot;]
+
+reinforcement_learning_config:
+  seed: 42
+
+  agent:
+    model_name: &quot;rl_simple_DQN&quot;
+    reward_function: &quot;models.model_catalog.RL_agents.reward_functions.spring_reward&quot;
+    env:
+      observations:
+        - federation_1.spring_federate.0.position
+        - federation_1.spring_federate.0.velocity
+      actions:
+        - federation_1.spring_federate.0.force
+      action_spaces_type: [&quot;discrete&quot;]
+      action_bins: [21]
+      action_boundaries: [[-10.0, 10.0]]
+    hyperparameters:
+      learning_rate: 0.001
+      gamma: 0.99
+      batch_size: 64
+      target_update_interval: 100
+
+  training:
+    mode: &quot;online&quot;
+    episode_length: 100
+    n_episodes: 1000
+    exploration:
+      strategy: &quot;epsilon_greedy&quot;
+      initial_epsilon: 1.0
+      final_epsilon: 0.05
+      epsilon_decay_steps: 5000
+    replay_buffer:
+      buffer_size: 100000
+      prefill_steps: 1000
+
+  test:
+    enabled: false
+
+  checkpointing:
+    enabled: true
+    directory: &quot;src/models/model_catalog/RL_agents/checkpoints&quot;
+    save_best: true
+    single_best_checkpoint: &quot;best_spring_dqn.pth&quot;
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: &quot;tcp&quot;
+      port: 23404
+    federate_configs:
+      spring_federate:
+        type: &quot;base&quot;
+        timing_configs:
+          real_period: 1
+        connections:
+          publishes:
+            - key: &quot;position&quot;
+              type: &quot;double&quot;
+              units: &quot;m&quot;
+            - key: &quot;velocity&quot;
+              type: &quot;double&quot;
+              units: &quot;m/s&quot;
+          subscribes:
+            - key: &quot;force&quot;     # target omitted — ScenarioManager wires the RL agent here
+              type: &quot;double&quot;
+              units: &quot;N&quot;
+        model_configs:
+          instantiation:
+            model_name: &quot;spring_mass_damper&quot;
+            n_instances: 1
+          parameters:
+            mass: 5.0
+            stiffness: 10.0
+            damping: 2.0
+          init_state:
+            position: 0.0
+            velocity: 0.0
+            force: 0.0
+</code></pre>
+<blockquote>
+<p><strong>Key rule:</strong> For each variable listed in <code>env.actions</code>, the corresponding federate subscription must <strong>omit</strong> <code>targets</code>. ScenarioManager fills them at runtime with the RL agent's publication address.</p>
+</blockquote>
 
 
 

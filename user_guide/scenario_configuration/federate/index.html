@@ -14,7 +14,7 @@
         <link rel="prev" href="../federation/">
       
       
-        <link rel="next" href="../rl/">
+        <link rel="next" href="../synchronization/">
       
       
         
@@ -694,10 +694,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#timings-configuration" class="md-nav__link">
+  <a href="#full-example-type-base" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Timings Configuration
+        Full example — type: "base"
       
     </span>
   </a>
@@ -705,22 +705,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#flags-configuration" class="md-nav__link">
+  <a href="#common-fields-both-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flags Configuration
+        Common fields (both types)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Flags Configuration">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#timing_configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        timing_configs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connections
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="connections">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#interfaces-list" class="md-nav__link">
+  <a href="#publication-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interfaces List
+        Publication fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscription-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscription fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#targets-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        targets format
       
     </span>
   </a>
@@ -733,10 +788,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#model-configurations" class="md-nav__link">
+  <a href="#model_configs-required-for-type-base" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model Configurations
+        model_configs (required for type: "base")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="model_configs (required for type: &#34;base&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instantiation-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instantiation fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-instance-vs-scalar-values-in-parameters-init_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-instance vs scalar values in parameters / init_state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-rl-rl-agent-federate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        type: "rl" — RL agent federate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory_config-per-federate-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memory_config (per-federate override)
       
     </span>
   </a>
@@ -747,6 +852,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1044,10 +1177,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#timings-configuration" class="md-nav__link">
+  <a href="#full-example-type-base" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Timings Configuration
+        Full example — type: "base"
       
     </span>
   </a>
@@ -1055,22 +1188,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#flags-configuration" class="md-nav__link">
+  <a href="#common-fields-both-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flags Configuration
+        Common fields (both types)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Flags Configuration">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#timing_configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        timing_configs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connections
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="connections">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#interfaces-list" class="md-nav__link">
+  <a href="#publication-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interfaces List
+        Publication fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscription-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscription fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#targets-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        targets format
       
     </span>
   </a>
@@ -1083,10 +1271,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#model-configurations" class="md-nav__link">
+  <a href="#model_configs-required-for-type-base" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model Configurations
+        model_configs (required for type: "base")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="model_configs (required for type: &#34;base&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instantiation-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instantiation fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-instance-vs-scalar-values-in-parameters-init_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-instance vs scalar values in parameters / init_state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-rl-rl-agent-federate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        type: "rl" — RL agent federate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory_config-per-federate-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memory_config (per-federate override)
       
     </span>
   </a>
@@ -1111,203 +1349,411 @@
 
 
 <h1 id="federate-configuration">Federate Configuration</h1>
-<p>This Configuration structure concern all the data for settin up a Federate along with co-simulation related aspects, model instances aspects, Interfaces specification.</p>
-<p>The main compolex datastructures are :</p>
-<ul>
-<li><a href="#Timings-Configurations">Timing Configurations</a></li>
-<li><a href="#Flags-Configurations">Flag Configurations</a></li>
-<li><a href="#Interfaces-List">List of Interfaces</a> (Enpoints/Subscriptions/Publications)</li>
-<li><a href="#Model-Configurations">Model Configurations</a></li>
-</ul>
-<pre><code class="language-yaml">    federate_name:
-        name: &quot;weather_federate&quot;
-        log_level: DEBUG
-        type: &quot;base&quot;
-        core_name: &quot;fed1&quot;
-        core_type: &quot;zmq&quot;
+<p>Each entry in <code>federate_configs</code> is a <code>FederateConfig</code>. The <code>type</code> field is the discriminator: <code>"base"</code> for physics federates, <code>"rl"</code> for the RL agent federate.</p>
+<hr />
+<h2 id="full-example-type-base">Full example — <code>type: "base"</code></h2>
+<pre><code class="language-yaml">federate_configs:
+  spring_federate:
+    type: &quot;base&quot;              # required — &quot;base&quot; | &quot;rl&quot;
+    log_level: DEBUG          # optional — overrides scenario-level log_level
+    core_type: &quot;zmq&quot;          # optional — default &quot;zmq&quot;
+    core_name: &quot;fed1&quot;         # optional — HELICS core identifier
 
-        timing_configs: &lt;TimingConfigurations&gt;
+    timing_configs:
+      real_period: 60         # required — seconds of real-world time per simulation step
 
-        flags: &lt;FlagConfigurations&gt;
+    flags:
+      terminate_on_error: true
+      wait_for_current_time_update: true
 
-        connections:
-          endpoints: &lt;ListofEndpoints&gt;
-          subscribes: &lt;ListofSubscriptions&gt; (Inputs)
-          publishes: &lt;ListofPublications&gt; (Outputs)
+    startup_sync:             # optional — overrides scenario-level default_startup_sync
+      enabled: true
+      missing_inputs_policy: &quot;warn&quot;
 
-        model_configs: &lt;ModelConfigurations&gt;
+    connections:
+      publishes:
+        - key: &quot;position&quot;
+          type: &quot;double&quot;
+          units: &quot;m&quot;
+      subscribes:
+        - key: &quot;force&quot;
+          type: &quot;double&quot;
+          units: &quot;N&quot;
+          targets:
+            '0': [driver_federate.0/force]
+          causality: &quot;same_step&quot;
+
+    model_configs:
+      instantiation:
+        model_name: &quot;spring_mass_damper&quot;
+        n_instances: 2
+        prefix: &quot;spring&quot;
+        parallel_execution: false
+      parameters:
+        mass: [5.0, 5.0]
+        stiffness: [10.0, 20.0]
+      init_state:
+        position: [0.0, 100.0]
+        velocity: 0.0
+        force: 0.0
+      user_defined:
+        solver: &quot;rk4&quot;
 </code></pre>
-<ul>
-<li>
-<p><strong><code>name</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Integer</li>
-<li><strong>Required:</strong> No</li>
-<li><strong>Meaning:</strong> Random seed for reproducibility</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>log_level</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> String | List of strings</li>
-<li><strong>Required:</strong> No</li>
-<li><strong>Meaning:</strong> Random seed for reproducibility</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>type</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> String | List of strings</li>
-<li><strong>Required:</strong> YES</li>
-<li><strong>Meaning:</strong> Random seed for reproducibility</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>core_name</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Int</li>
-<li><strong>Required:</strong> Yes</li>
-<li><strong>Meaning:</strong> number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>core_type</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Int</li>
-<li><strong>Required:</strong> Yes</li>
-<li><strong>Meaning:</strong> number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-</ul>
-<h3 id="timings-configuration">Timings Configuration</h3>
-<p>The timing configurations are related to all the aspect that concern synchronization, time clock allignment between simulation time and real-world time</p>
-<h3 id="flags-configuration">Flags Configuration</h3>
-<p>This structured set of information is optional and refers to <em>HELICS</em> specific federate flags and other flagging option on time and execution aspects. Refer to the official <em>HELICS</em> documentation:
-- timing flags <a href="#https://docs.helics.org/en/helics2/configuration/Timing.html#timing-flags">documentation</a>
-- federate flags <a href="#https://docs.helics.org/en/helics2/configuration/FederateFlags.html">documentation</a></p>
-<p><strong>Timing Flags</strong>
-- <strong><code>uninterruptible</code></strong> : Bool (True|False)</p>
-<ul>
-<li>
-<p><strong><code>source_only</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>observer</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>only_update_on_change</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>only_transmit_on_change</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>wait_for_current_time_update</code></strong> : Bool (True|False)</p>
-</li>
-</ul>
-<p>⚠️ <strong>Warning</strong> All the others could be imposed but not tested with the actual implementation of this repository v 1.0.0</p>
-<p><strong>Federate Flags</strong>
-- <strong><code>single_thread_federate</code></strong> : Bool (True|False)</p>
-<ul>
-<li>
-<p><strong><code>ignore_time_mismatch_warnings</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>connections_required</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>connections_optional</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>strict_input_type_checking</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>slow_responding</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>debugging</code></strong> : Bool (True|False)</p>
-</li>
-<li>
-<p><strong><code>terminate_on_error</code></strong> : Bool (True|False)</p>
-</li>
-</ul>
-<h4 id="interfaces-list">Interfaces List</h4>
-<p>⚠️ <strong>Warning</strong> Endpoints not implemented</p>
-<p>The connections field contain a dict with as keys the three main interfaces type supported by HELICS co-simulation library: Endpoints, Subscriptions and Publications. For all of them the configuration accepts a list of similarly structured items. The only difference is withing some additional fields for the subscription items.</p>
-<p>example:</p>
-<pre><code class="language-yaml">        connections:
-          endpoints: &lt;ListofEndpoints&gt;
-          subscribes: &lt;ListofSubscriptions&gt; (Inputs)
-          publishes: &lt;ListofPublications&gt; (Outputs)
-
+<hr />
+<h2 id="common-fields-both-types">Common fields (both types)</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Default</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>yes</td>
+<td>—</td>
+<td><code>"base"</code> | <code>"rl"</code></td>
+<td>Federate class discriminator</td>
+</tr>
+<tr>
+<td><code>log_level</code></td>
+<td>no</td>
+<td>scenario <code>log_level</code></td>
+<td>LogLevel</td>
+<td>Federate-level log verbosity</td>
+</tr>
+<tr>
+<td><code>core_type</code></td>
+<td>no</td>
+<td><code>"zmq"</code></td>
+<td>string</td>
+<td>HELICS transport: <code>"zmq"</code> | <code>"tcp"</code> | <code>"ipc"</code></td>
+</tr>
+<tr>
+<td><code>core_name</code></td>
+<td>no</td>
+<td><code>null</code></td>
+<td>string</td>
+<td>HELICS core name (advanced)</td>
+</tr>
+<tr>
+<td><code>broker_address</code></td>
+<td>no</td>
+<td>set at runtime</td>
+<td>string</td>
+<td>Explicit broker address (set by ScenarioManager)</td>
+</tr>
+<tr>
+<td><code>startup_sync</code></td>
+<td>no</td>
+<td>scenario default</td>
+<td>StartupSyncConfig</td>
+<td>Per-federate startup sync override</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><code>name</code> and <code>id</code> are injected automatically from the dict key and federation name. Do not set them manually.</p>
+</blockquote>
+<hr />
+<h2 id="timing_configs"><code>timing_configs</code></h2>
+<pre><code class="language-yaml">timing_configs:
+  real_period: 60        # required — real-world seconds per federate step
+  time_offset: 0.0       # optional — fractional HELICS units; set by auto_offset if enabled
+  timeout: 30            # optional — max seconds to wait for HELICS grant (default: 30)
+  int_max_iterations: 10000  # optional — max HELICS iterations per step (default: 10000)
 </code></pre>
-<p>fields for an Interface item:</p>
-<p><strong>common fields for publishes and subscribes items</strong></p>
-<ul>
-<li>
-<p><strong><code>key</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> String</li>
-<li><strong>Required:</strong> YES</li>
-<li><strong>Meaning:</strong> this is the name that will be used by federate and model</li>
-<li><strong>Accepted Values:</strong> Any string</li>
-<li><strong>Rules:</strong> You can choice any name without considering the other coupled interfaces, but this name must be consistent with the name used inside the model</li>
-</ul>
-</li>
-<li>
-<p><strong><code>type</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Int</li>
-<li><strong>Required:</strong> YES</li>
-<li><strong>Meaning:</strong> number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-<li>
-<p><strong><code>units</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> String</li>
-<li><strong>Required:</strong> YES</li>
-<li><strong>Meaning:</strong> unit of measurement</li>
-<li><strong>Accepted Values:</strong> Any String</li>
-<li><strong>Rules:</strong> units must be cosistent across I/O (publish/subscribe)</li>
-</ul>
-</li>
-</ul>
-<p><strong>only subscribes items fields</strong></p>
-<ul>
-<li>
-<p><strong><code>targets</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Dict | String</li>
-<li><strong>Required:</strong> YES</li>
-<li><strong>Meaning:</strong> the publication interface to which connect to get the value during co-simulation</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> It can be filled with both dict specifying targets for each model instance or as a string that will be applied to all model instances. In case of RL task it must be omitted it will be automatically configured by Scenario Manager</li>
-</ul>
-</li>
-<li>
-<p><strong><code>multi_input_handling</code></strong> :</p>
-<ul>
-<li><strong>Type:</strong> Int</li>
-<li><strong>Required:</strong> YES</li>
-<li><strong>Meaning:</strong> number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)</li>
-<li><strong>Accepted Values:</strong> Any integer number</li>
-<li><strong>Rules:</strong> For documentation purposes</li>
-</ul>
-</li>
-</ul>
-<h3 id="model-configurations">Model Configurations</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>real_period</code></td>
+<td><strong>yes</strong></td>
+<td>—</td>
+<td>Seconds of real-world simulation time per step. The only required timing field.</td>
+</tr>
+<tr>
+<td><code>time_offset</code></td>
+<td>no</td>
+<td><code>0.0</code></td>
+<td>Fractional HELICS time units added to this federate's requests. Computed automatically by <code>auto_offset</code> unless you set it manually.</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td>no</td>
+<td><code>30</code></td>
+<td>Seconds before a HELICS time-grant request is considered failed.</td>
+</tr>
+<tr>
+<td><code>int_max_iterations</code></td>
+<td>no</td>
+<td><code>10000</code></td>
+<td>Max HELICS iteration count per time step.</td>
+</tr>
+</tbody>
+</table>
+<p>ScenarioManager normalizes all federates to the same tick size (the minimum <code>real_period</code>). A federate with <code>real_period: 120</code> steps every 2 ticks; one with <code>real_period: 60</code> steps every tick.</p>
+<hr />
+<h2 id="flags"><code>flags</code></h2>
+<p>All HELICS federate flags. All default to <code>false</code> except <code>terminate_on_error</code> which defaults to <code>true</code>.</p>
+<pre><code class="language-yaml">flags:
+  terminate_on_error: true         # kill federate on any HELICS error (recommended)
+  wait_for_current_time_update: true  # wait for all publishers at current tick before stepping
+  uninterruptible: false           # prevent HELICS from interrupting at non-requested times
+  observer: false                  # receive-only federate (no publications)
+  source_only: false               # publish-only federate (no subscriptions)
+  only_update_on_change: false     # only update subscription value when it changes
+  only_transmit_on_change: false   # only transmit publication when value changes
+  realtime: false                  # enforce wall-clock pacing
+  debugging: false                 # enable HELICS debug output
+  slow_responding: false           # suppress slow-response warnings
+  single_thread_federate: false    # run federate in single thread
+  ignore_time_mismatch_warnings: false
+  strict_config_checking: false
+  force_logging_flush: false
+  dumplog: false
+  restrictive_time_policy: false
+  rollback: false
+  forward_compute: false
+  event_triggered: false
+</code></pre>
+<p>Commonly used flags:
+- <code>terminate_on_error: true</code> — recommended for all federates
+- <code>wait_for_current_time_update: true</code> — ensures a federate waits for all upstream publishers before stepping (useful when <code>time_offset</code> order is tight)
+- <code>observer: true</code> — for logging-only federates that only subscribe</p>
+<hr />
+<h2 id="connections"><code>connections</code></h2>
+<p>Defines the HELICS pub/sub interfaces for this federate.</p>
+<pre><code class="language-yaml">connections:
+  publishes:
+    - key: &quot;position&quot;     # variable name used inside the model
+      type: &quot;double&quot;      # HELICS type: &quot;double&quot; | &quot;string&quot; | &quot;complex&quot; | &quot;vector&quot; | &quot;boolean&quot; | &quot;integer&quot;
+      units: &quot;m&quot;          # unit of measurement (must match subscriber's units)
+
+  subscribes:
+    - key: &quot;force&quot;
+      type: &quot;double&quot;
+      units: &quot;N&quot;
+      targets:
+        '0': [driver.0/force]       # targets for model instance 0
+        '1': [driver.1/force]       # targets for model instance 1
+      causality: &quot;same_step&quot;        # &quot;same_step&quot; (default) | &quot;next_step&quot;
+      multi_input_handling: null    # aggregation strategy when multiple targets (advanced)
+
+  endpoints: []   # not currently implemented — leave empty or omit
+</code></pre>
+<h3 id="publication-fields">Publication fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>key</code></td>
+<td>yes</td>
+<td>string</td>
+<td>Variable name. Must match the model's output variable name.</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>yes</td>
+<td>string</td>
+<td>HELICS data type (<code>"double"</code>, <code>"string"</code>, <code>"vector"</code>, etc.)</td>
+</tr>
+<tr>
+<td><code>units</code></td>
+<td>yes</td>
+<td>string</td>
+<td>Physical unit. Must be consistent with subscribers.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="subscription-fields">Subscription fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>key</code></td>
+<td>yes</td>
+<td>string</td>
+<td>Variable name. Must match the model's input variable name.</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>yes</td>
+<td>string</td>
+<td>HELICS data type.</td>
+</tr>
+<tr>
+<td><code>units</code></td>
+<td>yes</td>
+<td>string</td>
+<td>Physical unit.</td>
+</tr>
+<tr>
+<td><code>targets</code></td>
+<td>yes*</td>
+<td>dict or list</td>
+<td>What to subscribe to. *Omit for RL-controlled inputs (filled by ScenarioManager).</td>
+</tr>
+<tr>
+<td><code>causality</code></td>
+<td>no</td>
+<td>string</td>
+<td><code>"same_step"</code> (default) or <code>"next_step"</code>. See <a href="../synchronization/">Synchronization</a>.</td>
+</tr>
+<tr>
+<td><code>multi_input_handling</code></td>
+<td>no</td>
+<td>string/dict</td>
+<td>Aggregation when multiple targets feed one input (advanced).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="targets-format"><code>targets</code> format</h3>
+<p>For a federate with <code>n_instances: N</code>, each instance needs its own target list keyed by string instance index:</p>
+<pre><code class="language-yaml">targets:
+  '0': [federate_name.0/pub_key]
+  '1': [federate_name.1/pub_key]
+</code></pre>
+<p>For a single instance (<code>n_instances: 1</code>):</p>
+<pre><code class="language-yaml">targets:
+  '0': [federate_name.0/pub_key]
+</code></pre>
+<p>Or use a list (same target applied to all instances):</p>
+<pre><code class="language-yaml">targets: [federate_name.0/pub_key]
+</code></pre>
+<p>Cross-federation target format: <code>&lt;federation_name&gt;.&lt;federate_name&gt;.&lt;instance_id&gt;/&lt;pub_key&gt;</code></p>
+<p><strong>RL-controlled subscriptions:</strong> When an RL agent controls a variable, omit <code>targets</code> on the corresponding subscription. ScenarioManager wires the RL agent's output to that subscription automatically.</p>
+<hr />
+<h2 id="model_configs-required-for-type-base"><code>model_configs</code> (required for <code>type: "base"</code>)</h2>
+<p>Specifies the model to instantiate and its configuration.</p>
+<pre><code class="language-yaml">model_configs:
+  instantiation:
+    model_name: &quot;spring_mass_damper&quot;  # required — key in catalog.yaml
+    n_instances: 2                     # optional — number of parallel model instances (default: 1)
+    prefix: &quot;spring&quot;                   # optional — instance naming prefix (default: &quot;model&quot;)
+    parallel_execution: false          # optional — run instances in parallel (default: false)
+    max_paraller_workers: null         # optional — worker pool size for parallel execution
+
+  parameters:                          # optional — model parameters (overrides catalog defaults)
+    mass: [5.0, 5.0]                   # scalar applies to all instances; list assigns per-instance
+    stiffness: [10.0, 20.0]
+
+  init_state:                          # optional — initial values for model state variables
+    position: [0.0, 100.0]
+    velocity: 0.0
+
+  inputs: {}                           # optional — input metadata (advanced)
+  outputs: {}                          # optional — output metadata (advanced)
+
+  user_defined:                        # optional — arbitrary dict passed to the model
+    solver: &quot;rk4&quot;
+    integrator: &quot;fixed-step&quot;
+</code></pre>
+<h3 id="instantiation-fields"><code>instantiation</code> fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>model_name</code></td>
+<td><strong>yes</strong></td>
+<td>—</td>
+<td>Key in <code>src/models/model_catalog/catalog.yaml</code>. Must exist.</td>
+</tr>
+<tr>
+<td><code>n_instances</code></td>
+<td>no</td>
+<td><code>1</code></td>
+<td>Number of model instances. Instances are named <code>&lt;prefix&gt;.0</code>, <code>&lt;prefix&gt;.1</code>, etc.</td>
+</tr>
+<tr>
+<td><code>prefix</code></td>
+<td>no</td>
+<td><code>"model"</code></td>
+<td>Prefix for instance names.</td>
+</tr>
+<tr>
+<td><code>parallel_execution</code></td>
+<td>no</td>
+<td><code>false</code></td>
+<td>If true, instances run concurrently via a thread/process pool.</td>
+</tr>
+<tr>
+<td><code>max_paraller_workers</code></td>
+<td>no</td>
+<td><code>null</code></td>
+<td>Pool size for parallel execution.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="per-instance-vs-scalar-values-in-parameters-init_state">Per-instance vs scalar values in <code>parameters</code> / <code>init_state</code></h3>
+<p>When <code>n_instances &gt; 1</code>, you can assign different values per instance using lists:</p>
+<pre><code class="language-yaml">parameters:
+  mass: [5.0, 10.0]    # instance 0 → 5.0 kg, instance 1 → 10.0 kg
+  damping: 2.0          # scalar → same value for all instances
+</code></pre>
+<p>The list length must equal <code>n_instances</code>.</p>
+<hr />
+<h2 id="type-rl-rl-agent-federate"><code>type: "rl"</code> — RL agent federate</h2>
+<p>The RL federate is usually <strong>injected at runtime by ScenarioManager</strong> and does not need to be written manually in the YAML. However, if you need to override its configuration:</p>
+<pre><code class="language-yaml">federate_configs:
+  rl_agent:
+    type: &quot;rl&quot;
+    timing_configs:
+      real_period: 60
+    connections:
+      publishes: []
+      subscribes: []
+    # model_configs is optional for type &quot;rl&quot;
+    controlled_models: {}         # optional — maps model key to model name
+    observed_models: {}           # optional
+    additional_observed_models: {} # optional
+</code></pre>
+<p>For <code>type: "rl"</code>, <code>model_configs</code> is optional (unlike <code>type: "base"</code> where it is required).</p>
+<hr />
+<h2 id="memory_config-per-federate-override"><code>memory_config</code> (per-federate override)</h2>
+<p>Each federate inherits <code>memory_config</code> from the scenario level. Override it for a specific federate:</p>
+<pre><code class="language-yaml">federate_configs:
+  verbose_federate:
+    type: &quot;base&quot;
+    memory_config:
+      batch_size: 500
+      attrs:
+        - &quot;position&quot;
+        - &quot;velocity&quot;
+    ...
+</code></pre>
 
 
 

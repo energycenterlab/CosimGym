@@ -610,41 +610,57 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-yaml-structure" class="md-nav__link">
+  <a href="#file-location" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The YAML Structure
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The YAML Structure">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#hierarchy-breakdown" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hierarchy Breakdown
+        File location
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#strict-validation" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#top-level-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Strict Validation
+        Top-level structure
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#minimal-working-example-plain-co-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal working example — plain co-simulation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sections
+      
+    </span>
+  </a>
   
 </li>
       
@@ -728,6 +744,34 @@
     
   
     Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
   
 
     
@@ -1033,41 +1077,57 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-yaml-structure" class="md-nav__link">
+  <a href="#file-location" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The YAML Structure
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The YAML Structure">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#hierarchy-breakdown" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hierarchy Breakdown
+        File location
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#strict-validation" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#top-level-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Strict Validation
+        Top-level structure
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#minimal-working-example-plain-co-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal working example — plain co-simulation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sections
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1089,54 +1149,139 @@
 
 
 <h1 id="scenario-configuration">Scenario Configuration</h1>
-<p>The entire logic of your simulation runs via a strictly enforced YAML schema. This prevents manual scripting of the HELICS orchestration.</p>
-<h2 id="the-yaml-structure">The YAML Structure</h2>
-<p>A Scenario YAML file (e.g. <code>src/scenarios/simple_test.yaml</code>) maps to the Pydantic classes located in <code>src/utils/config_dataclasses.py</code>.</p>
-<p>A simplified layout of a simulation looks like this:</p>
-<pre><code class="language-yaml">name: &quot;case0: simple_test&quot;
-start_time: &quot;2024-01-01 00:00:00&quot;
-end_time: &quot;2024-01-02 00:00:00&quot;
+<p>A CosimGym simulation is fully described by a single YAML file. No Python scripting is required. The file is validated against Pydantic v2 models at load time, so errors are caught before anything starts.</p>
+<hr />
+<h2 id="file-location">File location</h2>
+<p>Place scenario YAML files in <code>src/scenarios/</code>. Pass the filename (without extension) to <code>read_scenario_config</code>:</p>
+<pre><code class="language-python">from src.utils.config_reader import read_scenario_config
+config = read_scenario_config(&quot;my_scenario&quot;)   # resolves to src/scenarios/my_scenario.yaml
+</code></pre>
+<hr />
+<h2 id="top-level-structure">Top-level structure</h2>
+<pre><code class="language-yaml">name: &quot;my_scenario&quot;                  # required — unique identifier
+start_time: &quot;2024-01-01T00:00:00&quot;   # required — ISO 8601
+end_time:   &quot;2024-01-02T00:00:00&quot;   # required — ISO 8601
+log_level: INFO                      # optional — ERROR|WARNING|INFO|DEBUG (default: INFO)
 
-# Optional: Add reinforcement_learning_config here 
+memory_config:                       # required — controls result storage
+  batch_size: 100
+  attrs: &quot;all&quot;                       # or a list of variable names
+
+synchronization:                     # optional — time-offset and startup sync settings
+  auto_offset:
+    enabled: true
+
+reinforcement_learning_config:       # optional — include only for RL scenarios
+  agent: ...
+  training: ...
+
+federations:                         # required — one or more named federations
+  my_federation:
+    broker_config: ...
+    federate_configs:
+      my_federate:
+        type: &quot;base&quot;
+        ...
+</code></pre>
+<p>Unknown top-level keys (e.g. <code>version</code>, <code>scenario_description</code>, <code>seed</code>) are silently ignored.</p>
+<hr />
+<h2 id="hierarchy">Hierarchy</h2>
+<pre><code>ScenarioConfig
+└── federations: Dict[name → FederationConfig]
+    ├── broker_config: BrokerConfig
+    └── federate_configs: Dict[name → FederateConfig]
+        ├── type: &quot;base&quot; | &quot;rl&quot;           ← discriminator
+        ├── timing_configs: FedTimingConfig
+        ├── flags: FedFlags
+        ├── connections: FedConnections
+        │   ├── publishes: [FedPublication]
+        │   └── subscribes: [FedSubscription]
+        └── model_configs: ModelConfig     ← required for type &quot;base&quot;
+</code></pre>
+<hr />
+<h2 id="minimal-working-example-plain-co-simulation">Minimal working example — plain co-simulation</h2>
+<pre><code class="language-yaml">name: &quot;spring_demo&quot;
+start_time: &quot;2024-01-01T00:00:00&quot;
+end_time:   &quot;2024-01-01T01:00:00&quot;
+
+memory_config:
+  attrs: &quot;all&quot;
 
 federations:
-  - name: &quot;federation1&quot;
-    broker_config:
-      core_type: &quot;zmq&quot;
-      port: 23405
-      log_level: 3
+  main:
     federate_configs:
-      - name: &quot;Fed_simple&quot;
+      physics:
         type: &quot;base&quot;
-        timing_config:
-          step_size: 900
-        model_configs:
-          - model_name: &quot;spring_mass_damper&quot;
-            instantiation:
-              n_instances: 1
-            parameters:
-              mass: 10.0
+        timing_configs:
+          real_period: 60        # one step = 60 real-world seconds
         connections:
-          subscribes:
-            # Inputs
           publishes:
-            # Outputs
+            - key: &quot;position&quot;
+              type: &quot;double&quot;
+              units: &quot;m&quot;
+          subscribes:
+            - key: &quot;force&quot;
+              type: &quot;double&quot;
+              units: &quot;N&quot;
+              targets:
+                '0': [driver.0/force]
+        model_configs:
+          instantiation:
+            model_name: &quot;spring_mass_damper&quot;
+          parameters:
+            mass: 5.0
+            stiffness: 10.0
+          init_state:
+            position: 0.0
+            force: 0.0
+
+      driver:
+        type: &quot;base&quot;
+        timing_configs:
+          real_period: 60
+        connections:
+          publishes:
+            - key: &quot;force&quot;
+              type: &quot;double&quot;
+              units: &quot;N&quot;
+        model_configs:
+          instantiation:
+            model_name: &quot;constant_input&quot;
+          init_state:
+            force: 5.0
 </code></pre>
-<h3 id="hierarchy-breakdown">Hierarchy Breakdown</h3>
-<ol>
-<li><strong><code>ScenarioConfig</code></strong> (Top Level): Defines the overall time window and global configs for metrics memory (InfluxDB) or reinforcement learning parameters.</li>
-<li><strong><code>FederationConfig</code></strong>: Configures the HELICS broker settings (<code>zmq</code> vs <code>tcp</code>) and groups multiple federate nodes.</li>
-<li><strong><code>FederateConfig</code></strong>: <ul>
-<li><code>type</code>: usually <code>'base'</code> for physics or <code>'rl'</code> if wrapping an AI agent.</li>
-<li><code>timing_config</code>: Defines <code>step_size</code> (in seconds).</li>
-<li><code>model_configs</code>: An array pointing strings to registered entries in the Model Catalog (e.g. <code>spring_mass_damper</code>).</li>
-</ul>
-</li>
-<li><strong><code>ModelConfig</code> &amp; <code>Connections</code></strong>: Under <code>connections</code>, you explicitly map HELICS publish/subscribe topic strings. If an actor model publishes to <code>'federation1/agent_actions/damper'</code>, the physics federate <em>must</em> subscribe using that same exact string.</li>
-</ol>
-<h3 id="strict-validation">Strict Validation</h3>
-<p>When the scenario is executed, <code>config_validator.py</code> ensures that all requested <code>model_name</code> keys actually exist in your deployed Redis catalog, and that your <code>parameters</code> adhere to expected types bounds.</p>
-<p>For a full tree of allowable parameters and features, check the <code>src/utils/config_dataclasses.py</code> datastructures directly.</p>
+<hr />
+<h2 id="sections">Sections</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../general/">General</a></td>
+<td>Top-level <code>ScenarioConfig</code> fields</td>
+</tr>
+<tr>
+<td><a href="../federation/">Federation</a></td>
+<td><code>FederationConfig</code>, <code>BrokerConfig</code>, cross-federation subscriptions</td>
+</tr>
+<tr>
+<td><a href="../federate/">Federate</a></td>
+<td><code>FederateConfig</code>, timing, flags, connections, model_configs</td>
+</tr>
+<tr>
+<td><a href="../synchronization/">Synchronization</a></td>
+<td>Auto time-offset, startup sync, causality</td>
+</tr>
+<tr>
+<td><a href="../rl/">RL</a></td>
+<td><code>reinforcement_learning_config</code> — agent, training, test, checkpointing</td>
+</tr>
+</tbody>
+</table>
 
 
 
