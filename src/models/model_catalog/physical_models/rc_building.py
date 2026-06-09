@@ -251,6 +251,8 @@ class RCBuilding(BaseModel):
             out["energy_demand"] = energy_demand
         if "P_elec" in out:
             out["P_elec"] = p_elec
+        if "P_elec_mw" in out:
+            out["P_elec_mw"] = p_elec / 1e6
 
     def reset(self, mode="full", ts=None, time=None) -> None:
         """Reset interfaces and the internal thermal-mass state."""

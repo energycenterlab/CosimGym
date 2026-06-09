@@ -2340,6 +2340,17 @@ models:
         tags:
         - electrical
         - consumption
+      P_elec_mw:
+        type: float
+        default_value: 0.0
+        description: Electrical power consumed in MW (P_elec / 1e6) — for direct wiring to pandapower load inputs
+        unit: MW
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags:
+        - electrical
+        - consumption
 
   pandapower_grid:
     class_name: PandapowerGrid
