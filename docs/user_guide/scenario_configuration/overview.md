@@ -1,55 +1,133 @@
 # Scenario Configuration
 
-The entire logic of your simulation runs via a strictly enforced YAML schema. This prevents manual scripting of the HELICS orchestration.
+A CosimGym simulation is fully described by a single YAML file. No Python scripting is required. The file is validated against Pydantic v2 models at load time, so errors are caught before anything starts.
 
-## The YAML Structure
-A Scenario YAML file (e.g. `src/scenarios/simple_test.yaml`) maps to the Pydantic classes located in `src/utils/config_dataclasses.py`.
+---
 
-A simplified layout of a simulation looks like this:
+## File location
 
-```yaml
-name: "case0: simple_test"
-start_time: "2024-01-01 00:00:00"
-end_time: "2024-01-02 00:00:00"
+Place scenario YAML files in `src/scenarios/`. Pass the filename (without extension) to `read_scenario_config`:
 
-# Optional: Add reinforcement_learning_config here 
-
-federations:
-  - name: "federation1"
-    broker_config:
-      core_type: "zmq"
-      port: 23405
-      log_level: 3
-    federate_configs:
-      - name: "Fed_simple"
-        type: "base"
-        timing_config:
-          step_size: 900
-        model_configs:
-          - model_name: "spring_mass_damper"
-            instantiation:
-              n_instances: 1
-            parameters:
-              mass: 10.0
-        connections:
-          subscribes:
-            # Inputs
-          publishes:
-            # Outputs
+```python
+from src.utils.config_reader import read_scenario_config
+config = read_scenario_config("my_scenario")   # resolves to src/scenarios/my_scenario.yaml
 ```
 
-### Hierarchy Breakdown
+---
 
-1. **`ScenarioConfig`** (Top Level): Defines the overall time window and global configs for metrics memory (InfluxDB) or reinforcement learning parameters.
-2. **`FederationConfig`**: Configures the HELICS broker settings (`zmq` vs `tcp`) and groups multiple federate nodes.
-3. **`FederateConfig`**: 
-    - `type`: usually `'base'` for physics or `'rl'` if wrapping an AI agent.
-    - `timing_config`: Defines `step_size` (in seconds).
-    - `model_configs`: An array pointing strings to registered entries in the Model Catalog (e.g. `spring_mass_damper`).
-4. **`ModelConfig` & `Connections`**: Under `connections`, you explicitly map HELICS publish/subscribe topic strings. If an actor model publishes to `'federation1/agent_actions/damper'`, the physics federate *must* subscribe using that same exact string.
+## Top-level structure
 
-### Strict Validation
+```yaml
+name: "my_scenario"                  # required — unique identifier
+start_time: "2024-01-01T00:00:00"   # required — ISO 8601
+end_time:   "2024-01-02T00:00:00"   # required — ISO 8601
+log_level: INFO                      # optional — ERROR|WARNING|INFO|DEBUG (default: INFO)
 
-When the scenario is executed, `config_validator.py` ensures that all requested `model_name` keys actually exist in your deployed Redis catalog, and that your `parameters` adhere to expected types bounds.
+memory_config:                       # required — controls result storage
+  batch_size: 100
+  attrs: "all"                       # or a list of variable names
 
-For a full tree of allowable parameters and features, check the `src/utils/config_dataclasses.py` datastructures directly.
+synchronization:                     # optional — time-offset and startup sync settings
+  auto_offset:
+    enabled: true
+
+reinforcement_learning_config:       # optional — include only for RL scenarios
+  agent: ...
+  training: ...
+
+federations:                         # required — one or more named federations
+  my_federation:
+    broker_config: ...
+    federate_configs:
+      my_federate:
+        type: "base"
+        ...
+```
+
+Unknown top-level keys (e.g. `version`, `scenario_description`, `seed`) are silently ignored.
+
+---
+
+## Hierarchy
+
+```
+ScenarioConfig
+└── federations: Dict[name → FederationConfig]
+    ├── broker_config: BrokerConfig
+    └── federate_configs: Dict[name → FederateConfig]
+        ├── type: "base" | "rl"           ← discriminator
+        ├── timing_configs: FedTimingConfig
+        ├── flags: FedFlags
+        ├── connections: FedConnections
+        │   ├── publishes: [FedPublication]
+        │   └── subscribes: [FedSubscription]
+        └── model_configs: ModelConfig     ← required for type "base"
+```
+
+---
+
+## Minimal working example — plain co-simulation
+
+```yaml
+name: "spring_demo"
+start_time: "2024-01-01T00:00:00"
+end_time:   "2024-01-01T01:00:00"
+
+memory_config:
+  attrs: "all"
+
+federations:
+  main:
+    federate_configs:
+      physics:
+        type: "base"
+        timing_configs:
+          real_period: 60        # one step = 60 real-world seconds
+        connections:
+          publishes:
+            - key: "position"
+              type: "double"
+              units: "m"
+          subscribes:
+            - key: "force"
+              type: "double"
+              units: "N"
+              targets:
+                '0': [driver.0/force]
+        model_configs:
+          instantiation:
+            model_name: "spring_mass_damper"
+          parameters:
+            mass: 5.0
+            stiffness: 10.0
+          init_state:
+            position: 0.0
+            force: 0.0
+
+      driver:
+        type: "base"
+        timing_configs:
+          real_period: 60
+        connections:
+          publishes:
+            - key: "force"
+              type: "double"
+              units: "N"
+        model_configs:
+          instantiation:
+            model_name: "constant_input"
+          init_state:
+            force: 5.0
+```
+
+---
+
+## Sections
+
+| Document | Covers |
+|---|---|
+| [General](general.md) | Top-level `ScenarioConfig` fields |
+| [Federation](federation.md) | `FederationConfig`, `BrokerConfig`, cross-federation subscriptions |
+| [Federate](federate.md) | `FederateConfig`, timing, flags, connections, model_configs |
+| [Synchronization](synchronization.md) | Auto time-offset, startup sync, causality |
+| [RL](rl.md) | `reinforcement_learning_config` — agent, training, test, checkpointing |

@@ -1,119 +1,176 @@
-# Scenario General Configuration
+# General Scenario Configuration
 
-Generic Scenario information in the yaml files they will appear at first hierarchy level. 
+These fields live at the top level of the scenario YAML.
 
-full example:
+---
+
+## Full example
+
 ```yaml
-version: "1.0.0"
-scenario_name: "pv_batt_test_base"
-scenario_description: "Simple test case with PV, Battery, Weather, Rule-based controller, and electric Load"
+name: "pv_batt_base"
 start_time: "2024-01-01T00:00:00"
-end_time: "2024-01-03T00:00:00"
+end_time:   "2024-01-03T00:00:00"
 log_level: DEBUG
 
-memory_config: <MemoryConfig>
+memory_config:
+  batch_size: 1000
+  attrs: "all"
 
-reinforcement_learning_config: <ReinforcementLearningConfig>
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  validate_causality_cycles: true
 
-federations: <Dict of FederationConfig per federation>
+reinforcement_learning_config: ...   # omit for plain co-simulation
+
+federations:
+  federation_1: ...
 ```
 
+---
 
-**`scenario_name`** :
-- **Type:** String
-- **Required:** Yes
-- **Meaning:** Name of the scenario
-- **Accepted Values:** Any string
-- **Rules:** Must be unique; used as identifier in logs and results
+## Fields
 
-
-**`scenario_description`** :
-- **Type:** String
-- **Required:** No
-- **Meaning:** Description of the scenario
-- **Accepted Values:** Any string
-- **Rules:** For documentation purposes
-
-
-**`start_time`** :
+### `name`
+- **Required:** yes
 - **Type:** string
-- **Required:** Yes
-- **Meaning:** Random seed for reproducibility
-- **Accepted Values:** Any correct datetime string formatted as in rules
-- **Rules:** accepted formats: isoformat( "YYYY-MM-DDTHH:MM:SS")
+- **Meaning:** Unique scenario identifier. Used as directory name under `results/` and in logs.
 
+> **Migration note:** The old key `scenario_name` was renamed to `name`. Update any YAML files still using `scenario_name`.
 
-**`end_time`** :
-- **Type:** string
-- **Required:** Yes
-- **Meaning:** Random seed for reproducibility
-- **Accepted Values:** Any correct datetime string formatted as in rules
-- **Rules:** accepted formats: isoformat( "YYYY-MM-DDTHH:MM:SS")
+---
 
+### `start_time` / `end_time`
+- **Required:** yes
+- **Type:** string — ISO 8601 datetime
+- **Format:** `"YYYY-MM-DDTHH:MM:SS"` (no timezone suffix)
+- **Example:** `"2024-01-01T00:00:00"`
 
-**`log_level`** :
-- **Type:** string
-- **Required:** No
-- **Meaning:** global logging level
-- **Accepted Values:** *[ 'INFO', 'DEBUG', 'WARNING', 'ERROR' ]*
-- **Rules:** 
+These bound the simulation clock. The total number of HELICS ticks is derived from the time span and the minimum `real_period` across all federates.
 
+---
 
-**`seed`** :
-- **Type:** Integer
-- **Required:** No
-- **Meaning:** Random seed for reproducibility
-- **Accepted Values:** Any integer number
-- **Rules:** For documentation purposes
+### `log_level`
+- **Required:** no
+- **Default:** `INFO`
+- **Accepted values:** `CRITICAL` | `ERROR` | `WARNING` | `INFO` | `DEBUG` | `NOTSET`
 
+Scenario-level log level applied to all federates and the ScenarioManager process. Individual federates can override this with their own `log_level` field.
 
-**`memory_config`** : 
+---
 
-structure config for storage of results: refer to MemoryConfiguration specs
+### `memory_config`
+- **Required:** yes
+
+Controls what simulation variables are stored to disk at the end of a run.
 
 ```yaml
-    memory_config:
-        batch_size: 1000
-        attrs: "all"
- ```
+memory_config:
+  batch_size: 100      # number of timesteps buffered in memory before flushing
+  attrs: "all"         # record every variable
+  # OR
+  attrs:               # record only named variables
+    - "position"
+    - "velocity"
+    - "force"
+```
 
-- **`batch_size`** :
-    - **Type:** Integer
-    - **Required:** No
-    - **Meaning:** Random seed for reproducibility
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `batch_size` | int | `100` | In-memory buffer size before write |
+| `attrs` | `"all"` or list of strings | `["all"]` | Variables to record; `"all"` records everything |
 
-- **`attrs`** :
-    - **Type:** String | List of strings
-    - **Required:** No
-    - **Meaning:** Random seed for reproducibility
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+This `memory_config` is automatically propagated to every federate that does not define its own. To override for a specific federate, add a `memory_config` block inside that federate's config.
 
+---
 
+### `synchronization`
+- **Required:** no
+- **Default:** all sub-fields use their defaults (auto_offset enabled, startup_sync enabled)
 
-**`federations`** : 
+Controls time-offset computation and startup input validation. See [Synchronization](synchronization.md) for full documentation.
 
-Dict of structured FederationConfiguration for each federation look at [FederationConfiguration specs](#Federation-Configuration). 
+```yaml
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_startup_sync:
+    enabled: true
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+```
 
-example:
+---
 
- ```yaml
-    federations: 
-        federation_name1 : FederationConfiguration
-        federation_name2 : FederationConfiguration 
- ```
+### `federations`
+- **Required:** yes
+- **Type:** dict — keys are federation names, values are `FederationConfig` objects
 
+```yaml
+federations:
+  federation_1:
+    broker_config: ...
+    federate_configs: ...
+  federation_2:
+    broker_config: ...
+    federate_configs: ...
+```
 
-**`reinforcement_learning_config`** : 
+The dict key becomes the federation's `name`. It is injected automatically — you do not need to repeat it inside the federation block. For multi-federation scenarios, ScenarioManager automatically creates a hierarchy broker. See [Federation](federation.md).
 
-Structured configuration for reinforcement learning task look at [ReinforcementlearningConfiguration specs](#Reinforcement-Learning-Configuration)
+---
 
-example:
+### `reinforcement_learning_config`
+- **Required:** no (omit entirely for plain co-simulation)
 
- ```yaml
-    reinforcement_learning_config: ReinforcementlearningConfiguration
- ```
+Configures the RL agent, training loop, and test evaluation. When present, ScenarioManager injects a synthetic `rl_agent` federate into the appropriate federation at runtime. See [RL](rl.md).
 
+```yaml
+reinforcement_learning_config:
+  agent:
+    model_name: "rl_simple_DQN"
+    env:
+      observations: [federation_1.spring_federate.0.position]
+      actions:      [federation_1.spring_federate.0.force]
+      action_spaces_type: ["discrete"]
+  training:
+    episode_length: 100
+    n_episodes: 500
+  test:
+    enabled: false
+```
 
+---
+
+### `multi_computer` / `multi_computer_config`
+- **Required:** no
+- **Default:** `multi_computer: false`
+
+Distributes federates across multiple machines via SSH. Not fully implemented in the current release.
+
+```yaml
+multi_computer: true
+multi_computer_config:
+  ssh_user: "ubuntu"
+  ssh_key_path: "/home/user/.ssh/id_rsa"
+  hostnames:
+    - "192.168.1.10"
+    - "192.168.1.11"
+```
+
+---
+
+## Ignored fields
+
+The following fields are accepted but silently ignored (useful for documentation inside the YAML):
+
+- `version`
+- `scenario_description`
+- `seed` (at scenario level — seed inside `reinforcement_learning_config` is used)
+- Any other unknown key

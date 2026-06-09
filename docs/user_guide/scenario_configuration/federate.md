@@ -1,170 +1,290 @@
 # Federate Configuration
-This Configuration structure concern all the data for settin up a Federate along with co-simulation related aspects, model instances aspects, Interfaces specification.
 
-The main compolex datastructures are :
+Each entry in `federate_configs` is a `FederateConfig`. The `type` field is the discriminator: `"base"` for physics federates, `"rl"` for the RL agent federate.
 
-- [Timing Configurations](#Timings-Configurations)
-- [Flag Configurations](#Flags-Configurations)
-- [List of Interfaces](#Interfaces-List) (Enpoints/Subscriptions/Publications)
-- [Model Configurations](#Model-Configurations)
+---
 
+## Full example — `type: "base"`
 
 ```yaml
-    federate_name:
-        name: "weather_federate"
-        log_level: DEBUG
-        type: "base"
-        core_name: "fed1"
-        core_type: "zmq"
+federate_configs:
+  spring_federate:
+    type: "base"              # required — "base" | "rl"
+    log_level: DEBUG          # optional — overrides scenario-level log_level
+    core_type: "zmq"          # optional — default "zmq"
+    core_name: "fed1"         # optional — HELICS core identifier
 
-        timing_configs: <TimingConfigurations>
+    timing_configs:
+      real_period: 60         # required — seconds of real-world time per simulation step
 
-        flags: <FlagConfigurations>
+    flags:
+      terminate_on_error: true
+      wait_for_current_time_update: true
 
-        connections:
-          endpoints: <ListofEndpoints>
-          subscribes: <ListofSubscriptions> (Inputs)
-          publishes: <ListofPublications> (Outputs)
+    startup_sync:             # optional — overrides scenario-level default_startup_sync
+      enabled: true
+      missing_inputs_policy: "warn"
 
-        model_configs: <ModelConfigurations>
+    connections:
+      publishes:
+        - key: "position"
+          type: "double"
+          units: "m"
+      subscribes:
+        - key: "force"
+          type: "double"
+          units: "N"
+          targets:
+            '0': [driver_federate.0/force]
+          causality: "same_step"
+
+    model_configs:
+      instantiation:
+        model_name: "spring_mass_damper"
+        n_instances: 2
+        prefix: "spring"
+        parallel_execution: false
+      parameters:
+        mass: [5.0, 5.0]
+        stiffness: [10.0, 20.0]
+      init_state:
+        position: [0.0, 100.0]
+        velocity: 0.0
+        force: 0.0
+      user_defined:
+        solver: "rk4"
 ```
 
-- **`name`** :
-    - **Type:** Integer
-    - **Required:** No
-    - **Meaning:** Random seed for reproducibility
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+---
 
-- **`log_level`** :
-    - **Type:** String | List of strings
-    - **Required:** No
-    - **Meaning:** Random seed for reproducibility
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+## Common fields (both types)
 
-- **`type`** :
-    - **Type:** String | List of strings
-    - **Required:** YES
-    - **Meaning:** Random seed for reproducibility
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+| Field | Required | Default | Type | Meaning |
+|---|---|---|---|---|
+| `type` | yes | — | `"base"` \| `"rl"` | Federate class discriminator |
+| `log_level` | no | scenario `log_level` | LogLevel | Federate-level log verbosity |
+| `core_type` | no | `"zmq"` | string | HELICS transport: `"zmq"` \| `"tcp"` \| `"ipc"` |
+| `core_name` | no | `null` | string | HELICS core name (advanced) |
+| `broker_address` | no | set at runtime | string | Explicit broker address (set by ScenarioManager) |
+| `startup_sync` | no | scenario default | StartupSyncConfig | Per-federate startup sync override |
 
-- **`core_name`** :
-    - **Type:** Int
-    - **Required:** Yes
-    - **Meaning:** number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+> `name` and `id` are injected automatically from the dict key and federation name. Do not set them manually.
 
-- **`core_type`** :
-    - **Type:** Int
-    - **Required:** Yes
-    - **Meaning:** number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+---
 
-### Timings Configuration
-The timing configurations are related to all the aspect that concern synchronization, time clock allignment between simulation time and real-world time
-
-### Flags Configuration
-This structured set of information is optional and refers to *HELICS* specific federate flags and other flagging option on time and execution aspects. Refer to the official *HELICS* documentation:
-- timing flags [documentation](#https://docs.helics.org/en/helics2/configuration/Timing.html#timing-flags)
-- federate flags [documentation](#https://docs.helics.org/en/helics2/configuration/FederateFlags.html)
-
-**Timing Flags**
-- **`uninterruptible`** : Bool (True|False)
-
-- **`source_only`** : Bool (True|False)
-
-- **`observer`** : Bool (True|False)
-
-- **`only_update_on_change`** : Bool (True|False)
-
-- **`only_transmit_on_change`** : Bool (True|False)
-
-- **`wait_for_current_time_update`** : Bool (True|False)
-
-⚠️ **Warning** All the others could be imposed but not tested with the actual implementation of this repository v 1.0.0
-
-**Federate Flags**
-- **`single_thread_federate`** : Bool (True|False)
-
-- **`ignore_time_mismatch_warnings`** : Bool (True|False)
-
-- **`connections_required`** : Bool (True|False)
-
-- **`connections_optional`** : Bool (True|False)
-
-- **`strict_input_type_checking`** : Bool (True|False)
-
-- **`slow_responding`** : Bool (True|False)
-
-- **`debugging`** : Bool (True|False)
-
-- **`terminate_on_error`** : Bool (True|False)
-
-#### Interfaces List
-⚠️ **Warning** Endpoints not implemented
-
-The connections field contain a dict with as keys the three main interfaces type supported by HELICS co-simulation library: Endpoints, Subscriptions and Publications. For all of them the configuration accepts a list of similarly structured items. The only difference is withing some additional fields for the subscription items.
-
-example:
+## `timing_configs`
 
 ```yaml
-        connections:
-          endpoints: <ListofEndpoints>
-          subscribes: <ListofSubscriptions> (Inputs)
-          publishes: <ListofPublications> (Outputs)
-
+timing_configs:
+  real_period: 60        # required — real-world seconds per federate step
+  time_offset: 0.0       # optional — fractional HELICS units; set by auto_offset if enabled
+  timeout: 30            # optional — max seconds to wait for HELICS grant (default: 30)
+  int_max_iterations: 10000  # optional — max HELICS iterations per step (default: 10000)
 ```
-fields for an Interface item:
 
-**common fields for publishes and subscribes items**
+| Field | Required | Default | Meaning |
+|---|---|---|---|
+| `real_period` | **yes** | — | Seconds of real-world simulation time per step. The only required timing field. |
+| `time_offset` | no | `0.0` | Fractional HELICS time units added to this federate's requests. Computed automatically by `auto_offset` unless you set it manually. |
+| `timeout` | no | `30` | Seconds before a HELICS time-grant request is considered failed. |
+| `int_max_iterations` | no | `10000` | Max HELICS iteration count per time step. |
 
-- **`key`** :
-    - **Type:** String
-    - **Required:** YES
-    - **Meaning:** this is the name that will be used by federate and model
-    - **Accepted Values:** Any string
-    - **Rules:** You can choice any name without considering the other coupled interfaces, but this name must be consistent with the name used inside the model
+ScenarioManager normalizes all federates to the same tick size (the minimum `real_period`). A federate with `real_period: 120` steps every 2 ticks; one with `real_period: 60` steps every tick.
 
-- **`type`** :
-    - **Type:** Int
-    - **Required:** YES
-    - **Meaning:** number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+---
 
-- **`units`** :
-    - **Type:** String
-    - **Required:** YES
-    - **Meaning:** unit of measurement
-    - **Accepted Values:** Any String
-    - **Rules:** units must be cosistent across I/O (publish/subscribe)
+## `flags`
 
-**only subscribes items fields**
+All HELICS federate flags. All default to `false` except `terminate_on_error` which defaults to `true`.
 
-- **`targets`** :
-    - **Type:** Dict | String
-    - **Required:** YES
-    - **Meaning:** the publication interface to which connect to get the value during co-simulation
-    - **Accepted Values:** Any integer number
-    - **Rules:** It can be filled with both dict specifying targets for each model instance or as a string that will be applied to all model instances. In case of RL task it must be omitted it will be automatically configured by Scenario Manager
+```yaml
+flags:
+  terminate_on_error: true         # kill federate on any HELICS error (recommended)
+  wait_for_current_time_update: true  # wait for all publishers at current tick before stepping
+  uninterruptible: false           # prevent HELICS from interrupting at non-requested times
+  observer: false                  # receive-only federate (no publications)
+  source_only: false               # publish-only federate (no subscriptions)
+  only_update_on_change: false     # only update subscription value when it changes
+  only_transmit_on_change: false   # only transmit publication when value changes
+  realtime: false                  # enforce wall-clock pacing
+  debugging: false                 # enable HELICS debug output
+  slow_responding: false           # suppress slow-response warnings
+  single_thread_federate: false    # run federate in single thread
+  ignore_time_mismatch_warnings: false
+  strict_config_checking: false
+  force_logging_flush: false
+  dumplog: false
+  restrictive_time_policy: false
+  rollback: false
+  forward_compute: false
+  event_triggered: false
+```
 
-- **`multi_input_handling`** :
-    - **Type:** Int
-    - **Required:** YES
-    - **Meaning:** number of federates that will connect to this broker (will be automatized from number of federates partecipating to this federation)
-    - **Accepted Values:** Any integer number
-    - **Rules:** For documentation purposes
+Commonly used flags:
+- `terminate_on_error: true` — recommended for all federates
+- `wait_for_current_time_update: true` — ensures a federate waits for all upstream publishers before stepping (useful when `time_offset` order is tight)
+- `observer: true` — for logging-only federates that only subscribe
 
+---
 
+## `connections`
 
-### Model Configurations
+Defines the HELICS pub/sub interfaces for this federate.
 
+```yaml
+connections:
+  publishes:
+    - key: "position"     # variable name used inside the model
+      type: "double"      # HELICS type: "double" | "string" | "complex" | "vector" | "boolean" | "integer"
+      units: "m"          # unit of measurement (must match subscriber's units)
 
+  subscribes:
+    - key: "force"
+      type: "double"
+      units: "N"
+      targets:
+        '0': [driver.0/force]       # targets for model instance 0
+        '1': [driver.1/force]       # targets for model instance 1
+      causality: "same_step"        # "same_step" (default) | "next_step"
+      multi_input_handling: null    # aggregation strategy when multiple targets (advanced)
 
+  endpoints: []   # not currently implemented — leave empty or omit
+```
 
+### Publication fields
 
+| Field | Required | Type | Meaning |
+|---|---|---|---|
+| `key` | yes | string | Variable name. Must match the model's output variable name. |
+| `type` | yes | string | HELICS data type (`"double"`, `"string"`, `"vector"`, etc.) |
+| `units` | yes | string | Physical unit. Must be consistent with subscribers. |
 
+### Subscription fields
+
+| Field | Required | Type | Meaning |
+|---|---|---|---|
+| `key` | yes | string | Variable name. Must match the model's input variable name. |
+| `type` | yes | string | HELICS data type. |
+| `units` | yes | string | Physical unit. |
+| `targets` | yes* | dict or list | What to subscribe to. *Omit for RL-controlled inputs (filled by ScenarioManager). |
+| `causality` | no | string | `"same_step"` (default) or `"next_step"`. See [Synchronization](synchronization.md). |
+| `multi_input_handling` | no | string/dict | Aggregation when multiple targets feed one input (advanced). |
+
+### `targets` format
+
+For a federate with `n_instances: N`, each instance needs its own target list keyed by string instance index:
+
+```yaml
+targets:
+  '0': [federate_name.0/pub_key]
+  '1': [federate_name.1/pub_key]
+```
+
+For a single instance (`n_instances: 1`):
+```yaml
+targets:
+  '0': [federate_name.0/pub_key]
+```
+
+Or use a list (same target applied to all instances):
+```yaml
+targets: [federate_name.0/pub_key]
+```
+
+Cross-federation target format: `<federation_name>.<federate_name>.<instance_id>/<pub_key>`
+
+**RL-controlled subscriptions:** When an RL agent controls a variable, omit `targets` on the corresponding subscription. ScenarioManager wires the RL agent's output to that subscription automatically.
+
+---
+
+## `model_configs` (required for `type: "base"`)
+
+Specifies the model to instantiate and its configuration.
+
+```yaml
+model_configs:
+  instantiation:
+    model_name: "spring_mass_damper"  # required — key in catalog.yaml
+    n_instances: 2                     # optional — number of parallel model instances (default: 1)
+    prefix: "spring"                   # optional — instance naming prefix (default: "model")
+    parallel_execution: false          # optional — run instances in parallel (default: false)
+    max_paraller_workers: null         # optional — worker pool size for parallel execution
+
+  parameters:                          # optional — model parameters (overrides catalog defaults)
+    mass: [5.0, 5.0]                   # scalar applies to all instances; list assigns per-instance
+    stiffness: [10.0, 20.0]
+
+  init_state:                          # optional — initial values for model state variables
+    position: [0.0, 100.0]
+    velocity: 0.0
+
+  inputs: {}                           # optional — input metadata (advanced)
+  outputs: {}                          # optional — output metadata (advanced)
+
+  user_defined:                        # optional — arbitrary dict passed to the model
+    solver: "rk4"
+    integrator: "fixed-step"
+```
+
+### `instantiation` fields
+
+| Field | Required | Default | Meaning |
+|---|---|---|---|
+| `model_name` | **yes** | — | Key in `src/models/model_catalog/catalog.yaml`. Must exist. |
+| `n_instances` | no | `1` | Number of model instances. Instances are named `<prefix>.0`, `<prefix>.1`, etc. |
+| `prefix` | no | `"model"` | Prefix for instance names. |
+| `parallel_execution` | no | `false` | If true, instances run concurrently via a thread/process pool. |
+| `max_paraller_workers` | no | `null` | Pool size for parallel execution. |
+
+### Per-instance vs scalar values in `parameters` / `init_state`
+
+When `n_instances > 1`, you can assign different values per instance using lists:
+
+```yaml
+parameters:
+  mass: [5.0, 10.0]    # instance 0 → 5.0 kg, instance 1 → 10.0 kg
+  damping: 2.0          # scalar → same value for all instances
+```
+
+The list length must equal `n_instances`.
+
+---
+
+## `type: "rl"` — RL agent federate
+
+The RL federate is usually **injected at runtime by ScenarioManager** and does not need to be written manually in the YAML. However, if you need to override its configuration:
+
+```yaml
+federate_configs:
+  rl_agent:
+    type: "rl"
+    timing_configs:
+      real_period: 60
+    connections:
+      publishes: []
+      subscribes: []
+    # model_configs is optional for type "rl"
+    controlled_models: {}         # optional — maps model key to model name
+    observed_models: {}           # optional
+    additional_observed_models: {} # optional
+```
+
+For `type: "rl"`, `model_configs` is optional (unlike `type: "base"` where it is required).
+
+---
+
+## `memory_config` (per-federate override)
+
+Each federate inherits `memory_config` from the scenario level. Override it for a specific federate:
+
+```yaml
+federate_configs:
+  verbose_federate:
+    type: "base"
+    memory_config:
+      batch_size: 500
+      attrs:
+        - "position"
+        - "velocity"
+    ...
+```
