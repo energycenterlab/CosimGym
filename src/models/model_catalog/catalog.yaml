@@ -2340,3 +2340,419 @@ models:
         tags:
         - electrical
         - consumption
+
+  pandapower_grid:
+    class_name: PandapowerGrid
+    module_path: models.model_catalog.physical_models.pandapower_grid
+    version: 1.0.0
+    description: >
+      Parametrizable pandapower power grid model. Loads any pandapower-compatible
+      case file (JSON, Matpower, pickle, builtin IEEE cases), applies per-component
+      setpoints received from other federates, runs AC/DC power flow or optimal
+      power flow, and publishes result variables (bus voltages, line loadings,
+      power flows) as outputs. I/O keys use dot-notation:
+      {component}.{index}.{column} for inputs,
+      res.{component}.{index}.{column} for outputs.
+    author: Pietro Rando Mazzarino
+    domain: power_systems
+    category: physical_model
+    tags:
+      - power_grid
+      - pandapower
+      - powerflow
+      - opf
+      - transmission
+      - distribution
+    dependencies:
+      - pandapower
+    time_step: 3600
+    max_time_step: 86400
+    min_time_step: 1
+    user_defined:
+      solver: newton-raphson
+      integrator: quasi-static
+    parameters:
+      case_file:
+        type: string
+        default_value: "case14"
+        description: Path to pandapower case file OR builtin case name (e.g. case14, case118)
+        unit: "-"
+        required: true
+      case_file_format:
+        type: string
+        default_value: "builtin"
+        description: "builtin | json | pickle | excel | sqlite | matpower | pypower"
+        unit: "-"
+        required: true
+      solver_mode:
+        type: string
+        default_value: "pf"
+        description: "pf | dc_pf | opf | dc_opf"
+        unit: "-"
+        required: false
+      pf_algorithm:
+        type: string
+        default_value: "nr"
+        description: "nr | bfsw | gs | iwamoto_nr — PF mode only"
+        unit: "-"
+        required: false
+      pf_max_iteration:
+        type: int
+        default_value: 10
+        description: Max Newton-Raphson iterations
+        unit: "-"
+        required: false
+      pf_tolerance_mva:
+        type: float
+        default_value: 1.0e-8
+        description: Convergence tolerance [MVA]
+        unit: MVA
+        required: false
+      enforce_q_lims:
+        type: bool
+        default_value: false
+        description: Enforce generator Q limits during PF
+        unit: "-"
+        required: false
+      fail_on_divergence:
+        type: bool
+        default_value: true
+        description: Raise exception on non-convergence vs publish convergence=0 and continue
+        unit: "-"
+        required: false
+      topology_updates_key:
+        type: string
+        default_value: ""
+        description: Input key for runtime JSON topology-change commands (empty = disabled)
+        unit: "-"
+        required: false
+    # inputs/outputs are DYNAMIC — keys below are SCHEMA examples (naming convention),
+    # not an exhaustive enumeration. Actual keys are declared in the scenario YAML.
+    inputs:
+      "load.N.p_mw":
+        type: float
+        default_value: ~
+        description: "Active power setpoint for load N [MW]. Replace N with 0-based index."
+        unit: MW
+        required: false
+        tags:
+          - load
+          - active_power
+      "load.N.q_mvar":
+        type: float
+        default_value: ~
+        description: "Reactive power setpoint for load N [Mvar]."
+        unit: Mvar
+        required: false
+        tags:
+          - load
+          - reactive_power
+      "sgen.N.p_mw":
+        type: float
+        default_value: ~
+        description: "Active power output for static generator N [MW]."
+        unit: MW
+        required: false
+        tags:
+          - sgen
+          - active_power
+      "gen.N.p_mw":
+        type: float
+        default_value: ~
+        description: "Active power setpoint for synchronous generator N [MW]."
+        unit: MW
+        required: false
+        tags:
+          - gen
+          - active_power
+      "gen.N.vm_pu":
+        type: float
+        default_value: ~
+        description: "Voltage setpoint magnitude for gen N [p.u.]."
+        unit: p.u.
+        required: false
+        tags:
+          - gen
+          - voltage
+      "switch.N.closed":
+        type: bool
+        default_value: ~
+        description: "Switch N state (true=closed)."
+        unit: "-"
+        required: false
+        tags:
+          - switch
+          - topology
+    outputs:
+      "res.bus.N.vm_pu":
+        type: float
+        default_value: 1.0
+        description: "Voltage magnitude at bus N after power flow [p.u.]."
+        unit: p.u.
+        required: false
+        tags:
+          - bus
+          - voltage
+          - state
+      "res.bus.N.va_degree":
+        type: float
+        default_value: 0.0
+        description: "Voltage angle at bus N [degree]."
+        unit: degree
+        required: false
+        tags:
+          - bus
+          - voltage
+          - state
+      "res.line.N.loading_percent":
+        type: float
+        default_value: 0.0
+        description: "Line N loading as percentage of thermal limit."
+        unit: "%"
+        required: false
+        tags:
+          - line
+          - loading
+      "res.gen.N.q_mvar":
+        type: float
+        default_value: 0.0
+        description: "Reactive power dispatch from gen N [Mvar]."
+        unit: Mvar
+        required: false
+        tags:
+          - gen
+          - reactive_power
+      "convergence":
+        type: float
+        default_value: 0.0
+        description: "1.0 if power flow converged at this step, 0.0 otherwise."
+        unit: "-"
+        required: false
+        tags:
+          - solver
+          - status
+      "total_loss_mw":
+        type: float
+        default_value: 0.0
+        description: "Total system active power losses [MW]."
+        unit: MW
+        required: false
+        tags:
+          - system
+          - losses
+      "total_gen_mw":
+        type: float
+        default_value: 0.0
+        description: "Total generation dispatched [MW]."
+        unit: MW
+        required: false
+        tags:
+          - system
+          - generation
+      "total_load_mw":
+        type: float
+        default_value: 0.0
+        description: "Total active load in service [MW]."
+        unit: MW
+        required: false
+        tags:
+          - system
+          - load
+
+  pandapipes_grid:
+    class_name: PandapipesGrid
+    module_path: models.model_catalog.physical_models.pandapipes_grid
+    version: 1.0.0
+    description: >
+      Parametrizable pandapipes fluid/gas network model. Loads any pandapipes-compatible
+      network file (JSON, pickle, builtin gas/heat cases), applies per-component
+      setpoints received from other federates (sink demands, source injections,
+      valve states, external grid pressures), runs hydraulic or thermal pipeflow,
+      and publishes result variables (junction pressures/temperatures, pipe
+      velocities/pressure losses) as outputs. I/O keys use dot-notation:
+      {component}.{index}.{column} for inputs,
+      res.{component}.{index}.{column} for outputs.
+    author: Pietro Rando Mazzarino
+    domain: fluid_networks
+    category: physical_model
+    tags:
+      - gas_network
+      - fluid_network
+      - pandapipes
+      - pipeflow
+      - hydraulics
+      - heat_transfer
+    dependencies:
+      - pandapipes
+    time_step: 3600
+    max_time_step: 86400
+    min_time_step: 1
+    user_defined:
+      solver: newton-raphson
+      integrator: quasi-static
+    parameters:
+      case_file:
+        type: string
+        default_value: "gas_tcross1"
+        description: Path to pandapipes network file OR builtin case name (e.g. gas_tcross1, gas_one_pipe1)
+        unit: "-"
+        required: true
+      case_file_format:
+        type: string
+        default_value: "builtin"
+        description: "builtin | json | pickle"
+        unit: "-"
+        required: true
+      pf_mode:
+        type: string
+        default_value: "hydraulics"
+        description: "hydraulics | heat | sequential | bidirectional"
+        unit: "-"
+        required: false
+      max_iter_hyd:
+        type: int
+        default_value: 10
+        description: Max hydraulic solver iterations
+        unit: "-"
+        required: false
+      max_iter_therm:
+        type: int
+        default_value: 10
+        description: Max thermal solver iterations (heat/sequential modes)
+        unit: "-"
+        required: false
+      friction_model:
+        type: string
+        default_value: "nikuradse"
+        description: "nikuradse | colebrook — friction factor correlation"
+        unit: "-"
+        required: false
+      fail_on_divergence:
+        type: bool
+        default_value: true
+        description: Raise exception on non-convergence vs publish convergence=0 and continue
+        unit: "-"
+        required: false
+    # inputs/outputs are DYNAMIC — keys below are SCHEMA examples (naming convention),
+    # not an exhaustive enumeration. Actual keys are declared in the scenario YAML.
+    inputs:
+      "sink.N.mdot_kg_per_s":
+        type: float
+        default_value: ~
+        description: "Mass flow demand for sink N [kg/s]. Replace N with 0-based index."
+        unit: "kg/s"
+        required: false
+        tags:
+          - sink
+          - mass_flow
+      "source.N.mdot_kg_per_s":
+        type: float
+        default_value: ~
+        description: "Mass flow injection from source N [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - source
+          - mass_flow
+      "ext_grid.N.p_bar":
+        type: float
+        default_value: ~
+        description: "Supply pressure from external grid N [bar]."
+        unit: "bar"
+        required: false
+        tags:
+          - ext_grid
+          - pressure
+      "ext_grid.N.t_k":
+        type: float
+        default_value: ~
+        description: "Supply temperature from external grid N [K]."
+        unit: "K"
+        required: false
+        tags:
+          - ext_grid
+          - temperature
+      "valve.N.opened":
+        type: bool
+        default_value: ~
+        description: "Valve N open state (true = open)."
+        unit: "-"
+        required: false
+        tags:
+          - valve
+          - topology
+    outputs:
+      "res.junction.N.p_bar":
+        type: float
+        default_value: 0.0
+        description: "Pressure at junction N after pipeflow [bar]."
+        unit: "bar"
+        required: false
+        tags:
+          - junction
+          - pressure
+          - state
+      "res.junction.N.t_k":
+        type: float
+        default_value: 293.15
+        description: "Temperature at junction N [K]."
+        unit: "K"
+        required: false
+        tags:
+          - junction
+          - temperature
+          - state
+      "res.pipe.N.v_mean_m_per_s":
+        type: float
+        default_value: 0.0
+        description: "Mean flow velocity in pipe N [m/s]."
+        unit: "m/s"
+        required: false
+        tags:
+          - pipe
+          - velocity
+      "res.pipe.N.dp_friction_loss_bar":
+        type: float
+        default_value: 0.0
+        description: "Frictional pressure loss across pipe N [bar]."
+        unit: "bar"
+        required: false
+        tags:
+          - pipe
+          - pressure_loss
+      "res.pipe.N.mdot_from_kg_per_s":
+        type: float
+        default_value: 0.0
+        description: "Mass flow entering pipe N from the from-junction [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - pipe
+          - mass_flow
+      "convergence":
+        type: float
+        default_value: 0.0
+        description: "1.0 if pipeflow converged at this step, 0.0 otherwise."
+        unit: "-"
+        required: false
+        tags:
+          - solver
+          - status
+      "total_supply_mdot_kg_per_s":
+        type: float
+        default_value: 0.0
+        description: "Total mass flow supplied by all external grids [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - system
+          - supply
+      "total_demand_mdot_kg_per_s":
+        type: float
+        default_value: 0.0
+        description: "Total mass flow consumed by all sinks [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - system
+          - demand
