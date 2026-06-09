@@ -196,6 +196,14 @@ class ModelConfig(BaseModel):
     outputs: Dict[str, Any] = Field(default_factory=dict)
     user_defined: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
+    # Injected at runtime by BaseFederate from the federate timing_configs so
+    # the model receives its time grid (see BaseFederate._setup_models).
+    time_step: Optional[float] = None
+    time_stop: Optional[float] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    real_period: Optional[float] = None
+
 
 # ==============================================================================
 # MEMORY CONFIG

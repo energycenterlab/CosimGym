@@ -26,11 +26,12 @@ from core.ScenarioManager import main, ScenarioManager
 
 # OSMSES26 - working examples
 #main('bui_hp_test_base') # Run without progress bar (maximum performance)
-main('pv_batt_test_base') # Run without progress bar (maximum performance)
+#main('pv_batt_test_base') # Run without progress bar (maximum performance)
 
 
 #DEVELOPMENT TESTS - uncomment to run
-main('fmu_feedthrough_test')
+#main('fmu_feedthrough_test')
+main('bui0_fmu_test')
 
 
 

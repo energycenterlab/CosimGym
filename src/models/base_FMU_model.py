@@ -21,6 +21,7 @@ Organization: EC-Lab Politecnico di Torino
 
 import os
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -275,9 +276,27 @@ class BaseFMUModel(BaseModel):
         else:
             raise RuntimeError(f"Unsupported FMI version: {self.fmiVersion}")
 
+    def _stop_time_seconds(self):
+        """Total simulation horizon in seconds.
+
+        Some co-sim FMUs (notably EnergyPlus exports) require a *defined* stop
+        time: with stopTime=None fmpy sets stopTimeDefined=False and EnergyPlus
+        clamps the stop time to 0, so the second doStep fails with fmi2Error.
+        Derive it from the scenario start/end, falling back to time_stop*period.
+        """
+        try:
+            start = datetime.fromisoformat(self.config.start_time)
+            end = datetime.fromisoformat(self.config.end_time)
+            return (end - start).total_seconds()
+        except (TypeError, ValueError):
+            pass
+        if self.config.time_stop is not None and self.real_period is not None:
+            return float(self.config.time_stop) * float(self.real_period)
+        return None
+
     def _setup_experiment(self) -> None:
         if self.fmiVersion == '2.0':
-            self.fmu.setupExperiment(startTime=0.0, stopTime=None)
+            self.fmu.setupExperiment(startTime=0.0, stopTime=self._stop_time_seconds())
         # FMI 1.0 has no setupExperiment; initialization happens in _exit_initialization_mode
         # FMI 3.0 folds setupExperiment into enterInitializationMode(startTime, stopTime)
 
@@ -285,7 +304,7 @@ class BaseFMUModel(BaseModel):
         if self.fmiVersion == '2.0':
             self.fmu.enterInitializationMode()
         elif self.fmiVersion == '3.0':
-            self.fmu.enterInitializationMode(startTime=0.0, stopTime=None)
+            self.fmu.enterInitializationMode(startTime=0.0, stopTime=self._stop_time_seconds())
 
     def _push_initial_state_to_fmu(self) -> None:
         for param_name, (vref, vtype) in self.params_vars.items():

@@ -1705,3 +1705,265 @@ models:
         required: false
         tags:
         - fmu
+  bui0_input_feeder:
+    class_name: BUI0InputFeeder
+    module_path: models.model_catalog.physical_models.bui0_input_feeder
+    version: 1.0.0
+    description: Time-varying input feeder driving the six BUI0 EnergyPlus FMU
+      schedules (occupancy, lighting, equipment, set-point) from hour of day.
+    author: Pietro Rando Mazzarino
+    domain: testing
+    category: physical_model
+    tags:
+    - fmu
+    - feeder
+    - building
+    dependencies: []
+    time_step: 600
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+    parameters:
+      occupied_start_hour:
+        type: float
+        default_value: 8.0
+        description: Hour of day occupancy begins
+        unit: h
+        required: false
+        tags:
+        - schedule
+      occupied_end_hour:
+        type: float
+        default_value: 18.0
+        description: Hour of day occupancy ends
+        unit: h
+        required: false
+        tags:
+        - schedule
+      people_occupied:
+        type: float
+        default_value: 4.0
+        description: Number of people during occupied hours
+        unit: '-'
+        required: false
+        tags:
+        - schedule
+      lights_peak_w:
+        type: float
+        default_value: 400.0
+        description: Lighting power during occupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      lights_base_w:
+        type: float
+        default_value: 40.0
+        description: Lighting power during unoccupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      eequip_peak_w:
+        type: float
+        default_value: 500.0
+        description: Electric equipment power during occupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      eequip_base_w:
+        type: float
+        default_value: 50.0
+        description: Electric equipment power during unoccupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      otheq_rad_peak_w:
+        type: float
+        default_value: 100.0
+        description: Other equipment (radiant) power during occupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      otheq_rad_base_w:
+        type: float
+        default_value: 0.0
+        description: Other equipment (radiant) power during unoccupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      otheq_fc_peak_w:
+        type: float
+        default_value: 100.0
+        description: Other equipment (fan-coil) power during occupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      otheq_fc_base_w:
+        type: float
+        default_value: 0.0
+        description: Other equipment (fan-coil) power during unoccupied hours
+        unit: W
+        required: false
+        tags:
+        - schedule
+      setpoint_day_c:
+        type: float
+        default_value: 21.0
+        description: Zone heating set-point during occupied hours
+        unit: degC
+        required: false
+        tags:
+        - schedule
+      setpoint_night_c:
+        type: float
+        default_value: 18.0
+        description: Zone heating set-point during unoccupied hours (set-back)
+        unit: degC
+        required: false
+        tags:
+        - schedule
+    inputs: {}
+    outputs:
+      PeopleNumber:
+        type: float
+        default_value: 0.0
+        description: Occupancy schedule fed to the FMU
+        unit: '-'
+        required: true
+        tags:
+        - schedule
+      LightsWatt:
+        type: float
+        default_value: 0.0
+        description: Lighting power fed to the FMU
+        unit: W
+        required: true
+        tags:
+        - schedule
+      EEquipWatt:
+        type: float
+        default_value: 0.0
+        description: Electric equipment power fed to the FMU
+        unit: W
+        required: true
+        tags:
+        - schedule
+      OthEquRadWatt:
+        type: float
+        default_value: 0.0
+        description: Other equipment radiant power fed to the FMU
+        unit: W
+        required: true
+        tags:
+        - schedule
+      OthEquFCWatt:
+        type: float
+        default_value: 0.0
+        description: Other equipment fan-coil power fed to the FMU
+        unit: W
+        required: true
+        tags:
+        - schedule
+      ZoneSetPoint:
+        type: float
+        default_value: 20.0
+        description: Zone heating set-point fed to the FMU
+        unit: degC
+        required: true
+        tags:
+        - schedule
+  bui0_building_fmu:
+    class_name: BaseFMUModel
+    module_path: models.base_FMU_model
+    version: 1.0.0
+    description: BUI0 EnergyPlus building FMU (FMI 2.0, generated from BUI0.idf).
+      Six schedule inputs, two outputs (zone temperature, heating load target).
+    author: Pietro Rando Mazzarino
+    domain: building
+    category: physical_model
+    tags:
+    - fmu
+    - fmi2.0
+    - energyplus
+    - building
+    dependencies:
+    - fmpy
+    time_step: 600
+    max_time_step: 600
+    min_time_step: 600
+    user_defined:
+      fmu_source:
+        type: local
+        path: /media/space/rando/CODE/CosimGym/src/models/model_catalog/physical_models/resources/BUI0.fmu
+    inputs:
+      PeopleNumber:
+        type: float
+        default_value: 0.0
+        description: Number of people in the zone
+        unit: '-'
+        required: false
+        tags:
+        - fmu
+      LightsWatt:
+        type: float
+        default_value: 0.0
+        description: Lighting power
+        unit: W
+        required: false
+        tags:
+        - fmu
+      EEquipWatt:
+        type: float
+        default_value: 0.0
+        description: Electric equipment power
+        unit: W
+        required: false
+        tags:
+        - fmu
+      OthEquRadWatt:
+        type: float
+        default_value: 0.0
+        description: Other equipment radiant power
+        unit: W
+        required: false
+        tags:
+        - fmu
+      OthEquFCWatt:
+        type: float
+        default_value: 0.0
+        description: Other equipment fan-coil power
+        unit: W
+        required: false
+        tags:
+        - fmu
+      ZoneSetPoint:
+        type: float
+        default_value: 20.0
+        description: Zone heating set-point
+        unit: degC
+        required: false
+        tags:
+        - fmu
+    outputs:
+      TBuilding:
+        type: float
+        default_value: 0.0
+        description: Zone mean air temperature
+        unit: degC
+        required: true
+        tags:
+        - fmu
+      HeatingLoadTarget:
+        type: float
+        default_value: 0.0
+        description: Zone predicted sensible load to heating set-point
+        unit: W
+        required: true
+        tags:
+        - fmu

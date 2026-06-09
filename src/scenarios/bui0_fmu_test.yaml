@@ -1,0 +1,185 @@
+# BUI0 EnergyPlus FMU test scenario
+#
+# Data flow:
+#   feeder_federate (bui0_input_feeder, pure Python)
+#       → PeopleNumber / LightsWatt / EEquipWatt / OthEquRadWatt
+#         / OthEquFCWatt / ZoneSetPoint
+#       → building_federate (bui0_building_fmu, FMI 2.0 EnergyPlus FMU)
+#       → TBuilding / HeatingLoadTarget
+#
+# The FMU is generated from BUI0.idf with idf-to-fmu-export-prep. The IDF uses
+# 6 timesteps/hour, so the communication step is fixed at 600 s
+# (canHandleVariableCommunicationStepSize=false) — both federates use
+# real_period 600. One simulated day = 144 steps.
+
+version: "1.0.0"
+name: "bui0_fmu_test"
+scenario_description: "Smoke test wiring a Python schedule feeder into the BUI0 EnergyPlus FMU (FMI 2.0) through BaseFMUModel."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-02T00:00:00"
+log_level: INFO
+
+memory_config:
+  batch_size: 1000
+  attrs: ["PeopleNumber", "LightsWatt", "EEquipWatt", "OthEquRadWatt",
+          "OthEquFCWatt", "ZoneSetPoint", "TBuilding", "HeatingLoadTarget"]
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "next_step"
+
+federations:
+  federation_1:
+
+    federate_configs:
+
+      # -----------------------------------------------------------------
+      # Feeder federate – generates the six FMU input schedules
+      # -----------------------------------------------------------------
+      feeder_federate:
+        name: "feeder_federate"
+        type: "base"
+        log_level: INFO
+
+        timing_configs:
+          real_period: 600
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "PeopleNumber"
+              type: "double"
+              units: "-"
+            - key: "LightsWatt"
+              type: "double"
+              units: "W"
+            - key: "EEquipWatt"
+              type: "double"
+              units: "W"
+            - key: "OthEquRadWatt"
+              type: "double"
+              units: "W"
+            - key: "OthEquFCWatt"
+              type: "double"
+              units: "W"
+            - key: "ZoneSetPoint"
+              type: "double"
+              units: "degC"
+
+        model_configs:
+          instantiation:
+            model_name: "bui0_input_feeder"
+            n_instances: 1
+            prefix: "feed"
+            parallel_execution: false
+
+          parameters:
+            occupied_start_hour: 8.0
+            occupied_end_hour: 18.0
+            people_occupied: 4.0
+            lights_peak_w: 400.0
+            lights_base_w: 40.0
+            eequip_peak_w: 500.0
+            eequip_base_w: 50.0
+            otheq_rad_peak_w: 100.0
+            otheq_rad_base_w: 0.0
+            otheq_fc_peak_w: 100.0
+            otheq_fc_base_w: 0.0
+            setpoint_day_c: 21.0
+            setpoint_night_c: 18.0
+
+          init_state:
+            PeopleNumber: 0.0
+            LightsWatt: 40.0
+            EEquipWatt: 50.0
+            OthEquRadWatt: 0.0
+            OthEquFCWatt: 0.0
+            ZoneSetPoint: 18.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------
+      # Building federate – BUI0 EnergyPlus FMU (FMI 2.0)
+      # -----------------------------------------------------------------
+      building_federate:
+        name: "building_federate"
+        type: "base"
+        log_level: INFO
+
+        timing_configs:
+          real_period: 600
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "PeopleNumber"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [feeder_federate.0/PeopleNumber]
+            - key: "LightsWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/LightsWatt]
+            - key: "EEquipWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/EEquipWatt]
+            - key: "OthEquRadWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/OthEquRadWatt]
+            - key: "OthEquFCWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/OthEquFCWatt]
+            - key: "ZoneSetPoint"
+              type: "double"
+              units: "degC"
+              targets:
+                '0': [feeder_federate.0/ZoneSetPoint]
+          publishes:
+            - key: "TBuilding"
+              type: "double"
+              units: "degC"
+            - key: "HeatingLoadTarget"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "bui0_building_fmu"
+            n_instances: 1
+            prefix: "bui"
+            parallel_execution: false
+
+          parameters: {}
+
+          init_state:
+            PeopleNumber: 0.0
+            LightsWatt: 0.0
+            EEquipWatt: 0.0
+            OthEquRadWatt: 0.0
+            OthEquFCWatt: 0.0
+            ZoneSetPoint: 20.0
+            TBuilding: 0.0
+            HeatingLoadTarget: 0.0
+
+          user_defined: {}
