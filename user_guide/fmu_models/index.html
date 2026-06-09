@@ -11,28 +11,28 @@
       
       
       
-        <link rel="prev" href="../overview/">
+        <link rel="prev" href="../custom_models/">
       
       
-        <link rel="next" href="../federation/">
+        <link rel="next" href="../rl_integration/">
       
       
         
       
       
-      <link rel="icon" href="../../../images/cosimgym_icon_transparent.svg">
+      <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>General Configuration - CosimGym Documentation</title>
+        <title>FMU Models - CosimGym Documentation</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#general-scenario-configuration" class="md-skip">
+        <a href="#fmu-models" class="md-skip">
           Skip to content
         </a>
       
@@ -90,9 +90,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="CosimGym Documentation" class="md-header__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+    <a href="../.." title="CosimGym Documentation" class="md-header__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
       
-  <img src="../../../images/cosimgym_icon_transparent.svg" alt="logo">
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -109,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              General Configuration
+              FMU Models
             
           </span>
         </div>
@@ -187,9 +187,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="CosimGym Documentation" class="md-nav__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+    <a href="../.." title="CosimGym Documentation" class="md-nav__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
       
-  <img src="../../../images/cosimgym_icon_transparent.svg" alt="logo">
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
 
     </a>
     CosimGym Documentation
@@ -204,7 +204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -231,7 +231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Installation_Setup/" class="md-nav__link">
+      <a href="../../Installation_Setup/" class="md-nav__link">
         
   
   
@@ -305,7 +305,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/introduction/" class="md-nav__link">
+      <a href="../../overview/introduction/" class="md-nav__link">
         
   
   
@@ -333,7 +333,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/core_concepts/" class="md-nav__link">
+      <a href="../../overview/core_concepts/" class="md-nav__link">
         
   
   
@@ -361,7 +361,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/terminology/" class="md-nav__link">
+      <a href="../../overview/terminology/" class="md-nav__link">
         
   
   
@@ -389,7 +389,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/architecture/" class="md-nav__link">
+      <a href="../../overview/architecture/" class="md-nav__link">
         
   
   
@@ -473,7 +473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting_started/" class="md-nav__link">
+      <a href="../getting_started/" class="md-nav__link">
         
   
   
@@ -501,7 +501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../running_scenarios/" class="md-nav__link">
+      <a href="../running_scenarios/" class="md-nav__link">
         
   
   
@@ -526,20 +526,18 @@
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
           <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
@@ -560,7 +558,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -578,7 +576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../scenario_configuration/overview/" class="md-nav__link">
         
   
   
@@ -586,6 +584,182 @@
     
   
     Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenario_configuration/general/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    General Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenario_configuration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenario_configuration/federate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenario_configuration/synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenario_configuration/rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Models & Catalog
   
 
     
@@ -622,7 +796,7 @@
   <span class="md-ellipsis">
     
   
-    General Configuration
+    FMU Models
   
 
     
@@ -640,7 +814,7 @@
   <span class="md-ellipsis">
     
   
-    General Configuration
+    FMU Models
   
 
     
@@ -666,110 +840,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#full-example" class="md-nav__link">
+  <a href="#1-catalog-entry" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Full example
+        1. Catalog entry
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fields
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Fields">
+    <nav class="md-nav" aria-label="1. Catalog entry">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#name" class="md-nav__link">
+  <a href="#fmu-sources" class="md-nav__link">
     <span class="md-ellipsis">
       
-        name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#start_time-end_time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        start_time / end_time
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#log_level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        log_level
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#memory_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        memory_config
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#synchronization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        synchronization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#federations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        federations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reinforcement_learning_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        reinforcement_learning_config
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi_computer-multi_computer_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        multi_computer / multi_computer_config
+        FMU sources
       
     </span>
   </a>
@@ -782,10 +868,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ignored-fields" class="md-nav__link">
+  <a href="#2-communication-step-must-match-the-fmu" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ignored fields
+        2. Communication step must match the FMU
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-energyplus-fmus-defined-stop-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. EnergyPlus FMUs: defined stop time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-worked-example-bui0-building-fmu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Worked example — BUI0 building FMU
       
     </span>
   </a>
@@ -808,183 +916,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Configuration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../federate/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federate Configuration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../synchronization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Synchronization & Causality
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rl/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reinforcement Learning Configuration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../custom_models/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Custom Models & Catalog
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../fmu_models/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FMU Models
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../rl_integration/" class="md-nav__link">
+      <a href="../rl_integration/" class="md-nav__link">
         
   
   
@@ -1012,7 +944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dashboard/" class="md-nav__link">
+      <a href="../dashboard/" class="md-nav__link">
         
   
   
@@ -1040,7 +972,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1122,7 +1054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/examples_list/" class="md-nav__link">
+      <a href="../../examples/examples_list/" class="md-nav__link">
         
   
   
@@ -1150,7 +1082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/example_base/" class="md-nav__link">
+      <a href="../../examples/example_base/" class="md-nav__link">
         
   
   
@@ -1178,7 +1110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/example_rl/" class="md-nav__link">
+      <a href="../../examples/example_rl/" class="md-nav__link">
         
   
   
@@ -1233,110 +1165,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#full-example" class="md-nav__link">
+  <a href="#1-catalog-entry" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Full example
+        1. Catalog entry
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fields
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Fields">
+    <nav class="md-nav" aria-label="1. Catalog entry">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#name" class="md-nav__link">
+  <a href="#fmu-sources" class="md-nav__link">
     <span class="md-ellipsis">
       
-        name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#start_time-end_time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        start_time / end_time
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#log_level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        log_level
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#memory_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        memory_config
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#synchronization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        synchronization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#federations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        federations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reinforcement_learning_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        reinforcement_learning_config
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi_computer-multi_computer_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        multi_computer / multi_computer_config
+        FMU sources
       
     </span>
   </a>
@@ -1349,10 +1193,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ignored-fields" class="md-nav__link">
+  <a href="#2-communication-step-must-match-the-fmu" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ignored fields
+        2. Communication step must match the FMU
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-energyplus-fmus-defined-stop-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. EnergyPlus FMUs: defined stop time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-worked-example-bui0-building-fmu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Worked example — BUI0 building FMU
       
     </span>
   </a>
@@ -1376,176 +1242,85 @@
 
 
 
-<h1 id="general-scenario-configuration">General Scenario Configuration</h1>
-<p>These fields live at the top level of the scenario YAML.</p>
-<hr />
-<h2 id="full-example">Full example</h2>
-<pre><code class="language-yaml">name: &quot;pv_batt_base&quot;
-start_time: &quot;2024-01-01T00:00:00&quot;
-end_time:   &quot;2024-01-03T00:00:00&quot;
-log_level: DEBUG
-
-memory_config:
-  batch_size: 1000
-  attrs: &quot;all&quot;
-
-synchronization:
-  auto_offset:
-    enabled: true
-    offset_step: 0.1
-    override_existing_offsets: false
-  validate_causality_cycles: true
-
-reinforcement_learning_config: ...   # omit for plain co-simulation
-
-federations:
-  federation_1: ...
+<h1 id="fmu-models">FMU Models</h1>
+<p>CosimGym runs <strong>Functional Mock-up Units (FMUs)</strong> as ordinary models through a single wrapper class, <code>BaseFMUModel</code> (<code>src/models/base_FMU_model.py</code>). It supports <strong>FMI 2.0 and 3.0</strong> co-simulation (with partial FMI 1.0 support) via <a href="https://github.com/CATIA-Systems/FMPy">fmpy</a>, and reads the FMU's input/output variable names directly from the FMU's <code>modelDescription.xml</code>.</p>
+<p>You do not write any Python to use an FMU — you register a catalog entry pointing <code>class_name</code> at <code>BaseFMUModel</code> and declare where the FMU file lives.</p>
+<h2 id="1-catalog-entry">1. Catalog entry</h2>
+<pre><code class="language-yaml">models:
+  my_building_fmu:
+    class_name: BaseFMUModel
+    module_path: models.base_FMU_model
+    version: 1.0.0
+    description: My building FMU.
+    category: physical_model
+    time_step: 600          # must match the FMU's fixed communication step (see below)
+    max_time_step: 600
+    min_time_step: 600
+    user_defined:
+      fmu_source:
+        type: local         # local | minio | http
+        path: /abs/path/to/MyBuilding.fmu
+    inputs:                 # names MUST match the FMU's input variables
+      ZoneSetPoint:
+        type: float
+        default_value: 20.0
+        unit: degC
+    outputs:                # names MUST match the FMU's output variables
+      TBuilding:
+        type: float
+        default_value: 0.0
+        unit: degC
 </code></pre>
-<hr />
-<h2 id="fields">Fields</h2>
-<h3 id="name"><code>name</code></h3>
-<ul>
-<li><strong>Required:</strong> yes</li>
-<li><strong>Type:</strong> string</li>
-<li><strong>Meaning:</strong> Unique scenario identifier. Used as directory name under <code>results/</code> and in logs.</li>
-</ul>
 <blockquote>
-<p><strong>Migration note:</strong> The old key <code>scenario_name</code> was renamed to <code>name</code>. Update any YAML files still using <code>scenario_name</code>.</p>
+<p>The <code>inputs</code>/<code>outputs</code> keys are not free-form: they must equal the variable names declared inside the FMU. <code>BaseFMUModel</code> looks each scenario input/output up by name and sets/gets it on the FMU via its value reference.</p>
 </blockquote>
-<hr />
-<h3 id="start_time-end_time"><code>start_time</code> / <code>end_time</code></h3>
-<ul>
-<li><strong>Required:</strong> yes</li>
-<li><strong>Type:</strong> string — ISO 8601 datetime</li>
-<li><strong>Format:</strong> <code>"YYYY-MM-DDTHH:MM:SS"</code> (no timezone suffix)</li>
-<li><strong>Example:</strong> <code>"2024-01-01T00:00:00"</code></li>
-</ul>
-<p>These bound the simulation clock. The total number of HELICS ticks is derived from the time span and the minimum <code>real_period</code> across all federates.</p>
-<hr />
-<h3 id="log_level"><code>log_level</code></h3>
-<ul>
-<li><strong>Required:</strong> no</li>
-<li><strong>Default:</strong> <code>INFO</code></li>
-<li><strong>Accepted values:</strong> <code>CRITICAL</code> | <code>ERROR</code> | <code>WARNING</code> | <code>INFO</code> | <code>DEBUG</code> | <code>NOTSET</code></li>
-</ul>
-<p>Scenario-level log level applied to all federates and the ScenarioManager process. Individual federates can override this with their own <code>log_level</code> field.</p>
-<hr />
-<h3 id="memory_config"><code>memory_config</code></h3>
-<ul>
-<li><strong>Required:</strong> yes</li>
-</ul>
-<p>Controls what simulation variables are stored to disk at the end of a run.</p>
-<pre><code class="language-yaml">memory_config:
-  batch_size: 100      # number of timesteps buffered in memory before flushing
-  attrs: &quot;all&quot;         # record every variable
-  # OR
-  attrs:               # record only named variables
-    - &quot;position&quot;
-    - &quot;velocity&quot;
-    - &quot;force&quot;
+<h3 id="fmu-sources">FMU sources</h3>
+<p><code>fmu_source.type</code> selects how the binary is resolved. Downloaded FMUs are cached under <code>~/.cosimgym/fmu_cache/&lt;model_name&gt;/&lt;version&gt;/</code> and reused.</p>
+<pre><code class="language-yaml"># Local file
+fmu_source: {type: local, path: /abs/path/to/Model.fmu}
+
+# MinIO / S3 (the docker-compose stack ships a MinIO service)
+fmu_source:
+  type: minio
+  endpoint: http://localhost:9000
+  bucket: fmus
+  object_key: building/MyBuilding.fmu
+  # access_key/secret_key optional — fall back to MINIO_ACCESS_KEY/MINIO_SECRET_KEY env vars
+
+# HTTP download
+fmu_source: {type: http, url: https://example.com/MyBuilding.fmu}
 </code></pre>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Default</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>batch_size</code></td>
-<td>int</td>
-<td><code>100</code></td>
-<td>In-memory buffer size before write</td>
-</tr>
-<tr>
-<td><code>attrs</code></td>
-<td><code>"all"</code> or list of strings</td>
-<td><code>["all"]</code></td>
-<td>Variables to record; <code>"all"</code> records everything</td>
-</tr>
-</tbody>
-</table>
-<p>This <code>memory_config</code> is automatically propagated to every federate that does not define its own. To override for a specific federate, add a <code>memory_config</code> block inside that federate's config.</p>
-<hr />
-<h3 id="synchronization"><code>synchronization</code></h3>
-<ul>
-<li><strong>Required:</strong> no</li>
-<li><strong>Default:</strong> all sub-fields use their defaults (auto_offset enabled, startup_sync enabled)</li>
-</ul>
-<p>Controls time-offset computation and startup input validation. See <a href="../synchronization/">Synchronization</a> for full documentation.</p>
-<pre><code class="language-yaml">synchronization:
-  auto_offset:
-    enabled: true
-    offset_step: 0.1
-    override_existing_offsets: false
-  default_startup_sync:
-    enabled: true
-    missing_inputs_policy: &quot;warn&quot;
-    invalid_inputs_policy: &quot;warn&quot;
-  default_subscription_causality: &quot;same_step&quot;
-  validate_causality_cycles: true
+<h2 id="2-communication-step-must-match-the-fmu">2. Communication step must match the FMU</h2>
+<p>Many co-sim FMUs declare <code>canHandleVariableCommunicationStepSize="false"</code>, meaning the communication step is <strong>fixed</strong>. You must set the federate's <code>real_period</code> (and the catalog <code>time_step</code>) to that fixed step. For an EnergyPlus FMU with <code>Timestep = 6</code> per hour, the step is <code>3600 / 6 = 600</code> seconds.</p>
+<pre><code class="language-yaml">timing_configs:
+  real_period: 600     # match the FMU's required communication step
 </code></pre>
-<hr />
-<h3 id="federations"><code>federations</code></h3>
+<h2 id="3-energyplus-fmus-defined-stop-time">3. EnergyPlus FMUs: defined stop time</h2>
+<p>FMUs generated from EnergyPlus IDF files (<code>idf-to-fmu-export-prep</code>) require a <strong>defined stop time</strong>. <code>BaseFMUModel</code> derives it automatically from the scenario <code>start_time</code>/<code>end_time</code> and passes it to <code>setupExperiment</code> (FMI 2.0) / <code>enterInitializationMode</code> (FMI 3.0). If the stop time is left undefined, EnergyPlus clamps it to 0 and the second <code>doStep</code> fails with <code>fmi2Error</code>.</p>
+<p>EnergyPlus FMUs also create runtime working directories named <code>Output_EPExport_&lt;federate&gt;.&lt;n&gt;/</code>. These are git-ignored — do not commit them.</p>
+<h2 id="4-worked-example-bui0-building-fmu">4. Worked example — BUI0 building FMU</h2>
+<p>The repository ships a complete two-federate example wiring a Python schedule feeder into an EnergyPlus building FMU.</p>
 <ul>
-<li><strong>Required:</strong> yes</li>
-<li><strong>Type:</strong> dict — keys are federation names, values are <code>FederationConfig</code> objects</li>
+<li><strong>Scenario:</strong> <code>src/scenarios/bui0_fmu_test.yaml</code></li>
+<li><strong>FMU:</strong> <code>src/models/model_catalog/physical_models/resources/BUI0.fmu</code> (FMI 2.0)</li>
+<li><strong>Feeder model:</strong> <code>bui0_input_feeder</code> — generates six schedule signals (<code>PeopleNumber</code>, <code>LightsWatt</code>, <code>EEquipWatt</code>, <code>OthEquRadWatt</code>, <code>OthEquFCWatt</code>, <code>ZoneSetPoint</code>) from an hour-of-day occupancy profile.</li>
+<li><strong>FMU outputs:</strong> <code>TBuilding</code> (zone air temperature), <code>HeatingLoadTarget</code>.</li>
 </ul>
-<pre><code class="language-yaml">federations:
-  federation_1:
-    broker_config: ...
-    federate_configs: ...
-  federation_2:
-    broker_config: ...
-    federate_configs: ...
+<p>Data flow:</p>
+<pre><code>feeder_federate (bui0_input_feeder)
+    ──6 schedule signals──▶ building_federate (bui0_building_fmu, BaseFMUModel)
+                                ──▶ TBuilding, HeatingLoadTarget
 </code></pre>
-<p>The dict key becomes the federation's <code>name</code>. It is injected automatically — you do not need to repeat it inside the federation block. For multi-federation scenarios, ScenarioManager automatically creates a hierarchy broker. See <a href="../federation/">Federation</a>.</p>
-<hr />
-<h3 id="reinforcement_learning_config"><code>reinforcement_learning_config</code></h3>
-<ul>
-<li><strong>Required:</strong> no (omit entirely for plain co-simulation)</li>
-</ul>
-<p>Configures the RL agent, training loop, and test evaluation. When present, ScenarioManager injects a synthetic <code>rl_agent</code> federate into the appropriate federation at runtime. See <a href="../rl/">RL</a>.</p>
-<pre><code class="language-yaml">reinforcement_learning_config:
-  agent:
-    model_name: &quot;rl_simple_DQN&quot;
-    env:
-      observations: [federation_1.spring_federate.0.position]
-      actions:      [federation_1.spring_federate.0.force]
-      action_spaces_type: [&quot;discrete&quot;]
-  training:
-    episode_length: 100
-    n_episodes: 500
-  test:
-    enabled: false
+<p>Both federates use <code>real_period: 600</code>; one simulated day = 144 steps. Run it:</p>
+<pre><code class="language-python"># src/test_script.py
+main('bui0_fmu_test')
 </code></pre>
-<hr />
-<h3 id="multi_computer-multi_computer_config"><code>multi_computer</code> / <code>multi_computer_config</code></h3>
-<ul>
-<li><strong>Required:</strong> no</li>
-<li><strong>Default:</strong> <code>multi_computer: false</code></li>
-</ul>
-<p>Distributes federates across multiple machines via SSH. Not fully implemented in the current release.</p>
-<pre><code class="language-yaml">multi_computer: true
-multi_computer_config:
-  ssh_user: &quot;ubuntu&quot;
-  ssh_key_path: &quot;/home/user/.ssh/id_rsa&quot;
-  hostnames:
-    - &quot;192.168.1.10&quot;
-    - &quot;192.168.1.11&quot;
+<pre><code class="language-bash">docker compose -f src/docker-compose.yaml up -d
+python src/models/model_catalog/catalog_loader.py
+conda activate cosim_gym
+python src/test_script.py
 </code></pre>
-<hr />
-<h2 id="ignored-fields">Ignored fields</h2>
-<p>The following fields are accepted but silently ignored (useful for documentation inside the YAML):</p>
-<ul>
-<li><code>version</code></li>
-<li><code>scenario_description</code></li>
-<li><code>seed</code> (at scenario level — seed inside <code>reinforcement_learning_config</code> is used)</li>
-<li>Any other unknown key</li>
-</ul>
+<p>Inspect <code>results/bui0_fmu_test/&lt;sim_id&gt;/federation_1/</code> — <code>TBuilding</code> and <code>HeatingLoadTarget</code> should be populated after the first step.</p>
 
 
 
@@ -1595,10 +1370,10 @@ multi_computer_config:
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

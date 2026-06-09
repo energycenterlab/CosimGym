@@ -14,14 +14,14 @@
         <link rel="prev" href="../../overview/architecture/">
       
       
-        <link rel="next" href="../scenario_configuration/overview/">
+        <link rel="next" href="../running_scenarios/">
       
       
         
       
       
       <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -602,6 +602,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -611,10 +639,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -632,8 +660,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -854,6 +882,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../rl_integration/" class="md-nav__link">
         
   
@@ -890,6 +946,34 @@
     
   
     Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
   
 
     
@@ -1149,7 +1233,7 @@
 <h1 id="getting-started">Getting Started</h1>
 <p>This guide walks you through setting up and running your first simulation with CosimGym.</p>
 <h2 id="1-prerequisites">1. Prerequisites</h2>
-<p>Before starting, ensure you have completed the installation steps listed in the <a href="../../Installation_Setup/">Installation Setup</a> section. Our recommended setup uses the unified Makefile which relies on <strong>Docker</strong> (for backend services like Redis and InfluxDB) and <strong>Conda</strong>.</p>
+<p>Before starting, ensure you have completed the installation steps listed in the <a href="../../Installation_Setup/">Installation Setup</a> section. The recommended setup uses <strong>Conda</strong> (Python 3.12 environment) plus <strong>Docker</strong>, which provides the backend services: <strong>Redis</strong> (mandatory — distributes the scenario config and model catalog to federate processes) and <strong>MinIO</strong> (optional — object store for remotely-hosted FMUs).</p>
 <h2 id="2-basic-setup-validation">2. Basic Setup Validation</h2>
 <p>Once installed, ensure your backend infrastructure is running. The repository provides an environment wrapper handling everything.</p>
 <p>Navigate to the repository root:</p>
@@ -1158,26 +1242,41 @@ make validate
 </code></pre>
 <p><em>(If you are choosing the Python setup script route, use <code>python setup.py --auto</code> and <code>python setup.py --validate</code>)</em>.</p>
 <h2 id="3-review-a-basic-scenario">3. Review a Basic Scenario</h2>
-<p>A scenario defines the models, timeline, and connections. In the <code>src/scenarios</code> directory, open <code>simple_test.yaml</code>. 
-This file defines a single <code>spring_mass_damper</code> physics model and an <code>inputs4spring</code> signal model publishing into it.</p>
-<pre><code class="language-yaml">name: &quot;case0: simple_test&quot;
-start_time: &quot;2024-01-01 00:00:00&quot;
-end_time: &quot;2024-01-02 00:00:00&quot;
+<p>A scenario defines the models, timeline, and connections. In the <code>src/scenarios/</code> directory, open <code>simple_test.yaml</code>.
+This file defines two federates inside one federation: a <code>spring_federate</code> running the <code>spring_mass_damper</code> physics model (2 instances) and an <code>input_federate</code> running the <code>inputs4spring</code> signal model that publishes the driving <code>force</code> and <code>disturbance</code> signals.</p>
+<pre><code class="language-yaml">name: &quot;simple_test&quot;
+start_time: &quot;2024-01-01T00:00:00&quot;
+end_time:   &quot;2024-01-01T01:00:00&quot;
 
 federations:
-  - name: &quot;federation1&quot;
-    # ... broker and federate definitions
-    # Detailed in &quot;Scenario Configuration&quot;
+  federation_1:                 # dict keyed by federation name (not a list)
+    broker_config:
+      core_type: &quot;zmq&quot;
+      port: 23404
+    federate_configs:
+      spring_federate:          # ... broker and federate definitions
+      input_federate:           # detailed in &quot;Scenario Configuration&quot;
 </code></pre>
+<blockquote>
+<p>Full field-by-field reference is in <a href="../scenario_configuration/overview/">Scenario Configuration</a>.</p>
+</blockquote>
 <h2 id="4-run-the-scenario">4. Run the Scenario</h2>
-<p>All scenarios in CosimGym are launched via the main entry point: <code>src/test_script.py</code>. Let's execute the <code>case0</code> (simple test).</p>
-<p>Make sure your conda environment is activated:</p>
-<pre><code class="language-bash">conda activate cosim_gym
-python src/test_script.py --scenario simple_test
+<p>All scenarios are launched via the main entry point <code>src/test_script.py</code>. There is <strong>no command-line flag</strong> — you select the scenario by editing the file and calling <code>main('&lt;scenario_name&gt;')</code>:</p>
+<pre><code class="language-python"># src/test_script.py
+from core.ScenarioManager import main
+
+main('simple_test')      # scenario filename without the .yaml extension
 </code></pre>
-<p>You will see logs streaming showing the Scenario Manager spawning brokers and advancing time. The output artifacts are saved inside the <code>logs/</code> and <code>results/</code> directories.</p>
+<p>Then, with the conda environment active, run it from the repository root:</p>
+<pre><code class="language-bash">conda activate cosim_gym
+python src/test_script.py
+</code></pre>
+<p>Or use the Makefile wrapper, which validates the setup first:</p>
+<pre><code class="language-bash">make run
+</code></pre>
+<p>You will see logs streaming as the Scenario Manager spawns brokers and advances time. Output artifacts are saved under <code>logs/</code> and <code>results/&lt;scenario_name&gt;/</code>.</p>
 <h2 id="5-visualize-results-in-dashboard">5. Visualize Results in Dashboard</h2>
-<p>CosimGym features a built-in interactive Streamlit dashboard. It connects directly to the resulting output files (Parquet + InfluxDB).</p>
+<p>CosimGym features a built-in interactive Streamlit dashboard. It reads the JSON result files written under <code>results/</code> (and builds a local Parquet cache for fast re-loading).</p>
 <p>Start the dashboard:</p>
 <pre><code class="language-bash">make run-dashboard
 </code></pre>

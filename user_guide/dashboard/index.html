@@ -14,14 +14,14 @@
         <link rel="prev" href="../rl_integration/">
       
       
-        <link rel="next" href="../../examples/examples_list/">
+        <link rel="next" href="../troubleshooting/">
       
       
         
       
       
       <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -500,6 +500,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -509,10 +537,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -530,8 +558,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -752,6 +780,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../rl_integration/" class="md-nav__link">
         
   
@@ -882,6 +938,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1117,9 +1201,11 @@
 <h1 id="dashboard-analytics">Dashboard &amp; Analytics</h1>
 <p>Co-simulation outputs high-frequency time-series data across dozens of models. To help rapidly inspect these massive traces and evaluate AI training success, CosimGym features an automated runtime Streamlit Dashboard.</p>
 <h2 id="the-data-pipeline">The Data Pipeline</h2>
-<p>CosimGym utilizes a dual-path caching system defined in <code>ScenarioManager</code>:
-1. <strong>InfluxDB Integration (Optional/Legacy):</strong> True real-time metric pushes.
-2. <strong>Parquet Caching (Default/Preferred):</strong> At conclusion of the simulation run, federates dump internal logging tables into highly compressed <code>.parquet</code> formats stored inside <code>results/&lt;scenario_run&gt;</code>. </p>
+<ol>
+<li><strong>JSON results (default):</strong> At the end of a run, each federate writes its buffered timeseries to JSON files under <code>results/&lt;scenario_name&gt;/&lt;sim_id&gt;/&lt;federation_name&gt;/</code> (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.json</code>).</li>
+<li><strong>Parquet cache:</strong> The first time the dashboard opens a run, it converts those JSON files into a compressed <code>.parquet</code> cache for fast subsequent re-loading.</li>
+<li><strong>InfluxDB (optional/legacy):</strong> A real-time metric-push path exists in <code>src/utils/influxdb_client.py</code>, but it is not part of the default Docker stack and is disabled unless explicitly configured.</li>
+</ol>
 <h2 id="how-to-use-the-dashboard">How To Use The Dashboard</h2>
 <p>If you used the Makefile setup:</p>
 <pre><code class="language-bash">make run-dashboard

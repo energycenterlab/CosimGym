@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -498,6 +498,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../user_guide/running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -507,10 +535,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -528,8 +556,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -750,6 +778,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../user_guide/fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../user_guide/rl_integration/" class="md-nav__link">
         
   
@@ -786,6 +842,34 @@
     
   
     Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
   
 
     
@@ -969,6 +1053,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Core Takeaways">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Topology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-model-instantiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Model instantiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-publish-subscribe-wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Publish / Subscribe wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1072,6 +1195,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Core Takeaways">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Topology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-model-instantiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Model instantiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-publish-subscribe-wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Publish / Subscribe wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1103,47 +1265,52 @@
 
 
 <h1 id="example-1-base-simulation-case-0">Example 1: Base Simulation (Case 0)</h1>
-<p>This scenario demonstrates the simplest possible CosimGym layout: a one-federation instance connecting a math model (<code>spring_mass_damper</code>) to a driving force (<code>inputs4spring</code>).</p>
+<p>This scenario demonstrates the simplest CosimGym layout: one federation wiring a physics model (<code>spring_mass_damper</code>) to a signal generator (<code>inputs4spring</code>).</p>
 <h2 id="scenario-source">Scenario Source</h2>
 <p>Found at <code>src/scenarios/simple_test.yaml</code>.</p>
 <h2 id="core-takeaways">Core Takeaways</h2>
-<ol>
-<li>
-<p><strong>Topology Definition:</strong>
-We declare a single <code>federation1</code> running a <code>zmq</code> broker.</p>
-</li>
-<li>
-<p><strong>Model Instantiation:</strong>
-Inside the federate <code>Fed_simple</code>, two models are spawned:</p>
-</li>
-</ol>
+<h3 id="1-topology">1. Topology</h3>
+<p>A single federation <code>federation_1</code> runs a <code>zmq</code> broker and hosts two <code>base</code> federates:</p>
+<ul>
+<li><code>input_federate</code> → runs <code>inputs4spring</code>, publishes <code>force</code> and <code>disturbance</code>.</li>
+<li><code>spring_federate</code> → runs <code>spring_mass_damper</code>, subscribes to those signals and publishes <code>position</code>, <code>velocity</code>, <code>acceleration</code>.</li>
+</ul>
+<p>Both federates instantiate <strong>2 model instances</strong> (<code>n_instances: 2</code>), so two independent springs run in parallel.</p>
+<h3 id="2-model-instantiation">2. Model instantiation</h3>
+<p><code>model_configs</code> is a single object with an <code>instantiation</code> block (not a list of models):</p>
 <pre><code class="language-yaml">model_configs:
-  - model_name: &quot;spring_mass_damper&quot;
-    instantiation:
-      n_instances: 1
-    parameters:
-      mass: 10.0
-      spring_constant: 50.0
-      damping_coefficient: 5.0
-
-  - model_name: &quot;inputs4spring&quot;
-    instantiation:
-      n_instances: 1
-    parameters:
-      target_amplitude: 1.0 # The displacement the spring should reach
+  instantiation:
+    model_name: &quot;spring_mass_damper&quot;
+    n_instances: 2
+    prefix: &quot;spring&quot;
+  parameters:
+    mass:      [5, 5]          # one value per instance
+    damping:   [2.0, 3.0]
+    stiffness: [10.0, 20]
+  init_state:
+    position: [0.0, 100.0]
+    velocity: 0.0
+    force:    [10.0, 5.0]
 </code></pre>
-<ol>
-<li><strong>Publish / Subscribe Mapping:</strong>
-The spring must read the force generated by the inputs, and the inputs might read the current state of the spring.
-Notice how the HELICS strings align: </li>
-<li><code>inputs4spring</code> publishes <code>federation1/input4spring1/output_var</code>.</li>
-<li><code>spring_mass_damper</code> subscribes <code>input_var</code> to <code>federation1/input4spring1/output_var</code>.</li>
-</ol>
+<h3 id="3-publish-subscribe-wiring">3. Publish / Subscribe wiring</h3>
+<p>The spring subscribes its <code>force</code> input to the input federate's <code>force</code> publication, per instance. The <code>targets</code> map is keyed by instance index:</p>
+<pre><code class="language-yaml">subscribes:
+  - key: &quot;force&quot;
+    type: &quot;double&quot;
+    units: &quot;N&quot;
+    targets:
+      '0': [input_federate.0/force]   # &lt;federate_name&gt;.&lt;instance&gt;/&lt;pub_key&gt;
+      '1': [input_federate.1/force]
+</code></pre>
 <h2 id="execution">Execution</h2>
-<p>Run it:</p>
-<pre><code class="language-bash">python src/test_script.py --scenario simple_test
+<p>Set the scenario in the entry-point script and run it (no <code>--scenario</code> flag exists):</p>
+<pre><code class="language-python"># src/test_script.py
+main('simple_test')
 </code></pre>
-<p>Once complete, open the dashboard. You will see an under-damped harmonic oscillation graph where <code>spring_mass_damper_1_displacement</code> rings and eventually dampens to the <code>target_amplitude</code> generated by <code>inputs4spring_1_output</code>.</p>
+<pre><code class="language-bash">conda activate cosim_gym
+python src/test_script.py        # or: make run
+</code></pre>
+<p>Once complete, open the dashboard (<code>make run-dashboard</code>) and select the run. You will see the recorded <code>position</code>, <code>velocity</code>, and <code>acceleration</code> traces for each spring instance responding to the driving <code>force</code>.</p>
 
 
 

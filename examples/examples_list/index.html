@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../../user_guide/dashboard/">
+        <link rel="prev" href="../../user_guide/troubleshooting/">
       
       
         <link rel="next" href="../example_base/">
@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -498,6 +498,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../user_guide/running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -507,10 +535,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -528,8 +556,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -750,6 +778,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../user_guide/fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../user_guide/rl_integration/" class="md-nav__link">
         
   
@@ -786,6 +842,34 @@
     
   
     Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
   
 
     
@@ -1096,9 +1180,17 @@
 <li><strong><code>bui_hp_DQN</code> / <code>bui_hp_SAC</code> (Cases 2 &amp; 3):</strong> Replaces the PID controller from Case 1 with stable-baselines3 agents learning optimal thermal setpoints based on ambient conditions. Includes "rolling reset" variations.</li>
 <li><strong><code>pv_batt_DQN</code> / <code>pv_batt_SAC</code> (Cases 5 &amp; 6):</strong> Replaces the Rule-Based manager from Case 4 with an algorithm learning deep policies to balance grid stability and storage degradation constraints. </li>
 </ul>
-<p>All cases can be executed via:</p>
-<pre><code class="language-bash">python src/test_script.py --scenario &lt;filename_without_yaml&gt;
+<p>To run any case, set the scenario name inside the entry-point script, then run it:</p>
+<pre><code class="language-python"># src/test_script.py        (base co-simulation cases)
+main('simple_test')
+
+# src/test_script_rl.py     (RL training cases)
+main('simple_DQN_test')
 </code></pre>
+<pre><code class="language-bash">conda activate cosim_gym
+python src/test_script.py        # or: python src/test_script_rl.py
+</code></pre>
+<p>There is no <code>--scenario</code> command-line flag; the scenario is chosen by the <code>main('&lt;name&gt;')</code> call.</p>
 
 
 

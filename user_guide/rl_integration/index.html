@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../custom_models/">
+        <link rel="prev" href="../fmu_models/">
       
       
         <link rel="next" href="../dashboard/">
@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -500,6 +500,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -509,10 +537,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -530,8 +558,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -749,6 +777,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -885,6 +941,34 @@
     
   
     Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
   
 
     
@@ -1147,33 +1231,35 @@
 - An <code>observation</code> is <strong>subscribed</strong> from the federates' output sensors over the local network.
 - The <code>step(action)</code> command essentially halts the agent process and advances the global HELICS time clock until the physics federates respond with the next state snapshot.</p>
 <h2 id="adding-rl-to-your-scenario">Adding RL to your Scenario</h2>
-<p>To execute a training loop, you do not write a python python pipeline. Instead, inject the <code>reinforcement_learning_config</code> block directly into the scenario YAML:</p>
+<p>To execute a training loop, you do not write a Python pipeline. Instead, inject the <code>reinforcement_learning_config</code> block directly into the scenario YAML. The agent is referenced by its catalog <code>model_name</code>; its observation and action spaces are wired from <code>env</code>:</p>
 <pre><code class="language-yaml">reinforcement_learning_config:
   agent:
-    class_name: &quot;StableBaselines3Agent&quot;
-    module: &quot;src.models.RL_agents.rl_simple_SACsb3&quot;
-    algorithm: &quot;SAC&quot;
-    library: &quot;stable_baselines3&quot;
+    model_name: &quot;rl_simple_SACsb3&quot;     # key in catalog.yaml
+    reward_function: &quot;models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward&quot;
+    env:
+      observations: [federation_1.spring_federate.0.position, federation_1.spring_federate.0.velocity]
+      actions:      [federation_1.spring_federate.0.force]
+      action_spaces_type: [&quot;box&quot;]      # &quot;discrete&quot; | &quot;box&quot;
     hyperparameters:
       learning_rate: 0.0003
       gamma: 0.99
       batch_size: 256
   training:
     mode: &quot;online&quot;
-    episode_length: 96
-    max_steps_per_episode: 96
-    train_frequency: 1
-    eval_frequency: 10
-  # Checkpointing and Tracking
+    episode_length: 96                 # simulation steps per episode
+    n_episodes: 1000
   checkpointing:
     enabled: true
-    directory: &quot;logs/&quot;
-    save_frequency: 5
+    directory: &quot;src/models/model_catalog/RL_agents/checkpoints&quot;
+    save_frequency: 5000
 </code></pre>
+<blockquote>
+<p>For the complete field reference (training, exploration, replay buffer, test, logging), see <a href="../scenario_configuration/rl/">Reinforcement Learning Configuration</a>.</p>
+</blockquote>
 <h3 id="supported-rl-libraries">Supported RL Libraries</h3>
 <p>CosimGym includes out-of-the-box wrappers for:
 - <strong>Stable-Baselines3</strong> (e.g., DQN, SAC)
-- Example implementations: <code>rl_simple_DQN.py</code>, <code>rl_simple_SACsb3.py</code> located in <code>src/models/RL_agents/</code>.</p>
+- Example implementations: <code>rl_simple_DQN.py</code>, <code>rl_simple_SACsb3.py</code> located in <code>src/models/model_catalog/RL_agents/</code>.</p>
 <p>Because the internal translation implements a standard <code>gymnasium.Env</code>, it is relatively trivial to bolt on libraries like <strong>Ray RLlib</strong> with minor modifications.</p>
 <h2 id="understanding-episode-logic-resets">Understanding Episode Logic &amp; Resets</h2>
 <p>Because the models executing the physics might be compiled FMUs or distributed systems, "resetting" an episode is complex.</p>

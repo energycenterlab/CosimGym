@@ -14,14 +14,14 @@
         <link rel="prev" href="../scenario_configuration/rl/">
       
       
-        <link rel="next" href="../rl_integration/">
+        <link rel="next" href="../fmu_models/">
       
       
         
       
       
       <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -500,6 +500,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -509,10 +537,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -530,8 +558,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -784,15 +812,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#extending-basemodel" class="md-nav__link">
+  <a href="#1-extending-basemodel" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Extending BaseModel
+        1. Extending BaseModel
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Extending BaseModel">
+    <nav class="md-nav" aria-label="1. Extending BaseModel">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -828,6 +856,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#minimal-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal example
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -845,10 +884,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-catalog-is-distributed" class="md-nav__link">
+  <a href="#3-how-the-catalog-is-distributed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the Catalog is distributed
+        3. How the Catalog is distributed
       
     </span>
   </a>
@@ -859,6 +898,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -907,6 +974,34 @@
     
   
     Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
   
 
     
@@ -1092,15 +1187,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#extending-basemodel" class="md-nav__link">
+  <a href="#1-extending-basemodel" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Extending BaseModel
+        1. Extending BaseModel
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Extending BaseModel">
+    <nav class="md-nav" aria-label="1. Extending BaseModel">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1136,6 +1231,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#minimal-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal example
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1153,10 +1259,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-catalog-is-distributed" class="md-nav__link">
+  <a href="#3-how-the-catalog-is-distributed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the Catalog is distributed
+        3. How the Catalog is distributed
       
     </span>
   </a>
@@ -1181,52 +1287,123 @@
 
 
 <h1 id="custom-models-catalog">Custom Models &amp; Catalog</h1>
-<p>CosimGym treats simulated environments as plug-and-play modules. To achieve this, it enforces an interface standard and manages deployments through a dynamic catalog.</p>
-<h2 id="extending-basemodel">Extending BaseModel</h2>
-<p>Any physical subsystem, controller, or data feed in CosimGym must extend the <code>BaseModel</code> class at <code>src/models/base_model.py</code>.</p>
-<p>A simplified lifecycle is defined by three strict overrides:</p>
+<p>CosimGym treats simulated environments as plug-and-play modules. To achieve this, it enforces a single interface standard (<code>BaseModel</code>) and resolves models at runtime through a dynamic <strong>Model Catalog</strong>.</p>
+<h2 id="1-extending-basemodel">1. Extending <code>BaseModel</code></h2>
+<p>Every physical subsystem, controller, or data feed must extend <code>BaseModel</code>, defined in <code>src/models/base_model.py</code>. You implement three lifecycle methods. You do <strong>not</strong> override <code>__init__</code> — the base class builds the model's <code>state</code> from the catalog metadata and your scenario config for you.</p>
+<p>All data lives on <code>self.state</code> (a <code>State</code> dataclass):</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>self.state.parameters</code></td>
+<td>Static parameters (from catalog defaults, overridden by the scenario <code>parameters</code> block)</td>
+</tr>
+<tr>
+<td><code>self.state.inputs</code></td>
+<td>Latest values received from subscriptions (filled by the federate before each <code>step()</code>)</td>
+</tr>
+<tr>
+<td><code>self.state.outputs</code></td>
+<td>Values your model produces — published to HELICS after <code>step()</code></td>
+</tr>
+<tr>
+<td><code>self.state.time</code></td>
+<td>Current simulation <code>datetime</code> (maintained by the base class)</td>
+</tr>
+<tr>
+<td><code>self.state.ts</code></td>
+<td>Current integer time step</td>
+</tr>
+</tbody>
+</table>
 <h3 id="initializeself"><code>initialize(self)</code></h3>
-<p>This is called once before the simulation clock starts ticking. Use it to ingest <code>self.parameters</code>, establish data arrays, and initialize physical matrices.</p>
+<p>Called once before the simulation clock starts. Use it to set up internal arrays, matrices, or solver state. Parameters are already available in <code>self.state.parameters</code>.</p>
 <h3 id="stepself"><code>step(self)</code></h3>
-<p>This method ticks every HELICS synchronous time step.
-- Internal simulation state is advanced.
-- All incoming values from the <code>self.inputs</code> dictionary should be read.
-- The resulting values must be pushed into the <code>self.outputs</code> dictionary.</p>
+<p>Called every HELICS time step. The base class has already updated the time state and copied incoming values into <code>self.state.inputs</code>. Your job:</p>
+<ol>
+<li>Read inputs from <code>self.state.inputs</code>.</li>
+<li>Advance your internal state.</li>
+<li>Write results into <code>self.state.outputs</code>.</li>
+</ol>
 <h3 id="finalizeself"><code>finalize(self)</code></h3>
-<p>Triggered at simulation end for graceful teardown or plotting generation.</p>
+<p>Called once at simulation end for cleanup (close files, free resources).</p>
+<h3 id="minimal-example">Minimal example</h3>
+<pre><code class="language-python"># src/models/model_catalog/physical_models/gain.py
+from models.base_model import BaseModel
+
+
+class Gain(BaseModel):
+    &quot;&quot;&quot;Multiplies its input by a constant gain parameter.&quot;&quot;&quot;
+
+    def initialize(self) -&gt; None:
+        self.k = self.state.parameters['gain']
+
+    def step(self) -&gt; None:
+        x = self.state.inputs.get('x', 0.0)
+        self.state.outputs['y'] = self.k * x
+
+    def finalize(self) -&gt; None:
+        pass
+</code></pre>
 <hr />
 <h2 id="2-registering-in-the-catalog">2. Registering in the Catalog</h2>
-<p>To allow the <code>ScenarioManager</code> to spin up your model by simply referencing string names in the YAML, your model must be registered in the <strong>Model Catalog</strong>.</p>
-<ol>
-<li>Place your new python class (e.g. <code>src/models/physical_models/custom_hvac.py</code>).</li>
-<li>Open <code>src/models/model_catalog/catalog.yaml</code>.</li>
-<li>Add a mapping specifying the metadata of your model:</li>
-</ol>
-<pre><code class="language-yaml">Custom_HVAC:
-  metadata:
-    class_name: &quot;CustomHVACModel&quot;
-    module_path: &quot;src.models.physical_models.custom_hvac&quot;
-    description: &quot;A custom HVAC simulation module&quot;
-  parameters:
-    max_cooling_power:
-      type: &quot;float&quot;
-      default_value: 50.0
-      units: &quot;kW&quot;
-  inputs:
-    ambient_temp:
-      type: &quot;float&quot;
-      units: &quot;C&quot;
-  outputs:
-    power_consumed:
-      type: &quot;float&quot;
-      units: &quot;kW&quot;
+<p>For <code>ScenarioManager</code> to instantiate your model from a string name in the YAML, register it in <code>src/models/model_catalog/catalog.yaml</code>. Every entry lives under the top-level <code>models:</code> key. Use <code>model_template.yaml</code> in the same folder as a starting point.</p>
+<pre><code class="language-yaml">models:
+  # ... existing entries ...
+
+  gain:                                                    # ← model_name referenced in scenario YAML
+    class_name: Gain                                       # Python class name
+    module_path: models.model_catalog.physical_models.gain # import path (NB: no &quot;src.&quot; prefix)
+    version: 1.0.0
+    description: Multiplies its input by a constant gain.
+    author: Your Name
+    domain: testing
+    category: physical_model
+    time_step: 60                                          # nominal step (seconds)
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+    parameters:
+      gain:
+        type: float
+        default_value: 2.0       # NB: default_value, and unit (singular)
+        unit: '-'
+        description: Multiplication factor
+        required: false
+    inputs:
+      x:
+        type: float
+        default_value: 0.0
+        unit: '-'
+        description: Input signal
+        required: true
+    outputs:
+      y:
+        type: float
+        default_value: 0.0
+        unit: '-'
+        description: Scaled output signal
+        required: true
 </code></pre>
-<h2 id="how-the-catalog-is-distributed">How the Catalog is distributed</h2>
+<blockquote>
+<p><strong>Catalog vs. connections.</strong> The <code>parameters</code> / <code>inputs</code> / <code>outputs</code> blocks in the catalog declare the model's interface schema and <strong>default values</strong>. The actual HELICS wiring (which variable subscribes to which publisher) is defined separately in the scenario's <code>connections.publishes</code> / <code>connections.subscribes</code>. The <code>key</code> of each publish/subscribe must match an <code>outputs</code> / <code>inputs</code> name here. See <a href="../scenario_configuration/federate/">Federate Configuration</a>.</p>
+</blockquote>
+<hr />
+<h2 id="3-how-the-catalog-is-distributed">3. How the Catalog is distributed</h2>
 <ol>
-<li>At simulation launch, <code>catalog_loader.py</code> reads <code>catalog.yaml</code>.</li>
-<li>It constructs a <code>ModelCatalog</code> instance and drops it into <strong>Redis</strong>.</li>
-<li>When the <code>ScenarioManager</code> spawns a disconnected <code>Federate</code> in a totally separate OS process, the federate queries Redis for the specific python module and parameters, instantiating your custom object without dealing with fragile local pathing dependencies.</li>
+<li>At setup, <code>catalog_loader.py</code> reads <code>catalog.yaml</code> and loads every entry into <strong>Redis</strong>.</li>
+<li>When <code>ScenarioManager</code> spawns each federate in its own OS process, that federate queries Redis (via <code>RedisCatalog</code>) for the model's <code>module_path</code>, <code>class_name</code>, and interface defaults.</li>
+<li>The federate dynamically imports the class and instantiates it — no fragile local path dependencies between processes.</li>
 </ol>
+<p>Reload the catalog after editing <code>catalog.yaml</code>:</p>
+<pre><code class="language-bash">python src/models/model_catalog/catalog_loader.py
+</code></pre>
+<p>(The Docker / Makefile setups run this step for you.)</p>
 
 
 
