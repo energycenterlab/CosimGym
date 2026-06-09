@@ -9,7 +9,7 @@
 #   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
 
 version: "1.0.0"
-scenario_name: "bui_hp_DQN"
+name: "bui_hp_DQN"
 scenario_description: "Building thermal model controlled by a DQN RL agent, with real weather data from CSV."
 
 start_time: "2024-01-01T00:00:00"

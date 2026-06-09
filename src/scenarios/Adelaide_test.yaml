@@ -9,7 +9,7 @@
 #   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
 
 version: "1.0.0"
-scenario_name: "Adelaide_test"
+name: "Adelaide_test"
 scenario_description: "fmu_test"
 
 start_time: "2024-01-01T00:00:00"

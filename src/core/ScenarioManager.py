@@ -24,10 +24,9 @@ import pprint
 import socket
 import pandas as pd
 from collections import deque
-from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-from utils.config_dataclasses import BrokerConfig, FederationConfig,FederateConfig,FedTimingConfig,FedFlags,FedConnections,MemoryConfig,FedPublication,FedSubscription,StartupSyncConfig
+from utils.config_dataclasses import BrokerConfig, FederationConfig, FederateConfig, RLFederateConfig, FedTimingConfig, FedFlags, FedConnections, MemoryConfig, FedPublication, FedSubscription, StartupSyncConfig
 from utils.config_reader import read_scenario_config
 from utils.logging_config import FederationLogger
 from utils.redis_client import RedisClient
@@ -535,19 +534,14 @@ class ScenarioManager:
         broker_config = BrokerConfig(core_type=None, port=None, log_level=self.config.log_level, federates=1) # TODO: this is hardcoded, we should understand how to set this in a dynamic way based on the existing brokers and the expected communication needs of the RL agent
         
         fed_configs={
-                                            'rl_agent': FederateConfig(
+                                            'rl_agent': RLFederateConfig(
                                                 type='rl',
                                                 id='',
                                                 name='rl_agent',
-                                                model_configs=None, 
-                                                timing_configs=FedTimingConfig(real_period=rl_period), 
-                                                flags=FedFlags(),
-                                                connections=FedConnections(publishes=publications, subscribes=subscriptions, endpoints=[]), 
-                                                memory_config=None, # TODO: this is hardcoded, we should understand how to set this in a dynamic way based on the expected memory usage of the RL agent
+                                                timing_configs=FedTimingConfig(real_period=rl_period),
+                                                connections=FedConnections(publishes=publications, subscribes=subscriptions),
                                                 log_level=self.config.log_level,
-                                                core_name=None,
                                                 core_type=None,
-                                                broker_address=None
                                             )
                                         }
         federation_conf= FederationConfig(broker_config=broker_config,
@@ -670,7 +664,7 @@ class ScenarioManager:
         redis_db = int(os.getenv('REDIS_DB', '0'))
         self.redis_url = os.getenv('REDIS_URL', f'redis://{redis_host}:{redis_port}/{redis_db}')
 
-        config_dict = asdict(self.config)
+        config_dict = self.config.model_dump()
         self.logger.info(f"Storing scenario configuration in Redis. config={pp.pformat(config_dict)}")
         if self.redis_client:
                 # Store config in Redis with 1 hour expiration

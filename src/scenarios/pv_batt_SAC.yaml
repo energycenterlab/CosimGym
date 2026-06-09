@@ -9,7 +9,7 @@
 #   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
 
 version: "1.0.0"
-scenario_name: "pv_batt_SAC"
+name: "pv_batt_SAC"
 scenario_description: "Simple test case with PV, Battery, Weather, and electric Load + RL agent SAC drom stablebaseline"
 
 start_time: "2024-01-01T00:00:00"

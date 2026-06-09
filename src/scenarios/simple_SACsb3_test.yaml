@@ -4,7 +4,7 @@
 
 
 version: "1.0.0"
-scenario_name: "simple_test_SACsb3"
+name: "simple_test_SACsb3"
 scenario_description: test using integration of SB3 SAC algorithm.
 
 start_time: "2024-01-01T00:00:00"

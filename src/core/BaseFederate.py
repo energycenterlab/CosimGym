@@ -21,7 +21,6 @@ from abc import ABC, abstractmethod
 print(os.getcwd())
 sys.path.append('src/')
 from datetime import datetime, timedelta
-from dataclasses import fields
 from utils.config_dataclasses import FederateConfig, StartupSyncConfig
 from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, InterfaceType
 from models.model_catalog.RedisCatalog import RedisCatalog
@@ -244,11 +243,9 @@ class BaseFederate():
         # set the flags
         flags = self.config.flags
         if flags:
-            for field in fields(flags):
-                flag_name = field.name
-                flag_value = getattr(flags, flag_name)
+            for flag_name, flag_value in flags.model_dump().items():
                 flag_name = 'HELICS_FLAG_{}'.format(flag_name.upper())
-                fed.flag[getattr(h,flag_name)] = flag_value
+                fed.flag[getattr(h, flag_name)] = flag_value
         else:
             self.logger.warning("Federate Flags in yaml config file are empty!\n")
  

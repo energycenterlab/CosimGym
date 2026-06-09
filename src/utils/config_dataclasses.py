@@ -1,20 +1,22 @@
-
 """
-Configuration Data Classes
+Configuration Models
 
-This module defines all data classes used for configuration management
-in the COSIM Gym framework. These classes represent the structure of
-HELICS federations, federates, and their configurations.
-
-Author: Pietro Rando Mazzarino
-Date: 2025
+Pydantic v2 models for COSIM Gym scenario, federation, and federate configuration.
+All models use extra='ignore' so YAML keys without a corresponding field are silently
+dropped, preserving the permissive behaviour of the original dataclass approach.
 """
 
 import logging
 import os
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Union, Any, Tuple
+from typing import Annotated, Any, Dict, List, Literal, Optional, Tuple, Union
 from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+# ==============================================================================
+# ENUM
+# ==============================================================================
 
 class LogLevel(str, Enum):
     CRITICAL = "CRITICAL"
@@ -22,24 +24,18 @@ class LogLevel(str, Enum):
     WARNING  = "WARNING"
     INFO     = "INFO"
     DEBUG    = "DEBUG"
-    NOTSET  = "NOTSET"
+    NOTSET   = "NOTSET"
 
     def to_logging_level(self) -> int:
-        """Return the corresponding logging level constant."""
-        # equivalent to logging.DEBUG, logging.INFO, etc.
         return getattr(logging, self.value)
-    
+
     def as_string(self) -> str:
-        """Return the log level as a plain string: 'INFO', 'DEBUG', etc."""
         return self.value
+
     def as_lc_str(self) -> str:
-        """Return the log level as a lowercase string: 'info', 'debug', etc."""
         return self.value.lower()
 
     def to_helics_level(self) -> str:
-        """Return the equivalent HELICS broker log level string.
-        HELICS does not have 'info'; the nearest equivalent is 'summary'.
-        """
         _map = {
             'DEBUG':    'debug',
             'INFO':     'summary',
@@ -51,25 +47,14 @@ class LogLevel(str, Enum):
         return _map.get(self.value, 'summary')
 
 
+# ==============================================================================
+# TIMING / SYNC
+# ==============================================================================
 
-@dataclass
-class FedTimingConfig:
-    """
-    Configuration for federate timing parameters.
-    
-    This class defines timing-related settings for HELICS federates,
-    including simulation time periods, timeouts, and synchronization options.
-    
-    Attributes:
-        time_period (int): Base time period for the federate
-        time_stop (float): Simulation stop time
-        start_time (str): Simulation start time
-        timeout (int): Timeout value in seconds (default: 30)
-        real_period (Optional[int]): Real-time period, defaults to time_period
-        time_offset (float): Time offset for the federate (default: 0.0)
-        int_max_iterations (int): Maximum iterations (default: 10000)
-    """
-    real_period: int   # This is the only required field the others will be updated accordingly depending on the scenario configs
+class FedTimingConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    real_period: int
     time_period: Optional[int] = None
     time_delta: Optional[float] = None
     time_stop: Optional[float] = None
@@ -78,82 +63,54 @@ class FedTimingConfig:
     timeout: Optional[int] = 30
     time_offset: Optional[float] = 0.0
     int_max_iterations: Optional[int] = 10000
-    # Filled by parser: True if `time_offset` was explicitly set in YAML.
     time_offset_explicit: bool = False
-    
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
+
+    @model_validator(mode='before')
+    @classmethod
+    def _mark_explicit_offset(cls, data: Any) -> Any:
+        if isinstance(data, dict) and 'time_offset' in data and 'time_offset_explicit' not in data:
+            data = dict(data)
+            data['time_offset_explicit'] = True
+        return data
 
 
-@dataclass
-class StartupSyncConfig:
-    """
-    Per-federate startup synchronization policy.
+class StartupSyncConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-    Attributes:
-        enabled: Enable startup input synchronization before first model step.
-        force_read_all_subscriptions: Read current values even when inputs are not flagged as updated.
-        missing_inputs_policy: One of "error", "warn", "ignore".
-        required_inputs: Optional explicit list of required input variable names.
-    """
     enabled: bool = True
     force_read_all_subscriptions: bool = True
     require_updated_inputs: bool = True
     require_finite_numeric: bool = True
-    invalid_numeric_sentinels: Optional[List[float]] = field(default_factory=lambda: [-1e49])
+    invalid_numeric_sentinels: Optional[List[float]] = Field(default_factory=lambda: [-1e49])
     missing_inputs_policy: str = "warn"
     invalid_inputs_policy: str = "warn"
     required_inputs: Optional[List[str]] = None
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class AutoOffsetConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class AutoOffsetConfig:
-    """
-    Scenario-wide automatic time-offset sequencing policy.
-
-    Attributes:
-        enabled: Enable dependency-based auto offset assignment.
-        offset_step: Offset increment per dependency stage (HELICS time units).
-        override_existing_offsets: If True, overwrite explicit time offsets.
-    """
     enabled: bool = True
     offset_step: float = 0.1
     override_existing_offsets: bool = False
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class SynchronizationConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class SynchronizationConfig:
-    """
-    Scenario-level synchronization policy.
-    """
-    auto_offset: AutoOffsetConfig = field(default_factory=AutoOffsetConfig)
-    default_startup_sync: StartupSyncConfig = field(default_factory=StartupSyncConfig)
+    auto_offset: AutoOffsetConfig = Field(default_factory=AutoOffsetConfig)
+    default_startup_sync: StartupSyncConfig = Field(default_factory=StartupSyncConfig)
     default_subscription_causality: str = "same_step"
     validate_causality_cycles: bool = True
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-    
-@dataclass
-class FedFlags:
-    """
-    Configuration flags for HELICS federate behavior.
-    
-    This class defines boolean flags that control various aspects of
-    federate behavior, error handling, and execution modes.
-    
-    All attributes default to False unless otherwise specified.
-    """
+
+# ==============================================================================
+# FEDERATE FLAGS
+# ==============================================================================
+
+class FedFlags(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     terminate_on_error: bool = True
     debugging: bool = False
     realtime: bool = False
@@ -174,456 +131,129 @@ class FedFlags:
     dumplog: bool = False
     slow_responding: bool = False
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
-@dataclass
-class FedEndpoint:
-    """
-    Configuration for a HELICS federate endpoint.
-    
-    Endpoints are used for point-to-point communication between federates.
-    
-    Attributes:
-        key (str): Unique identifier for the endpoint
-        name (str): Human-readable name for the endpoint
-    
-    Note:
-        Endpoint design and implementation is still under development.
-    """
-    key: str 
-    name: str 
+# ==============================================================================
+# CONNECTIONS
+# ==============================================================================
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
+class FedEndpoint(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class FedPublication:
-    """
-    Configuration for a HELICS federate publication.
-    
-    Publications are used to publish data that can be subscribed to by other federates.
-    
-    Attributes:
-        key (str): Unique identifier for the publication
-        type (str): Data type of the publication
-        units (str): Units of measurement for the published data
-    """
+    key: str
+    name: str
+
+
+class FedPublication(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     key: str
     type: str
     units: str
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
-@dataclass
-class FedSubscription:
-    """
-    Configuration for a HELICS federate subscription.
-    
-    Subscriptions are used to receive data published by other federates.
-    
-    Attributes:
-        key (str): Unique identifier for the subscription
-        type (str): Data type of the subscription
-        units (str): Units of measurement for the subscribed data
-        targets (Optional[List[str]]): Target publications to subscribe to
-        multi_input_handling (Optional[str]): Method for handling multiple inputs
-    """
+class FedSubscription(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     key: str
     type: str
     units: str
-    targets: Optional[Union[ List[Any], Dict[str, Any]]] = None
+    targets: Optional[Union[List[Any], Dict[str, Any]]] = None
     causality: str = "same_step"
-    multi_input_handling: Optional[Union[ str, Dict[str, Any]]] = None
+    multi_input_handling: Optional[Union[str, Dict[str, Any]]] = None
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
-@dataclass
-class FedConnections:
-    """
-    Container for all federate connection configurations.
-    
-    This class groups together all types of federate connections including
-    endpoints, subscriptions, and publications.
-    
-    Attributes:
-        endpoints (List[FedEndpoint]): List of endpoint configurations
-        subscribes (List[FedSubscription]): List of subscription configurations
-        publishes (List[FedPublication]): List of publication configurations
-    """
-    endpoints: List[FedEndpoint]
-    subscribes: List[FedSubscription]
-    publishes: List[FedPublication]
+class FedConnections(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
+    endpoints: List[FedEndpoint] = Field(default_factory=list)
+    subscribes: List[FedSubscription] = Field(default_factory=list)
+    publishes: List[FedPublication] = Field(default_factory=list)
 
-@dataclass
-class ModelInstantiationConfig:
-    """
-    Configuration for model instantiation within a federate.
-    
-    This class defines how models are instantiated and executed within federates.
-    
-    Attributes:
-        class_name (str): Name of the model class to instantiate
-        model_script (str): Path to the script containing the model
-        n_instances (int): Number of model instances to create
-    """
+
+# ==============================================================================
+# MODEL CONFIG
+# All dict-valued fields default to {} because YAML often omits them.
+# Values typed as Any to allow both scalars and lists (e.g. init_state: {x: 0.0}).
+# ==============================================================================
+
+class ModelInstantiationConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     model_name: str
-    prefix: str
+    prefix: str = 'model'
     n_instances: int = 1
     parallel_execution: bool = False
-    max_paraller_workers: Optional[int] = None  # Only relevant if parallel_execution is True
+    max_paraller_workers: Optional[int] = None
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
-@dataclass
-class ModelConfig:
-    """
-    Complete configuration for federate models.
-    
-    This class contains all model-related configuration including
-    initialization state, parameters, inputs, outputs, and instantiation settings.
-    
-    Attributes:
-        init_state (Dict[str, List[float]]): Initial state values
-        parameters (Dict[str, List[float]]): Model parameters
-        inputs (Dict[str, List[str]]): Input configuration
-        outputs (Dict[str, List[str]]): Output configuration
-        instantiation (ModelInstantiationConfig): Instantiation configuration
-    """
-    init_state: Dict[str, List[float]]
-    parameters: Dict[str, List[float]]
-    inputs: Dict[str, List[str]]
-    outputs: Dict[str, List[str]]
+class ModelConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     instantiation: ModelInstantiationConfig
-    user_defined: Optional[Dict[str, any]] = field(default_factory=dict)  # For any extra model-specific config
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-    
-@dataclass
-class MemoryConfig:
-    """
-    Configuration for data storage and persistence.
-    
-    This class defines how simulation data is stored, buffered, and written
-    to InfluxDB during execution.
-    
-    Attributes:
-        batch_size (int): Number of time steps to buffer before writing to InfluxDB
-        storage_interval (int): Store data every N steps (default: 1 = every step)
-        attrs (List[str]): List of attributes to store. 
-                          Use ['all'] to store everything (inputs, outputs, params)
-                          Or specify categories: ['inputs', 'outputs', 'params']
-                          Or specific attributes: ['position', 'velocity', etc.]
-        use_numpy_storage (bool): Use NumPy arrays for storage (faster for large datasets)
-        enabled (bool): Enable/disable storage completely
-    """
+    init_state: Dict[str, Any] = Field(default_factory=dict)
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+    inputs: Dict[str, Any] = Field(default_factory=dict)
+    outputs: Dict[str, Any] = Field(default_factory=dict)
+    user_defined: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+
+# ==============================================================================
+# MEMORY CONFIG
+# attrs can be the literal string "all" or a list of attribute names.
+# ==============================================================================
+
+class MemoryConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     batch_size: int = 100
-    attrs: List[str] = field(default_factory=lambda: ['all'])
-    
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-    
-@dataclass
-class FederateConfig:
-    """
-    Complete configuration for a HELICS federate.
-    
-    This class contains all configuration needed to create and run a federate,
-    including identification, timing, flags, connections, and model settings.
-    
-    Attributes:
-        name (str): Name of the federate
-        type (str): Type/class of the federate
-        id (int): Unique identifier for the federate
-        log_level (int): Logging level for the federate
-        timing_configs (FedTimingConfig): Timing configuration
-        flags (FedFlags): Behavior flags
-        connections (FedConnections): Connection configurations
-        model_configs (ModelConfig): Model configuration
-    """
-    name: str
-    type: str
-    id: int
-    timing_configs: FedTimingConfig
-    flags: FedFlags
-    connections: FedConnections
-    model_configs: ModelConfig
-    memory_config : MemoryConfig
-    log_level: LogLevel = LogLevel.INFO
-    core_name: Optional[str] = None  # e.g., "zmq", "tcp", etc.
-    core_type: Optional[str] = "zmq"  # e.g., "zmq", "tcp", etc.
-    broker_address: Optional[str] = None  # Address of the broker to connect to (e.g., "tcp://localhost:23404")
-    rl_config: Optional[Dict] = None  # Number of steps between episode resets (for RL federates)
-    mode: Optional[str] = 'test'  # "training" or "test"    
-    startup_sync: Optional[StartupSyncConfig] = None
-    # only for RL federates, TODO: create a child class RL_FederateConfig that inherits from this and adds these fields, this is just for testing now
-    controlled_models: Optional[Dict[str, str]] = None   # {full_attr_id: model_name}
-    observed_models: Optional[Dict[str, str]] = None
-    additional_observed_models: Optional[Dict[str, str]] = None
-    reset_observation_defaults: Optional[Dict[str, Any]] = None
-    rl_task: Optional[Any] = None
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-
-
-@dataclass
-class BrokerConfig:
-    """
-    Configuration for the HELICS broker.
-    
-    The broker coordinates communication between federates in a federation.
-    
-    Attributes:
-        core_type (str): Type of broker core (e.g., 'zmq', 'tcp')
-        port (int): Port number for broker communication
-        federates (int): Number of federates expected to connect
-        log_level (LogLevel): Logging level for the broker
-    """
-    core_type: str
-    port: int
-    federates: Optional[int] = None# This is optional only for main broker TODO should be autocalculated on the number of federates
-    log_level: LogLevel = LogLevel.INFO
-    host:Optional[str] = None  # Hostname or IP address for the broker (default: localhost)
-    address: Optional[str] = None  # Full address for THIS broker (e.g., "tcp://localhost:23404")
-    broker_address: Optional[str] = None  # e.g., "localhost" or IP address for remote broker
-    sub_brokers:Optional[int]= None
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-
-@dataclass
-class FederationConfig:
-    """
-    Complete configuration for a HELICS federation.
-    
-    A federation consists of a broker and multiple federates working together.
-    
-    Attributes:
-        broker_config (BrokerConfig): Broker configuration
-        federate_configs (List[FederateConfig]): List of federate configurations
-        name (str): Name of the federation
-    """
-    broker_config: BrokerConfig
-    federate_configs: Dict[str, FederateConfig]
-    name: str
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-
-@dataclass
-class MultiComputerConfig:
-    """
-    TODO: this class is still under development and may be modified significantly.
-    Configuration for multi-computer execution of a scenario.
-    
-    This class defines the """
-    ssh_user: str
-    ssh_key_path: str
-    hostnames: List[str]
-    # Additional fields can be added as needed (e.g., port forwarding settings, etc.)
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-
-
-@dataclass
-class ScenarioConfig:
-    """
-    Complete configuration for a simulation scenario.
-    
-    A scenario can contain multiple federations and defines the overall
-    simulation parameters.
-    
-    Attributes:
-        name (str): Name of the scenario
-        federations (List[FederationConfig]): List of federation configurations
-        start_time (str): Scenario start time
-        end_time (str): Scenario end time
-        
-    Note:
-        It may be necessary to add a parent broker configuration for scenarios
-        with multiple federations, depending on HELICS requirements.
-    """
-    name: str
-    federations: Dict[str, FederationConfig]
-    start_time: str
-    end_time: str
-    memory_config: MemoryConfig
-    reinforcement_learning_config: Optional['ReinforcementLearningConfig'] = None
-    synchronization: SynchronizationConfig = field(default_factory=SynchronizationConfig)
-    log_level: LogLevel = LogLevel.INFO
-    multi_computer: bool = False  # Flag to indicate if the scenario is designed for multi-computer execution
-    multi_computer_config: Optional[MultiComputerConfig] = None  # Additional configuration for multi-computer setups (e.g., SSH credentials, hostnames, etc.)
-    # TODO: Consider adding parent broker configuration for multi-federation scenarios
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-
-
+    attrs: Union[Literal['all'], List[str]] = Field(default_factory=lambda: ['all'])
 
 
 # ==============================================================================
-# REINFORCEMENT LEARNING CONFIGURATION
+# RL CONFIGURATIONS
+# Defined before FederateConfig so _FederateConfigBase can reference
+# ReinforcementLearningConfig without forward references.
 # ==============================================================================
 
-@dataclass
-class RLHyperparametersConfig:
-    """
-    Core hyperparameters for deep reinforcement learning algorithms.
-    
-    This class defines common hyperparameters shared across different RL libraries
-    (Stable-Baselines3, RLlib, etc.). Algorithm-specific parameters can be passed
-    through the algorithm_kwargs field.
-    
-    Attributes:
-        # Core learning parameters
-        learning_rate (float): Learning rate for the optimizer
-        gamma (float): Discount factor for future rewards [0.0-1.0]
-        batch_size (int): Mini-batch size for training
-        
-        # Network architecture
-        net_arch (Optional[List[int]]): Hidden layer sizes (e.g., [256, 256])
-        activation_fn (str): Activation function ("relu", "tanh", "elu", "gelu")
-        
-        # Optimization
-        optimizer (str): Optimizer type ("adam", "rmsprop", "sgd")
-        gradient_clip (Optional[float]): Max gradient norm for clipping
-        
-        # Policy gradient specific (PPO, A2C, etc.)
-        n_epochs (Optional[int]): Number of epochs for on-policy algorithms
-        ent_coef (Optional[float]): Entropy coefficient for exploration
-        vf_coef (Optional[float]): Value function coefficient
-        gae_lambda (Optional[float]): GAE lambda parameter [0.0-1.0]
-        clip_range (Optional[float]): PPO clipping parameter
-        normalize_advantages (bool): Normalize advantages
-        
-        # Q-learning specific (DQN, SAC, TD3, etc.)
-        target_update_interval (Optional[int]): Steps between target network updates
-        tau (Optional[float]): Soft update coefficient for target network [0.0-1.0]
-        
-        # Advanced
-        use_sde (bool): Use State-Dependent Exploration (for SAC)
-        algorithm_kwargs (Dict[str, Any]): Additional algorithm-specific parameters
-    """
-    # Core parameters
+class RLHyperparametersConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     learning_rate: float = 0.0003
     gamma: float = 0.99
     batch_size: int = 64
-    
-    # Network architecture
     net_arch: Optional[List[int]] = None
     activation_fn: str = "relu"
-    
-    # Optimization
     optimizer: str = "adam"
     gradient_clip: Optional[float] = None
-    
-    # Policy gradient specific
     n_epochs: Optional[int] = None
     ent_coef: Optional[float] = None
     vf_coef: Optional[float] = None
     gae_lambda: Optional[float] = None
     clip_range: Optional[float] = None
     normalize_advantages: bool = True
-    
-    # Q-learning specific
     target_update_interval: Optional[int] = None
     tau: Optional[float] = None
-    
-    # Advanced
     use_sde: bool = False
-    algorithm_kwargs: Dict[str, Any] = field(default_factory=dict)
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
+    algorithm_kwargs: Dict[str, Any] = Field(default_factory=dict)
 
 
-@dataclass
-class RLExplorationConfig:
-    """
-    Exploration strategy configuration for reinforcement learning.
-    
-    Supports multiple exploration strategies compatible with various RL libraries.
-    
-    Attributes:
-        strategy (str): Exploration strategy type
-            - "epsilon_greedy": Epsilon-greedy exploration (DQN)
-            - "gaussian_noise": Gaussian noise for continuous actions (DDPG, TD3)
-            - "ornstein_uhlenbeck": OU noise for continuous actions
-            - "entropy": Entropy-based exploration (policy gradient methods)
-        
-        # Epsilon-greedy parameters
-        initial_epsilon (float): Initial exploration rate
-        final_epsilon (float): Final exploration rate
-        epsilon_decay_steps (int): Steps to decay epsilon from initial to final
-        
-        # Gaussian/OU noise parameters
-        noise_std (float): Standard deviation of exploration noise
-        noise_std_decay (float): Decay factor for noise std
-        noise_std_min (float): Minimum noise std
-        
-        # OU noise specific
-        ou_theta (float): Mean reversion rate
-        ou_sigma (float): Volatility
-    """
+class RLExplorationConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     strategy: str = "epsilon_greedy"
-    
-    # Epsilon-greedy
     initial_epsilon: float = 1.0
     final_epsilon: float = 0.05
     epsilon_decay_steps: int = 100000
-    
-    # Gaussian/OU noise
     noise_std: float = 0.1
     noise_std_decay: float = 0.9999
     noise_std_min: float = 0.01
-    
-    # OU noise
     ou_theta: float = 0.15
     ou_sigma: float = 0.2
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class RLReplayBufferConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class RLReplayBufferConfig:
-    """
-    Replay buffer configuration for off-policy RL algorithms.
-    
-    Supports both uniform and prioritized experience replay, compatible
-    with Stable-Baselines3, RLlib, and other libraries.
-    
-    Attributes:
-        buffer_size (int): Maximum number of transitions to store
-        prioritized (bool): Use Prioritized Experience Replay (PER)
-        alpha (float): Prioritization exponent for PER [0.0-1.0]
-        beta (float): Initial importance sampling exponent [0.0-1.0]
-        beta_annealing_steps (int): Steps to anneal beta to 1.0
-        n_step (int): Number of steps for n-step returns (1 = standard TD)
-        prefill_steps (int): Random transitions to collect before training
-    """
     buffer_size: int = 1000000
     prioritized: bool = False
     alpha: float = 0.6
@@ -632,25 +262,10 @@ class RLReplayBufferConfig:
     n_step: int = 1
     prefill_steps: int = 0
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class RLOfflineTrainingConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class RLOfflineTrainingConfig:
-    """
-    Configuration for offline reinforcement learning training.
-    
-    Attributes:
-        dataset_path (str): Path to offline dataset (HDF5, pickle, parquet)
-        dataset_type (str): Dataset format ("hdf5", "pickle", "parquet", "d4rl")
-        n_epochs (int): Number of training epochs
-        validation_split (float): Fraction of data for validation [0.0-1.0]
-        shuffle (bool): Shuffle dataset during training
-        normalize_observations (bool): Normalize observations from dataset
-        normalize_rewards (bool): Normalize rewards from dataset
-    """
     dataset_path: str = ""
     dataset_type: str = "pickle"
     n_epochs: int = 100
@@ -659,178 +274,80 @@ class RLOfflineTrainingConfig:
     normalize_observations: bool = True
     normalize_rewards: bool = False
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class RLEarlyStoppingConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class RLEarlyStoppingConfig:
-    """
-    Early stopping configuration for training.
-    TODO: probably this will not be possible with co-simulation
-    
-    Attributes:
-        enabled (bool): Enable early stopping
-        metric (str): Metric to monitor ("episode_reward", "success_rate", "loss")
-        patience (int): Episodes/evaluations without improvement before stopping
-        min_delta (float): Minimum change to qualify as improvement
-        mode (str): "max" for maximizing metric, "min" for minimizing
-    """
     enabled: bool = False
     metric: str = "episode_reward"
     patience: int = 100
     min_delta: float = 0.01
     mode: str = "max"
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class RLTrainingConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class RLTrainingConfig:
-    """
-    Comprehensive configuration for reinforcement learning training.
-    
-    This class defines all training-related settings for deep RL agents,
-    designed to be compatible with multiple RL libraries (Stable-Baselines3,
-    RLlib, etc.) through a shared taxonomy of parameters.
-    
-    Attributes:
-        # Training mode
-        mode (str): Training mode - "online", "offline", or "mixed"
-        online (bool): Enable online training (deprecated, use mode)
-        offline (bool): Enable offline training (deprecated, use mode)
-        
-        # Training duration
-        total_timesteps (Optional[int]): Total timesteps to train (overrides n_episodes)
-        n_episodes (int): Number of training episodes (if total_timesteps not set)
-        max_steps_per_episode (int): Maximum steps per episode
-        
-        # Online training schedule
-        warmup_steps (int): Random action steps before training starts
-        train_frequency (int): Steps between training updates
-        gradient_steps (int): Gradient updates per training step
-        
-        # Evaluation during training
-        eval_frequency (int): Steps between evaluations (0 = no evaluation)
-        n_eval_episodes (int): Number of episodes per evaluation
-        eval_deterministic (bool): Use deterministic policy for evaluation
-        
-        # Sub-configurations
-        hyperparameters (RLHyperparametersConfig): Core RL hyperparameters
-        exploration (Optional[RLExplorationConfig]): Exploration strategy
-        replay_buffer (Optional[RLReplayBufferConfig]): Replay buffer config (off-policy)
-        offline_config (Optional[RLOfflineTrainingConfig]): Offline training settings
-        early_stopping (Optional[RLEarlyStoppingConfig]): Early stopping criteria
-        
-        # Logging
-        log_interval (int): Steps between logging updates
-        verbose (int): Verbosity level (0=none, 1=info, 2=debug)
-    """
-    # Training mode
-    mode: str = "online"  # "online", "offline", "mixed"
-    
-    # Training duration These established the lenght of 2 loops dipendent with the simulation
-    episode_length: int = 100 # Max steps per episode
-    n_episodes: int = 100 
-    reset_mode: str = 'full' # "full" (reset_env from starting point), "soft"(only applydone flag but do not reset env), "rolling" (reset env but keep the same starting point for the next episode) ,random (reset env and randomize the starting point for the next episode) 
-    rolling_window: Optional[int] = None # Only relevant if reset_mode is "rolling", number of timestep to shift the data window at reset 
-    reset_period: Optional[int] = None # decoupled from episode_length; defaults to episode_length if not set
-    total_steps: Optional[int] = None # do not use is set in scenariomanager
-
-    # Online training schedule This established independet loop from simulation
+    mode: str = "online"
+    episode_length: int = 100
+    n_episodes: int = 100
+    reset_mode: str = 'full'
+    rolling_window: Optional[int] = None
+    reset_period: Optional[int] = None
+    total_steps: Optional[int] = None
     warmup_steps: int = 0
     train_frequency: int = 1
     gradient_steps: int = 1
-    
-    # Evaluation during training
     eval_frequency: int = 10000
     n_eval_episodes: int = 10
     eval_deterministic: bool = True
-    
-    # Sub-configurations
     exploration: Optional[RLExplorationConfig] = None
     replay_buffer: Optional[RLReplayBufferConfig] = None
     offline_config: Optional[RLOfflineTrainingConfig] = None
     early_stopping: Optional[RLEarlyStoppingConfig] = None
-    
-    # Logging
     log_interval: int = 100
     verbose: int = 1
 
-    def __post_init__(self):
+    @model_validator(mode='after')
+    def _set_derived_fields(self) -> 'RLTrainingConfig':
         if self.reset_period is None:
             self.reset_period = self.episode_length
-
         if self.total_steps is None:
             self.total_steps = self.n_episodes * self.episode_length
+        return self
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
-@dataclass
-class RLEnvironmentConfig:
+class RLEnvironmentConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     observations: Union[List[Any], Dict[str, Any]]
     actions: Union[List[Any], Dict[str, Any]]
-    action_spaces_type: List[str]  # list of action space types corresponding to the actions (only discrete, box)
-    action_bins: Optional[List[int]] = None  # list of action space bins for discretization (only for discrete action spaces, int for uniform bins, list of floats for custom bin edges)
-    action_boundaries: Optional[List[Tuple[float, float]]] = None  # list of action space boundaries for normalization (only for continuous action spaces)
+    action_spaces_type: List[str]
+    action_bins: Optional[List[int]] = None
+    action_boundaries: Optional[List[Tuple[float, float]]] = None
     additional_observations: Optional[Union[List[Any], Dict[str, Any]]] = None
-    observation_causality: Optional[List[str]] = None  # per-observation causality: "same_step" or "next_step"
+    observation_causality: Optional[List[str]] = None
     additional_observation_causality: Optional[List[str]] = None
     reset_observation_defaults: Optional[Dict[str, Any]] = None
     force_reset_observation_defaults: bool = False
-    action_space_remapping: Optional[List[Tuple]] = None  # list of action space remapping corresponding to the actions (for discrete only)
-    include_prev_obs: Optional[List[int]] = None  # list of observation keys to include from the previous time step (for partially observable environments)
-    # TODO: refine and expand
+    action_space_remapping: Optional[List[Tuple]] = None
+    include_prev_obs: Optional[List[int]] = None
 
 
+class RLAgentConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class RLAgentConfig:
-    """
-    Configuration for reinforcement learning agent specification.
-    
-    This class defines which RL agent implementation to use and how to
-    instantiate it.
-    
-    Attributes:
-        module (str): Python module path containing the agent class
-        class_name (str): Name of the agent class to instantiate
-        algorithm (str): RL algorithm type (e.g., "PPO", "DQN", "SAC", "TD3", "A2C")
-        library (str): RL library to use ("sb3", "rllib", "custom")
-    """
     model_name: str
     env: RLEnvironmentConfig
     algorithm: Optional[str] = None
     library: Optional[str] = None
     hyperparameters: Optional[RLHyperparametersConfig] = None
-    reward_function: Optional[str] = None  # dotted import path, e.g. "models.model_catalog.RL_agents.reward_functions.spring_reward"
-
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
+    reward_function: Optional[str] = None
 
 
+class RLCheckpointingConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class RLCheckpointingConfig:
-    """
-    Configuration for model checkpointing during training.
-    
-    Attributes:
-        enabled (bool): Enable checkpoint saving
-        directory (str): Directory to save checkpoints
-        save_frequency (int): Save checkpoint every N steps
-        save_best (bool): Save best model based on evaluation metric
-        best_metric (str): Metric to track for best model ("episode_reward", "success_rate")
-        best_mode (str): "max" or "min" for best metric
-        keep_last_n (int): Keep only last N checkpoints (0 = keep all)
-        save_replay_buffer (bool): Save replay buffer with checkpoint
-    """
     enabled: bool = True
     directory: str = "src/models/model_catalog/RL_agents/checkpoints"
     save_frequency: int = 10000
@@ -839,87 +356,38 @@ class RLCheckpointingConfig:
     best_mode: str = "max"
     keep_last_n: int = 5
     save_replay_buffer: bool = False
-    single_best_checkpoint: str = None  
+    single_best_checkpoint: Optional[str] = None
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
-    def __post_init__(self):
-        # if self.single_best_checkpoint is None:
-        #     return
-
-        # # Avoid duplicating the checkpoint directory when configs are
-        # # round-tripped through Redis and reconstructed multiple times.
-        # if os.path.isabs(self.single_best_checkpoint):
-        #     return
-
-        # norm_directory = os.path.normpath(self.directory)
-        # norm_checkpoint = os.path.normpath(self.single_best_checkpoint)
-        # if norm_checkpoint == norm_directory or norm_checkpoint.startswith(norm_directory + os.sep):
-        #     return
-
-        self.single_best_checkpoint = os.path.join(self.directory, self.single_best_checkpoint)
+    @model_validator(mode='after')
+    def _build_checkpoint_path(self) -> 'RLCheckpointingConfig':
+        if self.single_best_checkpoint is not None and not os.path.isabs(self.single_best_checkpoint):
+            norm_dir = os.path.normpath(self.directory)
+            norm_cp = os.path.normpath(self.single_best_checkpoint)
+            if not (norm_cp == norm_dir or norm_cp.startswith(norm_dir + os.sep)):
+                self.single_best_checkpoint = os.path.join(self.directory, self.single_best_checkpoint)
+        return self
 
 
-@dataclass
-class RLLoggingConfig:
-    """
-    Configuration for training logging and monitoring.
-    
-    Supports multiple backends for compatibility with different workflows.
-    
-    Attributes:
-        backend (str): Logging backend ("tensorboard", "wandb", "mlflow", "csv", "none")
-        log_dir (str): Directory for log files
-        experiment_name (Optional[str]): Experiment name (auto-generated if None)
-        project_name (str): Project name for wandb/mlflow
-        tags (List[str]): Tags for experiment tracking
-        log_gradients (bool): Log gradient histograms
-        log_weights (bool): Log network weights
-        
-        # WandB specific
-        wandb_entity (Optional[str]): WandB username/team
-        wandb_mode (str): "online", "offline", or "disabled"
-    """
+class RLLoggingConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     backend: str = "tensorboard"
     log_dir: str = "logs"
     experiment_name: Optional[str] = None
     project_name: str = "cosim_gym"
-    tags: List[str] = field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
     log_gradients: bool = False
     log_weights: bool = False
-    
-    # WandB specific
     wandb_entity: Optional[str] = None
     wandb_mode: str = "online"
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class RLTestConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class RLTestConfig:
-    """
-
-    Configuration for reinforcement learning testing/evaluation phase.
-    
-    This class defines parameters for testing trained RL agents, including
-    model loading, deterministic evaluation, and trajectory saving.
-    
-    Attributes:
-        enabled (bool): Enable test mode (default: False)
-        checkpoint_path (Optional[str]): Path to trained model checkpoint to load
-        n_episodes (int): Number of test episodes to run (default: 100)
-        deterministic (bool): Use deterministic policy during testing (default: True)
-        render (bool): Render environment during testing (default: False)
-        save_trajectories (bool): Save episode trajectories for analysis (default: False)
-        trajectories_path (Optional[str]): Path to save trajectories (default: "results/test_trajectories.pkl")
-    """
-    total_steps: Optional[int] 
-
+    total_steps: Optional[int] = None
     enabled: bool = False
-    checkpoint_path: Optional[str] = None # if None will use best checkpoint from model training or untrained agent
+    checkpoint_path: Optional[str] = None
     n_episodes: Optional[int] = None
     episode_length: Optional[int] = None
     deterministic: bool = True
@@ -927,31 +395,195 @@ class RLTestConfig:
     save_trajectories: bool = False
     trajectories_path: Optional[str] = "results/test_trajectories.pkl"
 
-    
+    @field_validator('checkpoint_path', mode='before')
+    @classmethod
+    def _normalize_none_like(cls, v: Any) -> Any:
+        if isinstance(v, str) and v.strip().lower() in {'none', 'null', ''}:
+            return None
+        return v
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
 
+class ReinforcementLearningConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
 
-@dataclass
-class ReinforcementLearningConfig:
-    """
-    Complete configuration for reinforcement learning
-    """
     agent: RLAgentConfig
-    training: RLTrainingConfig = None
+    training: Optional[RLTrainingConfig] = None
     checkpointing: Optional[RLCheckpointingConfig] = None
     logging: Optional[RLLoggingConfig] = None
     test: Optional[RLTestConfig] = None
     seed: Optional[int] = None
 
-    def __post_init__(self):
+    @model_validator(mode='after')
+    def _validate_training_or_test(self) -> 'ReinforcementLearningConfig':
         if self.training is None and self.test is None:
-            raise ValueError(
-                "At least one of 'training' or 'test' must be provided in ReinforcementLearningConfig."
-            )
+            raise ValueError("At least one of 'training' or 'test' must be provided.")
+        return self
 
-    def __repr__(self):
-        classname = self.__class__.__name__
-        return f"{classname}({self.__dict__})"
+
+# ==============================================================================
+# FEDERATE CONFIGS — discriminated union on `type`
+# ==============================================================================
+
+class _FederateConfigBase(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    name: str
+    id: str
+    timing_configs: FedTimingConfig
+    flags: FedFlags = Field(default_factory=FedFlags)
+    connections: FedConnections = Field(default_factory=FedConnections)
+    log_level: LogLevel = LogLevel.INFO
+    core_name: Optional[str] = None
+    core_type: Optional[str] = "zmq"
+    broker_address: Optional[str] = None
+    rl_config: Optional[Dict] = None
+    mode: Optional[str] = 'test'
+    startup_sync: Optional[StartupSyncConfig] = None
+    reset_observation_defaults: Optional[Dict[str, Any]] = None
+    rl_task: Optional[ReinforcementLearningConfig] = None
+
+
+class BaseFederateConfig(_FederateConfigBase):
+    type: Literal["base"]
+    model_configs: ModelConfig
+    memory_config: MemoryConfig
+
+
+class RLFederateConfig(_FederateConfigBase):
+    type: Literal["rl"]
+    model_configs: Optional[ModelConfig] = None
+    memory_config: Optional[MemoryConfig] = None
+    controlled_models: Optional[Dict[str, str]] = None
+    observed_models: Optional[Dict[str, str]] = None
+    additional_observed_models: Optional[Dict[str, str]] = None
+
+
+FederateConfig = Annotated[
+    Union[BaseFederateConfig, RLFederateConfig],
+    Field(discriminator='type')
+]
+
+
+# ==============================================================================
+# BROKER AND FEDERATION
+# ==============================================================================
+
+class BrokerConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    core_type: Optional[str] = None
+    port: Optional[int] = None
+    federates: Optional[int] = None
+    log_level: LogLevel = LogLevel.INFO
+    host: Optional[str] = None
+    address: Optional[str] = None
+    broker_address: Optional[str] = None
+    sub_brokers: Optional[int] = None
+
+
+class FederationConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    name: str
+    broker_config: BrokerConfig = Field(default_factory=BrokerConfig)
+    federate_configs: Dict[str, FederateConfig]
+
+    @model_validator(mode='before')
+    @classmethod
+    def _inject_federate_ids(cls, data: Any) -> Any:
+        """Inject name and id into each federate dict from the dict key + federation name."""
+        if not isinstance(data, dict):
+            return data
+        fed_name_prefix = data.get('name', '')
+        fed_configs = data.get('federate_configs', {})
+        if not isinstance(fed_configs, dict):
+            return data
+        data = dict(data)
+        new_fed_configs: Dict[str, Any] = {}
+        for fed_name, fdata in fed_configs.items():
+            if isinstance(fdata, dict):
+                fdata = dict(fdata)
+                fdata.setdefault('name', fed_name)
+                fdata.setdefault('id', f'{fed_name_prefix}_{fed_name}')
+            new_fed_configs[fed_name] = fdata
+        data['federate_configs'] = new_fed_configs
+        return data
+
+    @model_validator(mode='after')
+    def _validate(self) -> 'FederationConfig':
+        if self.broker_config.federates is not None:
+            if self.broker_config.federates != len(self.federate_configs):
+                raise ValueError(
+                    f"Broker expects {self.broker_config.federates} federates, "
+                    f"but {len(self.federate_configs)} are configured"
+                )
+        ids = [f.id for f in self.federate_configs.values()]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Federate IDs must be unique")
+        names = [f.name for f in self.federate_configs.values()]
+        if len(names) != len(set(names)):
+            raise ValueError("Federate names must be unique")
+        for fed in self.federate_configs.values():
+            if isinstance(fed, BaseFederateConfig) and fed.model_configs.instantiation.n_instances < 1:
+                raise ValueError(f"Federate {fed.name} must have at least one model instance")
+        return self
+
+
+# ==============================================================================
+# TOP-LEVEL SCENARIO CONFIG
+# ==============================================================================
+
+class MultiComputerConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    ssh_user: str
+    ssh_key_path: str
+    hostnames: List[str]
+
+
+class ScenarioConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    name: str
+    federations: Dict[str, FederationConfig]
+    start_time: str
+    end_time: str
+    memory_config: MemoryConfig
+    reinforcement_learning_config: Optional[ReinforcementLearningConfig] = None
+    synchronization: SynchronizationConfig = Field(default_factory=SynchronizationConfig)
+    log_level: LogLevel = LogLevel.INFO
+    multi_computer: bool = False
+    multi_computer_config: Optional[MultiComputerConfig] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def _prepare_federations(cls, data: Any) -> Any:
+        """
+        Inject federation name into each federation dict and propagate
+        scenario-level memory_config into every federate that lacks one.
+        """
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        memory_config = data.get('memory_config', {})
+        feds = data.get('federations', {})
+        if not isinstance(feds, dict):
+            return data
+        new_feds: Dict[str, Any] = {}
+        for fed_name, fed_data in feds.items():
+            if isinstance(fed_data, dict):
+                fed_data = dict(fed_data)
+                fed_data.setdefault('name', fed_name)
+                # Propagate memory_config to each federate dict that doesn't have one
+                fed_configs = fed_data.get('federate_configs', {})
+                if isinstance(fed_configs, dict):
+                    new_fed_configs: Dict[str, Any] = {}
+                    for fname, fdata in fed_configs.items():
+                        if isinstance(fdata, dict):
+                            fdata = dict(fdata)
+                            fdata.setdefault('memory_config', memory_config)
+                        new_fed_configs[fname] = fdata
+                    fed_data['federate_configs'] = new_fed_configs
+            new_feds[fed_name] = fed_data
+        data['federations'] = new_feds
+        return data

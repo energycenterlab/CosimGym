@@ -1,25 +1,20 @@
 """
 Utilities Module
 
-This module provides utility functions and data classes for configuration
-management in the COSIM Gym framework.
-
-Author: COSIM Gym Team
-Date: 2025
+Utility functions and Pydantic v2 models for COSIM Gym configuration management.
 """
 
 from .config_reader import (
-    read_federation_config,
-    validate_federation_config,
     read_scenario_config,
     read_yaml,
-    create_dataclass_from_dict
 )
 
 from .config_dataclasses import (
     FederationConfig,
     BrokerConfig,
     FederateConfig,
+    BaseFederateConfig,
+    RLFederateConfig,
     FedTimingConfig,
     StartupSyncConfig,
     AutoOffsetConfig,
@@ -31,21 +26,19 @@ from .config_dataclasses import (
     FedEndpoint,
     ModelInstantiationConfig,
     ModelConfig,
-    ScenarioConfig
+    MemoryConfig,
+    ScenarioConfig,
+    ReinforcementLearningConfig,
 )
 
 __all__ = [
-    # Configuration reader functions
-    'read_federation_config',
-    'validate_federation_config',
     'read_scenario_config',
     'read_yaml',
-    'create_dataclass_from_dict',
-    
-    # Data classes
     'FederationConfig',
     'BrokerConfig',
     'FederateConfig',
+    'BaseFederateConfig',
+    'RLFederateConfig',
     'FedTimingConfig',
     'StartupSyncConfig',
     'AutoOffsetConfig',
@@ -57,5 +50,7 @@ __all__ = [
     'FedEndpoint',
     'ModelInstantiationConfig',
     'ModelConfig',
-    'ScenarioConfig'
+    'MemoryConfig',
+    'ScenarioConfig',
+    'ReinforcementLearningConfig',
 ]

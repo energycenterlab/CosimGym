@@ -4,7 +4,7 @@
 
 
 version: "1.0.0"
-scenario_name: "simple_test_rlagent"
+name: "simple_test_rlagent"
 scenario_description: A simple test, only one federation but using a yaml with open config for multiple.
 
 start_time: "2024-01-01T00:00:00"

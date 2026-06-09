@@ -10,7 +10,7 @@
 # downloads/loads/steps an FMU correctly inside a real co-simulation.
 
 version: "1.0.0"
-scenario_name: "fmu_feedthrough_test"
+name: "fmu_feedthrough_test"
 scenario_description: "Smoke test wiring a simple Python signal generator into an FMI 3.0 FMU through BaseFMUModel."
 
 start_time: "2024-01-01T00:00:00"

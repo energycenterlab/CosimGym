@@ -9,7 +9,7 @@
 #   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
 
 version: "1.0.0"
-scenario_name: "pv_batt_test_base"
+name: "pv_batt_test_base"
 scenario_description: "Simple test case with PV, Battery, Weather, Rule-based controller, and electric Load"
 
 start_time: "2024-01-01T00:00:00"

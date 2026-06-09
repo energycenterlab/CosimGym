@@ -25,7 +25,8 @@ src_dir = current_dir.parent
 if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
-from utils.config_reader import read_yaml, reconstruct_federate_config_from_dict
+from utils.config_reader import read_yaml
+from utils.config_dataclasses import BaseFederateConfig, RLFederateConfig, ReinforcementLearningConfig
 from utils.logging_config import setup_process_logger
 from utils.redis_client import RedisClient
 
@@ -98,21 +99,22 @@ def main():
         else:
             logger.info(f"Successfully retrieved configuration from Redis key: {args.redis_key}")
         
-         # Reconstruct FederateConfig from dict (handles nested dataclasses)
         if args.type == 'rl':
-            config = reconstruct_federate_config_from_dict(config_dict, rl_task=rl_task)
+            config_dict['rl_task'] = rl_task  # validated to ReinforcementLearningConfig by Pydantic
+            config = RLFederateConfig.model_validate(config_dict)
         else:
-            mode = 'train' if rl_task and rl_task.get('training', {}) and rl_task['training'].get('mode', 'offline')!='offline' else 'test'
+            mode = 'train' if rl_task and rl_task.get('training', {}) and rl_task['training'].get('mode', 'offline') != 'offline' else 'test'
             training = rl_task.get('training', {}) if rl_task else {}
-            rl_4_fed = {'reset_period':   training.get('reset_period'),
-                        'reset_type':     training.get('reset_mode'),
-                        'episode_length': training.get('episode_length'),
-                        'n_episodes':     training.get('n_episodes'),
-                        'rolling_window':   training.get('rolling_window'),
-                        'mode': mode}
-                
-            
-            config = reconstruct_federate_config_from_dict(config_dict, rl_config=rl_4_fed)
+            rl_4_fed = {
+                'reset_period':   training.get('reset_period'),
+                'reset_type':     training.get('reset_mode'),
+                'episode_length': training.get('episode_length'),
+                'n_episodes':     training.get('n_episodes'),
+                'rolling_window': training.get('rolling_window'),
+                'mode': mode,
+            }
+            config_dict['rl_config'] = rl_4_fed
+            config = BaseFederateConfig.model_validate(config_dict)
 
     
     
