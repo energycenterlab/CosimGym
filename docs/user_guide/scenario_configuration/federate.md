@@ -218,9 +218,6 @@ model_configs:
     position: [0.0, 100.0]
     velocity: 0.0
 
-  inputs: {}                           # optional — input metadata (advanced)
-  outputs: {}                          # optional — output metadata (advanced)
-
   user_defined:                        # optional — arbitrary dict passed to the model
     solver: "rk4"
     integrator: "fixed-step"

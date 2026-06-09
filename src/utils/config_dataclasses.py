@@ -192,12 +192,14 @@ class ModelConfig(BaseModel):
     instantiation: ModelInstantiationConfig
     init_state: Dict[str, Any] = Field(default_factory=dict)
     parameters: Dict[str, Any] = Field(default_factory=dict)
-    inputs: Dict[str, Any] = Field(default_factory=dict)
-    outputs: Dict[str, Any] = Field(default_factory=dict)
     user_defined: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
-    # Injected at runtime by BaseFederate from the federate timing_configs so
-    # the model receives its time grid (see BaseFederate._setup_models).
+    # All fields below are injected at runtime by BaseFederate._register_entities()
+    # and must never appear in scenario YAML files.
+    # inputs/outputs: derived from connections.subscribes/publishes key lists.
+    # time_*: propagated from the federate timing_configs block.
+    inputs: Optional[List[str]] = None
+    outputs: Optional[List[str]] = None
     time_step: Optional[float] = None
     time_stop: Optional[float] = None
     start_time: Optional[str] = None

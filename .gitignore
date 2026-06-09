@@ -189,3 +189,6 @@ Desktop.ini
 # HELICS specific files (if any)
 *.hfed
 *.hlog
+
+# EnergyPlus FMU export working directories (runtime-generated, name varies by FMU instance)
+Output_EPExport_*/
