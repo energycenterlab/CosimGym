@@ -1967,3 +1967,376 @@ models:
         required: true
         tags:
         - fmu
+  rc_building:
+    class_name: RCBuilding
+    module_path: models.model_catalog.physical_models.rc_building
+    version: 1.0.0
+    description: Parametrizable 5R1C (ISO 13790) single-zone building thermal model,
+      ported from the RC_BuildingSimulator project. Computes indoor air/mass/surface/operative
+      temperatures and the ideal heating/cooling demand to hold the set-point, given
+      outdoor temperature, solar gains and internal gains. Set-points are control
+      inputs (drivable by a controller/RL agent).
+    author: Pietro Rando Mazzarino
+    domain: building_energy
+    category: physical_model
+    tags:
+    - building
+    - thermal
+    - 5R1C
+    - iso13790
+    - rc_buildingsimulator
+    dependencies: []
+    time_step: 3600
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined:
+      solver: crank-nicolson
+      integrator: fixed-step
+    parameters:
+      floor_area:
+        type: float
+        default_value: 35.0
+        description: Conditioned floor area of the zone
+        unit: m^2
+        min_value: 1.0
+        max_value: 100000.0
+        required: true
+        tags:
+        - geometry
+      window_area:
+        type: float
+        default_value: 4.0
+        description: Total window area
+        unit: m^2
+        min_value: 0.0
+        max_value: 100000.0
+        required: false
+        tags:
+        - geometry
+        - envelope
+      walls_area:
+        type: float
+        default_value: 11.0
+        description: Total opaque external wall area
+        unit: m^2
+        min_value: 0.0
+        max_value: 100000.0
+        required: false
+        tags:
+        - geometry
+        - envelope
+      room_vol:
+        type: float
+        default_value: 105.0
+        description: Air volume of the zone
+        unit: m^3
+        min_value: 1.0
+        max_value: 1000000.0
+        required: false
+        tags:
+        - geometry
+      total_internal_area:
+        type: float
+        default_value: 142.0
+        description: Total internal surface area (A_t) seen by the surface node
+        unit: m^2
+        min_value: 1.0
+        max_value: 1000000.0
+        required: false
+        tags:
+        - geometry
+      u_walls:
+        type: float
+        default_value: 0.2
+        description: Thermal transmittance of opaque walls
+        unit: W/(m^2K)
+        min_value: 0.01
+        max_value: 5.0
+        required: false
+        tags:
+        - envelope
+      u_windows:
+        type: float
+        default_value: 1.1
+        description: Thermal transmittance of windows
+        unit: W/(m^2K)
+        min_value: 0.1
+        max_value: 6.0
+        required: false
+        tags:
+        - envelope
+      ach_vent:
+        type: float
+        default_value: 1.5
+        description: Air changes per hour from mechanical ventilation
+        unit: 1/h
+        min_value: 0.0
+        max_value: 20.0
+        required: false
+        tags:
+        - ventilation
+      ach_infl:
+        type: float
+        default_value: 0.5
+        description: Air changes per hour from infiltration
+        unit: 1/h
+        min_value: 0.0
+        max_value: 20.0
+        required: false
+        tags:
+        - ventilation
+      ventilation_efficiency:
+        type: float
+        default_value: 0.6
+        description: Heat-recovery efficiency of the ventilation system
+        unit: '-'
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags:
+        - ventilation
+      thermal_capacitance_per_floor_area:
+        type: float
+        default_value: 165000.0
+        description: Effective thermal capacitance per unit floor area (c_m)
+        unit: J/(m^2K)
+        min_value: 1000.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - thermal
+        - mass
+      t_set_heating:
+        type: float
+        default_value: 20.0
+        description: Default heating set-point (used when no control input is connected)
+        unit: °C
+        min_value: 5.0
+        max_value: 30.0
+        required: false
+        tags:
+        - control
+        - setpoint
+      t_set_cooling:
+        type: float
+        default_value: 26.0
+        description: Default cooling set-point (used when no control input is connected)
+        unit: °C
+        min_value: 15.0
+        max_value: 40.0
+        required: false
+        tags:
+        - control
+        - setpoint
+      max_heating_power_per_floor_area:
+        type: float
+        default_value: 500.0
+        description: Maximum deliverable heating power per floor area
+        unit: W/m^2
+        min_value: 0.0
+        max_value: 100000.0
+        required: false
+        tags:
+        - sizing
+      max_cooling_power_per_floor_area:
+        type: float
+        default_value: -500.0
+        description: Maximum deliverable cooling power per floor area (negative)
+        unit: W/m^2
+        min_value: -100000.0
+        max_value: 0.0
+        required: false
+        tags:
+        - sizing
+      cop_heating:
+        type: float
+        default_value: 3.0
+        description: Constant COP used to convert heating thermal demand to electricity
+        unit: '-'
+        min_value: 0.1
+        max_value: 10.0
+        required: false
+        tags:
+        - efficiency
+      cop_cooling:
+        type: float
+        default_value: 3.0
+        description: Constant COP/EER used to convert cooling thermal demand to electricity
+        unit: '-'
+        min_value: 0.1
+        max_value: 10.0
+        required: false
+        tags:
+        - efficiency
+      default_solar_gains:
+        type: float
+        default_value: 0.0
+        description: Solar gains used when no solar_gains input is connected
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - boundary
+      default_internal_gains:
+        type: float
+        default_value: 0.0
+        description: Internal gains used when no internal_gains input is connected
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - boundary
+      t_m_initial:
+        type: float
+        default_value: 20.0
+        description: Initial thermal-mass temperature at start of simulation
+        unit: °C
+        min_value: -30.0
+        max_value: 50.0
+        required: false
+        tags:
+        - initial_condition
+    inputs:
+      T_ext:
+        type: float
+        default_value: 10.0
+        description: Outdoor (external) air temperature
+        unit: °C
+        min_value: -40.0
+        max_value: 60.0
+        required: true
+        tags:
+        - weather
+        - external
+      solar_gains:
+        type: float
+        default_value: 0.0
+        description: Solar heat gains entering the zone
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - weather
+        - boundary
+      internal_gains:
+        type: float
+        default_value: 0.0
+        description: Internal heat gains (people, lighting, equipment)
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - boundary
+      t_set_heating:
+        type: float
+        default_value: 20.0
+        description: Heating set-point control action (overrides parameter when connected)
+        unit: °C
+        min_value: 5.0
+        max_value: 30.0
+        required: false
+        tags:
+        - control
+        - setpoint
+      t_set_cooling:
+        type: float
+        default_value: 26.0
+        description: Cooling set-point control action (overrides parameter when connected)
+        unit: °C
+        min_value: 15.0
+        max_value: 40.0
+        required: false
+        tags:
+        - control
+        - setpoint
+    outputs:
+      T_indoor:
+        type: float
+        default_value: 20.0
+        description: Indoor air temperature (t_air node)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: true
+        tags:
+        - state
+        - measurement
+      T_mass:
+        type: float
+        default_value: 20.0
+        description: Thermal-mass node temperature (t_m)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: false
+        tags:
+        - state
+      T_surface:
+        type: float
+        default_value: 20.0
+        description: Surface node temperature (t_s)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: false
+        tags:
+        - state
+      T_operative:
+        type: float
+        default_value: 20.0
+        description: Operative temperature (0.3*t_air + 0.7*t_s)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: false
+        tags:
+        - state
+        - comfort
+      Q_heating:
+        type: float
+        default_value: 0.0
+        description: Thermal heating power delivered to the zone
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - hvac
+        - heating
+      Q_cooling:
+        type: float
+        default_value: 0.0
+        description: Thermal cooling power extracted from the zone
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - hvac
+        - cooling
+      energy_demand:
+        type: float
+        default_value: 0.0
+        description: Signed sensible energy demand (+ heating / - cooling)
+        unit: W
+        min_value: -1.0e7
+        max_value: 1.0e7
+        required: false
+        tags:
+        - hvac
+        - demand
+      P_elec:
+        type: float
+        default_value: 0.0
+        description: Electrical power consumed (thermal demand divided by COP)
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - electrical
+        - consumption

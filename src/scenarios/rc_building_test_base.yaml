@@ -1,0 +1,176 @@
+# RC Building (5R1C ISO 13790) co-simulation smoke test
+#
+# Data flow:
+#   weather_federate  → T_ext → rc_building_federate
+#
+# The building runs with a constant heating set-point (t_set_heating = 21 °C,
+# a parameter). Starting from a cold thermal mass (t_m_initial = 15 °C) the
+# model computes the ideal heating demand needed to track the set-point, so
+# T_indoor rises toward 21 °C — demonstrating the control action (set-point)
+# driving the zone state. The set-point input can instead be wired to a
+# controller/RL federate to make it dynamic.
+
+version: "1.0.0"
+name: "rc_building_test_base"
+scenario_description: "5R1C RC_BuildingSimulator zone driven by real weather, holding a constant heating set-point."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-02T00:00:00"
+log_level: ERROR
+
+memory_config:
+  batch_size: 1000
+  attrs: ["T_indoor", "T_mass", "T_surface", "T_operative", "T_ext", "Q_heating", "energy_demand", "P_elec"]
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23414
+      host: "localhost"
+      federates: 2
+      log_level: ERROR
+
+    federate_configs:
+
+      # -----------------------------------------------------------------------
+      # Weather federate – streams T_ext from CSV (one row per hour)
+      # -----------------------------------------------------------------------
+      weather_federate:
+        name: "weather_federate"
+        type: "base"
+        log_level: ERROR
+        core_name: "fed_weather"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 3600   # one CSV row per simulation hour
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "weather_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "resources/weather_TO.csv"  # relative to model script dir
+            column: "T_ext"
+            skip_rows: 0
+
+          init_state:
+            T_ext: 3.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # RC building federate (5R1C ISO 13790)
+      # -----------------------------------------------------------------------
+      rc_building_federate:
+        name: "rc_building_federate"
+        type: "base"
+        log_level: ERROR
+        core_name: "fed_rcbldg"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/T_ext]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+            - key: "T_mass"
+              type: "double"
+              units: "°C"
+            - key: "T_surface"
+              type: "double"
+              units: "°C"
+            - key: "T_operative"
+              type: "double"
+              units: "°C"
+            - key: "Q_heating"
+              type: "double"
+              units: "W"
+            - key: "energy_demand"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "rc_building"
+            n_instances: 1
+            prefix: "rcbldg"
+            parallel_execution: false
+
+          parameters:
+            floor_area: 35.0
+            window_area: 4.0
+            walls_area: 11.0
+            room_vol: 105.0
+            total_internal_area: 142.0
+            u_walls: 0.2
+            u_windows: 1.1
+            ach_vent: 1.5
+            ach_infl: 0.5
+            ventilation_efficiency: 0.6
+            thermal_capacitance_per_floor_area: 165000.0
+            t_set_heating: 21.0
+            t_set_cooling: 26.0
+            cop_heating: 3.0
+            cop_cooling: 3.0
+            default_solar_gains: 0.0
+            default_internal_gains: 150.0
+            t_m_initial: 15.0
+
+          init_state:
+            T_ext: 3.0
+            T_indoor: 15.0
+
+          user_defined:
+            integrator: "fixed-step"
