@@ -1967,3 +1967,803 @@ models:
         required: true
         tags:
         - fmu
+  rc_building:
+    class_name: RCBuilding
+    module_path: models.model_catalog.physical_models.rc_building
+    version: 1.0.0
+    description: Parametrizable 5R1C (ISO 13790) single-zone building thermal model,
+      ported from the RC_BuildingSimulator project. Computes indoor air/mass/surface/operative
+      temperatures and the ideal heating/cooling demand to hold the set-point, given
+      outdoor temperature, solar gains and internal gains. Set-points are control
+      inputs (drivable by a controller/RL agent).
+    author: Pietro Rando Mazzarino
+    domain: building_energy
+    category: physical_model
+    tags:
+    - building
+    - thermal
+    - 5R1C
+    - iso13790
+    - rc_buildingsimulator
+    dependencies: []
+    time_step: 3600
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined:
+      solver: crank-nicolson
+      integrator: fixed-step
+    parameters:
+      floor_area:
+        type: float
+        default_value: 35.0
+        description: Conditioned floor area of the zone
+        unit: m^2
+        min_value: 1.0
+        max_value: 100000.0
+        required: true
+        tags:
+        - geometry
+      window_area:
+        type: float
+        default_value: 4.0
+        description: Total window area
+        unit: m^2
+        min_value: 0.0
+        max_value: 100000.0
+        required: false
+        tags:
+        - geometry
+        - envelope
+      walls_area:
+        type: float
+        default_value: 11.0
+        description: Total opaque external wall area
+        unit: m^2
+        min_value: 0.0
+        max_value: 100000.0
+        required: false
+        tags:
+        - geometry
+        - envelope
+      room_vol:
+        type: float
+        default_value: 105.0
+        description: Air volume of the zone
+        unit: m^3
+        min_value: 1.0
+        max_value: 1000000.0
+        required: false
+        tags:
+        - geometry
+      total_internal_area:
+        type: float
+        default_value: 142.0
+        description: Total internal surface area (A_t) seen by the surface node
+        unit: m^2
+        min_value: 1.0
+        max_value: 1000000.0
+        required: false
+        tags:
+        - geometry
+      u_walls:
+        type: float
+        default_value: 0.2
+        description: Thermal transmittance of opaque walls
+        unit: W/(m^2K)
+        min_value: 0.01
+        max_value: 5.0
+        required: false
+        tags:
+        - envelope
+      u_windows:
+        type: float
+        default_value: 1.1
+        description: Thermal transmittance of windows
+        unit: W/(m^2K)
+        min_value: 0.1
+        max_value: 6.0
+        required: false
+        tags:
+        - envelope
+      ach_vent:
+        type: float
+        default_value: 1.5
+        description: Air changes per hour from mechanical ventilation
+        unit: 1/h
+        min_value: 0.0
+        max_value: 20.0
+        required: false
+        tags:
+        - ventilation
+      ach_infl:
+        type: float
+        default_value: 0.5
+        description: Air changes per hour from infiltration
+        unit: 1/h
+        min_value: 0.0
+        max_value: 20.0
+        required: false
+        tags:
+        - ventilation
+      ventilation_efficiency:
+        type: float
+        default_value: 0.6
+        description: Heat-recovery efficiency of the ventilation system
+        unit: '-'
+        min_value: 0.0
+        max_value: 1.0
+        required: false
+        tags:
+        - ventilation
+      thermal_capacitance_per_floor_area:
+        type: float
+        default_value: 165000.0
+        description: Effective thermal capacitance per unit floor area (c_m)
+        unit: J/(m^2K)
+        min_value: 1000.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - thermal
+        - mass
+      t_set_heating:
+        type: float
+        default_value: 20.0
+        description: Default heating set-point (used when no control input is connected)
+        unit: °C
+        min_value: 5.0
+        max_value: 30.0
+        required: false
+        tags:
+        - control
+        - setpoint
+      t_set_cooling:
+        type: float
+        default_value: 26.0
+        description: Default cooling set-point (used when no control input is connected)
+        unit: °C
+        min_value: 15.0
+        max_value: 40.0
+        required: false
+        tags:
+        - control
+        - setpoint
+      max_heating_power_per_floor_area:
+        type: float
+        default_value: 500.0
+        description: Maximum deliverable heating power per floor area
+        unit: W/m^2
+        min_value: 0.0
+        max_value: 100000.0
+        required: false
+        tags:
+        - sizing
+      max_cooling_power_per_floor_area:
+        type: float
+        default_value: -500.0
+        description: Maximum deliverable cooling power per floor area (negative)
+        unit: W/m^2
+        min_value: -100000.0
+        max_value: 0.0
+        required: false
+        tags:
+        - sizing
+      cop_heating:
+        type: float
+        default_value: 3.0
+        description: Constant COP used to convert heating thermal demand to electricity
+        unit: '-'
+        min_value: 0.1
+        max_value: 10.0
+        required: false
+        tags:
+        - efficiency
+      cop_cooling:
+        type: float
+        default_value: 3.0
+        description: Constant COP/EER used to convert cooling thermal demand to electricity
+        unit: '-'
+        min_value: 0.1
+        max_value: 10.0
+        required: false
+        tags:
+        - efficiency
+      default_solar_gains:
+        type: float
+        default_value: 0.0
+        description: Solar gains used when no solar_gains input is connected
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - boundary
+      default_internal_gains:
+        type: float
+        default_value: 0.0
+        description: Internal gains used when no internal_gains input is connected
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - boundary
+      t_m_initial:
+        type: float
+        default_value: 20.0
+        description: Initial thermal-mass temperature at start of simulation
+        unit: °C
+        min_value: -30.0
+        max_value: 50.0
+        required: false
+        tags:
+        - initial_condition
+    inputs:
+      T_ext:
+        type: float
+        default_value: 10.0
+        description: Outdoor (external) air temperature
+        unit: °C
+        min_value: -40.0
+        max_value: 60.0
+        required: true
+        tags:
+        - weather
+        - external
+      solar_gains:
+        type: float
+        default_value: 0.0
+        description: Solar heat gains entering the zone
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - weather
+        - boundary
+      internal_gains:
+        type: float
+        default_value: 0.0
+        description: Internal heat gains (people, lighting, equipment)
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e6
+        required: false
+        tags:
+        - boundary
+      t_set_heating:
+        type: float
+        default_value: 20.0
+        description: Heating set-point control action (overrides parameter when connected)
+        unit: °C
+        min_value: 5.0
+        max_value: 30.0
+        required: false
+        tags:
+        - control
+        - setpoint
+      t_set_cooling:
+        type: float
+        default_value: 26.0
+        description: Cooling set-point control action (overrides parameter when connected)
+        unit: °C
+        min_value: 15.0
+        max_value: 40.0
+        required: false
+        tags:
+        - control
+        - setpoint
+    outputs:
+      T_indoor:
+        type: float
+        default_value: 20.0
+        description: Indoor air temperature (t_air node)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: true
+        tags:
+        - state
+        - measurement
+      T_mass:
+        type: float
+        default_value: 20.0
+        description: Thermal-mass node temperature (t_m)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: false
+        tags:
+        - state
+      T_surface:
+        type: float
+        default_value: 20.0
+        description: Surface node temperature (t_s)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: false
+        tags:
+        - state
+      T_operative:
+        type: float
+        default_value: 20.0
+        description: Operative temperature (0.3*t_air + 0.7*t_s)
+        unit: °C
+        min_value: -30.0
+        max_value: 60.0
+        required: false
+        tags:
+        - state
+        - comfort
+      Q_heating:
+        type: float
+        default_value: 0.0
+        description: Thermal heating power delivered to the zone
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - hvac
+        - heating
+      Q_cooling:
+        type: float
+        default_value: 0.0
+        description: Thermal cooling power extracted from the zone
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - hvac
+        - cooling
+      energy_demand:
+        type: float
+        default_value: 0.0
+        description: Signed sensible energy demand (+ heating / - cooling)
+        unit: W
+        min_value: -1.0e7
+        max_value: 1.0e7
+        required: false
+        tags:
+        - hvac
+        - demand
+      P_elec:
+        type: float
+        default_value: 0.0
+        description: Electrical power consumed (thermal demand divided by COP)
+        unit: W
+        min_value: 0.0
+        max_value: 1.0e7
+        required: false
+        tags:
+        - electrical
+        - consumption
+      P_elec_mw:
+        type: float
+        default_value: 0.0
+        description: Electrical power consumed in MW (P_elec / 1e6) — for direct wiring to pandapower load inputs
+        unit: MW
+        min_value: 0.0
+        max_value: 10.0
+        required: false
+        tags:
+        - electrical
+        - consumption
+
+  pandapower_grid:
+    class_name: PandapowerGrid
+    module_path: models.model_catalog.physical_models.pandapower_grid
+    version: 1.0.0
+    description: >
+      Parametrizable pandapower power grid model. Loads any pandapower-compatible
+      case file (JSON, Matpower, pickle, builtin IEEE cases), applies per-component
+      setpoints received from other federates, runs AC/DC power flow or optimal
+      power flow, and publishes result variables (bus voltages, line loadings,
+      power flows) as outputs. I/O keys use dot-notation:
+      {component}.{index}.{column} for inputs,
+      res.{component}.{index}.{column} for outputs.
+    author: Pietro Rando Mazzarino
+    domain: power_systems
+    category: physical_model
+    tags:
+      - power_grid
+      - pandapower
+      - powerflow
+      - opf
+      - transmission
+      - distribution
+    dependencies:
+      - pandapower
+    time_step: 3600
+    max_time_step: 86400
+    min_time_step: 1
+    user_defined:
+      solver: newton-raphson
+      integrator: quasi-static
+    parameters:
+      case_file:
+        type: string
+        default_value: "case14"
+        description: Path to pandapower case file OR builtin case name (e.g. case14, case118)
+        unit: "-"
+        required: true
+      case_file_format:
+        type: string
+        default_value: "builtin"
+        description: "builtin | json | pickle | excel | sqlite | matpower | pypower"
+        unit: "-"
+        required: true
+      solver_mode:
+        type: string
+        default_value: "pf"
+        description: "pf | dc_pf | opf | dc_opf"
+        unit: "-"
+        required: false
+      pf_algorithm:
+        type: string
+        default_value: "nr"
+        description: "nr | bfsw | gs | iwamoto_nr — PF mode only"
+        unit: "-"
+        required: false
+      pf_max_iteration:
+        type: int
+        default_value: 10
+        description: Max Newton-Raphson iterations
+        unit: "-"
+        required: false
+      pf_tolerance_mva:
+        type: float
+        default_value: 1.0e-8
+        description: Convergence tolerance [MVA]
+        unit: MVA
+        required: false
+      enforce_q_lims:
+        type: bool
+        default_value: false
+        description: Enforce generator Q limits during PF
+        unit: "-"
+        required: false
+      fail_on_divergence:
+        type: bool
+        default_value: true
+        description: Raise exception on non-convergence vs publish convergence=0 and continue
+        unit: "-"
+        required: false
+      topology_updates_key:
+        type: string
+        default_value: ""
+        description: Input key for runtime JSON topology-change commands (empty = disabled)
+        unit: "-"
+        required: false
+    # inputs/outputs are DYNAMIC — keys below are SCHEMA examples (naming convention),
+    # not an exhaustive enumeration. Actual keys are declared in the scenario YAML.
+    inputs:
+      "load.N.p_mw":
+        type: float
+        default_value: ~
+        description: "Active power setpoint for load N [MW]. Replace N with 0-based index."
+        unit: MW
+        required: false
+        tags:
+          - load
+          - active_power
+      "load.N.q_mvar":
+        type: float
+        default_value: ~
+        description: "Reactive power setpoint for load N [Mvar]."
+        unit: Mvar
+        required: false
+        tags:
+          - load
+          - reactive_power
+      "sgen.N.p_mw":
+        type: float
+        default_value: ~
+        description: "Active power output for static generator N [MW]."
+        unit: MW
+        required: false
+        tags:
+          - sgen
+          - active_power
+      "gen.N.p_mw":
+        type: float
+        default_value: ~
+        description: "Active power setpoint for synchronous generator N [MW]."
+        unit: MW
+        required: false
+        tags:
+          - gen
+          - active_power
+      "gen.N.vm_pu":
+        type: float
+        default_value: ~
+        description: "Voltage setpoint magnitude for gen N [p.u.]."
+        unit: p.u.
+        required: false
+        tags:
+          - gen
+          - voltage
+      "switch.N.closed":
+        type: bool
+        default_value: ~
+        description: "Switch N state (true=closed)."
+        unit: "-"
+        required: false
+        tags:
+          - switch
+          - topology
+    outputs:
+      "res.bus.N.vm_pu":
+        type: float
+        default_value: 1.0
+        description: "Voltage magnitude at bus N after power flow [p.u.]."
+        unit: p.u.
+        required: false
+        tags:
+          - bus
+          - voltage
+          - state
+      "res.bus.N.va_degree":
+        type: float
+        default_value: 0.0
+        description: "Voltage angle at bus N [degree]."
+        unit: degree
+        required: false
+        tags:
+          - bus
+          - voltage
+          - state
+      "res.line.N.loading_percent":
+        type: float
+        default_value: 0.0
+        description: "Line N loading as percentage of thermal limit."
+        unit: "%"
+        required: false
+        tags:
+          - line
+          - loading
+      "res.gen.N.q_mvar":
+        type: float
+        default_value: 0.0
+        description: "Reactive power dispatch from gen N [Mvar]."
+        unit: Mvar
+        required: false
+        tags:
+          - gen
+          - reactive_power
+      "convergence":
+        type: float
+        default_value: 0.0
+        description: "1.0 if power flow converged at this step, 0.0 otherwise."
+        unit: "-"
+        required: false
+        tags:
+          - solver
+          - status
+      "total_loss_mw":
+        type: float
+        default_value: 0.0
+        description: "Total system active power losses [MW]."
+        unit: MW
+        required: false
+        tags:
+          - system
+          - losses
+      "total_gen_mw":
+        type: float
+        default_value: 0.0
+        description: "Total generation dispatched [MW]."
+        unit: MW
+        required: false
+        tags:
+          - system
+          - generation
+      "total_load_mw":
+        type: float
+        default_value: 0.0
+        description: "Total active load in service [MW]."
+        unit: MW
+        required: false
+        tags:
+          - system
+          - load
+
+  pandapipes_grid:
+    class_name: PandapipesGrid
+    module_path: models.model_catalog.physical_models.pandapipes_grid
+    version: 1.0.0
+    description: >
+      Parametrizable pandapipes fluid/gas network model. Loads any pandapipes-compatible
+      network file (JSON, pickle, builtin gas/heat cases), applies per-component
+      setpoints received from other federates (sink demands, source injections,
+      valve states, external grid pressures), runs hydraulic or thermal pipeflow,
+      and publishes result variables (junction pressures/temperatures, pipe
+      velocities/pressure losses) as outputs. I/O keys use dot-notation:
+      {component}.{index}.{column} for inputs,
+      res.{component}.{index}.{column} for outputs.
+    author: Pietro Rando Mazzarino
+    domain: fluid_networks
+    category: physical_model
+    tags:
+      - gas_network
+      - fluid_network
+      - pandapipes
+      - pipeflow
+      - hydraulics
+      - heat_transfer
+    dependencies:
+      - pandapipes
+    time_step: 3600
+    max_time_step: 86400
+    min_time_step: 1
+    user_defined:
+      solver: newton-raphson
+      integrator: quasi-static
+    parameters:
+      case_file:
+        type: string
+        default_value: "gas_tcross1"
+        description: Path to pandapipes network file OR builtin case name (e.g. gas_tcross1, gas_one_pipe1)
+        unit: "-"
+        required: true
+      case_file_format:
+        type: string
+        default_value: "builtin"
+        description: "builtin | json | pickle"
+        unit: "-"
+        required: true
+      pf_mode:
+        type: string
+        default_value: "hydraulics"
+        description: "hydraulics | heat | sequential | bidirectional"
+        unit: "-"
+        required: false
+      max_iter_hyd:
+        type: int
+        default_value: 10
+        description: Max hydraulic solver iterations
+        unit: "-"
+        required: false
+      max_iter_therm:
+        type: int
+        default_value: 10
+        description: Max thermal solver iterations (heat/sequential modes)
+        unit: "-"
+        required: false
+      friction_model:
+        type: string
+        default_value: "nikuradse"
+        description: "nikuradse | colebrook — friction factor correlation"
+        unit: "-"
+        required: false
+      fail_on_divergence:
+        type: bool
+        default_value: true
+        description: Raise exception on non-convergence vs publish convergence=0 and continue
+        unit: "-"
+        required: false
+    # inputs/outputs are DYNAMIC — keys below are SCHEMA examples (naming convention),
+    # not an exhaustive enumeration. Actual keys are declared in the scenario YAML.
+    inputs:
+      "sink.N.mdot_kg_per_s":
+        type: float
+        default_value: ~
+        description: "Mass flow demand for sink N [kg/s]. Replace N with 0-based index."
+        unit: "kg/s"
+        required: false
+        tags:
+          - sink
+          - mass_flow
+      "source.N.mdot_kg_per_s":
+        type: float
+        default_value: ~
+        description: "Mass flow injection from source N [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - source
+          - mass_flow
+      "ext_grid.N.p_bar":
+        type: float
+        default_value: ~
+        description: "Supply pressure from external grid N [bar]."
+        unit: "bar"
+        required: false
+        tags:
+          - ext_grid
+          - pressure
+      "ext_grid.N.t_k":
+        type: float
+        default_value: ~
+        description: "Supply temperature from external grid N [K]."
+        unit: "K"
+        required: false
+        tags:
+          - ext_grid
+          - temperature
+      "valve.N.opened":
+        type: bool
+        default_value: ~
+        description: "Valve N open state (true = open)."
+        unit: "-"
+        required: false
+        tags:
+          - valve
+          - topology
+    outputs:
+      "res.junction.N.p_bar":
+        type: float
+        default_value: 0.0
+        description: "Pressure at junction N after pipeflow [bar]."
+        unit: "bar"
+        required: false
+        tags:
+          - junction
+          - pressure
+          - state
+      "res.junction.N.t_k":
+        type: float
+        default_value: 293.15
+        description: "Temperature at junction N [K]."
+        unit: "K"
+        required: false
+        tags:
+          - junction
+          - temperature
+          - state
+      "res.pipe.N.v_mean_m_per_s":
+        type: float
+        default_value: 0.0
+        description: "Mean flow velocity in pipe N [m/s]."
+        unit: "m/s"
+        required: false
+        tags:
+          - pipe
+          - velocity
+      "res.pipe.N.dp_friction_loss_bar":
+        type: float
+        default_value: 0.0
+        description: "Frictional pressure loss across pipe N [bar]."
+        unit: "bar"
+        required: false
+        tags:
+          - pipe
+          - pressure_loss
+      "res.pipe.N.mdot_from_kg_per_s":
+        type: float
+        default_value: 0.0
+        description: "Mass flow entering pipe N from the from-junction [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - pipe
+          - mass_flow
+      "convergence":
+        type: float
+        default_value: 0.0
+        description: "1.0 if pipeflow converged at this step, 0.0 otherwise."
+        unit: "-"
+        required: false
+        tags:
+          - solver
+          - status
+      "total_supply_mdot_kg_per_s":
+        type: float
+        default_value: 0.0
+        description: "Total mass flow supplied by all external grids [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - system
+          - supply
+      "total_demand_mdot_kg_per_s":
+        type: float
+        default_value: 0.0
+        description: "Total mass flow consumed by all sinks [kg/s]."
+        unit: "kg/s"
+        required: false
+        tags:
+          - system
+          - demand
