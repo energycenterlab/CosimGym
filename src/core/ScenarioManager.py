@@ -511,6 +511,11 @@ class ScenarioManager:
                                                 connections=FedConnections(publishes=publications, subscribes=subscriptions),
                                                 log_level=self.config.log_level,
                                                 core_type=None,
+                                                # rl_federation is created at runtime, after the
+                                                # scenario validator that propagates memory_config
+                                                # to federates — so inject it here (BaseFederate
+                                                # init needs memory_config.batch_size).
+                                                memory_config=self.config.memory_config,
                                             )
                                         }
         federation_conf= FederationConfig(broker_config=broker_config,

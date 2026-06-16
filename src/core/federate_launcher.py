@@ -162,7 +162,9 @@ def main():
         federate.finalize()
         
     except Exception as e:
+        import traceback
         logger.error(f"Process {os.getpid()}: Error running federate {args.name}: {e}")
+        logger.error(f"Traceback:\n{traceback.format_exc()}")
         sys.exit(1)
 
 

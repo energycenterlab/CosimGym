@@ -11,13 +11,15 @@ created: 2026-03-17
 """
 
 from abc import ABC, abstractmethod
-import importlib
+import os
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict as DictSpace, Discrete, MultiBinary, MultiDiscrete
+
+from .model_catalog.RL_agents.components import load_reward_function, CheckpointManager
 
 
 Observation = np.ndarray | Any
@@ -69,23 +71,13 @@ class RLAgent(ABC):
         self.best_model_checkpoint = None # path to best model checkpoint during training for testing loop if not specified in test config
 
         # --- dynamic reward function (loaded from YAML config) ---
-        self._reward_fn: Optional[Callable] = None
+        # New schema: the reward callable path lives at environment.reward.
         reward_path = (
-            rl_task.agent.reward_function
-            if rl_task is not None and hasattr(rl_task, 'agent') and rl_task.agent.reward_function
+            rl_task.environment.reward
+            if rl_task is not None and getattr(rl_task, 'environment', None) is not None
             else None
         )
-        if reward_path:
-            try:
-                module_path, fn_name = reward_path.rsplit('.', 1)
-                module = importlib.import_module(module_path)
-                self._reward_fn = getattr(module, fn_name)
-                if logger:
-                    logger.info(f"RLAgent: loaded reward function '{reward_path}'")
-            except Exception as e:
-                if logger:
-                    logger.error(f"RLAgent: failed to load reward function '{reward_path}': {e}")
-                raise
+        self._reward_fn: Optional[Callable] = load_reward_function(reward_path, logger)
 
 
     @abstractmethod
@@ -161,10 +153,10 @@ class RLAgent(ABC):
 
     def online_training_loop(self):
         # main loop for online training example to be overridden
-        self.logger.debug(f"Starting online training loop for RLAgent: for a number of steps:{self.rl_task.training.total_steps}")
+        self.logger.debug(f"Starting online training loop for RLAgent: for a number of steps:{self.rl_task.run.train.total_steps}")
         obs = self.env.reset()  # Reset the environment at the start of training
         self.obs = obs
-        while self.env.ts < self.rl_task.training.total_steps:
+        while self.env.ts < self.rl_task.run.train.total_steps:
             self.logger.debug(f" Observation: {self.obs}")
             action = self.act(self.obs)
             next_obs, reward, terminated, truncated, info = self.env_step(action)
@@ -192,10 +184,10 @@ class RLAgent(ABC):
     
     def testing_loop(self):
         # main loop for testing the agent
-        self.logger.debug(f"Starting testing loop for RLAgent: for a number of steps:{self.rl_task.test.total_steps}")
+        self.logger.debug(f"Starting testing loop for RLAgent: for a number of steps:{self.rl_task.run.test.total_steps}")
         obs = self.env.reset()  # Reset the environment at the start of training
         self.obs = obs
-        while self.env.ts < self.rl_task.test.total_steps:
+        while self.env.ts < self.rl_task.run.test.total_steps:
             self.logger.debug(f" Observation: {obs}")
             action = self.act(obs)
             next_obs, reward, terminated, truncated, info = self.env_step(action)
@@ -205,8 +197,9 @@ class RLAgent(ABC):
 
     def save_checkpoint(self, name):
         # save model checkpoint
-        if self.rl_task.checkpointing.directory:
-            path = self.rl_task.checkpointing.directory + name
+        ckpt_dir = self.rl_task.experiment.checkpoint.dir
+        if ckpt_dir:
+            path = os.path.join(ckpt_dir, name)
             self.best_model_checkpoint = path
             self.model.save(path) # TODO: credo funzioni solo con sb3 per ora, da capire come gestire i checkpoints in generale
             self.logger.debug(f"SAC model checkpoint saved at: {path}")

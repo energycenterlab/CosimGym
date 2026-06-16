@@ -15,6 +15,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 import os
 import numpy as np
 from ...base_agent_rl import RLAgent, SB3ActionWrapper, DictKeyNameWrapper
+from .components import CheckpointManager
 
 
 class BestEpisodeCheckpointCallback(BaseCallback):
@@ -72,28 +73,37 @@ class RL_Simple_SACsb3(RLAgent):
     def __init__(self, env, logger=None, rl_task=None):
         super().__init__(env, logger, rl_task)
         
-        hp = self.rl_task.agent.hyperparameters          # RLHyperparametersConfig
-        replay_buf = self.rl_task.training.replay_buffer
-        
+        # New schema: universal core in agent.hyperparameters (None-default → omit so SB3
+        # applies its own tuned default); backend-specific knobs in agent.params.
+        hp = self.rl_task.agent.hyperparameters
+        params = self.rl_task.agent.params or {}
+        replay_buf = params.get('replay_buffer', {}) or {}
+        self.ckpt = CheckpointManager(self.rl_task.experiment, self.rl_task.run, logger=logger)
+
         # Wrap the environment: first sanitize key names, then convert Dict actions to Box
         # IMPORTANT: Update self.env directly so the federate and reward functions can access the wrapped env
         self.env = DictKeyNameWrapper(self.env)  # Step 1: Convert 'federation_1.building.0.X' → 'federation_1/building/0/X'
         self.env = SB3ActionWrapper(self.env)    # Step 2: Convert Dict action space to Box
 
-        self.model = SAC("MultiInputPolicy", self.env, learning_rate=hp.learning_rate, buffer_size=replay_buf.buffer_size, 
-                         learning_starts=replay_buf.prefill_steps, batch_size=hp.batch_size, gamma=hp.gamma,
-                           train_freq=self.rl_task.training.train_frequency, gradient_steps=self.rl_task.training.gradient_steps, ent_coef='auto',
-                               target_update_interval=hp.target_update_interval, target_entropy='auto', seed=self.rl_task.seed)
+        policy = self.rl_task.agent.policy or "MultiInputPolicy"
+        sac_kwargs = {
+            'learning_rate': hp.learning_rate,
+            'batch_size': hp.batch_size,
+            'gamma': hp.gamma,
+            'train_freq': hp.train_frequency,
+            'gradient_steps': hp.gradient_steps,
+            'buffer_size': replay_buf.get('buffer_size'),
+            'learning_starts': replay_buf.get('prefill_steps'),
+            'ent_coef': params.get('ent_coef', 'auto'),
+            'target_update_interval': params.get('target_update_interval'),
+            'seed': self.rl_task.seed,
+        }
+        # Drop unset (None) kwargs → SB3 uses its own per-algorithm defaults (design doc §2.6).
+        sac_kwargs = {k: v for k, v in sac_kwargs.items() if v is not None}
+        self.model = SAC(policy, self.env, target_entropy='auto', **sac_kwargs)
 
     def _resolve_test_checkpoint(self):
-        test_cfg = self.rl_task.test
-        ckpt_cfg = self.rl_task.checkpointing
-
-        if test_cfg is not None and getattr(test_cfg, "checkpoint_path", None):
-            return test_cfg.checkpoint_path
-        if ckpt_cfg is not None and getattr(ckpt_cfg, "single_best_checkpoint", None):
-            return ckpt_cfg.single_best_checkpoint
-        return None
+        return self.ckpt.test_checkpoint()
 
     
     def act(self,  obs, deterministic=False):
@@ -103,15 +113,12 @@ class RL_Simple_SACsb3(RLAgent):
     
     def online_training_loop(self):
         
-        self.logger.debug(f"Starting online training loop for RL_Simple_SACsb3: for a number of steps:{self.rl_task.training.total_steps}")
-        checkpoint_path = self.rl_task.checkpointing.single_best_checkpoint
-        checkpoint_dir = os.path.dirname(checkpoint_path)
-        if checkpoint_dir:
-            os.makedirs(checkpoint_dir, exist_ok=True)
+        self.logger.debug(f"Starting online training loop for RL_Simple_SACsb3: for a number of steps:{self.rl_task.run.train.total_steps}")
+        checkpoint_path = self.ckpt.ensure_dir()  # best_path with its dir created
 
         best_callback = BestEpisodeCheckpointCallback(checkpoint_path, logger=self.logger)
         self.model.learn(
-            total_timesteps=self.rl_task.training.total_steps,
+            total_timesteps=self.rl_task.run.train.total_steps,
             log_interval=4,
             callback=best_callback,
         )
@@ -138,7 +145,7 @@ class RL_Simple_SACsb3(RLAgent):
         if checkpoint_path is None:
             raise ValueError(
                 "No checkpoint available for testing. "
-                "Set reinforcement_learning_config.test.checkpoint_path or checkpointing.single_best_checkpoint."
+                "Set reinforcement_learning_config.run.test.checkpoint or experiment.checkpoint.best."
             )
         if not os.path.exists(checkpoint_path):
             raise FileNotFoundError(f"Checkpoint not found for SAC testing: {checkpoint_path}")
@@ -148,12 +155,12 @@ class RL_Simple_SACsb3(RLAgent):
         self.logger.debug(f"Loaded model from checkpoint: {checkpoint_path}")
         # Initialize observation from environment reset
         self.obs, _ = self.env.reset()
-        self.logger.debug(f" Starting testing loop for RL_Simple_SACsb3: for a number of steps:{self.rl_task.test.total_steps}")
+        self.logger.debug(f" Starting testing loop for RL_Simple_SACsb3: for a number of steps:{self.rl_task.run.test.total_steps}")
 
         episode_reward = 0.0
-        deterministic = True if self.rl_task.test is None else bool(self.rl_task.test.deterministic)
-        
-        for step in range(self.rl_task.test.total_steps):  # Run for a fixed number of steps or until termination
+        deterministic = True if self.rl_task.run.test is None else bool(self.rl_task.run.test.deterministic)
+
+        for step in range(self.rl_task.run.test.total_steps):  # Run for a fixed number of steps or until termination
             # Get action from model using current observation
             self.logger.debug(f"Testing step {step}: Current observation: {self.obs}")
             

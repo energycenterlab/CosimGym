@@ -30,6 +30,7 @@ reinforcement_learning_config:
     actions:
       federation_1.spring_federate.0.force:
         space: discrete
+        bins: 5
     reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
   agent:
     model_name: rl_simple_DQN
