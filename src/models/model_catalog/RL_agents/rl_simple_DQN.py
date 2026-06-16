@@ -97,7 +97,8 @@ class DQNAgent:
         self.replay.push(state, action, reward, next_state, done)
 
     def update(self):
-        if len(self.replay) < self.cfg.min_replay_size:
+        # Need at least min_replay_size AND a full batch before sampling.
+        if len(self.replay) < max(self.cfg.min_replay_size, self.cfg.batch_size):
             return None
 
         states, actions, rewards, next_states, dones = self.replay.sample(self.cfg.batch_size)

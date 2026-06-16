@@ -1,0 +1,220 @@
+# Example 1 (DQN): RL control of the BUI0 EnergyPlus FMU zone heating set-point.
+#
+# Identical MDP to bui0_setpoint_SAC.yaml — the ONLY differences are the agent block and the
+# action space: DQN uses a DISCRETE ZoneSetPoint (9 levels across 16..24 degC) instead of SAC's
+# continuous box. This demonstrates that the same declarative environment drives two different
+# algorithms by editing only `agent` + the action `space`/`bins`.
+#
+# tcp brokers (zmq hierarchy currently broken); FMU step fixed 600 s; reset.mode none (the
+# EnergyPlus FMU cannot re-initialize mid-run).
+
+version: "1.0.0"
+name: "bui0_setpoint_DQN"
+scenario_description: "RL (DQN) control of BUI0 EnergyPlus FMU zone set-point (discrete action)."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-02T00:00:00"
+log_level: INFO
+
+memory_config:
+  batch_size: 1000
+  attrs: ["PeopleNumber", "LightsWatt", "EEquipWatt", "OthEquRadWatt",
+          "OthEquFCWatt", "ZoneSetPoint", "TBuilding", "HeatingLoadTarget"]
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "next_step"
+
+reinforcement_learning_config:
+  seed: 42
+  environment:
+    observations:
+      federation_1.building_federate.0.TBuilding:
+        causality: next_step
+        reset_default: 20.0
+        bounds: [0.0, 40.0]
+    actions:
+      federation_1.building_federate.0.ZoneSetPoint:
+        space: discrete
+        bounds: [16.0, 24.0]
+        bins: 9
+    reward: models.model_catalog.RL_agents.reward_functions.bui0_setpoint_comfort
+    reset:
+      mode: none
+  agent:
+    model_name: rl_simple_DQN
+    backend: custom_torch
+    algorithm: DQN
+    hyperparameters:
+      learning_rate: 0.001
+      gamma: 0.99
+      batch_size: 64
+    params:
+      gradient_clip: 10.0
+      target_update_interval: 200
+      exploration:
+        strategy: epsilon_greedy
+        initial_epsilon: 1.0
+        final_epsilon: 0.05
+        epsilon_decay_steps: 2000
+      replay_buffer:
+        buffer_size: 100000
+        prefill_steps: 50
+  run:
+    mode: online
+    train:
+      episodes: 3
+      episode_length: 144
+    test:
+      episodes: 1
+      episode_length: 144
+      deterministic: true
+  experiment:
+    name: bui0_setpoint_DQN
+    checkpoint:
+      best: best_bui0_dqn.pth
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "tcp"
+
+    federate_configs:
+
+      feeder_federate:
+        name: "feeder_federate"
+        type: "base"
+        log_level: INFO
+
+        timing_configs:
+          real_period: 600
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "PeopleNumber"
+              type: "double"
+              units: "-"
+            - key: "LightsWatt"
+              type: "double"
+              units: "W"
+            - key: "EEquipWatt"
+              type: "double"
+              units: "W"
+            - key: "OthEquRadWatt"
+              type: "double"
+              units: "W"
+            - key: "OthEquFCWatt"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "bui0_input_feeder"
+            n_instances: 1
+            prefix: "feed"
+            parallel_execution: false
+
+          parameters:
+            occupied_start_hour: 8.0
+            occupied_end_hour: 18.0
+            people_occupied: 4.0
+            lights_peak_w: 400.0
+            lights_base_w: 40.0
+            eequip_peak_w: 500.0
+            eequip_base_w: 50.0
+            otheq_rad_peak_w: 100.0
+            otheq_rad_base_w: 0.0
+            otheq_fc_peak_w: 100.0
+            otheq_fc_base_w: 0.0
+            setpoint_day_c: 21.0
+            setpoint_night_c: 18.0
+
+          init_state:
+            PeopleNumber: 0.0
+            LightsWatt: 40.0
+            EEquipWatt: 50.0
+            OthEquRadWatt: 0.0
+            OthEquFCWatt: 0.0
+
+          user_defined: {}
+
+      building_federate:
+        name: "building_federate"
+        type: "base"
+        log_level: INFO
+
+        timing_configs:
+          real_period: 600
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "PeopleNumber"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [feeder_federate.0/PeopleNumber]
+            - key: "LightsWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/LightsWatt]
+            - key: "EEquipWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/EEquipWatt]
+            - key: "OthEquRadWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/OthEquRadWatt]
+            - key: "OthEquFCWatt"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [feeder_federate.0/OthEquFCWatt]
+            - key: "ZoneSetPoint"
+              type: "double"
+              units: "degC"
+          publishes:
+            - key: "TBuilding"
+              type: "double"
+              units: "degC"
+            - key: "HeatingLoadTarget"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "bui0_building_fmu"
+            n_instances: 1
+            prefix: "bui"
+            parallel_execution: false
+
+          parameters: {}
+
+          init_state:
+            PeopleNumber: 0.0
+            LightsWatt: 0.0
+            EEquipWatt: 0.0
+            OthEquRadWatt: 0.0
+            OthEquFCWatt: 0.0
+            ZoneSetPoint: 20.0
+            TBuilding: 20.0
+            HeatingLoadTarget: 0.0
+
+          user_defined: {}

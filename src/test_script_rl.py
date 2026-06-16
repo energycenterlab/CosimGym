@@ -21,14 +21,19 @@ import time
 # EXAMPLES base for debugging and development of new scenarios
 # main('simple_test_rlagent')
 # main('simple_DQN_test')
+# main('simple_SACsb3_test')
 
+# Example 1 — RL control of the BUI0 EnergyPlus FMU zone set-point. Same declarative MDP,
+# two algorithms (SB3): continuous (SAC) vs discretized (DQN). Run from the project ROOT.
+main('bui0_setpoint_SAC')
+# main('bui0_setpoint_DQN')
 
-# OSMSES26 - working examples
+# OSMSES26 - working examples (note: zmq multi-federation hierarchy broker currently broken)
 # main('bui_hp_DQN')
 # main ('bui_hp_SAC')
 #main('bui_hp_SAC_rollingreset')
 # main('bui_hp_DQN_rollingreset')
-main('pv_batt_SAC')
+# main('pv_batt_SAC')
 
 # scenarios = ['bui_hp_SAC_rollingreset', 'bui_hp_DQN_rollingreset', 'pv_batt_SAC']
 
