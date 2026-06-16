@@ -237,14 +237,12 @@ class RL_Federate(BaseFederate):
         # TODO: add proper action_mapping_dict in this method _prepare_act_dict
         self.action_mapping = None # this used for discretize in more bin a continous action
 
-        # rl_configs
-        self.episode_length = self.rl_task.training.episode_length if self.rl_task.training is not None else None
-        self.n_episodes = self.rl_task.training.n_episodes if self.rl_task.training is not None else None
+        # rl_configs — new schema: run.train holds the schedule, environment.reset the reset policy
+        train_cfg = self.rl_task.run.train
+        self.episode_length = train_cfg.episode_length if train_cfg is not None else None
+        self.n_episodes = train_cfg.episodes if train_cfg is not None else None
         self.reset_observation_defaults = self.config.reset_observation_defaults or {}
-        env_cfg = getattr(getattr(self.rl_task, "agent", None), "env", None)
-        self.force_reset_observation_defaults = bool(
-            getattr(env_cfg, "force_reset_observation_defaults", False)
-        )
+        self.force_reset_observation_defaults = bool(self.rl_task.environment.reset.force_defaults)
 
         # RL-specific episode tracking
         self._current_episode_reward = 0.0
@@ -405,27 +403,35 @@ class RL_Federate(BaseFederate):
         return entities
 
     def _prepare_obs_dict(self):
-        obs_list = self.rl_task.agent.env.observations
-        prev_obs = self.rl_task.agent.env.include_prev_obs
+        # New schema: environment.observations is a MAPPING key -> ObservationSpec.
+        # Only role=='state' observations form the policy's observation space; role=='extra'
+        # observations are received and available to the reward/logging but excluded here.
+        obs_specs = self.rl_task.environment.observations
         obs_dict = {"type": "dict", "spaces": {}}
         params_specs = {}
         for _obs , model_name in self.config.observed_models.items():
             # we need to get the space specification for each observed variable from the model catalog
             # for now we assume all observations are Box spaces, we can extend this later to support different types of spaces
             params_specs[_obs] = self._get_io_specs(_obs, model_name, io_section="outputs")
-        
-        for i, obs in enumerate(obs_list): 
-            # for now we assume all observations are Box spaces, we can extend this later to support different types of spaces
-            type= None
+
+        for obs, spec in obs_specs.items():
+            if spec.role == "extra":
+                continue
+            type = None
             var_name = obs.split('.')[-1]
-            if var_name not in params_specs[obs]:
+            if obs not in params_specs or var_name not in params_specs[obs]:
                 raise ValueError(
                     f"Missing outputs spec for '{obs}' (model '{self.config.observed_models.get(obs)}'). "
                     f"Ensure catalog override is loaded before federate startup."
                 )
-            low = getattr(params_specs[obs][var_name], 'min_value', -np.inf)
-            high = getattr(params_specs[obs][var_name], 'max_value', np.inf)
-            raw_type = params_specs[obs][var_name].type.value
+            catalog_spec = params_specs[obs][var_name]
+            # bounds: ObservationSpec.bounds override, else from the model catalog
+            if spec.bounds is not None:
+                low, high = spec.bounds
+            else:
+                low = getattr(catalog_spec, 'min_value', -np.inf)
+                high = getattr(catalog_spec, 'max_value', np.inf)
+            raw_type = catalog_spec.type.value
 
             # TODO: we have to understand space from observation so for now only box spaces, but we can extend this later to support different types of spaces
             if raw_type == 'int':
@@ -433,54 +439,63 @@ class RL_Federate(BaseFederate):
 
             elif raw_type == 'float':
                 type = 'float32'
-              
+
             else:
                 raise ValueError(f"Unsupported type {raw_type} for observation {obs}")
 
-            shape = (1, prev_obs[i]) if prev_obs is not None and prev_obs[i]!=0 else (1,)
+            shape = (1, spec.history) if spec.history else (1,)
             obs_dict["spaces"][obs] = {"type": "box",
-                                        "low": low, 
-                                        "high": high, 
-                                        "shape": shape, 
+                                        "low": low,
+                                        "high": high,
+                                        "shape": shape,
                                         "dtype": type}
         return obs_dict
 
     
     def _prepare_act_dict(self):
-        # TODO: add a complet remapping logic for discrete actions
-        act_list = self.rl_task.agent.env.actions
-        act_spaces_type = self.rl_task.agent.env.action_spaces_type
-        action_boundaries = self.rl_task.agent.env.action_boundaries
-        n_bins = self.rl_task.agent.env.action_bins
-        
+        # TODO: add a complete remapping logic for discrete actions
+        # New schema: environment.actions is a MAPPING key -> ActionSpec
+        # (space / bounds / bins per action).
+        act_specs = self.rl_task.environment.actions
+
         act_dict = {"type": "dict", "spaces": {}}
         params_specs = {}
         for _act , model_name in self.config.controlled_models.items():
             # we need to get the space specification for each action variable from the model catalog
             # for now we assume all actions are Box spaces, we can extend this later to support different types of spaces
             params_specs[_act] = self._get_io_specs(_act, model_name, io_section="inputs")
-        
-        for i, act in enumerate(act_list): 
-            type_of_space = act_spaces_type[i]
+
+        for act, spec in act_specs.items():
+            type_of_space = spec.space
             type = None
             var_name = act.split('.')[-1]
-            if var_name not in params_specs[act]:
+            if act not in params_specs or var_name not in params_specs[act]:
                 raise ValueError(
                     f"Missing inputs spec for '{act}' (model '{self.config.controlled_models.get(act)}'). "
                     f"Ensure catalog override is loaded before federate startup."
                 )
+            catalog_spec = params_specs[act][var_name]
             # getting boundaries or bins or mappings
-            low = getattr(params_specs[act][var_name], 'min_value', -np.inf)  # from model catalog 
-            high = getattr(params_specs[act][var_name], 'max_value', np.inf)  # from model catalog
-            raw_type = params_specs[act][var_name].type.value
+            low = getattr(catalog_spec, 'min_value', -np.inf)  # from model catalog
+            high = getattr(catalog_spec, 'max_value', np.inf)  # from model catalog
+            raw_type = catalog_spec.type.value
 
-            if action_boundaries is not None and len(action_boundaries) > i and action_boundaries[i] is not None:
-                low, high = action_boundaries[i]
-            
-            if n_bins is not None and len(n_bins) > i and n_bins[i] is not None:
-                n = n_bins[i]
+            if spec.bounds is not None:
+                low, high = spec.bounds
+
+            # Config-deferred validation (see config_dataclasses.ActionSpec): discretizing a
+            # CONTINUOUS (float) catalog variable requires an explicit number of bins. A
+            # naturally-integer variable may use 'discrete' with no bins (catalog int range).
+            if raw_type == 'float' and type_of_space in ('discrete', 'multidiscrete') and spec.bins is None:
+                raise ValueError(
+                    f"Action '{act}' discretizes a continuous (float) variable with space "
+                    f"'{type_of_space}' but no 'bins' set. Specify environment.actions.{act}.bins."
+                )
+
+            if spec.bins is not None:
+                n = spec.bins
             else:
-                n = int(high - low + 1) 
+                n = int(high - low + 1)
 
             # TODO: we have to understand space from action so for now only box spaces, but we can extend this later to support different types of spaces
             if raw_type == 'int' and type_of_space == 'discrete':
@@ -493,32 +508,31 @@ class RL_Federate(BaseFederate):
                 type = 'int32'
                 shape = (1,)
                 act_dict["spaces"][act] = {"type": "box",
-                                            "low": low, 
-                                            "high": high, 
-                                            "shape": shape, 
+                                            "low": low,
+                                            "high": high,
+                                            "shape": shape,
                                             "dtype": type}
 
             elif raw_type == 'float' and type_of_space == 'box':
                 type = 'float32'
                 shape = (1,)
                 act_dict["spaces"][act] = {"type": "box",
-                                            "low": low, 
-                                            "high": high, 
-                                            "shape": shape, 
+                                            "low": low,
+                                            "high": high,
+                                            "shape": shape,
                                             "dtype": type}
             elif raw_type == 'float' and type_of_space == 'discrete':
                 self.logger.warning(f"Model input for Action {act} is of type float but action space type is discrete. DISCRETIZE THE ACTION SPACE  and adding a remapping in case of negative min values")
                 type = 'int32'
-                if self.rl_task.agent.env.action_bins is not None and len(self.rl_task.agent.env.action_bins) > i:    
-                    self.action_mapping = {b:round(v, 2) for b,v in zip(range(n), np.linspace(low, high, n))}
-                
+                self.action_mapping = {b:round(v, 2) for b,v in zip(range(n), np.linspace(low, high, n))}
+
                 act_dict["spaces"][act]= {"type": "discrete", "n": n}
                 # if low < 0:
                 #     self.action_remapping = (low, high) if low < 0 else (0, high) # if low is negative we need to remap the action space to start from 0 for the agent and then remap back to the original space in the step function
             else:
                 raise ValueError(f"Unsupported type {raw_type} for action {act}")
 
-           
+
         return act_dict
 
     def _parse_attr_context(self, attr_key):
@@ -558,14 +572,13 @@ class RL_Federate(BaseFederate):
         self._enforce_startup_input_sync()
         try:
             # online training loop
-            if self.rl_task.training is not None and self.rl_task.training.mode != 'offline':
+            if self.rl_task.run.train is not None and self.rl_task.run.mode != 'offline':
                 self.logger.info("===================================================================================================================")
                 self.logger.info(f"Starting online training for RL_Federate {self.name}")
                 self.mode = 'train'
-                # self.agent.train(mode='online', max_steps=self.rl_task.training.total_steps, update_every=self.rl_task.training.train_frequency, updates_per_step=self.rl_task.training.gradient_steps, eval_every=self.rl_task.training.eval_frequency, eval_episodes=self.rl_task.training.n_eval_episodes, log_every=self.rl_task.training.log_interval)
                 self.agent.online_training_loop()
-            # Testing loop 
-            if self.rl_task.test is not None :
+            # Testing loop
+            if self.rl_task.run.test is not None :
                 self.logger.info("===================================================================================================================")
                 self.logger.info(f"Starting testing for RL_Federate {self.name}")
                 self.mode = 'test'

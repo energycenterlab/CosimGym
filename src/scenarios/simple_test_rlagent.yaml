@@ -19,28 +19,20 @@ memory_config:
 # TODO: add influxdb configs
 
 reinforcement_learning_config:
-
-  # RLAgentConfig – which agent class to load
+  environment:
+    observations:
+      federation_1.spring_federate.0.position: null
+      federation_1.spring_federate.0.velocity: null
+      federation_1.spring_federate.0.acceleration: null
+    actions:
+      federation_1.spring_federate.0.force:
+        space: discrete
   agent:
-    model_name: "rl_simple_agent"             # class inside that module
-    env:
-      observations: [federation_1.spring_federate.0.position, federation_1.spring_federate.0.velocity, federation_1.spring_federate.0.acceleration]  # list of keys to use as observations
-      actions: [federation_1.spring_federate.0.force ]  # list of actions
-      action_spaces_type: ["discrete"] # list of action space types corresponding to the actions (only discrete, box) MUST have same lenght of actions
-      action_space_remapping: [[-10,10]] # list of action space remapping corresponding to the actions (for discrete only)
-      include_prev_obs: [0,0,0]  # how many previous observations to include in the state representation (0 for none) must be None or same lenght of observations
-      
-
-  # RLTrainingConfig – core training loop settings
-  training:
-    mode:                 "online"   # online | offline | mixed
-    episode_length:       5       # total simulation steps per episode
-    n_episodes: 10       # max agent steps before forced reset
-
-
-# WHEN doing RL the controlled federate will not specify targets,
-#  these will be filled by the Scenario manager
-  
+    model_name: rl_simple_agent
+  run:
+    train:
+      episodes: 10
+      episode_length: 5
 federations:
   federation_1:
     broker_config:

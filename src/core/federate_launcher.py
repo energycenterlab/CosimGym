@@ -107,14 +107,21 @@ def main():
             config_dict['rl_task'] = rl_task  # validated to ReinforcementLearningConfig by Pydantic
             config = RLFederateConfig.model_validate(config_dict)
         else:
-            mode = 'train' if rl_task and rl_task.get('training', {}) and rl_task['training'].get('mode', 'offline') != 'offline' else 'test'
-            training = rl_task.get('training', {}) if rl_task else {}
+            # Base (non-RL) federates only need the episode/reset facts so they can reset in
+            # lockstep with the RL agent. New schema: run.train holds the schedule,
+            # environment.reset the reset policy. We flatten the few needed fields into the
+            # same small rl_config dict BaseFederate already consumes.
+            run = rl_task.get('run', {}) if rl_task else {}
+            train = run.get('train') or {}
+            reset = (rl_task.get('environment', {}) or {}).get('reset', {}) if rl_task else {}
+            reset = reset or {}
+            mode = 'train' if (train and run.get('mode', 'online') != 'offline') else 'test'
             rl_4_fed = {
-                'reset_period':   training.get('reset_period'),
-                'reset_type':     training.get('reset_mode'),
-                'episode_length': training.get('episode_length'),
-                'n_episodes':     training.get('n_episodes'),
-                'rolling_window': training.get('rolling_window'),
+                'reset_period':   reset.get('period') or train.get('episode_length'),
+                'reset_type':     reset.get('mode', 'full'),
+                'episode_length': train.get('episode_length'),
+                'n_episodes':     train.get('episodes'),
+                'rolling_window': reset.get('rolling_window'),
                 'mode': mode,
             }
             config_dict['rl_config'] = rl_4_fed
