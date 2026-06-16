@@ -62,7 +62,11 @@ def main():
     parser.add_argument('--log-level', required=True, help='log level for logging')
 
     args = parser.parse_args()
-    
+
+    # Expose the federate log path so models (e.g. EnergyPlus FMUs) can place
+    # their working/output dirs under the scenario log dir instead of the CWD.
+    os.environ['COSIM_FEDERATE_LOG_FILE'] = args.log_file
+
     logger = setup_process_logger(
         process_name=args.name,
         process_type =f"federate_{args.type}",

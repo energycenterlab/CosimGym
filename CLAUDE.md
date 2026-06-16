@@ -8,7 +8,9 @@ CosimGym is a Python orchestration framework that bridges HELICS co-simulation w
 
 ## Setup & Common Commands
 
-**Prerequisites:** Conda, Docker, Python 3.12
+**Prerequisites:** Conda, Docker, Docker Compose **v2** (`docker compose` plugin — verify `docker compose version` reports `v2.x`; legacy `docker-compose` v1 rejects the Compose Spec file), Python 3.12
+
+> On a shared server without sudo, install the Compose v2 plugin into your home only (no impact on other users): drop the `docker-compose` v2 binary in `~/.docker/cli-plugins/` and `chmod +x` it. See `docs/Installation_Setup.md`.
 
 ```bash
 # Full setup

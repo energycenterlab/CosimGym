@@ -19,6 +19,8 @@ Email: pietro.randomazzarino@polito.it
 Organization: EC-Lab Politecnico di Torino
 """
 
+import contextlib
+import logging
 import os
 import shutil
 from datetime import datetime
@@ -92,6 +94,11 @@ class BaseFMUModel(BaseModel):
         self.ou_vars = {}
         self.params_vars = {}
 
+        # Directory the FMU runtime runs in. EnergyPlus exports drop an
+        # ``Output_EPExport_<instanceName>`` folder into the process CWD; we
+        # point that at the scenario log dir instead of the workspace root.
+        self._fmu_workdir = None
+
         super().__init__(name, metadata, config, logger)
 
     # ------------------------------------------------------------------
@@ -104,11 +111,15 @@ class BaseFMUModel(BaseModel):
         fmu_path = self._resolve_fmu_path()
 
         self._unpack_fmu(fmu_path)
-        self._instantiate_fmu()
-        self._setup_experiment()
-        self._enter_initialization_mode()
-        self._push_initial_state_to_fmu()
-        self._exit_initialization_mode()
+        # EnergyPlus FMUs create their Output_EPExport_<instance> folder in the
+        # CWD active during instantiate/doStep, so run the lifecycle from the
+        # log dir to keep the workspace root clean.
+        with self._in_fmu_workdir():
+            self._instantiate_fmu()
+            self._setup_experiment()
+            self._enter_initialization_mode()
+            self._push_initial_state_to_fmu()
+            self._exit_initialization_mode()
 
         self.logger.info(f"FMU model {self.name} initialized (FMI {self.fmiVersion})")
 
@@ -116,18 +127,20 @@ class BaseFMUModel(BaseModel):
         self.logger.debug(f"Stepping FMU model {self.name} at ts={self.state.ts}")
         self._inputs_to_fmu()
         current_time = max(0, (self.state.ts - 1)) * self.real_period
-        self.fmu.doStep(
-            currentCommunicationPoint=current_time,
-            communicationStepSize=self.real_period,
-        )
+        with self._in_fmu_workdir():
+            self.fmu.doStep(
+                currentCommunicationPoint=current_time,
+                communicationStepSize=self.real_period,
+            )
         self._outputs_from_fmu()
 
     def finalize(self) -> None:
         self.logger.info(f"Finalizing FMU model {self.name}")
         if self.fmu is not None:
             try:
-                self.fmu.terminate()
-                self.fmu.freeInstance()
+                with self._in_fmu_workdir():
+                    self.fmu.terminate()
+                    self.fmu.freeInstance()
             except Exception as exc:
                 self.logger.warning(f"FMU terminate/free raised: {exc}")
         if self.unzipdir and os.path.isdir(self.unzipdir):
@@ -140,6 +153,54 @@ class BaseFMUModel(BaseModel):
         super().reset()
         self.logger.debug(f"Resetting FMU model {self.name} — re-running initialization")
         self.initialize()
+
+    # ------------------------------------------------------------------
+    # FMU working directory (keeps Output_EPExport_* out of workspace root)
+    # ------------------------------------------------------------------
+
+    def _resolve_fmu_workdir(self) -> Path:
+        """Directory the FMU runtime should execute in.
+
+        Derived from the federate logger's file handler so the EnergyPlus
+        ``Output_EPExport_<instance>`` folder lands next to the scenario logs.
+        Falls back to ``./logs`` when no file handler is found.
+        """
+        base = None
+
+        # Primary: federate log path exported by federate_launcher. Layout is
+        # .../<scenario>/<timestamp>/federates/<name>.log -> run dir is parent.parent.
+        log_file = os.environ.get('COSIM_FEDERATE_LOG_FILE')
+        if log_file:
+            base = Path(log_file).resolve().parent.parent
+
+        # Secondary: walk the logger chain for a FileHandler.
+        if base is None:
+            lg = self.logger
+            while lg is not None and base is None:
+                for handler in getattr(lg, 'handlers', []):
+                    if isinstance(handler, logging.FileHandler):
+                        base = Path(handler.baseFilename).resolve().parent.parent
+                        break
+                lg = getattr(lg, 'parent', None)
+
+        # Fallback: ./logs
+        if base is None:
+            base = Path('logs').resolve()
+
+        workdir = base / 'fmu_output'
+        workdir.mkdir(parents=True, exist_ok=True)
+        return workdir
+
+    @contextlib.contextmanager
+    def _in_fmu_workdir(self):
+        if self._fmu_workdir is None:
+            self._fmu_workdir = self._resolve_fmu_workdir()
+        prev_cwd = os.getcwd()
+        os.chdir(self._fmu_workdir)
+        try:
+            yield
+        finally:
+            os.chdir(prev_cwd)
 
     # ------------------------------------------------------------------
     # FMU source resolution (local / MinIO / HTTP)

@@ -15,6 +15,16 @@ cd CosimGym
 #### pre-requisites
 - python 3.12 installed
 - docker installed
+- **Docker Compose v2** (the `docker compose` plugin, **not** the legacy `docker-compose` v1 binary). Verify with `docker compose version` — must report `v2.x`. The `src/docker-compose.yaml` file uses the Compose Spec and is rejected by v1 (errors like `Unsupported config option for services: 'minio-init'`).
+
+  > **No-sudo / shared-server install** — install the plugin into your user home only (does not affect other users or the system `docker`):
+  > ```bash
+  > mkdir -p ~/.docker/cli-plugins
+  > curl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 \
+  >   -o ~/.docker/cli-plugins/docker-compose
+  > chmod +x ~/.docker/cli-plugins/docker-compose
+  > docker compose version   # verify v2.x
+  > ```
 
 1.  **Create Conda Environment**:
     ```bash
