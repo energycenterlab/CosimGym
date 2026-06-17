@@ -1,9 +1,5 @@
 """
-checkpoint_manager.py — resolve checkpoint paths from the new experiment.checkpoint config.
-
-New schema: experiment.checkpoint = { dir, best }. `CheckpointConfig.best_path` already resolves
-`best` against `dir`. This thin manager wraps path resolution + dir creation so agents (and
-custom agents) don't re-derive it. Save/load remain backend-specific and stay in the agent.
+checkpoint_manager.py — resolve checkpoint paths from experiment.checkpoint config.
 """
 from __future__ import annotations
 

@@ -107,10 +107,8 @@ def main():
             config_dict['rl_task'] = rl_task  # validated to ReinforcementLearningConfig by Pydantic
             config = RLFederateConfig.model_validate(config_dict)
         else:
-            # Base (non-RL) federates only need the episode/reset facts so they can reset in
-            # lockstep with the RL agent. New schema: run.train holds the schedule,
-            # environment.reset the reset policy. We flatten the few needed fields into the
-            # same small rl_config dict BaseFederate already consumes.
+            # Base (non-RL) federates only need episode/reset facts to reset in lockstep
+            # with the RL agent. Flatten into the small rl_config dict BaseFederate consumes.
             run = rl_task.get('run', {}) if rl_task else {}
             train = run.get('train') or {}
             reset = (rl_task.get('environment', {}) or {}).get('reset', {}) if rl_task else {}

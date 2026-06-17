@@ -382,11 +382,7 @@ class ScenarioManager:
         publications = []
         subscriptions = []
 
-        # New schema: environment.observations is a MAPPING key -> ObservationSpec, with a
-        # per-entry `causality`. State and extra-role observations are both subscribed (the
-        # role only governs whether the policy sees them, handled in RL_Federate). This single
-        # pass replaces the old main + additional_observations duplicated blocks and the
-        # positional causality arrays (the length-mismatch bug class no longer exists).
+        # All observations (state + extra role) are subscribed; role filtering happens in RL_Federate.
         for obs, spec in rl_task.environment.observations.items():
             pubs_model = self.config.federations[obs.split('.')[0]].federate_configs[obs.split('.')[1]].connections.publishes
             for p in pubs_model:
@@ -423,7 +419,6 @@ class ScenarioManager:
         return controlled_models
 
     def _build_rl_reset_observation_defaults(self, rl_task):
-        # New schema: per-observation reset_default lives on each ObservationSpec.
         explicit_defaults = {
             obs: spec.reset_default
             for obs, spec in rl_task.environment.observations.items()

@@ -73,8 +73,6 @@ class RL_Simple_SACsb3(RLAgent):
     def __init__(self, env, logger=None, rl_task=None):
         super().__init__(env, logger, rl_task)
         
-        # New schema: universal core in agent.hyperparameters (None-default → omit so SB3
-        # applies its own tuned default); backend-specific knobs in agent.params.
         hp = self.rl_task.agent.hyperparameters
         params = self.rl_task.agent.params or {}
         replay_buf = params.get('replay_buffer', {}) or {}
@@ -98,7 +96,7 @@ class RL_Simple_SACsb3(RLAgent):
             'target_update_interval': params.get('target_update_interval'),
             'seed': self.rl_task.seed,
         }
-        # Drop unset (None) kwargs → SB3 uses its own per-algorithm defaults (design doc §2.6).
+        # Drop unset (None) kwargs so SB3 applies its own defaults.
         sac_kwargs = {k: v for k, v in sac_kwargs.items() if v is not None}
         self.model = SAC(policy, self.env, target_entropy='auto', **sac_kwargs)
 

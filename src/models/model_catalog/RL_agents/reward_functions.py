@@ -14,8 +14,8 @@ where:
 
 Add a new function here and reference it in the scenario YAML via:
     reinforcement_learning_config:
-      agent:
-        reward_function: "models.model_catalog.RL_agents.reward_functions.<function_name>"
+      environment:
+        reward: "models.model_catalog.RL_agents.reward_functions.<function_name>"
 """
 
 

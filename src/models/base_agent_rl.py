@@ -71,7 +71,6 @@ class RLAgent(ABC):
         self.best_model_checkpoint = None # path to best model checkpoint during training for testing loop if not specified in test config
 
         # --- dynamic reward function (loaded from YAML config) ---
-        # New schema: the reward callable path lives at environment.reward.
         reward_path = (
             rl_task.environment.reward
             if rl_task is not None and getattr(rl_task, 'environment', None) is not None

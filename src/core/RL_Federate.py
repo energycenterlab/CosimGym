@@ -237,7 +237,7 @@ class RL_Federate(BaseFederate):
         # TODO: add proper action_mapping_dict in this method _prepare_act_dict
         self.action_mapping = None # this used for discretize in more bin a continous action
 
-        # rl_configs — new schema: run.train holds the schedule, environment.reset the reset policy
+        # rl_configs
         train_cfg = self.rl_task.run.train
         self.episode_length = train_cfg.episode_length if train_cfg is not None else None
         self.n_episodes = train_cfg.episodes if train_cfg is not None else None
@@ -403,9 +403,7 @@ class RL_Federate(BaseFederate):
         return entities
 
     def _prepare_obs_dict(self):
-        # New schema: environment.observations is a MAPPING key -> ObservationSpec.
-        # Only role=='state' observations form the policy's observation space; role=='extra'
-        # observations are received and available to the reward/logging but excluded here.
+        # role=='extra' observations are excluded from the policy's obs space.
         obs_specs = self.rl_task.environment.observations
         obs_dict = {"type": "dict", "spaces": {}}
         params_specs = {}
@@ -454,8 +452,6 @@ class RL_Federate(BaseFederate):
     
     def _prepare_act_dict(self):
         # TODO: add a complete remapping logic for discrete actions
-        # New schema: environment.actions is a MAPPING key -> ActionSpec
-        # (space / bounds / bins per action).
         act_specs = self.rl_task.environment.actions
 
         act_dict = {"type": "dict", "spaces": {}}
@@ -483,9 +479,7 @@ class RL_Federate(BaseFederate):
             if spec.bounds is not None:
                 low, high = spec.bounds
 
-            # Config-deferred validation (see config_dataclasses.ActionSpec): discretizing a
-            # CONTINUOUS (float) catalog variable requires an explicit number of bins. A
-            # naturally-integer variable may use 'discrete' with no bins (catalog int range).
+            # Discretizing a continuous variable requires explicit bins.
             if raw_type == 'float' and type_of_space in ('discrete', 'multidiscrete') and spec.bins is None:
                 raise ValueError(
                     f"Action '{act}' discretizes a continuous (float) variable with space "

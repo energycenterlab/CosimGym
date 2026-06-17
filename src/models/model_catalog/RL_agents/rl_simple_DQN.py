@@ -148,8 +148,6 @@ class RL_Simple_DQN(RLAgent):
     def __init__(self, env, logger=None, rl_task=None):
         super().__init__(env, logger, rl_task)
         self.logger.debug(f"Initialized RL_Simple_DQN with rl_task: {pp.pformat(self.rl_task)}")
-        # New schema: universal core in agent.hyperparameters; DQN-specific knobs (exploration
-        # schedule, replay buffer, gradient_clip, target update) in agent.params.
         hp = self.rl_task.agent.hyperparameters
         params = self.rl_task.agent.params or {}
         exploration = params.get('exploration', {}) or {}
@@ -157,8 +155,6 @@ class RL_Simple_DQN(RLAgent):
         self.env = FlattenObservation(self.env)  # Ensure observations are flat vectors
         self.checkpoints = CheckpointManager(self.rl_task.experiment, self.rl_task.run, logger=logger)
 
-        # DQNConfig carries sane defaults; only override with values that are actually set
-        # (None-default hyperparameters are omitted so the algorithm default stands).
         base = DQNConfig()
         cfg = DQNConfig(
             gamma=hp.gamma if hp.gamma is not None else base.gamma,

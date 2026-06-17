@@ -225,12 +225,12 @@ class MemoryConfig(BaseModel):
 # ReinforcementLearningConfig without forward references.
 # ==============================================================================
 
-# Refactored schema — see plan_for_rl_config_refactor.md §4. Four orthogonal axes:
-#   (a) environment  — the MDP (observations/actions/reward/reset). CosimGym owns it.
-#   (b) agent        — the solver (library/algorithm/hyperparameters). Mostly pass-through.
-#   (c) run          — what to execute (train/eval/test). Single source of run length.
-#   (d) experiment   — orthogonal infra (name/checkpoint/logging/offline).
-# All RL models use extra='forbid': unknown/typo'd keys fail loudly instead of being dropped.
+# Four orthogonal axes:
+#   (a) environment  — the MDP (observations/actions/reward/reset)
+#   (b) agent        — the solver (library/algorithm/hyperparameters)
+#   (c) run          — what to execute (train/eval/test)
+#   (d) experiment   — orthogonal infra (name/checkpoint/logging/offline)
+# All RL models use extra='forbid'.
 
 
 # ---- (a) ENVIRONMENT — the MDP. Framework-agnostic. ----
@@ -251,10 +251,8 @@ class ActionSpec(BaseModel):
 
     space: Literal["box", "discrete", "multidiscrete", "multibinary"] = "box"
     bounds: Optional[Tuple[float, float]] = None
-    # `bins` = number of discrete levels when discretizing a CONTINUOUS catalog variable.
-    # Required-when-discretizing-continuous is enforced in RL_Federate._prepare_act_dict
-    # (Phase 2), where the catalog variable type/bounds are known; a naturally-integer
-    # action may legitimately use `discrete` with no bins (catalog min..max integer range).
+    # Number of discrete levels when discretizing a continuous variable. Validated at
+    # runtime in RL_Federate._prepare_act_dict where catalog type/bounds are known.
     bins: Optional[int] = None
 
 
@@ -302,8 +300,7 @@ class EnvironmentConfig(BaseModel):
 # ---- (b) AGENT — the solver. ----
 
 class Hyperparameters(BaseModel):
-    # SMALL universal core. ALL Optional → unset fields omitted so the backend applies its
-    # own per-algorithm tuned default (see design doc §2.6). Anything else → agent.params.
+    # All Optional → unset fields omitted so backend applies its own default.
     model_config = ConfigDict(extra='forbid')
 
     learning_rate: Optional[float] = None
