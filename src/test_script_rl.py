@@ -28,6 +28,9 @@ import time
 main('bui0_setpoint_SAC')
 # main('bui0_setpoint_DQN')
 
+# Example 2 — RLlib PPO on spring-mass-damper (standalone RLModule, no ray workers).
+# main('simple_rllib_test')
+
 # OSMSES26 - working examples (note: zmq multi-federation hierarchy broker currently broken)
 # main('bui_hp_DQN')
 # main ('bui_hp_SAC')

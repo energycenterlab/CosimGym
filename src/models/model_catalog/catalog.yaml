@@ -1212,6 +1212,12 @@ models:
     version: 1.0.0
     description: simple stablebaseline SAC intergation agent for testing
     category: rl_agent
+  rl_simple_rllib:
+    class_name: RL_Simple_RLlib
+    module_path: models.model_catalog.RL_agents.rl_simple_rllib
+    version: 1.0.0
+    description: RLlib PPO agent for HELICS co-simulation (ray 2.55+)
+    category: rl_agent
   adelaide_test:
     class_name: BaseFMUModel
     module_path: models.base_FMU_model

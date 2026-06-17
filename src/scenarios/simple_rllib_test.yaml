@@ -1,0 +1,117 @@
+# Simple spring-mass-damper scenario with RLlib PPO agent
+# Uses the same MDP as simple_SACsb3_test but with RLlib backend
+
+version: "1.0.0"
+name: "simple_test_rllib"
+scenario_description: RLlib PPO agent controlling a spring-mass-damper system.
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T01:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 100
+  attrs: ["position", "velocity", "acceleration", "force", "disturbance"]
+
+reinforcement_learning_config:
+  seed: 42
+  environment:
+    observations:
+      federation_1.spring_federate.0.position:
+        causality: next_step
+      federation_1.spring_federate.0.velocity:
+        causality: next_step
+      federation_1.spring_federate.0.acceleration:
+        causality: next_step
+    actions:
+      federation_1.spring_federate.0.force: null
+  agent:
+    model_name: rl_simple_rllib
+    backend: rllib
+    algorithm: PPO
+    hyperparameters:
+      learning_rate: 0.0003
+      gamma: 0.99
+      net_arch: [64, 64]
+    params:
+      train_batch_size: 32
+      minibatch_size: 16
+      num_epochs: 2
+      clip_param: 0.3
+      entropy_coeff: 0.0
+  run:
+    train:
+      episodes: 3
+      episode_length: 50
+    test:
+      episodes: 1
+      episode_length: 50
+      deterministic: true
+      checkpoint: null
+  experiment:
+    checkpoint:
+      best: best_rllib_ppo.pth
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "tcp"
+      port: 23404
+      federates: 1
+      log_level: DEBUG
+
+    federate_configs:
+      spring_federate:
+          name: "spring_federate"
+          type: "base"
+          log_level: DEBUG
+          core_name: "fed1"
+          core_type: "zmq"
+
+          timing_configs:
+            real_period: 1
+
+          flags:
+            terminate_on_error: true
+            wait_for_current_time_update: true
+
+          connections:
+            endpoints: []
+            subscribes:
+              - key: "force"
+                type: "double"
+                units: "N"
+
+            publishes:
+              - key: "position"
+                type: "double"
+                units: "m"
+              - key: "velocity"
+                type: "double"
+                units: "m/s"
+              - key: "acceleration"
+                type: "double"
+                units: "m/s^2"
+
+          model_configs:
+            instantiation:
+              model_name: "spring_mass_damper"
+              n_instances: 1
+              prefix: "spring"
+              parallel_execution: false
+
+            parameters:
+              mass: 5.0
+              damping: 2.0
+              stiffness: 10.0
+
+            init_state:
+              force: 0.0
+              disturbance: 0.0
+              position: 0.0
+              velocity: 0.0
+              acceleration: 0.0
+
+            user_defined:
+              solver: "euler"
+              integrator: "fixed-step"
