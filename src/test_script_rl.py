@@ -32,7 +32,9 @@ main('bui0_heatingpower_DQN')
 # Example 2 — RLlib PPO on spring-mass-damper (standalone RLModule, no ray workers).
 # main('simple_rllib_test')
 
-# OSMSES26 - working examples (note: zmq multi-federation hierarchy broker currently broken)
+# OSMSES26 - working examples. NOTE: RL injects an rl_federation, so these become 2-federation
+# scenarios needing a hierarchy broker. The zmq hierarchy broker is broken, so these use
+# core_type: tcp (verified: train + test run end-to-end, both full and rolling reset).
 # main('bui_hp_DQN')
 # main ('bui_hp_SAC')
 #main('bui_hp_SAC_rollingreset')

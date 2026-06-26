@@ -70,11 +70,11 @@ reinforcement_learning_config:
         prefill_steps: 10000
   run:
     train:
-      episodes: 10
-      episode_length: 20
+      episodes: 100
+      episode_length: 2880
     test:
       episodes: 1
-      episode_length: 20
+      episode_length: 2880
       deterministic: true
   experiment:
     checkpoint:
@@ -82,7 +82,7 @@ reinforcement_learning_config:
 federations:
   federation_1:
     broker_config:
-      core_type: "zmq"
+      core_type: "tcp"
       port: 23404
       host: "localhost"
       federates: 3
@@ -98,7 +98,7 @@ federations:
         type: "base"
         log_level: ERROR
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60   # one CSV row per 60 s sim-step
@@ -139,7 +139,7 @@ federations:
         type: "base"
         log_level: ERROR
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60
@@ -203,7 +203,7 @@ federations:
         type: "base"
         log_level: ERROR
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60
