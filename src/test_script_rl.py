@@ -25,8 +25,9 @@ import time
 
 # Example 1 — RL control of the BUI0 EnergyPlus FMU zone set-point. Same declarative MDP,
 # two algorithms (SB3): continuous (SAC) vs discretized (DQN). Run from the project ROOT.
-main('bui0_setpoint_SAC')
+#main('bui0_setpoint_SAC')
 # main('bui0_setpoint_DQN')
+main('bui0_heatingpower_DQN')
 
 # Example 2 — RLlib PPO on spring-mass-damper (standalone RLModule, no ray workers).
 # main('simple_rllib_test')

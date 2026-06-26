@@ -413,6 +413,76 @@ class SB3ActionWrapper(gym.ActionWrapper):
 # WRAPPER FOR DICT KEY NAME SANITIZATION (DOTS TO UNDERSCORES)
 # ============================================================================
 
+class MinMaxNormalizeObservation(gym.ObservationWrapper):
+    """
+    Min-max normalize Dict Box observations into [0, 1] using each subspace's
+    declared low/high bounds.
+
+    Bounds source & priority are resolved upstream in
+    RL_Federate._prepare_obs_dict: an ObservationSpec.bounds set in the scenario
+    YAML overrides the model-catalog min/max, and whichever wins lands in the Box
+    low/high of the observation space. This wrapper just consumes those bounds, so
+    YAML bounds get priority for free, with catalog min/max as the fallback.
+
+    Keys whose bounds are non-finite (catalog min/max missing/infinite AND no YAML
+    bounds) or degenerate (high <= low) cannot be normalized: they are passed
+    through unchanged and a one-time warning recommends setting explicit bounds in
+    the scenario YAML (environment.observations.<key>.bounds).
+
+    Note: this only rescales what the policy network sees. Reward functions read raw
+    physical values inside the federate, so they are unaffected.
+    """
+
+    def __init__(self, env, logger=None):
+        super().__init__(env)
+        self.logger = logger
+        if not isinstance(env.observation_space, DictSpace):
+            raise TypeError(
+                "MinMaxNormalizeObservation expects a Dict observation space, "
+                f"got {type(env.observation_space)}."
+            )
+        self._norm = {}          # key -> (low, span) for normalizable keys
+        self._skipped = []       # keys left un-normalized (no finite bounds)
+        new_spaces = {}
+        for key, space in env.observation_space.spaces.items():
+            low = np.asarray(space.low, dtype=np.float64)
+            high = np.asarray(space.high, dtype=np.float64)
+            finite = np.all(np.isfinite(low)) and np.all(np.isfinite(high))
+            if finite and np.all(high > low):
+                self._norm[key] = (low.astype(np.float32),
+                                   (high - low).astype(np.float32))
+                new_spaces[key] = Box(low=0.0, high=1.0,
+                                      shape=space.shape, dtype=np.float32)
+            else:
+                self._skipped.append(key)
+                new_spaces[key] = space
+        self.observation_space = DictSpace(new_spaces)
+        if self._skipped:
+            msg = (
+                "MinMaxNormalizeObservation: no finite bounds for "
+                f"{self._skipped}; leaving them un-normalized. Set explicit bounds in "
+                "the scenario YAML (environment.observations.<key>.bounds) so they "
+                "can be normalized."
+            )
+            if self.logger is not None:
+                self.logger.warning(msg)
+            else:
+                print(msg)
+
+    def observation(self, obs):
+        if not isinstance(obs, dict):
+            return obs
+        out = {}
+        for key, value in obs.items():
+            if key in self._norm:
+                low, span = self._norm[key]
+                scaled = (np.asarray(value, dtype=np.float32) - low) / span
+                out[key] = np.clip(scaled, 0.0, 1.0)
+            else:
+                out[key] = value
+        return out
+
+
 class DictKeyNameWrapper(gym.ObservationWrapper):
     """
     Sanitizes Dict observation and action keys by replacing dots with underscores.

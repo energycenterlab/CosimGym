@@ -9,8 +9,8 @@
 # EnergyPlus FMU cannot re-initialize mid-run).
 
 version: "1.0.0"
-name: "bui0_setpoint_DQN"
-scenario_description: "RL (DQN) control of BUI0 EnergyPlus FMU zone set-point (discrete action)."
+name: "bui0_heatingpower_DQN"
+scenario_description: "RL (DQN) control of BUI0 EnergyPlus FMU zone heating radiative power (discrete action)."
 
 start_time: "2024-01-01T00:00:00"
 end_time: "2024-01-02T00:00:00"
@@ -35,12 +35,20 @@ reinforcement_learning_config:
       federation_1.building_federate.0.TBuilding:
         causality: next_step
         reset_default: 20.0
-        bounds: [0.0, 40.0]
-    actions:
-      federation_1.building_federate.0.ZoneSetPoint:
-        space: discrete
+        bounds: [-20.0, 100.0]
+      federation_1.feeder_federate.0.ZoneSetPoint:
+        causality: same_step
+        reset_default: 20.0
         bounds: [16.0, 24.0]
-        bins: 9
+      federation_1.building_federate.0.HeatingLoadTarget:
+        causality: same_step
+        reset_default: 20.0
+        bounds: [-400000.0, 400000.0]
+    actions:
+      federation_1.building_federate.0.OthEquRadWatt:
+        space: discrete
+        bounds: [-240000.0, 240000.0]
+        bins: 25
     reward: models.model_catalog.RL_agents.reward_functions.bui0_setpoint_comfort
     reset:
       mode: none
@@ -115,6 +123,9 @@ federations:
             - key: "OthEquFCWatt"
               type: "double"
               units: "W"
+            - key: "ZoneSetPoint"
+              type: "double"
+              units: "degC"
 
         model_configs:
           instantiation:
@@ -180,8 +191,8 @@ federations:
             - key: "OthEquRadWatt"
               type: "double"
               units: "W"
-              targets:
-                '0': [feeder_federate.0/OthEquRadWatt]
+              causality: next_step
+
             - key: "OthEquFCWatt"
               type: "double"
               units: "W"
@@ -190,6 +201,8 @@ federations:
             - key: "ZoneSetPoint"
               type: "double"
               units: "degC"
+              targets:
+                '0': [feeder_federate.0/ZoneSetPoint]
           publishes:
             - key: "TBuilding"
               type: "double"

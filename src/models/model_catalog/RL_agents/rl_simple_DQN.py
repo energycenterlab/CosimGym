@@ -10,7 +10,7 @@ created: 2026-03-17
 
 """
 
-from ...base_agent_rl import RLAgent
+from ...base_agent_rl import RLAgent, MinMaxNormalizeObservation
 from .components import ReplayBuffer, CheckpointManager
 
 
@@ -134,12 +134,13 @@ class DQNAgent:
         self.q.load_state_dict(torch.load(path, map_location=self.device))
         self.q_target.load_state_dict(self.q.state_dict())
     
-    def save_model(self, path, last=False):
-        # Create parent directory if it doesn't exist
+    def save_model(self, path):
+        # Persist current Q-network weights, creating the parent dir if needed.
         self.best_model = self.q.state_dict()
-        if last:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            torch.save(self.q.state_dict(), path)
+        d = os.path.dirname(path)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        torch.save(self.q.state_dict(), path)
 
 
 
@@ -152,6 +153,10 @@ class RL_Simple_DQN(RLAgent):
         params = self.rl_task.agent.params or {}
         exploration = params.get('exploration', {}) or {}
         replay_buf = params.get('replay_buffer', {}) or {}
+        # Normalize raw physical observations to [0, 1] using declared bounds
+        # (YAML bounds > catalog min/max) BEFORE flattening, so no single variable
+        # (e.g. HeatingLoadTarget ~24000) dominates the network input scale.
+        self.env = MinMaxNormalizeObservation(self.env, logger=logger)
         self.env = FlattenObservation(self.env)  # Ensure observations are flat vectors
         self.checkpoints = CheckpointManager(self.rl_task.experiment, self.rl_task.run, logger=logger)
 
@@ -201,7 +206,6 @@ class RL_Simple_DQN(RLAgent):
         checkpoint_path = self.checkpoints.ensure_dir()  # best_path with its dir created
         for step in range(total_steps):
             self.model.step_count += 1
-            last = False
 
             # (flatten state if needed)
             s = np.array(self.obs, dtype=np.float32).reshape(-1)
@@ -222,17 +226,21 @@ class RL_Simple_DQN(RLAgent):
             self.obs = obs
 
             if terminated:
-                # simple logging
-                if step == total_steps - 1:
-                    last=True
-
-                if episode_reward > best_ep_reward:
+                # Save the checkpoint ONLY when this episode improved on the best
+                # return so far, so `checkpoint_path` always holds the best policy.
+                improved = episode_reward > best_ep_reward
+                if improved:
                     best_ep_reward = episode_reward
-                self.logger.info(f"Episode finished at step {step} with return {episode_reward:.1f} (best so far: {best_ep_reward:.1f}), loss={loss}")
-                self.model.save_model(checkpoint_path, last=last)
-                print(f"step={step:7d}  eps={self.model.epsilon():.3f}  ep_return={episode_reward:.1f}  loss={loss}")
+                    self.model.save_model(checkpoint_path)
+                self.logger.info(f"Episode finished at step {step} with return {episode_reward:.1f} (best so far: {best_ep_reward:.1f}){' [saved best]' if improved else ''}, loss={loss}")
+                print(f"step={step:7d}  eps={self.model.epsilon():.3f}  ep_return={episode_reward:.1f}  best={best_ep_reward:.1f}  loss={loss}")
                 self.obs, _ = self.env.reset()
                 episode_reward = 0.0
+
+        # Safety net: guarantee a checkpoint exists even if no episode ever
+        # terminated (e.g. total_steps < episode_length), so testing can load one.
+        if best_ep_reward == float('-inf'):
+            self.model.save_model(checkpoint_path)
         
     def testing_loop(self):
         self.model.load_best_model(self.checkpoints.test_checkpoint())

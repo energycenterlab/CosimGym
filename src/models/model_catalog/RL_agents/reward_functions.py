@@ -265,6 +265,7 @@ def bui0_setpoint_comfort(obs, action, prev_obs=None, **kwargs) -> float:
     ENERGY_WEIGHT = 1.0e-4    # scale on heating load (W) penalty
 
     try:
+        T_TARGET = float(obs['federation_1.feeder_federate.0.ZoneSetPoint'])  # Use the setpoint as the target temperature
         T = float(obs['federation_1.building_federate.0.TBuilding'])
         comfort = -((T - T_TARGET) / COMFORT_SIGMA) ** 2
         load = obs.get('federation_1.building_federate.0.HeatingLoadTarget')

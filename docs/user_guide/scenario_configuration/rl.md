@@ -1,8 +1,22 @@
 # Reinforcement Learning Configuration
 
-Add a `reinforcement_learning_config:` block to any scenario YAML to enable RL training or evaluation. When present, ScenarioManager injects a synthetic `rl_agent` federate at runtime and wires its pub/sub connections based on the `env.observations` and `env.actions` lists.
+Add a `reinforcement_learning_config:` block to any scenario YAML to enable RL training or
+evaluation. When present, `ScenarioManager` injects a synthetic `rl_agent` federate at runtime
+and wires its pub/sub connections from `environment.observations` and `environment.actions`.
 
-At least one of `training` or `test` must be present.
+The block has **four orthogonal axes**:
+
+| Axis | Key | Owns |
+|---|---|---|
+| (a) Environment | `environment` | The MDP — observations, actions, reward, reset. Framework-agnostic. |
+| (b) Agent | `agent` | The solver — catalog class, backend, algorithm, hyperparameters. |
+| (c) Run | `run` | The schedule — train / eval / test phases. Single source of truth for length. |
+| (d) Experiment | `experiment` | Infra — name, checkpoints, logging, offline data. |
+
+All RL models use Pydantic `extra='forbid'`: **a typo in any key raises a `ValidationError` at
+parse time** instead of being silently dropped.
+
+`run` must define at least one of `train` or `test`.
 
 ---
 
@@ -10,345 +24,300 @@ At least one of `training` or `test` must be present.
 
 ```yaml
 reinforcement_learning_config:
-  seed: 42                    # optional — global RNG seed
+  seed: 42                            # optional — global RNG seed
 
-  agent:                      # required
-    model_name: "rl_simple_DQN"
-    reward_function: "models.model_catalog.RL_agents.reward_functions.my_reward"
-    algorithm: "DQN"          # optional — passed to agent class
-    library: "stable_baselines3"  # optional
-    env:                      # required
-      observations: [...]
-      actions: [...]
-      action_spaces_type: [...]
-    hyperparameters:          # optional
+  environment:                        # (a) the MDP — required
+    observations:                     # MAPPING keyed by dotted variable path
+      federation_1.spring_federate.0.position:
+        causality: next_step
+      federation_1.spring_federate.0.velocity:
+        causality: next_step
+    actions:                          # MAPPING keyed by dotted variable path
+      federation_1.spring_federate.0.force:
+        space: discrete
+        bounds: [-10.0, 10.0]
+        bins: 21
+    reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
+    reset:
+      mode: full                      # full | rolling | none
+
+  agent:                              # (b) the solver — required
+    model_name: rl_simple_DQN         # catalog key → concrete agent class
+    backend: custom_torch
+    algorithm: DQN
+    hyperparameters:                  # universal core — all Optional, omit → backend default
       learning_rate: 0.001
+      gamma: 0.99
+      batch_size: 64
+    params:                           # backend-specific escape hatch (free-form dict)
+      target_update_interval: 100
+      exploration: { strategy: epsilon_greedy, epsilon_decay_steps: 5000 }
+      replay_buffer: { buffer_size: 100000, prefill_steps: 1000 }
 
-  training:                   # optional (omit for test-only)
-    mode: "online"
-    episode_length: 100
-    n_episodes: 1000
+  run:                                # (c) the schedule — required
+    mode: online                      # online | offline | mixed
+    train:
+      episodes: 1000
+      episode_length: 100
+    test:
+      episodes: 1
+      episode_length: 100
+      deterministic: true
 
-  test:                       # optional (omit for training-only)
-    enabled: true
-    checkpoint_path: "src/models/model_catalog/RL_agents/checkpoints/best_model.pth"
-    n_episodes: 10
-
-  checkpointing:              # optional
-    enabled: true
-    directory: "src/models/model_catalog/RL_agents/checkpoints"
-
-  logging:                    # optional
-    backend: "tensorboard"
-    log_dir: "logs"
+  experiment:                         # (d) infra — optional
+    name: spring_DQN
+    checkpoint:
+      dir: src/models/model_catalog/RL_agents/checkpoints
+      best: best_spring_dqn.pth
 ```
 
 ---
 
-## `agent`
+## (a) `environment` — the MDP
+
+### `observations` — keyed mapping
+
+Each observation is a dotted key → `ObservationSpec`. **No parallel arrays** — every per-observation
+setting lives on its own spec.
 
 ```yaml
-agent:
-  model_name: "rl_simple_DQN"    # required — key in catalog.yaml pointing to the agent class
-  algorithm: "DQN"               # optional — algorithm name passed to the agent
-  library: "stable_baselines3"   # optional — RL library identifier
-  reward_function: "models.model_catalog.RL_agents.reward_functions.spring_reward"  # optional
-  hyperparameters:               # optional
-    learning_rate: 0.0003
-    gamma: 0.99
-    batch_size: 64
-  env:                           # required
-    ...
+observations:
+  federation_1.spring_federate.0.position:
+    causality: next_step        # same_step | next_step   (default same_step)
+    history: 0                  # frame-stack depth, 0 = current only (planned; not yet wired)
+    reset_default: 0.0          # value forced at episode reset
+    role: state                 # state | extra
+    space: null                 # override; else derived from the model catalog
+    bounds: null                # [low, high] override; else from catalog
 ```
 
----
+Shorthand: `federation_1.spring_federate.0.position:` (null value) → default `ObservationSpec`.
 
-## `agent.env` — Environment definition
+- **`role: state`** — part of the policy observation space (default).
+- **`role: extra`** — visible to the reward function / logging but excluded from the policy's
+  obs space. *Not yet end-to-end* (see Known Limitations); prefer `state` for now.
 
-Defines the observation and action spaces that the RL agent sees.
+### `actions` — keyed mapping
+
+Each action is a dotted key → `ActionSpec`.
 
 ```yaml
-env:
-  observations:                          # required — list of variable keys
-    - federation_1.spring_federate.0.position
-    - federation_1.spring_federate.0.velocity
-    - federation_1.spring_federate.0.acceleration
-
-  additional_observations: []            # optional — extra observations not used as RL inputs
-
-  actions:                               # required — list of variable keys the agent controls
-    - federation_1.spring_federate.0.force
-
-  action_spaces_type:                    # required — one entry per action
-    - "discrete"                         # "discrete" | "box"
-
-  action_bins: [21]                      # optional — number of bins for discrete actions
-  action_boundaries:                     # optional — [min, max] per action for box/discrete
-    - [-10.0, 10.0]
-
-  action_space_remapping: null           # optional — remap discrete index to physical value
-
-  observation_causality: null            # optional — "same_step"|"next_step" per observation
-  additional_observation_causality: null # optional — causality for additional_observations
-
-  reset_observation_defaults: null       # optional — default values to use at episode reset
-  force_reset_observation_defaults: false # optional — always use defaults even when valid values exist
-
-  include_prev_obs: null                 # optional — [n] previous obs to append to state per variable
+actions:
+  federation_1.spring_federate.0.force:
+    space: box                  # box | discrete | multidiscrete | multibinary (default box)
+    bounds: [-10.0, 10.0]       # [min, max] override; else from catalog
+    bins: 21                    # required when discretizing a continuous variable
 ```
+
+| `space` | Meaning | Notes |
+|---|---|---|
+| `box` | Continuous | uses `bounds` |
+| `discrete` | Integer index | **`bins` required** — discretizes `bounds` into `bins` levels |
+| `multidiscrete` / `multibinary` | Vector actions | advanced |
+
+`bins` is validated at runtime where the catalog type/bounds are known: discretizing a
+continuous variable without `bins` raises an error.
+
+### `reward`
+
+```yaml
+reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
+```
+
+Dotted import path to a callable in `reward_functions.py`. Reward belongs to the MDP, not the
+solver. Optional `termination:` (dotted path → `terminated(obs, action, t) -> bool`) reserved
+but not yet wired.
+
+### `reset`
+
+Single home for episode-reset semantics (was spread across four places in the old schema).
+
+```yaml
+reset:
+  mode: full                    # full | rolling | none      (default full)
+  period: null                  # defaults to run.train.episode_length
+  rolling_window: null          # required when mode == rolling
+  force_defaults: false         # always apply reset_default even when valid values exist
+```
+
+`mode: rolling` requires `rolling_window`. Because FMUs/distributed federates cannot be cheaply
+`reset()`, rolling treats the run as one long timeline and starts a new logical trajectory
+segment without rebooting the physics.
 
 ### Key naming convention
 
-All observation and action keys use dot notation:
 ```
 <federation_name>.<federate_name>.<instance_id>.<variable_name>
 ```
 
-Example: `federation_1.spring_federate.0.position`
-
-- `federation_1` — federation name (dict key under `federations:`)
-- `spring_federate` — federate name (dict key under `federate_configs:`)
-- `0` — model instance index (zero-based)
-- `position` — variable name (must be in the model's `publishes` list)
-
-### Action spaces
-
-| Type | Meaning | Related fields |
-|---|---|---|
-| `"discrete"` | Integer action space — agent picks an index | `action_bins` sets number of bins |
-| `"box"` | Continuous action space | `action_boundaries` sets `[min, max]` |
-
-All action and observation spaces use `gym.Dict` internally. If your RL library requires `Box` or `Discrete`, wrap the environment in the agent class.
+Example `federation_1.spring_federate.0.position`: `federation_1` federation key,
+`spring_federate` federate key, `0` zero-based instance index, `position` a published variable.
 
 ---
 
-## `training`
+## (b) `agent` — the solver
 
 ```yaml
-training:
-  mode: "online"             # "online" | "offline" | "mixed" (default: "online")
-  episode_length: 100        # required — simulation steps per episode
-  n_episodes: 1000           # required — total number of training episodes
-  reset_mode: "full"         # "full" | "partial" (default: "full")
-  rolling_window: null       # optional — window size for rolling-reset mode
-  warmup_steps: 0            # steps before gradient updates start (default: 0)
-  train_frequency: 1         # environment steps between gradient updates (default: 1)
-  gradient_steps: 1          # gradient updates per training call (default: 1)
-  eval_frequency: 10000      # steps between evaluations (default: 10000)
-  n_eval_episodes: 10        # episodes per evaluation (default: 10)
-  eval_deterministic: true   # use deterministic policy for eval (default: true)
-  log_interval: 100          # steps between log prints (default: 100)
-  verbose: 1                 # verbosity level (default: 1)
-
-  exploration:               # optional — controls epsilon-greedy or noise-based exploration
-    strategy: "epsilon_greedy"
-    initial_epsilon: 1.0
-    final_epsilon: 0.05
-    epsilon_decay_steps: 100000
-    noise_std: 0.1
-    noise_std_decay: 0.9999
-    noise_std_min: 0.01
-    ou_theta: 0.15
-    ou_sigma: 0.2
-
-  replay_buffer:             # optional — experience replay settings
-    buffer_size: 1000000
-    prioritized: false
-    alpha: 0.6
-    beta: 0.4
-    beta_annealing_steps: 100000
-    n_step: 1
-    prefill_steps: 0
-
-  early_stopping:            # optional
-    enabled: false
-    metric: "episode_reward"
-    patience: 100
-    min_delta: 0.01
-    mode: "max"
+agent:
+  model_name: rl_simple_DQN     # required — catalog.yaml key → concrete agent class
+  backend: custom_torch         # informational now; reserved for adapter dispatch
+  algorithm: DQN                # informational
+  policy: null                  # e.g. MultiInputPolicy (SB3)
+  hyperparameters:              # universal core — see below
+    learning_rate: 0.001
+    gamma: 0.99
+  params: {}                    # backend-specific dict, forwarded by the agent class
 ```
 
-### Derived fields (set automatically)
+The agent class is selected solely by `model_name`. `backend`/`algorithm` are documentation
+today (each catalog class hard-codes its library + algorithm). `params` is the escape hatch for
+anything not in the typed core — the agent class reads what it needs (e.g. DQN reads
+`params.exploration`, `params.replay_buffer`, `params.target_update_interval`).
 
-- `reset_period`: set to `episode_length` if not specified
-- `total_steps`: set to `n_episodes × episode_length` if not specified
+### `hyperparameters` — universal core
 
----
-
-## `test`
-
-```yaml
-test:
-  enabled: true                    # default: false
-  checkpoint_path: "src/models/model_catalog/RL_agents/checkpoints/best_model.pth"
-  n_episodes: 10                   # optional — number of test episodes
-  episode_length: 100              # optional — steps per test episode
-  total_steps: null                # optional — total test steps (overrides n_episodes × episode_length)
-  deterministic: true              # use deterministic policy (default: true)
-  render: false                    # optional — render environment (default: false)
-  save_trajectories: false         # save episode trajectories to disk (default: false)
-  trajectories_path: "results/test_trajectories.pkl"
-```
-
-`checkpoint_path` accepts `"none"`, `"null"`, or `""` as equivalent to `null` (no checkpoint loaded).
-
----
-
-## `checkpointing`
-
-```yaml
-checkpointing:
-  enabled: true
-  directory: "src/models/model_catalog/RL_agents/checkpoints"
-  save_frequency: 10000      # steps between checkpoint saves
-  save_best: true            # always save the best model seen so far
-  best_metric: "episode_reward"
-  best_mode: "max"           # "max" or "min"
-  keep_last_n: 5             # number of recent checkpoints to keep
-  save_replay_buffer: false  # also save the replay buffer (large!)
-  single_best_checkpoint: "best_sac_model.pth"  # optional — filename for the single best checkpoint
-```
-
-If `single_best_checkpoint` is a relative path, it is automatically joined with `directory`.
-
----
-
-## `logging`
-
-```yaml
-logging:
-  backend: "tensorboard"     # "tensorboard" | "wandb" (default: "tensorboard")
-  log_dir: "logs"
-  experiment_name: null      # optional label for the run
-  project_name: "cosim_gym"
-  tags: []                   # optional list of tags
-  log_gradients: false
-  log_weights: false
-  wandb_entity: null         # W&B entity/team name (for wandb backend)
-  wandb_mode: "online"       # "online" | "offline" | "disabled"
-```
-
----
-
-## `hyperparameters`
-
-Common fields shared across algorithms:
+All fields are **Optional and default to `None`**. Unset fields are omitted when forwarded to
+the backend, so the backend applies its own per-algorithm tuned default. Pin a value only where
+reproducibility matters.
 
 ```yaml
 hyperparameters:
-  learning_rate: 0.0003
-  gamma: 0.99              # discount factor
-  batch_size: 64
-  net_arch: [64, 64]       # hidden layer sizes
-  activation_fn: "relu"    # "relu" | "tanh" | "elu"
-  optimizer: "adam"
-  gradient_clip: null      # gradient norm clipping threshold
-  # PPO-specific
-  n_epochs: null
-  gae_lambda: null
-  clip_range: null
-  normalize_advantages: true
-  vf_coef: null
-  ent_coef: null
-  # DQN-specific
-  target_update_interval: null
-  # SAC-specific
-  tau: null
-  use_sde: false           # use state-dependent exploration
-  algorithm_kwargs: {}     # pass-through dict for any other algorithm arguments
+  learning_rate: null
+  gamma: null
+  batch_size: null
+  net_arch: null                # [hidden, hidden]
+  train_frequency: null
+  gradient_steps: null
 ```
+
+---
+
+## (c) `run` — the schedule
+
+Single source of truth for "how long". Each phase derives `total_steps = episodes × episode_length`.
+
+```yaml
+run:
+  mode: online                  # online | offline | mixed   (default online)
+  train:                        # PhaseConfig
+    episodes: 1000
+    episode_length: 100
+  eval:                         # optional periodic eval (schema present, runtime not yet wired)
+    every_steps: 10000
+    episodes: 10
+    deterministic: true
+  test:                         # PhaseConfig
+    episodes: 1
+    episode_length: 100
+    deterministic: true
+    checkpoint: null            # null → use the best produced by train
+```
+
+- A **test-only** run (no `train`) **requires** `test.checkpoint`.
+- `checkpoint` accepts `"none"`, `"null"`, or `""` as equivalent to `null`.
+
+---
+
+## (d) `experiment` — infrastructure
+
+```yaml
+experiment:
+  name: spring_DQN
+  checkpoint:
+    dir: src/models/model_catalog/RL_agents/checkpoints
+    best: best_spring_dqn.pth   # resolved against dir unless absolute / already under dir
+  logging: null                 # schema present; runtime not yet wired
+  offline: null                 # only when run.mode in {offline, mixed}
+```
+
+`experiment.checkpoint.best_path` resolves `best` against `dir` automatically.
 
 ---
 
 ## Complete RL scenario example
 
+See `src/scenarios/simple_DQN_test.yaml` for a runnable spring-mass-damper DQN scenario, and
+`src/scenarios/bui0_setpoint_DQN.yaml` / `bui0_setpoint_SAC.yaml` for the same EnergyPlus FMU
+MDP solved by two different algorithms (only the `agent` block and the action `space`/`bins`
+change).
+
 ```yaml
-name: "spring_DQN"
-start_time: "2024-01-01T00:00:00"
-end_time:   "2024-01-01T01:00:00"
-log_level: DEBUG
-
-memory_config:
-  batch_size: 100
-  attrs: ["position", "velocity", "force"]
-
 reinforcement_learning_config:
   seed: 42
-
+  environment:
+    observations:
+      federation_1.spring_federate.0.position: { causality: next_step }
+      federation_1.spring_federate.0.velocity: { causality: next_step }
+    actions:
+      federation_1.spring_federate.0.force:
+        space: discrete
+        bounds: [-10.0, 10.0]
+        bins: 21
+    reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
+    reset:
+      mode: full
   agent:
-    model_name: "rl_simple_DQN"
-    reward_function: "models.model_catalog.RL_agents.reward_functions.spring_reward"
-    env:
-      observations:
-        - federation_1.spring_federate.0.position
-        - federation_1.spring_federate.0.velocity
-      actions:
-        - federation_1.spring_federate.0.force
-      action_spaces_type: ["discrete"]
-      action_bins: [21]
-      action_boundaries: [[-10.0, 10.0]]
+    model_name: rl_simple_DQN
+    backend: custom_torch
+    algorithm: DQN
     hyperparameters:
       learning_rate: 0.001
       gamma: 0.99
       batch_size: 64
+    params:
       target_update_interval: 100
-
-  training:
-    mode: "online"
-    episode_length: 100
-    n_episodes: 1000
-    exploration:
-      strategy: "epsilon_greedy"
-      initial_epsilon: 1.0
-      final_epsilon: 0.05
-      epsilon_decay_steps: 5000
-    replay_buffer:
-      buffer_size: 100000
-      prefill_steps: 1000
-
-  test:
-    enabled: false
-
-  checkpointing:
-    enabled: true
-    directory: "src/models/model_catalog/RL_agents/checkpoints"
-    save_best: true
-    single_best_checkpoint: "best_spring_dqn.pth"
-
-federations:
-  federation_1:
-    broker_config:
-      core_type: "tcp"
-      port: 23404
-    federate_configs:
-      spring_federate:
-        type: "base"
-        timing_configs:
-          real_period: 1
-        connections:
-          publishes:
-            - key: "position"
-              type: "double"
-              units: "m"
-            - key: "velocity"
-              type: "double"
-              units: "m/s"
-          subscribes:
-            - key: "force"     # target omitted — ScenarioManager wires the RL agent here
-              type: "double"
-              units: "N"
-        model_configs:
-          instantiation:
-            model_name: "spring_mass_damper"
-            n_instances: 1
-          parameters:
-            mass: 5.0
-            stiffness: 10.0
-            damping: 2.0
-          init_state:
-            position: 0.0
-            velocity: 0.0
-            force: 0.0
+      exploration:
+        strategy: epsilon_greedy
+        initial_epsilon: 1.0
+        final_epsilon: 0.05
+        epsilon_decay_steps: 5000
+      replay_buffer:
+        buffer_size: 100000
+        prefill_steps: 1000
+  run:
+    mode: online
+    train:
+      episodes: 1000
+      episode_length: 100
+    test:
+      episodes: 1
+      episode_length: 100
+      deterministic: true
+  experiment:
+    name: spring_DQN
+    checkpoint:
+      dir: src/models/model_catalog/RL_agents/checkpoints
+      best: best_spring_dqn.pth
 ```
 
-> **Key rule:** For each variable listed in `env.actions`, the corresponding federate subscription must **omit** `targets`. ScenarioManager fills them at runtime with the RL agent's publication address.
+> **Key rule:** For each variable listed in `environment.actions`, the corresponding federate
+> subscription must **omit** `targets`. `ScenarioManager` fills it at runtime with the RL
+> agent's publication address.
+
+---
+
+## Available agents
+
+| Catalog key | Backend | Algorithm |
+|---|---|---|
+| `rl_simple_SACsb3` | Stable-Baselines3 | SAC |
+| `rl_simple_DQN` | custom PyTorch | DQN |
+| `rl_simple_rllib` | Ray RLlib (standalone RLModule) | PPO |
+
+Add a new agent by subclassing `RLAgent` (`src/models/base_agent_rl.py`), composing the reusable
+components in `RL_agents/components/` (`ReplayBuffer`, `CheckpointManager`, `load_reward_function`,
+`env_loop`), and adding a `catalog.yaml` entry.
+
+---
+
+## Known Limitations
+
+| Limitation | Notes |
+|---|---|
+| `role: extra` not end-to-end | Excluded from obs space but `HelicsGymEnv` still returns it → `KeyError` in SB3/RLlib. Use `role: state`. |
+| `run.eval` not wired | `EvalConfig` parses but no runtime reads it; agents go train → test. |
+| `experiment.logging` not wired | Agents log via Python `logging` only. |
+| `history` (frame-stacking) | Parsed, not yet implemented. |
+| `run.mode: offline / mixed` | Schema + seam ready; `_offline_learning()` not implemented. |
+
+See `handoffs/rl-refactor/SUMMARY.md` for the full future-work list and implementation seams.

@@ -1,6 +1,8 @@
 # Plan: Refactor of the `reinforcement_learning_config` Schema
 
-**Status:** Proposal only — nothing implemented. This document is a future-work plan.
+**Status:** ✅ IMPLEMENTED (branch `rl-config-refactor`). This is the historical blueprint;
+the 4-axis schema is live in `src/utils/config_dataclasses.py`, all scenarios are migrated,
+and tests pass. See `handoffs/rl-refactor/SUMMARY.md` for as-built results and future work.
 **Scope:** The RL configuration block of a scenario, its Pydantic models in
 `src/utils/config_dataclasses.py`, and every site that reads those models.
 **Goals (from request):** maximum generalization, compatibility with the conventions of

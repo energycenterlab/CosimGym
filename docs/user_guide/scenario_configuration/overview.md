@@ -32,8 +32,10 @@ synchronization:                     # optional — time-offset and startup sync
     enabled: true
 
 reinforcement_learning_config:       # optional — include only for RL scenarios
-  agent: ...
-  training: ...
+  environment: ...                    # the MDP (observations/actions/reward/reset)
+  agent: ...                          # the solver (model_name/hyperparameters/params)
+  run: ...                            # the schedule (train/eval/test)
+  experiment: ...                     # infra (name/checkpoint/logging)
 
 federations:                         # required — one or more named federations
   my_federation:
@@ -130,4 +132,4 @@ federations:
 | [Federation](federation.md) | `FederationConfig`, `BrokerConfig`, cross-federation subscriptions |
 | [Federate](federate.md) | `FederateConfig`, timing, flags, connections, model_configs |
 | [Synchronization](synchronization.md) | Auto time-offset, startup sync, causality |
-| [RL](rl.md) | `reinforcement_learning_config` — agent, training, test, checkpointing |
+| [RL](rl.md) | `reinforcement_learning_config` — environment, agent, run, experiment |

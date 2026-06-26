@@ -15,9 +15,9 @@ When you run a simulation in CosimGym, here is what happens under the hood:
 4. **Federate Launching:**
    The manager then triggers `federate_launcher.py` logic which spawns multiple async processes.
    - Standard physics endpoints instantiate as standard `BaseFederate` objects.
-   - If Reinforcement Learning is configured, a final `RL_Federate` process is created, which boots up a tailored Gymnasium env wrapped into Stable-Baselines3 algorithms.
+   - If Reinforcement Learning is configured, a final `RL_Federate` process is created, which boots up a tailored Gymnasium env driving the configured agent backend (Stable-Baselines3, custom PyTorch, or Ray RLlib).
 5. **Execution Loop:**
-   For simulation duration, HELICS manages internal time stepping, ensuring synchronized `publish` / `subscribe` across processes. If an RL agent is present, episode resets are coordinated via a global `reset_mode` signal across federates.
+   For simulation duration, HELICS manages internal time stepping, ensuring synchronized `publish` / `subscribe` across processes. If an RL agent is present, episode resets are coordinated via the `environment.reset` policy (`full | rolling | none`) across federates.
 6. **Graceful Teardown:**
    Once the endpoint is reached, or the agent completes testing epochs, the `ScenarioManager` harvests logging output, kills the subprocesses gracefully, and shuts down the brokers.
 
