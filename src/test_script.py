@@ -31,7 +31,8 @@ from core.ScenarioManager import main, ScenarioManager
 
 #DEVELOPMENT TESTS - uncomment to run
 #main('fmu_feedthrough_test')
-main('bui0_fmu_test')
+#main('bui0_fmu_test')
+main('dh_district_jan_base')
 
 
 

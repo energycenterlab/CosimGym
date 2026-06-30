@@ -11,6 +11,8 @@ I/O keys follow dot-notation:
 Author: Pietro Rando Mazzarino
 """
 
+import os
+
 import pandapipes as ppipe
 import pandapipes.networks as ppnet
 
@@ -72,6 +74,13 @@ class PandapipesGrid(BaseModel):
         }
         if fmt not in loaders:
             raise ValueError(f"Unknown case_file_format '{fmt}'")
+        # Resolve a workspace-relative case_file from this model's directory
+        # (mirrors weather_csv_reader), so scenarios stay machine-independent.
+        if not os.path.isabs(path):
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            path = os.path.join(base_dir, path)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"PandapipesGrid: case_file not found: {path}")
         return loaders[fmt](path)
 
     def _parse_key(self, key: str):
