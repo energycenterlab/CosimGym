@@ -300,31 +300,32 @@ class ScenarioManager:
             # 4. Training Offline + Training Online 
             # All of these possibilities could be folowed by a testing part
 
-            if self.config.reinforcement_learning_config.training.mode == "online":
-                self.logger.info("Setting up Online TRAINING!")
-                # modify config file adding rl agent as a federate in a new federation
-                self._modify_config_for_online_training() 
+            _run = self.config.reinforcement_learning_config.run
+            if _run.train is not None:
+                if _run.mode == "online":
+                    self.logger.info("Setting up Online TRAINING!")
+                    # modify config file adding rl agent as a federate in a new federation
+                    self._modify_config_for_online_training()
 
-            
-            # TODO: offline training logic
-            elif self.config.reinforcement_learning_config.training.mode == "offline":
-                self.logger.info("Starting Offline TRAINING!")
-                # do offline learning
-                self._offline_learning()
-            
-            # TODO mixed training logic
-            elif self.config.reinforcement_learning_config.training.mode == "mixed":
-                self.logger.info("Starting Mixed training loop (Offline + Online)...")
-                # do offline learning
-                self._offline_learning
-                # prepare config for online training
-                self._modify_config_for_online_training()
-            
-            else:
-                self.logger.warning(f"Unknown training mode specified: {self.config.reinforcement_learning_config.training.mode}. Proceeding without training.")
-            
+                # TODO: offline training logic
+                elif _run.mode == "offline":
+                    self.logger.info("Starting Offline TRAINING!")
+                    # do offline learning
+                    self._offline_learning()
+
+                # TODO mixed training logic
+                elif _run.mode == "mixed":
+                    self.logger.info("Starting Mixed training loop (Offline + Online)...")
+                    # do offline learning
+                    self._offline_learning
+                    # prepare config for online training
+                    self._modify_config_for_online_training()
+
+                else:
+                    self.logger.warning(f"Unknown run mode specified: {_run.mode}. Proceeding without training.")
+
             # ******************+TESTING PART****************** TODO
-            if self.config.reinforcement_learning_config.test:
+            if _run.test is not None:
                 self.logger.info("Setting up TESTING !")
                 self._modify_config_for_testing() # TODO: this method should modify the config in a way that the trained agent is loaded and ready to be tested in the co-simulation execution, we can have different testing modalities here as well (e.g. deterministic, stochastic, with or without rendering, etc.)
                 
@@ -377,39 +378,17 @@ class ScenarioManager:
         rl_period = min(periods)
         return rl_period
 
-    def _resolve_observation_causality(self, causality_list, index):
-        if causality_list and index < len(causality_list) and causality_list[index]:
-            return self._normalize_subscription_causality(causality_list[index])
-        return "same_step"
-    
     def _get_rl_pubsubs(self, rl_task):
         publications = []
         subscriptions = []
-        obs_causality = rl_task.agent.env.observation_causality
-        add_obs_causality = rl_task.agent.env.additional_observation_causality
-        if obs_causality and len(obs_causality) != len(rl_task.agent.env.observations):
-            self.logger.warning(
-                "Length mismatch for RL observation causality list: "
-                f"{len(obs_causality)} entries for {len(rl_task.agent.env.observations)} observations. "
-                "Missing entries will default to 'same_step'."
-            )
-        if (
-            rl_task.agent.env.additional_observations
-            and add_obs_causality
-            and len(add_obs_causality) != len(rl_task.agent.env.additional_observations)
-        ):
-            self.logger.warning(
-                "Length mismatch for RL additional_observation_causality list: "
-                f"{len(add_obs_causality)} entries for {len(rl_task.agent.env.additional_observations)} additional observations. "
-                "Missing entries will default to 'same_step'."
-            )
 
-        for obs_idx, obs in enumerate(rl_task.agent.env.observations):
+        # All observations (state + extra role) are subscribed; role filtering happens in RL_Federate.
+        for obs, spec in rl_task.environment.observations.items():
             pubs_model = self.config.federations[obs.split('.')[0]].federate_configs[obs.split('.')[1]].connections.publishes
             for p in pubs_model:
                 if p.key==obs.split('.')[-1]:
                     targets = [f'{obs.split(".")[1]}.{obs.split(".")[2]}/{obs.split(".")[3]}']
-                    causality = self._resolve_observation_causality(obs_causality, obs_idx)
+                    causality = self._normalize_subscription_causality(spec.causality)
                     subscriptions.append(
                         FedSubscription(
                             key=obs.split('.')[-1],
@@ -419,25 +398,8 @@ class ScenarioManager:
                             causality=causality,
                         )
                     )
-        # TODO: check if additional works (never tried)
-        if rl_task.agent.env.additional_observations:
-            for obs_idx, obs in enumerate(rl_task.agent.env.additional_observations):
-                pubs_model = self.config.federations[obs.split('.')[0]].federate_configs[obs.split('.')[1]].connections.publishes
-                for p in pubs_model:
-                    if p.key==obs.split('.')[-1]:
-                        targets = [f'{obs.split(".")[1]}.{obs.split(".")[2]}/{obs.split(".")[3]}']
-                        causality = self._resolve_observation_causality(add_obs_causality, obs_idx)
-                        subscriptions.append(
-                            FedSubscription(
-                                key=obs.split('.')[-1],
-                                type=p.type,
-                                units=p.units,
-                                targets=targets,
-                                causality=causality,
-                            )
-                        )
-        
-        for action in rl_task.agent.env.actions:
+
+        for action in rl_task.environment.actions:
             subs_model = self.config.federations[action.split('.')[0]].federate_configs[action.split('.')[1]].connections.subscribes
             for s in subs_model:
                 if s.key==action.split('.')[-1]:
@@ -452,16 +414,18 @@ class ScenarioManager:
     
     def _get_rl_controlled_models(self):
         rl_task = self.config.reinforcement_learning_config
-        controlled_models = [action.rsplit('.',2)[0] for action in rl_task.agent.env.actions]
+        controlled_models = [action.rsplit('.',2)[0] for action in rl_task.environment.actions]
         controlled_models = set(controlled_models)
         return controlled_models
 
     def _build_rl_reset_observation_defaults(self, rl_task):
-        explicit_defaults = getattr(rl_task.agent.env, "reset_observation_defaults", None) or {}
+        explicit_defaults = {
+            obs: spec.reset_default
+            for obs, spec in rl_task.environment.observations.items()
+            if spec.reset_default is not None
+        }
         reset_defaults = dict(explicit_defaults)
-        all_obs = list(rl_task.agent.env.observations)
-        if rl_task.agent.env.additional_observations:
-            all_obs.extend(list(rl_task.agent.env.additional_observations))
+        all_obs = list(rl_task.environment.observations)
 
         for obs_key in all_obs:
             if obs_key in reset_defaults:
@@ -542,37 +506,43 @@ class ScenarioManager:
                                                 connections=FedConnections(publishes=publications, subscribes=subscriptions),
                                                 log_level=self.config.log_level,
                                                 core_type=None,
+                                                # rl_federation is created at runtime, after the
+                                                # scenario validator that propagates memory_config
+                                                # to federates — so inject it here (BaseFederate
+                                                # init needs memory_config.batch_size).
+                                                memory_config=self.config.memory_config,
                                             )
                                         }
         federation_conf= FederationConfig(broker_config=broker_config,
                                         federate_configs=fed_configs,
                                         name="rl_federation",
                                         )
-        rl_required_inputs = [obs.split('.')[-1] for obs in rl_task.agent.env.observations]
-        if rl_task.agent.env.additional_observations:
-            rl_required_inputs.extend([obs.split('.')[-1] for obs in rl_task.agent.env.additional_observations])
+        # All observations (state + extra role) are subscribed inputs the RL federate must wait
+        # for at startup.
+        rl_required_inputs = [obs.split('.')[-1] for obs in rl_task.environment.observations]
         federation_conf.federate_configs['rl_agent'].startup_sync = StartupSyncConfig(
             required_inputs=sorted(set(rl_required_inputs))
         )
-        
+
         # add the knowledge of controlled model using the model name from model catalog to retrieve normalization boundaries for each attr
         real_controlled_models = {}
-        for cm in rl_task.agent.env.actions:
+        for cm in rl_task.environment.actions:
             mod_name = self.config.federations[cm.split('.')[0]].federate_configs[cm.split('.')[1]].model_configs.instantiation.model_name
             real_controlled_models[cm]= mod_name
         federation_conf.federate_configs['rl_agent'].controlled_models = real_controlled_models
 
-        real_observed_models = {} 
-        for cm in rl_task.agent.env.observations:
+        # observed_models covers every observation key (state + extra) so catalog specs and
+        # reset defaults resolve for all; additional_observed_models tracks the extra-role
+        # subset (visible to reward/logging, excluded from the policy observation space).
+        real_observed_models = {}
+        real_add_observed_models = {}
+        for cm, spec in rl_task.environment.observations.items():
             mod_name = self.config.federations[cm.split('.')[0]].federate_configs[cm.split('.')[1]].model_configs.instantiation.model_name
             real_observed_models[cm]= mod_name
+            if spec.role == "extra":
+                real_add_observed_models[cm] = mod_name
         federation_conf.federate_configs['rl_agent'].observed_models = real_observed_models
-
-        if rl_task.agent.env.additional_observations:
-            real_add_observed_models = {}
-            for cm in rl_task.agent.env.additional_observations:
-                mod_name = self.config.federations[cm.split('.')[0]].federate_configs[cm.split('.')[1]].model_configs.instantiation.model_name
-                real_add_observed_models[cm]= mod_name
+        if real_add_observed_models:
             federation_conf.federate_configs['rl_agent'].additional_observed_models = real_add_observed_models
 
         federation_conf.federate_configs['rl_agent'].reset_observation_defaults = self._build_rl_reset_observation_defaults(rl_task)
@@ -591,11 +561,11 @@ class ScenarioManager:
         rl_task = self.config.reinforcement_learning_config
         controlled_models = self._get_rl_controlled_models()
         rl_period = self._get_rl_period(controlled_models)
-        additional_period = rl_task.test.total_steps * rl_period
+        additional_period = rl_task.run.test.total_steps * rl_period
 
         has_online_training = (
-            self.config.reinforcement_learning_config.training
-            and self.config.reinforcement_learning_config.training.mode != "offline"
+            self.config.reinforcement_learning_config.run.train is not None
+            and self.config.reinforcement_learning_config.run.mode != "offline"
         )
 
         if has_online_training:
@@ -621,7 +591,7 @@ class ScenarioManager:
         rl_period = self._get_rl_period(controlled_models)
         # modifying simulation length to accomodate training duration TODO moving into setting timing vars
         rl_task = self.config.reinforcement_learning_config
-        additional_period = rl_task.training.total_steps * rl_period
+        additional_period = rl_task.run.train.total_steps * rl_period
         self.end_time = self.start_time + timedelta(seconds=additional_period)
         self.config.end_time = self.end_time.isoformat() #probably redundant
         self.logger.debug(f"Modified scenario configuration for online training\n new start_time:{self.start_time} \n new end_time: {self.end_time}")
@@ -1176,7 +1146,7 @@ class ScenarioManager:
         available_ports = []
 
         for port in range(20000, 30000 ):
-            if len(available_ports) >= n - len(exclude_ports):
+            if len(available_ports) >= n:
                 break
             if port in exclude_ports:
                 continue
@@ -1294,15 +1264,33 @@ class ScenarioManager:
                     )
                 federate_conf.core_type = core_type
 
-                if not federate_conf.core_name:
-                    federate_conf.core_name = f'{federation_name}_{federate_name}_core'
-                if federate_conf.core_name in seen_core_names:
-                    raise ValueError(
-                        f"Duplicate HELICS core_name '{federate_conf.core_name}' used by both "
-                        f"'{seen_core_names[federate_conf.core_name]}' and '{qualified_name}'. "
-                        "Every federate core must have a unique name."
+                # Every HELICS federate needs its OWN core, so core_name must be globally
+                # unique across the scenario. Rather than require the YAML to get this right
+                # (or fail on a wrong/duplicate value), assign a unique short human-readable
+                # name automatically: keep the YAML value only if it is free, otherwise fall
+                # back to the (already-unique-per-federation) federate name, then qualify with
+                # the federation, then suffix. This never raises.
+                requested = federate_conf.core_name
+                candidates = []
+                if requested:
+                    candidates.append(requested)
+                candidates.append(federate_name)
+                candidates.append(f'{federation_name}_{federate_name}')
+                core_name = next((c for c in candidates if c not in seen_core_names), None)
+                if core_name is None:
+                    base = f'{federation_name}_{federate_name}'
+                    i = 2
+                    while f'{base}_{i}' in seen_core_names:
+                        i += 1
+                    core_name = f'{base}_{i}'
+                if requested and core_name != requested:
+                    self.logger.info(
+                        f"Federate '{qualified_name}': core_name '{requested}' already in use "
+                        f"by '{seen_core_names[requested]}'; assigned unique core_name "
+                        f"'{core_name}' instead."
                     )
-                seen_core_names[federate_conf.core_name] = qualified_name
+                federate_conf.core_name = core_name
+                seen_core_names[core_name] = qualified_name
 
                 # Each federate connects to its own federation's broker.
                 federate_conf.broker_address = broker_conf.address
@@ -1532,12 +1520,18 @@ class ScenarioManager:
 
             self.logger.info(f"Creating local federate: {federate_name} (type: {federate_config.type})")
 
+            # Capture subprocess stdout/stderr to a file so uncaught exceptions / tracebacks
+            # (which bypass the federate's own logger) are visible instead of being lost in an
+            # undrained PIPE. Separate from the federate's logger file to avoid handler clashes.
+            stdio_path = self.logger_system.scenario_log_dir / "federates" / f"federate_{federate_name}.stdio.log"
+            stdio_file = open(stdio_path, 'wb')
+
             # Create subprocess in new process group for proper cleanup
             process = subprocess.Popen(
                 cmd,
                 preexec_fn=os.setsid,  # Create new process group
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stdout=stdio_file,
+                stderr=subprocess.STDOUT
             )
             success_msg = f"Federate process started with PID: {process.pid}"
             self.logger.info(success_msg)

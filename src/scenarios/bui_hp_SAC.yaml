@@ -22,61 +22,47 @@ memory_config:
 
 reinforcement_learning_config:
   seed: 42
-  # RLAgentConfig – which agent class to load
+  environment:
+    observations:
+      federation_1.weather.0.T_ext:
+        reset_default: 3.0
+      federation_1.building.0.T_indoor:
+        causality: next_step
+        reset_default: 18.0
+    actions:
+      federation_1.heatpump.0.modulation: null
+    reward: models.model_catalog.RL_agents.reward_functions.building_heatpump_comfort
   agent:
-    model_name: "rl_simple_SACsb3"             # class inside that module
-    reward_function: "models.model_catalog.RL_agents.reward_functions.building_heatpump_comfort"
-
-    env:
-      observations: [federation_1.weather.0.T_ext, federation_1.building.0.T_indoor]  # list of keys to use as observations
-      observation_causality: ["same_step", "next_step"]
-      reset_observation_defaults:
-        federation_1.weather.0.T_ext: 3.0
-        federation_1.building.0.T_indoor: 18.0
-      force_reset_observation_defaults: false
-      actions: [federation_1.heatpump.0.modulation]  # list of actions
-      action_spaces_type: ["box"] # list of action space types corresponding to the actions (only discrete, box) MUST have same lenght of actions for now discrete does not select the bin it is all integer bins betwen min and max
-      
-      # action_space_remapping: [[-10,10]] # list of action space remapping corresponding to the actions (for discrete only)
-      include_prev_obs: [0,0]  # TODO not implementedhow many previous observations to include in the state representation (0 for none) must be None or same lenght of observations
-    
-    # RLHyperparametersConfig – DQN-relevant hyperparameters
+    model_name: rl_simple_SACsb3
+    backend: stable_baselines3
+    algorithm: SAC
     hyperparameters:
       gamma: 0.99
-      learning_rate: 0.001
       batch_size: 64
+      learning_rate: 0.001
+      train_frequency: 100
+      gradient_steps: 1
+    params:
       gradient_clip: 10.0
       target_update_interval: 5
-
-  checkpointing:
-    single_best_checkpoint: "best_sac_sb3_model.pth"
-
-  test:
-    checkpoint_path: null
-    total_steps: 2880
-    deterministic: True
-
-  # RLTrainingConfig – core training loop settings
-  training:
-    mode:                 "online"   # online | offline | mixed
-    episode_length:       2880       # total simulation steps per episode
-    n_episodes: 100       # max agent steps before forced reset
-    train_frequency: 100           # how often to perform a training step (in environment steps)
-    gradient_steps: 1       # how many gradient steps to perform at each training step
-
-
-    # RLReplayBufferConfig – experience replay for off-policy DQN
-    replay_buffer:
-      buffer_size: 100000
-      prefill_steps: 2880
-
-
-
-
+      replay_buffer:
+        buffer_size: 100000
+        prefill_steps: 2880
+  run:
+    train:
+      episodes: 100
+      episode_length: 2880
+    test:
+      episodes: 1
+      episode_length: 2880
+      deterministic: true
+  experiment:
+    checkpoint:
+      best: best_sac_sb3_model.pth
 federations:
   federation_1:
     broker_config:
-      core_type: "zmq"
+      core_type: "tcp"
       port: 23404
       host: "localhost"
       federates: 3
@@ -92,7 +78,7 @@ federations:
         type: "base"
         log_level: ERROR
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60   # one CSV row per 60 s sim-step
@@ -133,7 +119,7 @@ federations:
         type: "base"
         log_level: ERROR
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60
@@ -197,7 +183,7 @@ federations:
         type: "base"
         log_level: ERROR
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60

@@ -225,209 +225,195 @@ class MemoryConfig(BaseModel):
 # ReinforcementLearningConfig without forward references.
 # ==============================================================================
 
-class RLHyperparametersConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
-
-    learning_rate: float = 0.0003
-    gamma: float = 0.99
-    batch_size: int = 64
-    net_arch: Optional[List[int]] = None
-    activation_fn: str = "relu"
-    optimizer: str = "adam"
-    gradient_clip: Optional[float] = None
-    n_epochs: Optional[int] = None
-    ent_coef: Optional[float] = None
-    vf_coef: Optional[float] = None
-    gae_lambda: Optional[float] = None
-    clip_range: Optional[float] = None
-    normalize_advantages: bool = True
-    target_update_interval: Optional[int] = None
-    tau: Optional[float] = None
-    use_sde: bool = False
-    algorithm_kwargs: Dict[str, Any] = Field(default_factory=dict)
+# Four orthogonal axes:
+#   (a) environment  — the MDP (observations/actions/reward/reset)
+#   (b) agent        — the solver (library/algorithm/hyperparameters)
+#   (c) run          — what to execute (train/eval/test)
+#   (d) experiment   — orthogonal infra (name/checkpoint/logging/offline)
+# All RL models use extra='forbid'.
 
 
-class RLExplorationConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
+# ---- (a) ENVIRONMENT — the MDP. Framework-agnostic. ----
 
-    strategy: str = "epsilon_greedy"
-    initial_epsilon: float = 1.0
-    final_epsilon: float = 0.05
-    epsilon_decay_steps: int = 100000
-    noise_std: float = 0.1
-    noise_std_decay: float = 0.9999
-    noise_std_min: float = 0.01
-    ou_theta: float = 0.15
-    ou_sigma: float = 0.2
+class ObservationSpec(BaseModel):
+    model_config = ConfigDict(extra='forbid')
 
-
-class RLReplayBufferConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
-
-    buffer_size: int = 1000000
-    prioritized: bool = False
-    alpha: float = 0.6
-    beta: float = 0.4
-    beta_annealing_steps: int = 100000
-    n_step: int = 1
-    prefill_steps: int = 0
+    causality: Literal["same_step", "next_step"] = "same_step"
+    history: int = 0                                   # frame-stack depth (0 = current only)
+    reset_default: Optional[float] = None
+    role: Literal["state", "extra"] = "state"          # extra = visible to reward/log, not policy
+    space: Optional[str] = None                         # override; else derived from catalog
+    bounds: Optional[Tuple[float, float]] = None
 
 
-class RLOfflineTrainingConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
+class ActionSpec(BaseModel):
+    model_config = ConfigDict(extra='forbid')
 
-    dataset_path: str = ""
-    dataset_type: str = "pickle"
-    n_epochs: int = 100
-    validation_split: float = 0.1
-    shuffle: bool = True
-    normalize_observations: bool = True
-    normalize_rewards: bool = False
+    space: Literal["box", "discrete", "multidiscrete", "multibinary"] = "box"
+    bounds: Optional[Tuple[float, float]] = None
+    # Number of discrete levels when discretizing a continuous variable. Validated at
+    # runtime in RL_Federate._prepare_act_dict where catalog type/bounds are known.
+    bins: Optional[int] = None
 
 
-class RLEarlyStoppingConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
+class ResetConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
 
-    enabled: bool = False
-    metric: str = "episode_reward"
-    patience: int = 100
-    min_delta: float = 0.01
-    mode: str = "max"
-
-
-class RLTrainingConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
-
-    mode: str = "online"
-    episode_length: int = 100
-    n_episodes: int = 100
-    reset_mode: str = 'full'
+    mode: Literal["full", "rolling", "none"] = "full"
+    period: Optional[int] = None                        # defaults to run.train.episode_length
     rolling_window: Optional[int] = None
-    reset_period: Optional[int] = None
-    total_steps: Optional[int] = None
-    warmup_steps: int = 0
-    train_frequency: int = 1
-    gradient_steps: int = 1
-    eval_frequency: int = 10000
-    n_eval_episodes: int = 10
-    eval_deterministic: bool = True
-    exploration: Optional[RLExplorationConfig] = None
-    replay_buffer: Optional[RLReplayBufferConfig] = None
-    offline_config: Optional[RLOfflineTrainingConfig] = None
-    early_stopping: Optional[RLEarlyStoppingConfig] = None
-    log_interval: int = 100
-    verbose: int = 1
+    force_defaults: bool = False
 
     @model_validator(mode='after')
-    def _set_derived_fields(self) -> 'RLTrainingConfig':
-        if self.reset_period is None:
-            self.reset_period = self.episode_length
-        if self.total_steps is None:
-            self.total_steps = self.n_episodes * self.episode_length
+    def _check_rolling(self) -> 'ResetConfig':
+        if self.mode == "rolling" and self.rolling_window is None:
+            raise ValueError("reset.mode 'rolling' requires 'rolling_window'")
         return self
 
 
-class RLEnvironmentConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
+class EnvironmentConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
 
-    observations: Union[List[Any], Dict[str, Any]]
-    actions: Union[List[Any], Dict[str, Any]]
-    action_spaces_type: List[str]
-    action_bins: Optional[List[int]] = None
-    action_boundaries: Optional[List[Tuple[float, float]]] = None
-    additional_observations: Optional[Union[List[Any], Dict[str, Any]]] = None
-    observation_causality: Optional[List[str]] = None
-    additional_observation_causality: Optional[List[str]] = None
-    reset_observation_defaults: Optional[Dict[str, Any]] = None
-    force_reset_observation_defaults: bool = False
-    action_space_remapping: Optional[List[Tuple]] = None
-    include_prev_obs: Optional[List[int]] = None
+    observations: Dict[str, ObservationSpec]
+    actions: Dict[str, ActionSpec]
+    reward: Optional[str] = None
+    termination: Optional[str] = None
+    reset: ResetConfig = Field(default_factory=ResetConfig)
+
+    @field_validator('observations', 'actions', mode='before')
+    @classmethod
+    def _coerce_null_specs(cls, v: Any) -> Any:
+        # Assisted shorthand: `federation.fed.0.var:` (null value) == default spec.
+        if isinstance(v, dict):
+            return {k: ({} if spec is None else spec) for k, spec in v.items()}
+        return v
+
+    @model_validator(mode='after')
+    def _non_empty(self) -> 'EnvironmentConfig':
+        if not self.observations:
+            raise ValueError("environment.observations must define at least one observation")
+        if not self.actions:
+            raise ValueError("environment.actions must define at least one action")
+        return self
 
 
-class RLAgentConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
+# ---- (b) AGENT — the solver. ----
 
-    model_name: str
-    env: RLEnvironmentConfig
+class Hyperparameters(BaseModel):
+    # All Optional → unset fields omitted so backend applies its own default.
+    model_config = ConfigDict(extra='forbid')
+
+    learning_rate: Optional[float] = None
+    gamma: Optional[float] = None
+    batch_size: Optional[int] = None
+    net_arch: Optional[List[int]] = None
+    train_frequency: Optional[int] = None
+    gradient_steps: Optional[int] = None
+
+    def as_kwargs(self) -> Dict[str, Any]:
+        """Only explicitly-set fields, for forwarding to a backend constructor."""
+        return {k: v for k, v in self.model_dump().items() if v is not None}
+
+
+class AgentConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    model_name: str                                     # catalog key → concrete agent class
+    backend: Optional[str] = None                       # informational now; adapter dispatch later
     algorithm: Optional[str] = None
-    library: Optional[str] = None
-    hyperparameters: Optional[RLHyperparametersConfig] = None
-    reward_function: Optional[str] = None
+    policy: Optional[str] = None
+    hyperparameters: Hyperparameters = Field(default_factory=Hyperparameters)
+    params: Dict[str, Any] = Field(default_factory=dict)  # backend-specific escape hatch
 
 
-class RLCheckpointingConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
+# ---- (c) RUN — what to execute. Single source of truth for length. ----
 
-    enabled: bool = True
-    directory: str = "src/models/model_catalog/RL_agents/checkpoints"
-    save_frequency: int = 10000
-    save_best: bool = True
-    best_metric: str = "episode_reward"
-    best_mode: str = "max"
-    keep_last_n: int = 5
-    save_replay_buffer: bool = False
-    single_best_checkpoint: Optional[str] = None
+class PhaseConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
 
-    @model_validator(mode='after')
-    def _build_checkpoint_path(self) -> 'RLCheckpointingConfig':
-        if self.single_best_checkpoint is not None and not os.path.isabs(self.single_best_checkpoint):
-            norm_dir = os.path.normpath(self.directory)
-            norm_cp = os.path.normpath(self.single_best_checkpoint)
-            if not (norm_cp == norm_dir or norm_cp.startswith(norm_dir + os.sep)):
-                self.single_best_checkpoint = os.path.join(self.directory, self.single_best_checkpoint)
-        return self
+    episodes: int
+    episode_length: int
+    deterministic: bool = False
+    checkpoint: Optional[str] = None
 
-
-class RLLoggingConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
-
-    backend: str = "tensorboard"
-    log_dir: str = "logs"
-    experiment_name: Optional[str] = None
-    project_name: str = "cosim_gym"
-    tags: List[str] = Field(default_factory=list)
-    log_gradients: bool = False
-    log_weights: bool = False
-    wandb_entity: Optional[str] = None
-    wandb_mode: str = "online"
-
-
-class RLTestConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
-
-    total_steps: Optional[int] = None
-    enabled: bool = False
-    checkpoint_path: Optional[str] = None
-    n_episodes: Optional[int] = None
-    episode_length: Optional[int] = None
-    deterministic: bool = True
-    render: bool = False
-    save_trajectories: bool = False
-    trajectories_path: Optional[str] = "results/test_trajectories.pkl"
-
-    @field_validator('checkpoint_path', mode='before')
+    @field_validator('checkpoint', mode='before')
     @classmethod
     def _normalize_none_like(cls, v: Any) -> Any:
         if isinstance(v, str) and v.strip().lower() in {'none', 'null', ''}:
             return None
         return v
 
+    @property
+    def total_steps(self) -> int:
+        return self.episodes * self.episode_length
 
-class ReinforcementLearningConfig(BaseModel):
-    model_config = ConfigDict(extra='ignore')
 
-    agent: RLAgentConfig
-    training: Optional[RLTrainingConfig] = None
-    checkpointing: Optional[RLCheckpointingConfig] = None
-    logging: Optional[RLLoggingConfig] = None
-    test: Optional[RLTestConfig] = None
-    seed: Optional[int] = None
+class EvalConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    every_steps: Optional[int] = None
+    episodes: int = 10
+    deterministic: bool = True
+
+
+class RunConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    mode: Literal["online", "offline", "mixed"] = "online"
+    train: Optional[PhaseConfig] = None
+    eval: Optional[EvalConfig] = None
+    test: Optional[PhaseConfig] = None
 
     @model_validator(mode='after')
-    def _validate_training_or_test(self) -> 'ReinforcementLearningConfig':
-        if self.training is None and self.test is None:
-            raise ValueError("At least one of 'training' or 'test' must be provided.")
+    def _validate_phases(self) -> 'RunConfig':
+        if self.train is None and self.test is None:
+            raise ValueError("run must define at least one of 'train' or 'test'")
+        if self.train is None and self.test is not None and self.test.checkpoint is None:
+            raise ValueError("test-only run (no train phase) requires run.test.checkpoint")
         return self
+
+
+# ---- (d) EXPERIMENT — orthogonal infrastructure. ----
+
+class CheckpointConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    dir: str = "src/models/model_catalog/RL_agents/checkpoints"
+    best: Optional[str] = None
+
+    @property
+    def best_path(self) -> Optional[str]:
+        """Resolve `best` against `dir` unless already absolute or already under `dir`."""
+        if self.best is None:
+            return None
+        if os.path.isabs(self.best):
+            return self.best
+        norm_dir = os.path.normpath(self.dir)
+        norm_best = os.path.normpath(self.best)
+        if norm_best == norm_dir or norm_best.startswith(norm_dir + os.sep):
+            return self.best
+        return os.path.join(self.dir, self.best)
+
+
+class ExperimentConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    name: Optional[str] = None
+    checkpoint: CheckpointConfig = Field(default_factory=CheckpointConfig)
+    logging: Optional[Dict[str, Any]] = None
+    offline: Optional[Dict[str, Any]] = None             # only when run.mode in {offline, mixed}
+
+
+# ---- ROOT ----
+
+class ReinforcementLearningConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    seed: Optional[int] = None
+    environment: EnvironmentConfig
+    agent: AgentConfig
+    run: RunConfig
+    experiment: ExperimentConfig = Field(default_factory=ExperimentConfig)
 
 
 # ==============================================================================

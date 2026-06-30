@@ -850,39 +850,24 @@ class BaseFederate():
             self.reset_count += 1
             if self.reset_type == 'full':
                 self.logger.info(f"Performing full reset of federate {self.name}")
-                # publish init_state
                 self._publish_init_state()
-                # reset init_state for every model
                 for entity in self.entities:
                     model = entity['object']
                     model.reset(mode=self.reset_type)
 
-            elif self.reset_type == 'soft':
-                self.logger.info(f"Performing partial reset of federate {self.name}")
-                return
-            
             elif self.reset_type == 'rolling':
                 if self.rolling_window is None:
                     self.logger.error("Rolling window size must be specified for rolling reset type")
                     raise AssertionError("Rolling window size must be specified for rolling reset type")
                 self.logger.info(f"Performing rolling reset of federate {self.name}")
-                self.new_starting_point += self.rolling_window 
+                self.new_starting_point += self.rolling_window
                 for entity in self.entities:
                     model = entity['object']
                     model.reset(mode=self.reset_type, ts= self.new_starting_point)
                 return
 
-            elif self.reset_type == 'random':
-                self.logger.info(f"Performing random reset of federate {self.name}")
-                #  TODO: must keep track of boundaries for random conditions
             else:
                 self.logger.warning(f"Unknown reset type '{self.reset_type}' specified. No reset will be performed.")
-        # TODO define the reset types!
-        # depending on the type:
-        # update the self.outputs dict with initial condition from init state
-        # publish this initial condition to the publications so that other federates can receive it if needed
-        # reset the model states to the initial conditions
-        
         else:
             return
         

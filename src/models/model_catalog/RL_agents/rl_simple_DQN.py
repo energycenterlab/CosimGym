@@ -10,12 +10,12 @@ created: 2026-03-17
 
 """
 
-from ...base_agent_rl import RLAgent
+from ...base_agent_rl import RLAgent, MinMaxNormalizeObservation
+from .components import ReplayBuffer, CheckpointManager
 
 
 import os
 import random
-from collections import deque
 from dataclasses import dataclass
 
 import numpy as np
@@ -26,29 +26,6 @@ import torch.optim as optim
 import pprint as pp
 from gymnasium.wrappers import FlattenObservation
 pp = pp.PrettyPrinter(indent=4)
-
-
-# ---------- Replay Buffer ----------
-class ReplayBuffer:
-    def __init__(self, capacity: int):
-        self.buffer = deque(maxlen=capacity)
-
-    def push(self, state, action, reward, next_state, done):
-        self.buffer.append((
-            np.array(state, dtype=np.float32),
-            int(action),
-            float(reward),
-            np.array(next_state, dtype=np.float32),
-            float(done),
-        ))
-
-    def sample(self, batch_size: int):
-        batch = random.sample(self.buffer, batch_size)
-        states, actions, rewards, next_states, dones = map(np.array, zip(*batch))
-        return states, actions, rewards, next_states, dones
-
-    def __len__(self):
-        return len(self.buffer)
 
 
 # ---------- Q Network ----------
@@ -120,7 +97,8 @@ class DQNAgent:
         self.replay.push(state, action, reward, next_state, done)
 
     def update(self):
-        if len(self.replay) < self.cfg.min_replay_size:
+        # Need at least min_replay_size AND a full batch before sampling.
+        if len(self.replay) < max(self.cfg.min_replay_size, self.cfg.batch_size):
             return None
 
         states, actions, rewards, next_states, dones = self.replay.sample(self.cfg.batch_size)
@@ -156,12 +134,13 @@ class DQNAgent:
         self.q.load_state_dict(torch.load(path, map_location=self.device))
         self.q_target.load_state_dict(self.q.state_dict())
     
-    def save_model(self, path, last=False):
-        # Create parent directory if it doesn't exist
+    def save_model(self, path):
+        # Persist current Q-network weights, creating the parent dir if needed.
         self.best_model = self.q.state_dict()
-        if last:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            torch.save(self.q.state_dict(), path)
+        d = os.path.dirname(path)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        torch.save(self.q.state_dict(), path)
 
 
 
@@ -170,34 +149,35 @@ class RL_Simple_DQN(RLAgent):
     def __init__(self, env, logger=None, rl_task=None):
         super().__init__(env, logger, rl_task)
         self.logger.debug(f"Initialized RL_Simple_DQN with rl_task: {pp.pformat(self.rl_task)}")
-        # Initialize DQN from the structured RL dataclasses
-        hp = self.rl_task.agent.hyperparameters          # RLHyperparametersConfig
-        # self.logger.debug(f"Extracted hyperparameters from RL task: {pp.pformat(hp)}")
-        exploration = self.rl_task.training.exploration   # RLExplorationConfig
-        # self.logger.debug(f"Extracted exploration config from RL task: {pp.pformat(exploration)}")
-        replay_buf = self.rl_task.training.replay_buffer  # RLReplayBufferConfig
-        # self.logger.debug(f"Extracted replay buffer config from RL task: {pp.pformat(replay_buf)}")
-        # self.logger.debug(f'obs_dim : {self.env.observation_space}, n_actions: {self.env.action_space}')
+        hp = self.rl_task.agent.hyperparameters
+        params = self.rl_task.agent.params or {}
+        exploration = params.get('exploration', {}) or {}
+        replay_buf = params.get('replay_buffer', {}) or {}
+        # Normalize raw physical observations to [0, 1] using declared bounds
+        # (YAML bounds > catalog min/max) BEFORE flattening, so no single variable
+        # (e.g. HeatingLoadTarget ~24000) dominates the network input scale.
+        self.env = MinMaxNormalizeObservation(self.env, logger=logger)
         self.env = FlattenObservation(self.env)  # Ensure observations are flat vectors
-        # self.logger.debug(f'After FlattenObservation — action_space: {self.env.action_space}, n={getattr(self.env.action_space, "n", "N/A")}')
-        self.check_pointing_config = self.rl_task.checkpointing  # RLCheckpointingConfig
+        self.checkpoints = CheckpointManager(self.rl_task.experiment, self.rl_task.run, logger=logger)
 
+        base = DQNConfig()
+        cfg = DQNConfig(
+            gamma=hp.gamma if hp.gamma is not None else base.gamma,
+            lr=hp.learning_rate if hp.learning_rate is not None else base.lr,
+            batch_size=hp.batch_size if hp.batch_size is not None else base.batch_size,
+            buffer_size=replay_buf.get('buffer_size', base.buffer_size),
+            min_replay_size=replay_buf.get('prefill_steps', base.min_replay_size),
+            target_update_freq=params.get('target_update_interval', base.target_update_freq),
+            eps_start=exploration.get('initial_epsilon', base.eps_start),
+            eps_end=exploration.get('final_epsilon', base.eps_end),
+            eps_decay_steps=exploration.get('epsilon_decay_steps', base.eps_decay_steps),
+            grad_clip_norm=params.get('gradient_clip', base.grad_clip_norm),
+        )
         self.model = DQNAgent(
                 obs_dim=self.env.observation_space.shape[0],
                 n_actions=self.env.action_space[list(self.env.action_space.keys())[0]].n,
                 device="cpu",  # or "cuda" if GPU is available
-                cfg=DQNConfig(
-                    gamma=hp.gamma,
-                    lr=hp.learning_rate,
-                    batch_size=hp.batch_size,
-                    buffer_size=replay_buf.buffer_size,
-                    min_replay_size=replay_buf.prefill_steps,
-                    target_update_freq=hp.target_update_interval,
-                    eps_start=exploration.initial_epsilon,
-                    eps_end=exploration.final_epsilon,
-                    eps_decay_steps=exploration.epsilon_decay_steps,
-                    grad_clip_norm=hp.gradient_clip,
-                )
+                cfg=cfg,
             )
     
             
@@ -222,9 +202,10 @@ class RL_Simple_DQN(RLAgent):
         episode_reward = 0.0
         best_ep_reward = float('-inf')
 
-        for step in range(self.rl_task.training.total_steps):
+        total_steps = self.rl_task.run.train.total_steps
+        checkpoint_path = self.checkpoints.ensure_dir()  # best_path with its dir created
+        for step in range(total_steps):
             self.model.step_count += 1
-            last = False
 
             # (flatten state if needed)
             s = np.array(self.obs, dtype=np.float32).reshape(-1)
@@ -245,22 +226,26 @@ class RL_Simple_DQN(RLAgent):
             self.obs = obs
 
             if terminated:
-                # simple logging
-                if step == self.rl_task.training.total_steps - 1:
-                    last=True
-                              
-                if episode_reward > best_ep_reward:
+                # Save the checkpoint ONLY when this episode improved on the best
+                # return so far, so `checkpoint_path` always holds the best policy.
+                improved = episode_reward > best_ep_reward
+                if improved:
                     best_ep_reward = episode_reward
-                self.logger.info(f"Episode finished at step {step} with return {episode_reward:.1f} (best so far: {best_ep_reward:.1f}), loss={loss}")
-                self.model.save_model(self.check_pointing_config.single_best_checkpoint, last=last)
-                print(f"step={step:7d}  eps={self.model.epsilon():.3f}  ep_return={episode_reward:.1f}  loss={loss}")
+                    self.model.save_model(checkpoint_path)
+                self.logger.info(f"Episode finished at step {step} with return {episode_reward:.1f} (best so far: {best_ep_reward:.1f}){' [saved best]' if improved else ''}, loss={loss}")
+                print(f"step={step:7d}  eps={self.model.epsilon():.3f}  ep_return={episode_reward:.1f}  best={best_ep_reward:.1f}  loss={loss}")
                 self.obs, _ = self.env.reset()
                 episode_reward = 0.0
+
+        # Safety net: guarantee a checkpoint exists even if no episode ever
+        # terminated (e.g. total_steps < episode_length), so testing can load one.
+        if best_ep_reward == float('-inf'):
+            self.model.save_model(checkpoint_path)
         
     def testing_loop(self):
-        self.model.load_best_model(self.check_pointing_config.single_best_checkpoint)
+        self.model.load_best_model(self.checkpoints.test_checkpoint())
         self.env.reset()
-        for step in range(self.rl_task.test.total_steps):
+        for step in range(self.rl_task.run.test.total_steps):
             obs, reward, terminated, truncated, _ = self.env.step(self.act(self.obs, deterministic=True))
             self.obs = obs
             if terminated:

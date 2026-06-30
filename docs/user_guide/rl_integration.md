@@ -15,43 +15,65 @@ In CosimGym:
 
 ## Adding RL to your Scenario
 
-To execute a training loop, you do not write a Python pipeline. Instead, inject the `reinforcement_learning_config` block directly into the scenario YAML. The agent is referenced by its catalog `model_name`; its observation and action spaces are wired from `env`:
+To execute a training loop, you do not write a Python pipeline. Instead, inject the `reinforcement_learning_config` block directly into the scenario YAML. It is organized into **four orthogonal axes** — `environment` (the MDP), `agent` (the solver), `run` (the schedule), and `experiment` (infra). The agent is referenced by its catalog `model_name`; its observation and action spaces are wired from `environment.observations` / `environment.actions`, which are **keyed mappings** (one spec per variable, no parallel arrays):
 
 ```yaml
 reinforcement_learning_config:
+  environment:
+    observations:
+      federation_1.spring_federate.0.position: { causality: next_step }
+      federation_1.spring_federate.0.velocity: { causality: next_step }
+    actions:
+      federation_1.spring_federate.0.force:
+        space: box                     # box | discrete | multidiscrete | multibinary
+        bounds: [-10.0, 10.0]
+    reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
+    reset:
+      mode: full                       # full | rolling | none
   agent:
-    model_name: "rl_simple_SACsb3"     # key in catalog.yaml
-    reward_function: "models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward"
-    env:
-      observations: [federation_1.spring_federate.0.position, federation_1.spring_federate.0.velocity]
-      actions:      [federation_1.spring_federate.0.force]
-      action_spaces_type: ["box"]      # "discrete" | "box"
-    hyperparameters:
+    model_name: rl_simple_SACsb3       # key in catalog.yaml
+    backend: stable_baselines3
+    algorithm: SAC
+    hyperparameters:                   # all Optional → omit to use the backend default
       learning_rate: 0.0003
       gamma: 0.99
       batch_size: 256
-  training:
-    mode: "online"
-    episode_length: 96                 # simulation steps per episode
-    n_episodes: 1000
-  checkpointing:
-    enabled: true
-    directory: "src/models/model_catalog/RL_agents/checkpoints"
-    save_frequency: 5000
+  run:
+    mode: online
+    train:
+      episodes: 1000
+      episode_length: 96               # simulation steps per episode
+  experiment:
+    checkpoint:
+      dir: src/models/model_catalog/RL_agents/checkpoints
+      best: best_sac_sb3_model.pth
 ```
 
-> For the complete field reference (training, exploration, replay buffer, test, logging), see [Reinforcement Learning Configuration](scenario_configuration/rl.md).
+> For the complete field reference (environment, agent, run, experiment), see [Reinforcement Learning Configuration](scenario_configuration/rl.md). Every RL key is `extra='forbid'` — typos fail loudly at parse time.
 
-### Supported RL Libraries
+### Supported RL Backends
 
-CosimGym includes out-of-the-box wrappers for:
-- **Stable-Baselines3** (e.g., DQN, SAC)
-- Example implementations: `rl_simple_DQN.py`, `rl_simple_SACsb3.py` located in `src/models/model_catalog/RL_agents/`.
+CosimGym ships three working agents, all sharing the reusable component layer in
+`RL_agents/components/`:
 
-Because the internal translation implements a standard `gymnasium.Env`, it is relatively trivial to bolt on libraries like **Ray RLlib** with minor modifications.
+| Catalog key | Backend | Algorithm |
+|---|---|---|
+| `rl_simple_SACsb3` | Stable-Baselines3 | SAC |
+| `rl_simple_DQN` | custom PyTorch | DQN |
+| `rl_simple_rllib` | Ray RLlib (standalone RLModule) | PPO |
+
+Because the internal translation implements a standard `gymnasium.Env`, adding a new backend
+means subclassing `RLAgent` and adding a `catalog.yaml` entry — not rewriting the pipeline.
 
 ## Understanding Episode Logic & Resets
 
-Because the models executing the physics might be compiled FMUs or distributed systems, "resetting" an episode is complex.
+Because the models executing the physics might be compiled FMUs or distributed systems, "resetting" an episode is complex. Reset semantics live in one place — `environment.reset`:
 
-CosimGym implements **`rolling_reset`**: Instead of killing physics states, the agent considers the scenario as an arbitrarily long continuous timeline. A "reset" for the Gym environment merely signifies the start of a logical new trajectory segment without forcing physical simulators to reboot completely over the network. 
+```yaml
+environment:
+  reset:
+    mode: rolling          # full | rolling | none
+    rolling_window: 96     # required when mode == rolling
+```
+
+With **`mode: rolling`**, instead of killing physics states the agent treats the scenario as an arbitrarily long continuous timeline. A "reset" merely starts a new logical trajectory segment without forcing the physical simulators to reboot over the network. `mode: full` forces the configured `reset_default` values; `mode: none` never resets. 

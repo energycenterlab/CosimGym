@@ -129,21 +129,25 @@ The dict key becomes the federation's `name`. It is injected automatically — y
 ### `reinforcement_learning_config`
 - **Required:** no (omit entirely for plain co-simulation)
 
-Configures the RL agent, training loop, and test evaluation. When present, ScenarioManager injects a synthetic `rl_agent` federate into the appropriate federation at runtime. See [RL](rl.md).
+Configures the MDP, solver, run schedule, and experiment infra across four axes (`environment`, `agent`, `run`, `experiment`). When present, ScenarioManager injects a synthetic `rl_agent` federate into the appropriate federation at runtime. See [RL](rl.md).
 
 ```yaml
 reinforcement_learning_config:
+  environment:
+    observations:
+      federation_1.spring_federate.0.position: { causality: next_step }
+    actions:
+      federation_1.spring_federate.0.force:
+        space: discrete
+        bounds: [-10.0, 10.0]
+        bins: 21
+    reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
   agent:
-    model_name: "rl_simple_DQN"
-    env:
-      observations: [federation_1.spring_federate.0.position]
-      actions:      [federation_1.spring_federate.0.force]
-      action_spaces_type: ["discrete"]
-  training:
-    episode_length: 100
-    n_episodes: 500
-  test:
-    enabled: false
+    model_name: rl_simple_DQN
+  run:
+    train:
+      episodes: 500
+      episode_length: 100
 ```
 
 ---

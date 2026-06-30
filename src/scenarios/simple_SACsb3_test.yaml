@@ -20,51 +20,44 @@ memory_config:
 
 reinforcement_learning_config:
   seed: 42
-  # RLAgentConfig – which agent class to load
+  environment:
+    observations:
+      federation_1.spring_federate.0.position:
+        causality: next_step
+      federation_1.spring_federate.0.velocity:
+        causality: next_step
+      federation_1.spring_federate.0.acceleration:
+        causality: next_step
+    actions:
+      federation_1.spring_federate.0.force: null
   agent:
-    model_name: "rl_simple_SACsb3"             # class inside that module
-    env:
-      observations: [federation_1.spring_federate.0.position, federation_1.spring_federate.0.velocity, federation_1.spring_federate.0.acceleration]  # list of keys to use as observations
-      actions: [federation_1.spring_federate.0.force ]  # list of actions
-      action_spaces_type: ["box"] # list of action space types corresponding to the actions (only discrete, box) MUST have same lenght of actions for now discrete does not select the bin it is all integer bins betwen min and max
-      
-      # action_space_remapping: [[-10,10]] # list of action space remapping corresponding to the actions (for discrete only)
-      include_prev_obs: [0,0,0]  # TODO not implementedhow many previous observations to include in the state representation (0 for none) must be None or same lenght of observations
-    
-    # RLHyperparametersConfig – DQN-relevant hyperparameters
+    model_name: rl_simple_SACsb3
+    backend: stable_baselines3
+    algorithm: SAC
     hyperparameters:
       gamma: 0.99
-      learning_rate: 0.001
       batch_size: 64
+      learning_rate: 0.001
+      train_frequency: 1
+      gradient_steps: 1
+    params:
       gradient_clip: 10.0
       target_update_interval: 5
-
-  checkpointing:
-    single_best_checkpoint: "best_sac_sb3_model.pth"
-
-  test:
-    checkpoint_path: None
-    total_steps: 10
-    deterministic: True
-
-  # RLTrainingConfig – core training loop settings
-  training:
-    mode:                 "online"   # online | offline | mixed
-    episode_length:       10       # total simulation steps per episode
-    n_episodes: 10       # max agent steps before forced reset
-    train_frequency: 1           # how often to perform a training step (in environment steps)
-    gradient_steps: 1       # how many gradient steps to perform at each training step
-
-
-    # RLReplayBufferConfig – experience replay for off-policy DQN
-    replay_buffer:
-      buffer_size: 100000
-      prefill_steps: 5
-
-
-# WHEN doing RL the controlled federate will not specify targets,
-#  these will be filled by the Scenario manager
-  
+      replay_buffer:
+        buffer_size: 100000
+        prefill_steps: 5
+  run:
+    train:
+      episodes: 10
+      episode_length: 10
+    test:
+      episodes: 1
+      episode_length: 10
+      deterministic: true
+      checkpoint: None
+  experiment:
+    checkpoint:
+      best: best_sac_sb3_model.pth
 federations:
   federation_1:
     broker_config:

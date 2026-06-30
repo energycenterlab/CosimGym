@@ -14,8 +14,8 @@ where:
 
 Add a new function here and reference it in the scenario YAML via:
     reinforcement_learning_config:
-      agent:
-        reward_function: "models.model_catalog.RL_agents.reward_functions.<function_name>"
+      environment:
+        reward: "models.model_catalog.RL_agents.reward_functions.<function_name>"
 """
 
 
@@ -244,5 +244,32 @@ def soc_band_clip_simple(obs, action, prev_obs=None, **kwargs) -> float:
             + 0.60 * direction_term
         )
         return float(reward)
+    except Exception:
+        return 0.0
+
+
+def bui0_setpoint_comfort(obs, action, prev_obs=None, **kwargs) -> float:
+    """
+    Comfort(+optional energy) reward for the BUI0 EnergyPlus FMU setpoint-control example.
+
+    The RL agent sets ZoneSetPoint; the FMU returns the resulting zone temperature
+    (TBuilding) and the predicted heating load (HeatingLoadTarget). Reward encourages
+    keeping TBuilding near a comfort target with a small penalty on heating load so the
+    agent does not just push the setpoint up.
+
+    obs keys (dot notation): 'federation_1.building_federate.0.TBuilding'
+                             'federation_1.building_federate.0.HeatingLoadTarget' (role: extra)
+    """
+    T_TARGET = 21.0
+    COMFORT_SIGMA = 1.0       # °C half-width of comfort zone
+    ENERGY_WEIGHT = 1.0e-4    # scale on heating load (W) penalty
+
+    try:
+        T_TARGET = float(obs['federation_1.feeder_federate.0.ZoneSetPoint'])  # Use the setpoint as the target temperature
+        T = float(obs['federation_1.building_federate.0.TBuilding'])
+        comfort = -((T - T_TARGET) / COMFORT_SIGMA) ** 2
+        load = obs.get('federation_1.building_federate.0.HeatingLoadTarget')
+        energy = -ENERGY_WEIGHT * abs(float(load)) if load is not None else 0.0
+        return float(comfort + energy)
     except Exception:
         return 0.0

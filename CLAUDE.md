@@ -73,10 +73,25 @@ Scenario YAML top-level keys:
 - `log_level`: `ERROR | WARNING | INFO | DEBUG`
 - `memory_config.attrs`: `"all"` or list of variable names to record
 - `synchronization`: auto-offset and startup-sync policies
-- `reinforcement_learning_config`: RL agent, env (observations/actions), training, test blocks
+- `reinforcement_learning_config`: 4-axis RL config (see below)
 - `federations.<name>.broker_config`: `core_type`, `port`, `federates`
 - `federations.<name>.federate_configs.<name>`: `type` (`base`|`rl`), `timing_configs.real_period`, `connections.publishes`, `connections.subscribes`, `model_configs.instantiation.model_name`
 
 Subscription target format: `<federate_name>.<instance_id>/<pub_key>` (same federation) or `<federation_name>.<federate_name>.<instance_id>/<pub_key>` (cross-federation).
 
 RL observation/action keys use dot notation: `<federation>.<federate>.<instance>.<variable>`.
+
+### RL Config Schema (`reinforcement_learning_config`)
+
+Four top-level axes under `reinforcement_learning_config`:
+
+- **`environment`** (MDP): `observations` (mapping: key → `ObservationSpec` with causality/history/reset_default/role/bounds), `actions` (mapping: key → `ActionSpec` with space/bounds/bins), `reward` (dotted path to reward fn), `reset` (mode: full|rolling|none, force_defaults)
+- **`agent`** (solver): `model_name` (catalog key), `backend` (stable_baselines3|rllib), `algorithm`, `policy`, `hyperparameters` (all-Optional: learning_rate/gamma/batch_size/net_arch/train_frequency/gradient_steps), `params` (backend-specific escape hatch)
+- **`run`** (schedule): `mode` (online|offline), `train` (episodes/episode_length → `total_steps` property), `eval`, `test` (episodes/episode_length/deterministic/checkpoint)
+- **`experiment`** (infra): `name`, `checkpoint` (dir/best → `best_path` property), `logging`, `offline`
+
+All RL Pydantic models use `extra='forbid'` — typos in YAML raise validation errors. Hyperparameters default to `None` (omit → backend applies own defaults).
+
+Available RL agents: `rl_simple_SACsb3` (SB3 SAC), `rl_simple_DQN` (custom PyTorch DQN), `rl_simple_rllib` (RLlib PPO standalone module). Add new agents by subclassing `RLAgent` and adding a catalog entry.
+
+Tests: `pytest tests/test_rl_config.py` (parse-gate + extra='forbid' + validators).
