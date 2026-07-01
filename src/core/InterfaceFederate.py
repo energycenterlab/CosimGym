@@ -7,9 +7,14 @@ BREAKTHROUGH_INNOVATIONS.md:79-92). Wired into HELICS with normal pub/sub
 like any model federate, but instead of stepping a model it relays its
 connections to/from an external adapter (MQTT first).
 
-M2 scope: outbound only (co-sim -> external). `interface_config.streams`
-declares which HELICS keys to subscribe to and relay out to the adapter's
-topic; `interface_config.bridges` (external -> co-sim) lands in M3/M4.
+M2 added outbound (co-sim -> external): `interface_config.streams` declares
+which HELICS keys to subscribe to and relay out to the adapter's topic.
+M3 adds inbound INPUT injection (external -> co-sim): `interface_config.bridges`
+entries with `scope: input` register a HELICS publication that mirrors the
+adapter's latest external value (bounds-clipped), for `mode: replace` (only the
+external value, once one has arrived) or `mode: passthrough` (falls back to a
+real HELICS source until an external value arrives). `scope: output`/`param`
+land in M4.
 
 Author: Pietro Rando Mazzarino
 Email: pietro.randomazzarino@polito.it
@@ -63,11 +68,13 @@ class InterfaceFederate(BaseFederate):
         self.logger.info(f'interface federate {self.name} initialized')
 
     def _register_connections(self):
-        """Build HELICS subscriptions from `interface_config.streams` (co-sim -> external)."""
+        """Build HELICS pubs/subs from `interface_config`: `streams` (co-sim -> external,
+        subscribe) and `bridges` with scope 'input' (external -> co-sim, publish)."""
         subs = []
+        pubs = []
         interface_config = self.config.interface_config
         if not interface_config:
-            return [], subs, []
+            return pubs, subs, []
 
         for i, stream in enumerate(interface_config.streams):
             topic_name = f"{self.name}/stream_{i}"
@@ -82,7 +89,38 @@ class InterfaceFederate(BaseFederate):
             })
             self.logger.debug(f"Interface federate {self.name}: relaying '{stream.helics_key}' -> '{stream.topic}'")
 
-        return [], subs, []
+        inbound_topics = []
+        for i, bridge in enumerate(interface_config.bridges):
+            if bridge.scope != "input":
+                self.logger.info(
+                    f"Interface federate {self.name}: bridge '{bridge.helics_key}' scope "
+                    f"'{bridge.scope}' not yet supported (lands in M4); skipping."
+                )
+                continue
+
+            pubid = self.federate.register_global_publication(bridge.helics_key, kind=bridge.type, units=bridge.units)
+            entry = {
+                'entity_name': self.name,
+                'topic': bridge.helics_key,
+                'pubid': pubid,
+                'bridge_spec': bridge,
+            }
+            if bridge.mode == "passthrough":
+                source_topic = f"{self.name}/bridge_source_{i}"
+                source_subid = self.federate.register_global_input(source_topic, kind=bridge.type, units=bridge.units)
+                h.helicsInputAddTarget(source_subid, bridge.source_key)
+                entry['source_subid'] = source_subid
+            pubs.append(entry)
+            inbound_topics.append(bridge.topic)
+            self.logger.debug(
+                f"Interface federate {self.name}: bridging '{bridge.topic}' -> '{bridge.helics_key}' "
+                f"(mode={bridge.mode})"
+            )
+
+        if inbound_topics and self._adapter is not None:
+            self._adapter.subscribe(inbound_topics)
+
+        return pubs, subs, []
 
     def _receive_inputs(self, force_read_all=False):
         super()._receive_inputs(force_read_all=force_read_all)
@@ -108,6 +146,31 @@ class InterfaceFederate(BaseFederate):
                 'sim_time': self.time_granted,
                 'wall_time': wall_time,
             })
+
+    def _publish_outputs(self):
+        """Publish each 'input'-scope bridge's current value: the external adapter
+        value if one has arrived (bounds-clipped), else the real source in
+        `mode: passthrough`, else nothing yet (`mode: replace` with no value)."""
+        for pub in self.pubs:
+            bridge = pub.get('bridge_spec')
+            if bridge is None:
+                continue
+
+            value = None
+            external = self._adapter.latest(bridge.topic) if self._adapter is not None else None
+            if external is not None:
+                value = external.get('value')
+            elif bridge.mode == "passthrough":
+                value = self._read_subscription_value(pub['source_subid'])
+
+            if value is None:
+                continue
+            if bridge.bounds is not None:
+                lo, hi = bridge.bounds
+                value = max(lo, min(hi, value))
+
+            pub['pubid'].publish(value)
+            self.logger.debug(f"Interface federate {self.name}: published {value} onto '{bridge.helics_key}'")
 
     def update_storage(self):
         # No entities/model state to record. Left empty (rather than inherited)

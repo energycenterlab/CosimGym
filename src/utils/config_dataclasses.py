@@ -456,14 +456,30 @@ class StreamSpec(BaseModel):
 
 
 class BridgeSpec(BaseModel):
-    """external -> co-sim: adapter inbound, publish onto a HELICS key."""
+    """external -> co-sim: adapter inbound, publish onto a HELICS key.
+
+    `helics_key` is the GLOBAL publication name this bridge registers and
+    publishes on — the key a model federate's subscription `targets` should
+    point at (the BK4 config-only swap). It is NOT a subscribe target.
+    """
     model_config = ConfigDict(extra='forbid')
 
     helics_key: str
     topic: str
+    type: str = "double"
+    units: str = ""
     bounds: Optional[Tuple[float, float]] = None
     scope: Literal["input", "output", "param"] = "input"
     mode: Literal["replace", "passthrough"] = "replace"
+    # Real-source HELICS subscribe target, only used when mode == "passthrough"
+    # (the bridge subscribes here and falls back to it until an external value arrives).
+    source_key: Optional[str] = None
+
+    @model_validator(mode='after')
+    def _check_passthrough_source(self) -> 'BridgeSpec':
+        if self.mode == "passthrough" and not self.source_key:
+            raise ValueError("bridge mode 'passthrough' requires 'source_key'")
+        return self
 
 
 class InterfaceConfig(BaseModel):

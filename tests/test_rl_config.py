@@ -32,6 +32,7 @@ from utils.config_dataclasses import (
     InterfaceFederateConfig,
     StreamSpec,
     FedTimingConfig,
+    BridgeSpec,
 )
 from utils.config_reader import read_scenario_config
 
@@ -265,3 +266,28 @@ class TestInterfaceOutboundConfig:
         cfg = FedTimingConfig(real_period=1, rt_lag=1.0, rt_lead=2.0)
         assert cfg.rt_lag == 1.0
         assert cfg.rt_lead == 2.0
+
+
+# ── digitaltwin_interfaces plan (M3): BridgeSpec passthrough/source_key ──
+
+
+class TestInterfaceInboundConfig:
+
+    def test_bridge_spec_replace_defaults(self):
+        b = BridgeSpec.model_validate({"helics_key": "dt/force", "topic": "cosim/x"})
+        assert b.mode == "replace"
+        assert b.scope == "input"
+        assert b.source_key is None
+
+    def test_bridge_spec_passthrough_requires_source_key(self):
+        with pytest.raises(Exception):
+            BridgeSpec.model_validate({
+                "helics_key": "dt/force", "topic": "cosim/x", "mode": "passthrough",
+            })
+
+    def test_bridge_spec_passthrough_with_source_key_ok(self):
+        b = BridgeSpec.model_validate({
+            "helics_key": "dt/force", "topic": "cosim/x",
+            "mode": "passthrough", "source_key": "input_federate.0/force",
+        })
+        assert b.source_key == "input_federate.0/force"
