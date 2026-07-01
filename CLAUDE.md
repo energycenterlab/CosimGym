@@ -60,7 +60,15 @@ Built-in physical models are in `src/models/model_catalog/physical_models/`. RL 
 
 ### Storage & Results
 
-Federates buffer timeseries in memory in `self.storage` (partitioned by `train`/`test`). At simulation end, `store_local_file()` writes JSON to `results/<scenario_name>/<sim_id>/<federation_name>/`. The Streamlit dashboard reads these files (via `src/dashboard/dashboard_data.py` and parquet caching in `src/dashboard/dashboard_parquet_cache.py`).
+Federates buffer timeseries in memory in `self.storage` (partitioned by `train`/`test`). What happens to that data at the end (or during) the run is controlled by `memory_config.sink`:
+
+- **`sink: json`** (default, unchanged behavior): nothing is written until the run ends, when `store_local_file()` dumps each partition to `results/<scenario_name>/<sim_id>/<federation_name>/<federate>_<mode>_storage.json`.
+- **`sink: parquet`**: non-blocking, incremental. Each tick, `update_storage()` hands a row snapshot to a background `AsyncStorageWriter` (`src/utils/async_storage.py`) via a queue — the sim thread never blocks on I/O (the queue only blocks, rather than drops, if the writer thread falls behind, since result rows must never be silently lost). The writer batches rows (`memory_config.batch_size`) and hands each batch to a `ParquetStorageWriter` (`src/utils/parquet_storage.py`), which flattens them into a long/tidy schema (`time, federation, federate, model_instance, attribute, type, mode, value`) and writes them via `pyarrow.parquet.ParquetWriter` — one row group per batch, one file per mode — to the same `results/<scenario_name>/<sim_id>/<federation_name>/<federate>_<mode>_storage.parquet` layout the JSON sink uses. The Parquet file is finalized (`close()`) at the end of the run, before `store_local_file()` runs (which for `sink: parquet` is then a no-op — the data is already on disk). Measured negligible sim-thread cost (~3µs/tick) vs `sink: json` on a 3600-tick benchmark.
+- **`sink: none`**: skips local file storage entirely (useful for throwaway runs).
+
+`RLFederate` currently only supports `sink: json` / `sink: none` — `sink: parquet` raises `NotImplementedError` there (its storage schema differs from `BaseFederate`'s and isn't wired to the async writer yet).
+
+The Streamlit dashboard's `load_all_records()` (`src/dashboard/dashboard_data.py`) currently reads **JSON results only**; Parquet result files are not yet dashboard-readable (the schema was deliberately designed to match the dashboard's existing columns to make that addition low-risk later, but it isn't implemented).
 
 ### Multi-Federation Scenarios
 
@@ -72,6 +80,8 @@ Scenario YAML top-level keys:
 - `start_time`, `end_time`: ISO 8601 datetimes
 - `log_level`: `ERROR | WARNING | INFO | DEBUG`
 - `memory_config.attrs`: `"all"` or list of variable names to record
+- `memory_config.sink`: `json` (default) | `parquet` | `none` — see Storage & Results above
+- `memory_config.batch_size`: rows per batch for the `parquet` sink's background writer (default `100`)
 - `synchronization`: auto-offset and startup-sync policies
 - `reinforcement_learning_config`: 4-axis RL config (see below)
 - `federations.<name>.broker_config`: `core_type`, `port`, `federates`

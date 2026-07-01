@@ -24,7 +24,6 @@ from datetime import datetime, timedelta
 from utils.config_dataclasses import FederateConfig, StartupSyncConfig
 from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, InterfaceType
 from models.model_catalog.RedisCatalog import RedisCatalog
-from utils.influxdb_client import InfluxClient
 from utils.async_storage import AsyncStorageWriter
 from utils.parquet_storage import ParquetStorageWriter
 pp = pprint.PrettyPrinter(indent=4)
