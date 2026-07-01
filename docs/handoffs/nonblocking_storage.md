@@ -9,100 +9,67 @@
 
 ## Last committed milestone
 
-**S1 — background writer thread + bounded queue** ✅ ticked. Commit: `5e31568`.
-(Earlier: S0 `9f63cad`.)
+**S2 — Parquet sink via pyarrow** ✅ ticked. Commit: `a2239bf`.
+(Earlier: S1 `5e31568`, S0 `9f63cad`.)
 
-## Staged, awaiting your commit: S2 — Parquet sink via pyarrow
+## Staged, awaiting your commit: S3 — remove dead `flush_storage`; perf check
 
-- **New `src/utils/parquet_storage.py`** — `ParquetStorageWriter`: consumes
-  the row batches S1's `AsyncStorageWriter` produces (nested by entity) and
-  flattens each into the **same long/tidy schema**
-  `dashboard_data.load_all_records()` already builds from JSON
-  (`time, federation, federate, model_instance, attribute, type, mode, value`
-  — `dashboard_data.py:15-24`'s `TIME_SERIES_COLUMNS`). Matching that schema
-  exactly (not inventing a new one) is deliberate — it's what would let the
-  dashboard read these files with a minimal addition later (see "Deferred"
-  below). Writes one `pyarrow.parquet.ParquetWriter` per **mode**, opened
-  lazily on first batch and kept open — one row group per `on_batch` call —
-  to `results/<scenario>/<sim_id>/<federation>/<federate>_<mode>_storage.parquet`,
-  mirroring the JSON sink's per-mode file split. `close()` finalizes every
-  open writer (required — an unclosed `ParquetWriter` produces a corrupt/
-  unreadable file, no footer written). Non-numeric values (there aren't any
-  in practice today, but `model.state.parameters` is untyped) are coerced to
-  `None` rather than breaking the fixed `float64` schema.
-- **`src/core/BaseFederate.py`**:
-  - `_enqueue_async_storage_row()`: now creates a real `ParquetStorageWriter`
-    alongside the `AsyncStorageWriter` (replacing S1's placeholder
-    `_on_storage_batch` counter, which is now deleted) and wires
-    `ParquetStorageWriter.on_batch` as the queue's batch callback.
-  - New `_results_base_dir()` helper — the `results/<scenario>/<sim_id>/
-    <federation>/` path, factored out of `store_local_file` so both it and
-    the new Parquet writer compute the identical path from
-    `self.simulation_id`/`self.federation_name`.
-  - `run()`: after `self._async_storage_writer.close()` (drains remaining
-    queued rows), now also calls `self._parquet_storage_writer.close()` to
-    finalize the Parquet file(s) — **must** happen before
-    `store_local_file()`, which for `sink: parquet` no longer raises
-    `NotImplementedError` (that was S0/S1's placeholder contract) — it now
-    just logs that the data was already flushed incrementally and returns
-    (all the real writing already happened via `on_batch` during the run).
-  - **`RL_Federate` is unchanged this milestone** — its `store_local_file`
-    still raises the S0 `NotImplementedError` for `sink: parquet`, exactly
-    as before. This is correct/safe, not a bug: since `RL_Federate.
-    update_storage` was never wired to the async writer (deferred at S1),
-    if it silently "succeeded" now it would silently produce *no* file at
-    all (neither JSON nor Parquet) — a real data-loss bug. Keeping the hard
-    failure there until RL's own wiring is designed is intentional.
-  - `environment.yml`: added `pyarrow>=14.0.0` as a direct conda dependency
-    (previously only pulled in transitively for the dashboard's own use of
-    `pandas(engine="pyarrow")`; core simulation code now imports it directly
-    when `sink: parquet` is used).
-- **New `tests/test_parquet_storage.py`** (6 tests, isolated — no HELICS,
-  uses `tmp_path`): correct schema/columns; separate files per mode
-  (train/test); multiple batches accumulate as row groups in one file;
-  non-numeric values coerce to `None` without breaking the schema; an empty
-  batch (no inputs/outputs/params for that tick) is a no-op, no file created;
-  `close()` without ever writing a batch doesn't raise.
+- **Confirmed dead code, then removed it** (`src/core/BaseFederate.py`):
+  - Grepped for `flush_storage` callers first — the only call site was
+    already commented out (`# if len(self.storage['time']) >= self.batch_size:
+    #     self.flush_storage()`, old lines ~455-457). Removed that dead
+    comment block along with the `flush_storage()` method itself (the
+    disabled InfluxDB batch-write path, ~70 lines).
+  - Grepped for `infl_client` too, since `flush_storage` was its only user —
+    found it was **never assigned anywhere** (no `self.infl_client = ...` in
+    `__init__` or elsewhere), only referenced inside `flush_storage` itself
+    and behind a `hasattr(self, 'infl_client')` guard in `finalize()`. Both
+    were unreachable dead code together; removed the guard block in
+    `finalize()` too (`if hasattr(self, 'infl_client') and self.infl_client:
+    ... self.infl_client.close()`). Net: **80 lines removed, 0 added.**
+  - `RL_Federate.py` — no references to `flush_storage`/`infl_client` at all;
+    untouched.
+- **Perf check** — built a scratch scenario (`spring_mass_damper`, single
+  federate, **3600 ticks**, `batch_size: 50`, `log_level: ERROR` to keep
+  logging overhead out of the measurement) and ran it three ways —
+  `sink: json`, `sink: parquet`, `sink: none` — reading `ScenarioManager`'s
+  own reported `simulation_duration`. Repeated json/parquet twice more for
+  noise:
+  ```
+  json:    2.533s, 2.533s, 2.544s
+  parquet: 2.534s, 2.540s, 2.533s
+  none:    2.533s
+  ```
+  Spread across all sinks is ≤0.011s over 3600 ticks (~3µs/tick) — within
+  run-to-run noise, no measurable sim-thread cost from the async
+  queue+writer thread. Confirms the plan's design rationale (in-process
+  queue handoff, GIL released during pyarrow encode/I/O) empirically rather
+  than just by argument.
 
 **Verified:**
-- `pytest tests/test_parquet_storage.py -v` → 6 passed.
 - `pytest tests/test_rl_config.py tests/test_async_storage.py
-  tests/test_parquet_storage.py -q` → 70 passed, 1 skipped.
-- Regression: `python src/test_script.py` and
-  `OMP_NUM_THREADS=1 python src/test_script_rl.py` both green — `sink: json`
-  (the default, used by every existing scenario) is byte-for-byte unaffected.
-- **Runtime integration check, the important one**: ran the same scratch
-  scenario (`spring_mass_damper`, single federate, 30 ticks, `batch_size: 7`)
-  twice — once with `sink: json`, once with `sink: parquet` — and directly
-  compared the two outputs:
-  - Parquet file exists, is valid, has the expected schema, **60 rows**
-    (30 ticks × 2 attributes: position, velocity) — logged as
-    `"Parquet storage (test) saved to .../spring_federate_test_storage.parquet
-    (60 rows)"`.
-  - `position`/`velocity` timeseries read back from the Parquet file via
-    `pd.read_parquet` are **identical, value-for-value**, to the same
-    timeseries read from the JSON file from the `sink: json` run.
-  - No `NotImplementedError` — `store_local_file` logged
-    `"memory_config.sink='parquet' — storage already flushed via
-    ParquetStorageWriter"` and returned cleanly.
+  tests/test_parquet_storage.py -q` → 70 passed, 1 skipped (unaffected by
+  the deletion, as expected — nothing tested the dead code).
+- `python src/test_script.py` → green (1 broker, 4 federates, completed
+  normally, `sink: json` default path unaffected by removing the dead
+  `flush_storage`/`infl_client` code paths since neither was ever exercised).
+- Perf comparison above.
+- Scratch `results/s3_perf_test`, `logs/s3_perf_test` cleaned up after
+  measurement — nothing left behind in the repo.
 
-**Your action:** review the staged diff, commit (e.g. `feat(storage): S2
-Parquet sink via pyarrow, matching the dashboard's tidy schema`), then say
-continue — I'll tick S2 and move to S3.
+**Your action:** review the staged diff (pure deletion, `src/core/
+BaseFederate.py` only), commit (e.g. `refactor(storage): remove dead
+InfluxDB flush_storage path, superseded by async Parquet sink`), then say
+continue — I'll tick S3 and move to S4 (docs).
 
-## Next step (after you commit S2)
+## Next step (after you commit S3)
 
-**S3 — Remove/supersede dead `flush_storage`; perf check.** Per the plan:
-`BaseFederate.flush_storage` (the disabled, "too slow" InfluxDB path,
-`BaseFederate.py` — search `flush_storage`) is dead code now fully
-superseded by the S1/S2 async Parquet path; remove it (it's never called —
-confirm with a grep for callers before deleting) or explicitly deprecate it
-if something still references it. Then measure per-step wall-time
-with/without the async writer (`sink: json` vs `sink: parquet`, same
-scenario) to confirm negligible sim-thread impact, per the plan's
-"Verification" section — the design rationale (in-process queue, GIL
-released during pyarrow I/O) predicts this, but S3 should actually measure it
-rather than assume it.
+**S4 — Docs + `sink` reference in `CLAUDE.md`.** Per the plan, the final
+Plan 2 milestone: add a `memory_config.sink` reference (`json | parquet |
+none`, defaults, what each does, where files land) to `CLAUDE.md`'s Config
+Reference section, and any user-facing docs (`docs/user_guide/` if there's a
+storage/results page) that describe result storage. No code changes
+expected — a docs-only milestone, same stage→report→wait-for-commit loop.
 
 **Deferred work worth flagging (not S3's job, but adjacent):**
 - **Dashboard read-support for `.parquet` result files** was NOT added this
@@ -131,24 +98,25 @@ new `src/utils/async_storage.py`, new `tests/test_async_storage.py`.
 **S2 (staged):** `src/core/BaseFederate.py` (further changes),
 `environment.yml` (+pyarrow), new `src/utils/parquet_storage.py`, new
 `tests/test_parquet_storage.py`.
+**S3 (staged):** `src/core/BaseFederate.py` (deletion only — dead
+`flush_storage`/`infl_client` code removed, no new files).
 
 ## State of the tree
 
-On `nonblocking_storage`, 2 commits ahead of `main` (`9f63cad`, `5e31568`).
-S2's changes are `git add`ed but **uncommitted**, waiting on you.
+On `nonblocking_storage`, 3 commits ahead of `main` (`9f63cad`, `5e31568`,
+`a2239bf`). S3's change is `git add`ed but **uncommitted**, waiting on you.
 
 ## Blockers / deviations from the plan
 
 1. **`RL_Federate` still raises `NotImplementedError` for `sink: parquet`**
-   (unchanged since S0) — deliberately not wired this milestone; see above.
+   (unchanged since S0) — deliberately not wired yet; see above.
 2. **Dashboard has no Parquet read support yet** — deliberately deferred to
    avoid touching dashboard code speculatively; flag to the user first (see
    above) since they've mentioned a broader dashboard redesign.
 3. **S1's row shape (nested by entity) was kept as-is** rather than
    flattened earlier in the pipeline — `ParquetStorageWriter.on_batch` does
-   the flattening. Fine for now; if profiling in S3 shows the flattening
-   itself is a hot path, it could move earlier (into `update_storage`
-   directly), but that's a perf-driven decision for S3, not S2.
+   the flattening. S3's perf check found this isn't a hot path (see above),
+   so no change made.
 4. **Value column is a fixed `float64`** — any genuinely non-numeric
    parameter value would silently become `null` in the Parquet output (test-
    covered: `test_non_numeric_value_coerced_to_none`). Not an issue for any
@@ -161,9 +129,9 @@ S2's changes are `git add`ed but **uncommitted**, waiting on you.
 
 ```bash
 cd /media/space/rando/CODE/CosimGym
-git status && git branch --show-current   # nonblocking_storage; S2 staged, not committed
-git log --oneline -4                       # 5e31568 (S1), 9f63cad (S0), 38948b3 (main)
-git diff --staged --stat                   # S2's staged changes
+git status && git branch --show-current   # nonblocking_storage; S3 staged, not committed
+git log --oneline -5                       # a2239bf (S2), 5e31568 (S1), 9f63cad (S0), 38948b3 (main)
+git diff --staged --stat                   # S3's staged changes (pure deletion)
 
 conda activate cosim_gym
 docker compose -f src/docker-compose.yaml up -d   # redis, minio (no mosquitto on this branch)
@@ -176,27 +144,22 @@ python -m pytest tests/test_rl_config.py -q       # 58 passed, 1 skipped
 python src/test_script.py
 OMP_NUM_THREADS=1 python src/test_script_rl.py
 
-# Runtime integration check (sink: parquet vs sink: json equivalence) — build
-# a small scratch scenario (spring_mass_damper, single federate), run it once
-# with each sink value, then:
-python -c "
-import json, pandas as pd
-j = json.load(open('results/<scenario>/<json_sim_id>/federation_1/spring_federate_test_storage.json'))
-df = pd.read_parquet('results/<scenario>/<parquet_sim_id>/federation_1/spring_federate_test_storage.parquet')
-pos_pq = df[df['attribute']=='position'].sort_values('time')['value'].tolist()
-assert j['outputs']['spring_federate.0']['position'] == pos_pq
-"
+# Perf check repro (sink: json vs parquet vs none, same scenario, ~3600 ticks):
+# build a scratch scenario (spring_mass_damper, single federate, batch_size: 50,
+# log_level: ERROR) three times with each sink value, compare ScenarioManager's
+# reported `simulation_duration` — expect deltas within run-to-run noise (~0.01s).
 ```
 
 ## One-line kickoff prompt for a fresh session
 
 > "Read `/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md`
 > (Plan 2 section) and `docs/handoffs/nonblocking_storage.md`. We're on branch
-> `nonblocking_storage`. S0-S2 are implemented; S2 (real Parquet writer via
-> pyarrow, `src/utils/parquet_storage.py`) is staged, not committed — review
-> and commit it yourself first, then tell the agent to tick S2 and continue
-> to S3 (remove dead `flush_storage`, measure sim-thread perf impact with/
-> without the async writer). Follow the per-milestone loop: implement, run
-> the milestone's check + regression tests, stage (don't commit), update the
-> handoff doc, then stop and wait for the user's commit + 'continue' signal
-> before ticking the box and starting S4 (docs)."
+> `nonblocking_storage`. S0-S3 are implemented; S3 (removed dead
+> `flush_storage`/`infl_client` InfluxDB code, confirmed negligible sim-thread
+> perf impact from the async Parquet writer) is staged, not committed —
+> review and commit it yourself first, then tell the agent to tick S3 and
+> continue to S4 (docs + `sink` reference in `CLAUDE.md` — the final Plan 2
+> milestone, docs-only, no code changes expected). Follow the per-milestone
+> loop: implement, run the milestone's check + regression tests, stage
+> (don't commit), update the handoff doc, then stop and wait for the user's
+> commit + 'continue' signal before ticking the box."

@@ -452,10 +452,6 @@ class BaseFederate():
             if self.mode == 'train' and self.episode_length is not None and self.ts > 0 and self.ts % self.episode_length == 0:
                 self._track_episodes() #TODO track the episodes and manage the end of episode conditions, this should be called at the end of the step after the reset to update the episode count and manage the end of episode conditions like setting a flag in the outputs or something like that, this is for now a simple episode tracking based on the number of steps but in the future it could be more complex and depend on specific conditions on the outputs or inputs
             
-            # flush storage at batch size using influxdb client too slow
-            # if len(self.storage['time']) >= self.batch_size:
-            #     self.flush_storage()
-
         # flush remaining storage at the end of the simulation
         if self._async_storage_writer is not None:
             self._async_storage_writer.close()  # drain remaining queued rows first (no data loss)
@@ -826,77 +822,6 @@ class BaseFederate():
             self._async_storage_writer.start()
         self._async_storage_writer.enqueue(row)
 
-    def flush_storage(self):
-        # TODO implement the flushing of the storage to the database, this method can be called at the end of the simulation or during the simulation if the batch size is reached to avoid storing too much data in memory
-        try:
-            bucket = 'simulation_data'
-            measurement = 'sim_ts'
-            time_series_data = []
-            
-            for ts in self.storage['time']:
-                for entity in self.entities:
-                    entity_id = entity['id']
-                    for var_name, values in self.storage['inputs'][entity_id].items():
-                        if len(values) > 0:
-                            time_series_data.append({
-                                'measurement': measurement,
-                                'tags': {
-                                    'simulation_id': self.simulation_id,
-                                    'federate': entity_id.split('.')[0],
-                                    'model_instance': entity_id.split('.')[1],
-                                    'type': 'input',
-                                    'attribute': var_name
-                                },
-                                'time': ts,
-                                'fields': {
-                                    'value': values.pop(0)  # Get the first value and remove it from the list
-                                }
-                            })
-                    for var_name, values in self.storage['outputs'][entity_id].items():
-                        if len(values) > 0:
-                            time_series_data.append({
-                                'measurement': measurement,
-                                'tags': {
-                                    'simulation_id': self.simulation_id,
-                                    'federate': entity_id.split('.')[0],
-                                    'model_instance': entity_id.split('.')[1],
-                                    'type': 'output',
-                                    'attribute': var_name
-                                },
-                                'time': ts,
-                                'fields': {
-                                    'value': values.pop(0)  # Get the first value and remove it from the list
-                                }
-                            })
-                    for var_name, values in self.storage['params'][entity_id].items():
-                        if len(values) > 0:
-                            time_series_data.append({
-                                'measurement': measurement,
-                                'tags': {
-                                    'simulation_id': self.simulation_id,
-                                    'federate': entity_id.split('.')[0],
-                                    'model_instance': entity_id.split('.')[1],
-                                    'type': 'param',
-                                    'attribute': var_name
-                                },
-                                'time': ts,
-                                'fields': {
-                                    'value': values.pop(0)  # Get the first value and remove it from the list
-                                }
-                            })
-            self.storage['time'] = []
-            if len(time_series_data) > 0:
-                # Log first and last timestamps being written
-                first_time = time_series_data[0]['time']
-                last_time = time_series_data[-1]['time']
-                self.logger.info(f"💾 Flushing {len(time_series_data)} points - Time range: {first_time} to {last_time}")
-                self.infl_client.write_time_series_batch(bucket,measurement, time_series_data)
-            else:
-                self.logger.warning("⚠️  No data to flush (storage empty)")
-        
-        except Exception as e:       
-            self.logger.error(f"Failed to flush storage to InfluxDB: {e}")
-    
     def _reset(self):
         # check if reset time has been reached
         if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
@@ -943,11 +868,6 @@ class BaseFederate():
         self.logger.info(f'federate {self.name} finalizing')
         status = h.helicsFederateDisconnect(self.federate)
         h.helicsFederateDestroy(self.federate)
-        # Flush and close the InfluxDB client AFTER HELICS is done so that
-        # all buffered async writes are delivered before the process exits.
-        if hasattr(self, 'infl_client') and self.infl_client:
-            self.logger.info('Flushing InfluxDB write buffer...')
-            self.infl_client.close()
         self.logger.info("Federate finalized\n")
 
  # def time_to_request(self):
