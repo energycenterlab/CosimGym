@@ -25,6 +25,7 @@ from utils.config_dataclasses import FederateConfig, StartupSyncConfig
 from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, InterfaceType
 from models.model_catalog.RedisCatalog import RedisCatalog
 from utils.influxdb_client import InfluxClient
+from adapters.mqtt_adapter import MqttAdapter
 pp = pprint.PrettyPrinter(indent=4)
 
 # TODO make an abstract class for base federate and change the name of this one as simplefederate
@@ -75,6 +76,9 @@ class BaseFederate():
                         'params':{},
                         'time':[]}
         self.batch_size = self.config.memory_config.batch_size
+
+        # lazily created on first use only if config.streaming.stream is enabled
+        self._stream_adapter = None
 
 
         # co.simualtion time management
@@ -440,7 +444,10 @@ class BaseFederate():
             
             # upate storage
             self.update_storage() # TODO i want the flushing to a be a routine that is not coded here but embeded beacuse this is the method that will be overridden by other types of federates
-            
+
+            self._stream_outbound() # opt-in MQTT mirror of this step's inputs/outputs (config.streaming.stream)
+
+
             # no longer need of reset here its above
             # if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
             #     self.logger.info(f"Resetting federate {self.name} at step {self.ts} for training purposes.")
@@ -773,6 +780,39 @@ class BaseFederate():
             for var_name in partition['params'].get(entity_id, {}).keys():
                 partition['params'][entity_id][var_name].append(model.state.parameters.get(var_name, None))
 
+    def _stream_outbound(self):
+        """Opt-in MQTT mirror of this step's inputs/outputs for live dashboards.
+        Non-blocking (MqttAdapter.publish only enqueues); disabled by default."""
+        streaming = self.config.streaming
+        if not streaming.stream:
+            return
+        every_n_ticks = max(1, streaming.every_n_ticks)
+        if self.ts % every_n_ticks != 0:
+            return
+
+        if self._stream_adapter is None:
+            self._stream_adapter = MqttAdapter(
+                client_id=f"stream_{self.simulation_id}_{self.name}",
+                host=os.getenv('MQTT_HOST', 'localhost'),
+                port=int(os.getenv('MQTT_PORT', '11883')),
+                logger=self.logger,
+            )
+            self._stream_adapter.connect()
+
+        prefix = streaming.stream_topic_prefix or f"cosim/{self.simulation_id}/{self.name}"
+        wall_time = datetime.now().isoformat()
+        for kind, values_by_entity in (('inputs', self.inputs), ('outputs', self.outputs)):
+            for entity_id, values in values_by_entity.items():
+                for var_name, value in values.items():
+                    key = f"{entity_id}/{var_name}"
+                    self._stream_adapter.publish(f"{prefix}/{kind}/{key}", {
+                        'sim_id': self.simulation_id,
+                        'key': key,
+                        'value': value,
+                        'sim_time': self.time_granted,
+                        'wall_time': wall_time,
+                    })
+
     def flush_storage(self):
         # TODO implement the flushing of the storage to the database, this method can be called at the end of the simulation or during the simulation if the batch size is reached to avoid storing too much data in memory
         try:
@@ -895,6 +935,8 @@ class BaseFederate():
         if hasattr(self, 'infl_client') and self.infl_client:
             self.logger.info('Flushing InfluxDB write buffer...')
             self.infl_client.close()
+        if self._stream_adapter is not None:
+            self._stream_adapter.close()
         self.logger.info("Federate finalized\n")
 
  # def time_to_request(self):
