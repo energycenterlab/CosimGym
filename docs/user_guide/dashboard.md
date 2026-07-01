@@ -42,3 +42,8 @@ filesystem:
 It shows whatever is being published to `cosim/#` — any federate's `streaming.stream: true`
 telemetry, or an interface federate's `interface_config` bridges. See
 [Digital-Twin Interfaces & Live Streaming](digital_twin_interfaces.md) for the full picture.
+
+The live dashboard's sidebar can also **launch a scenario directly** — pick any file from
+`src/scenarios/` and click **▶ Start** to run it as a background process (**■ Stop** to kill it),
+with a log tail so you can see it boot, all without a separate terminal. Only scenarios with
+`streaming.stream: true` or a `type: interface` federate will actually produce data to watch.
