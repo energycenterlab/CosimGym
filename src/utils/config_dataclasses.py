@@ -220,6 +220,19 @@ class MemoryConfig(BaseModel):
 
 
 # ==============================================================================
+# STREAMING CONFIG
+# Outbound MQTT mirror, opt-in on any federate type (base/rl/interface).
+# ==============================================================================
+
+class StreamingConfig(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    stream: bool = False
+    stream_topic_prefix: Optional[str] = None
+    every_n_ticks: int = 1
+
+
+# ==============================================================================
 # RL CONFIGURATIONS
 # Defined before FederateConfig so _FederateConfigBase can reference
 # ReinforcementLearningConfig without forward references.
@@ -417,6 +430,46 @@ class ReinforcementLearningConfig(BaseModel):
 
 
 # ==============================================================================
+# INTERFACE FEDERATE CONFIG — digital-twin bidirectional bridge (type: interface)
+# extra='forbid' like the RL axes: typos in this block must fail loudly.
+# ==============================================================================
+
+class AdapterConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    name: str                                   # catalog key, e.g. mqtt_adapter
+    params: Dict[str, Any] = Field(default_factory=dict)
+
+
+class StreamSpec(BaseModel):
+    """co-sim -> external: subscribe in HELICS, publish to the adapter."""
+    model_config = ConfigDict(extra='forbid')
+
+    helics_key: str
+    topic: str
+    every_n_ticks: int = 1
+
+
+class BridgeSpec(BaseModel):
+    """external -> co-sim: adapter inbound, publish onto a HELICS key."""
+    model_config = ConfigDict(extra='forbid')
+
+    helics_key: str
+    topic: str
+    bounds: Optional[Tuple[float, float]] = None
+    scope: Literal["input", "output", "param"] = "input"
+    mode: Literal["replace", "passthrough"] = "replace"
+
+
+class InterfaceConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    adapter: AdapterConfig
+    streams: List[StreamSpec] = Field(default_factory=list)
+    bridges: List[BridgeSpec] = Field(default_factory=list)
+
+
+# ==============================================================================
 # FEDERATE CONFIGS — discriminated union on `type`
 # ==============================================================================
 
@@ -437,6 +490,7 @@ class _FederateConfigBase(BaseModel):
     startup_sync: Optional[StartupSyncConfig] = None
     reset_observation_defaults: Optional[Dict[str, Any]] = None
     rl_task: Optional[ReinforcementLearningConfig] = None
+    streaming: StreamingConfig = Field(default_factory=StreamingConfig)
 
 
 class BaseFederateConfig(_FederateConfigBase):
@@ -454,8 +508,20 @@ class RLFederateConfig(_FederateConfigBase):
     additional_observed_models: Optional[Dict[str, str]] = None
 
 
+class InterfaceFederateConfig(_FederateConfigBase):
+    type: Literal["interface"]
+    interface_config: Optional[InterfaceConfig] = None
+    # ScenarioManager._enrich_dynamic_catalog_metadata reads .model_configs on every
+    # federate type generically (RLFederateConfig already declares it Optional=None).
+    model_configs: Optional[ModelConfig] = None
+    # BaseFederate.__init__ reads config.memory_config.batch_size unconditionally;
+    # the interface federate keeps empty storage (see InterfaceFederate.update_storage),
+    # so this only needs to exist, not do anything.
+    memory_config: MemoryConfig = Field(default_factory=MemoryConfig)
+
+
 FederateConfig = Annotated[
-    Union[BaseFederateConfig, RLFederateConfig],
+    Union[BaseFederateConfig, RLFederateConfig, InterfaceFederateConfig],
     Field(discriminator='type')
 ]
 

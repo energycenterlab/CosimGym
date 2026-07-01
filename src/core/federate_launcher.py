@@ -26,7 +26,12 @@ if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
 from utils.config_reader import read_yaml
-from utils.config_dataclasses import BaseFederateConfig, RLFederateConfig, ReinforcementLearningConfig
+from utils.config_dataclasses import (
+    BaseFederateConfig,
+    RLFederateConfig,
+    InterfaceFederateConfig,
+    ReinforcementLearningConfig,
+)
 from utils.logging_config import setup_process_logger
 from utils.redis_client import RedisClient
 
@@ -107,7 +112,7 @@ def main():
             config_dict['rl_task'] = rl_task  # validated to ReinforcementLearningConfig by Pydantic
             config = RLFederateConfig.model_validate(config_dict)
         else:
-            # Base (non-RL) federates only need episode/reset facts to reset in lockstep
+            # Base and interface federates only need episode/reset facts to reset in lockstep
             # with the RL agent. Flatten into the small rl_config dict BaseFederate consumes.
             run = rl_task.get('run', {}) if rl_task else {}
             train = run.get('train') or {}
@@ -123,7 +128,10 @@ def main():
                 'mode': mode,
             }
             config_dict['rl_config'] = rl_4_fed
-            config = BaseFederateConfig.model_validate(config_dict)
+            if args.type == 'interface':
+                config = InterfaceFederateConfig.model_validate(config_dict)
+            else:
+                config = BaseFederateConfig.model_validate(config_dict)
 
     
     

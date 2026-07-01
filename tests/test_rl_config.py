@@ -27,6 +27,9 @@ from utils.config_dataclasses import (
     CheckpointConfig,
     Hyperparameters,
     ResetConfig,
+    StreamingConfig,
+    InterfaceConfig,
+    InterfaceFederateConfig,
 )
 from utils.config_reader import read_scenario_config
 
@@ -180,3 +183,61 @@ class TestValidators:
         kw = hp.as_kwargs()
         assert "learning_rate" in kw
         assert "gamma" not in kw
+
+
+# ── digitaltwin_interfaces plan (M0): StreamingConfig / InterfaceConfig ──
+
+
+class TestStreamingAndInterfaceConfig:
+
+    def test_streaming_config_defaults_opt_out(self):
+        cfg = StreamingConfig()
+        assert cfg.stream is False
+
+    def test_streaming_config_rejects_typo_silently(self):
+        # StreamingConfig follows the base federate's extra='ignore' convention,
+        # unlike the RL axes' extra='forbid'.
+        cfg = StreamingConfig.model_validate({"stream": True, "bogus_key": 1})
+        assert cfg.stream is True
+
+    def test_interface_config_requires_adapter(self):
+        with pytest.raises(Exception):
+            InterfaceConfig.model_validate({"streams": [], "bridges": []})
+
+    def test_interface_config_rejects_unknown_key(self):
+        valid = {"adapter": {"name": "mqtt_adapter", "params": {}}}
+        InterfaceConfig.model_validate(valid)
+        bad = copy.deepcopy(valid)
+        bad["typo_field"] = True
+        with pytest.raises(Exception):
+            InterfaceConfig.model_validate(bad)
+
+    def test_interface_federate_config_empty_interface_config_ok(self):
+        cfg = InterfaceFederateConfig.model_validate({
+            "name": "dt_bridge",
+            "id": "fed_dt_bridge",
+            "type": "interface",
+            "timing_configs": {"real_period": 1},
+        })
+        assert cfg.interface_config is None
+        assert cfg.model_configs is None
+
+    def test_interface_federate_config_type_discriminates(self):
+        cfg = ScenarioConfig.model_validate({
+            "name": "s",
+            "start_time": "2024-01-01T00:00:00",
+            "end_time": "2024-01-01T00:01:00",
+            "memory_config": {},
+            "federations": {
+                "f": {
+                    "federate_configs": {
+                        "dt_bridge": {
+                            "type": "interface",
+                            "timing_configs": {"real_period": 1},
+                        }
+                    }
+                }
+            },
+        })
+        fed = cfg.federations["f"].federate_configs["dt_bridge"]
+        assert isinstance(fed, InterfaceFederateConfig)

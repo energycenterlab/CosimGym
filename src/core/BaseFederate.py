@@ -421,7 +421,7 @@ class BaseFederate():
             self._receive_inputs()
 
             # update models & do step & get outputs TODO manage multithreading for severla modle instances and intensive step methods
-            if self.config.model_configs.instantiation.parallel_execution:
+            if self.config.model_configs and self.config.model_configs.instantiation.parallel_execution:
             
                 self._step_models_parallel() #TODO implement parallel execution
                 
