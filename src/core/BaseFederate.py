@@ -458,6 +458,15 @@ class BaseFederate():
     def store_local_file(self):
         '''Store each mode partition as a separate JSON file (train / test).
         Will be substituted by flushing to database in the future.'''
+        sink = self.config.memory_config.sink
+        if sink == 'none':
+            self.logger.info("memory_config.sink='none' — skipping local file storage")
+            return
+        if sink == 'parquet':
+            raise NotImplementedError(
+                "memory_config.sink='parquet' is not implemented yet (nonblocking_storage "
+                "plan, milestone S2) — use 'json' (default) or 'none' for now."
+            )
         import json
         scenario_name = self.simulation_id[:-16]
         sim_id = self.simulation_id[-15:]

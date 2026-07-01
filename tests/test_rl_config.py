@@ -27,6 +27,7 @@ from utils.config_dataclasses import (
     CheckpointConfig,
     Hyperparameters,
     ResetConfig,
+    MemoryConfig,
 )
 from utils.config_reader import read_scenario_config
 
@@ -180,3 +181,25 @@ class TestValidators:
         kw = hp.as_kwargs()
         assert "learning_rate" in kw
         assert "gamma" not in kw
+
+
+# ── nonblocking_storage plan (S0): MemoryConfig.sink ──
+
+
+class TestMemoryConfigSink:
+
+    def test_sink_defaults_to_json(self):
+        cfg = MemoryConfig()
+        assert cfg.sink == "json"
+
+    def test_sink_explicit_parquet(self):
+        cfg = MemoryConfig.model_validate({"sink": "parquet"})
+        assert cfg.sink == "parquet"
+
+    def test_sink_explicit_none(self):
+        cfg = MemoryConfig.model_validate({"sink": "none"})
+        assert cfg.sink == "none"
+
+    def test_sink_invalid_value_rejected(self):
+        with pytest.raises(Exception):
+            MemoryConfig.model_validate({"sink": "csv"})
