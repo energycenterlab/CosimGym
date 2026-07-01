@@ -34,3 +34,11 @@ It translates the continuous time-stepped simulation into discrete Episodes:
 1. RL action outputs are mapped to **Publications** heading to the simulated actuators.
 2. Simulated sensor **Subscriptions** are bundled into a Gymnasium **Observation Space**.
 3. During `step()`, the simulation advances its time clock to the next decision timestep, pausing until new observations are ready to be passed back to the agent.
+
+## Digital-Twin Interfaces & Live Streaming
+
+By default a federation is a **closed box**: federates only exchange data over HELICS, and results are only written to disk once, at the end of a run. Two opt-in, MQTT-backed mechanisms open it up while it runs:
+- **`streaming.stream: true`** on any federate mirrors its inputs/outputs to MQTT each step, for a live dashboard or external observer — the co-simulation itself is unaffected.
+- An **interface federate** (`type: interface`) has no physics model; it relays its wired HELICS connections to and from an external adapter (real sensors/actuators, an operator, or another system), bidirectionally. Because it registers the same HELICS keys a physics-model federate would, swapping simulated hardware for real hardware is a change to *one* federate's block — the config-only sim-to-real pattern.
+
+See [Digital-Twin Interfaces & Live Streaming](../user_guide/digital_twin_interfaces.md) for the full reference.

@@ -112,3 +112,24 @@ python src/models/model_catalog/catalog_loader.py
 ```
 
 (The Docker / Makefile setups run this step for you.)
+
+---
+
+## 4. Interface Adapters (transport, not physics)
+
+An **interface federate** (`type: interface`, see [Federate Configuration](scenario_configuration/federate.md#type-interface-interface-federate-digital-twin-bridge)) instantiates a **transport adapter** instead of a `BaseModel` — but through the identical catalog mechanism: `category: interface_adapter` entries in `catalog.yaml` (mapped to their own Redis key prefix in `catalog_loader.py`'s `CATEGORY_MAP`), dynamic-imported by class name/module path.
+
+```yaml
+models:
+  mqtt_adapter:
+    class_name: MqttAdapter
+    module_path: adapters.mqtt_adapter
+    category: interface_adapter
+    parameters:
+      client_id: { type: str, default_value: cosim_dt }
+      host: { type: str, default_value: localhost }
+      port: { type: int, default_value: 11883 }
+      qos: { type: int, default_value: 0 }
+```
+
+To add a new transport (e.g. Kafka, Modbus, OPC-UA), implement `InterfaceAdapter` (`src/adapters/base_adapter.py`: `connect`, `publish`, `subscribe`, `latest`, `close`) and register it the same way. See [Digital-Twin Interfaces & Live Streaming](digital_twin_interfaces.md) for the adapter's role in both the `streaming` mirror and the interface federate.

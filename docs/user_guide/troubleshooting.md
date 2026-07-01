@@ -61,3 +61,14 @@ A federate's inputs were not populated before its first step (often a stale `-1.
 ## `TypeError: main() got an unexpected keyword argument 'enable_progress_bar'`
 
 `main()` now takes only `scenario_name`. Remove the `enable_progress_bar=...` argument from your `main(...)` call.
+
+## `FileNotFoundError: 'src/core/mappings.yaml'` in a federate's `.stdio.log`, manager hangs at "Monitoring N federates"
+
+Caused by running from inside `src/` (e.g. `cd src && python -c "..."`). Federate subprocesses resolve config paths (like `src/core/mappings.yaml`) relative to the **repository root**, not `src/`. Always launch from the repo root — either `python src/test_script.py`-style (script lives under `src/`, cwd stays root) or `PYTHONPATH=src python -c "from core.ScenarioManager import main; main('...')"` from the root. If you hit this, the federates die immediately but the broker (started from the correct cwd) stays up — kill stray processes and retry:
+```bash
+pkill -f helics_broker
+```
+
+## MQTT / digital-twin features silently produce no data
+
+`streaming.stream: true` or an interface federate's `interface_config` needs Mosquitto running (`docker compose -f src/docker-compose.yaml up -d`; check with `docker compose -f src/docker-compose.yaml logs -f mosquitto`). Confirm the host port: the compose file maps Mosquitto to `11883` (not the default `1883`, which may already be used by a system-wide broker). `MqttAdapter` defaults to `localhost:11883`; override via `MQTT_HOST`/`MQTT_PORT` env vars or `interface_config.adapter.params`. See [Digital-Twin Interfaces & Live Streaming](digital_twin_interfaces.md).

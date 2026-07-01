@@ -36,6 +36,9 @@ cd CosimGym
     ```bash
     docker compose -f src/docker-compose.yaml up -d
     ```
+    Brings up Redis (config/catalog distribution, port `6379`), MinIO, and Mosquitto
+    (MQTT broker for the opt-in digital-twin/streaming features, host port `11883` —
+    see [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
 
 3.  **Run Simulation**:
     ```bash
@@ -46,7 +49,8 @@ cd CosimGym
     ```bash
     streamlit run src/dashboard/streamlit_dashboard.py
     ```
-    Access at http://localhost:8501
+    Access at http://localhost:8501. For a **live** view of a running simulation
+    (rather than post-run results), see [Dashboard & Analytics → Live View](user_guide/dashboard.md#live-view-during-a-run).
 
 
 ##  Dev Container + VS Code
@@ -494,6 +498,9 @@ If you prefer manual setup without automation tools:
     ```bash
     docker compose -f src/docker-compose.yaml up -d
     ```
+    Brings up Redis (config/catalog distribution, port `6379`), MinIO, and Mosquitto
+    (MQTT broker for the opt-in digital-twin/streaming features, host port `11883` —
+    see [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
 
 3.  **Run Simulation**:
     ```bash
@@ -504,7 +511,8 @@ If you prefer manual setup without automation tools:
     ```bash
     streamlit run src/dashboard/streamlit_dashboard.py
     ```
-    Access at http://localhost:8501
+    Access at http://localhost:8501. For a **live** view of a running simulation
+    (rather than post-run results), see [Dashboard & Analytics → Live View](user_guide/dashboard.md#live-view-during-a-run).
 
 ---
 

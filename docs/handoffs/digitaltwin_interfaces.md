@@ -1,224 +1,189 @@
-# Handoff — `digitaltwin_interfaces` (Plan 1)
+# Handoff — `digitaltwin_interfaces` (Plan 1) — COMPLETE
 
 **Plan file:** `/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md`
-**Branch:** `digitaltwin_interfaces` (created off `main`, `git checkout main && git checkout -b digitaltwin_interfaces`)
+**Branch:** `digitaltwin_interfaces` (created off `main`)
 
 > **Process (in effect since M1):** the agent never runs `git commit`.
-> It stages (`git add`) and hands off; **you** run the commit. A milestone's box in
-> the Progress Tracker only gets ticked once you've confirmed the commit landed.
+> It stages (`git add`) and hands off; **you** run the commit.
 
-## Last **committed** milestone
+## Plan 1 status: all milestones committed ✅
 
-**M4 — OUTPUT then PARAMETER override** ✅ ticked. Commit: `47648ce`.
-(Earlier: M3 `0cd8d15`, M2 `d9f0eba` (message says "M3", content is M2 — see
-Blockers), M1 `b56fe1f`, M0 `3db608d`/`868fb6c`.)
+M0 `3db608d`/`868fb6c` → M1 `b56fe1f` → M2 `d9f0eba` (message says "M3",
+content is M2 — see Blockers) → M3 `0cd8d15` → M4 `47648ce` → M5 `797f618`.
+Every box in the Progress Tracker for Plan 1 is ticked.
 
-## Staged, awaiting your commit: M5 — Live dashboard, BK4 demo, docs
+## Staged, awaiting your commit: post-M5 documentation pass
 
-**This is the last milestone of Plan 1.** Implemented and verified, staged not
-committed.
+Not a new milestone — a follow-up pass making sure every Plan-1 feature
+(`streaming`, `type: interface`, `interface_config`, override registry, BK4
+demo pair, live dashboard) is discoverable from the project's existing doc
+set, not just the dedicated design note added in M5. Staged, not committed:
 
-- **`src/dashboard/live_dashboard.py`** (new) — a separate Streamlit page
-  (does **not** touch `dashboard_app.py`, which stays the post-run historical
-  explorer). Subscribes to `cosim/#` on Mosquitto via a background `paho-mqtt`
-  client (same `CallbackAPIVersion.VERSION2` pattern as `mqtt_adapter.py`),
-  cached per-session with `st.cache_resource` so the connection/buffers
-  survive page reruns. Shows a "latest value per topic" table plus a
-  multi-topic Plotly line chart, refreshed via a `time.sleep(N); st.rerun()`
-  polling loop (no extra `streamlit-autorefresh` dependency). Works with
-  **both** externalization mechanisms unmodified — a `streaming.stream: true`
-  federate's mirror topics and any interface federate's `streams`/`bridges`
-  topics all show up identically, since the dashboard only reads the shared
-  JSON payload shape (`sim_id, key, value, sim_time, wall_time`) and doesn't
-  care which mechanism produced it.
-- **`src/dashboard/run_live_dashboard.sh`** (new) — launcher on port 8053
-  (post-run dashboard stays on 8052), mirrors `run_dashboard.sh`'s conda-env
-  guard.
-- **BK4 demo pair** (the actual "config-only sim-to-real" demonstration):
-  - `src/scenarios/m5_bk4_demo_a_full_sim.yaml` — `spring_federate` (base,
-    `spring_mass_damper`) + `input_federate` (base, `inputs4spring` model:
-    constant force=10, randomized disturbance). Fast, non-realtime, 20 ticks.
-  - `src/scenarios/m5_bk4_demo_b_digital_twin.yaml` — **identical
-    `spring_federate` block** (byte-for-byte the same subscription targets:
-    `input_federate.0/force`, `input_federate.0/disturbance`). The **only**
-    change is `input_federate`: `type: base` → `type: interface`, with
-    `model_configs` replaced by `interface_config` (`mqtt_adapter`, two
-    `scope: input`/`mode: replace` bridges registered at the **same** global
-    publication keys the model federate used). Realtime-paced
-    (`rt_lag`/`rt_lead: 1.0`) so there's a wall-clock window for an external
-    process to feed it.
-  - `src/scenarios/bk4_demo_external_sensor.py` (new) — stand-in "real
-    hardware": a plain script (no CosimGym imports) publishing a sinusoidal
-    force + randomized disturbance over MQTT to the two bridge topics, once a
-    second. Demonstrates the bridge side is genuinely protocol-only — nothing
-    about the sensor script is CosimGym-specific.
-- **Docs:**
-  - `docs/user_guide/digital_twin_interfaces.md` (new) — full design note:
-    both mechanisms, the `scope: input/output/param` distinction, the BK4
-    pattern, and the demo pair. Added to `mkdocs.yml` nav (User Guide, after
-    "Reinforcement Learning Integration").
-  - `docs/user_guide/dashboard.md` — new "Live View" section pointing at
-    `run_live_dashboard.sh` and cross-linking the design note.
-  - `CLAUDE.md` — new "Digital-Twin Interfaces & Live Streaming" subsection
-    (mirrors how the RL config schema is documented there): `streaming`,
-    `interface_config` (`streams`/`bridges`, `scope`, `mode`), the override
-    registry, the BK4 pattern, and the live dashboard, all in one place.
+- **`README.md`** — new bullet in Main Features.
+- **`docs/Installation_Setup.md`** — Mosquitto/paho-mqtt noted alongside Redis
+  in both "Start Infrastructure" steps (manual setup appears twice in this
+  file); live-dashboard cross-link in the "Run Dashboard" steps.
+- **`docs/overview/architecture.md`** — step 4 (Federate Launching) and step 5
+  (Execution Loop) now mention `InterfaceFederate` and `streaming.stream`.
+- **`docs/overview/core_concepts.md`** — new "Digital-Twin Interfaces & Live
+  Streaming" section.
+- **`docs/overview/terminology.md`** — new **Interface Federate** and
+  **Adapter** terms.
+- **`docs/user_guide/scenario_configuration/overview.md`** — `type` union and
+  hierarchy diagram now include `interface`/`interface_config`; new row in the
+  Sections table.
+- **`docs/user_guide/scenario_configuration/federate.md`** — discriminator
+  updated everywhere; `streaming`/`override_enabled` added to the common
+  fields table; `rt_lag`/`rt_lead` added to the `timing_configs` table; two
+  new sections: `streaming` (all types) and `type: "interface"` (full
+  `interface_config` example + field table).
+- **`docs/user_guide/custom_models.md`** — new "§4 Interface Adapters"
+  subsection (the `interface_adapter` catalog category, same dynamic-import
+  mechanism as physics models).
+- **`docs/user_guide/running_scenarios.md`** — short "Digital-twin / streaming
+  scenarios" note pointing at the design doc + the BK4 demo pair.
+- **`docs/user_guide/troubleshooting.md`** — two new entries: the `cd src`
+  cwd gotcha found during M5 verification (`FileNotFoundError:
+  'src/core/mappings.yaml'` + manager hang), and "MQTT/digital-twin features
+  silently produce no data" (Mosquitto not running / wrong port).
 
-**Verified:**
-- `m5_bk4_demo_a_full_sim` run standalone (`PYTHONPATH=src python -c
-  "from core.ScenarioManager import main; main('m5_bk4_demo_a_full_sim')"` from
-  the repo root — see Blockers #9 on why *not* `cd src` first) — completed in
-  2.6s, 2 federates.
-- `m5_bk4_demo_b_digital_twin` run alongside `bk4_demo_external_sensor.py`
-  (started ~3s in): completed in 21.5s (realtime-paced as expected). Recorded
-  `spring_federate.0/force` timeseries: HELICS's `-1e+49` "unconnected" sentinel
-  for the first ~9 ticks (before the sensor's first MQTT message landed —
-  broker/subprocess/MQTT-connect startup overhead, same class of "wall-clock
-  margin" issue as M3's timing gotcha, not a bug), then values `0.0, 4.43, 8.47,
-  11.75, 13.98, 14.96, 14.61, 12.95, 10.13, 6.41, 2.12` — an **exact match** to
-  the sensor script's own printed tick-by-tick output. `spring_federate`'s own
-  YAML block is untouched between (a) and (b) — confirms the one-line BK4 swap.
-- `live_dashboard.py` smoke-tested: `streamlit run ... --server.headless=true`,
-  curled `http://localhost:8053` → `200`, no exceptions in the server log.
-- Regression: `python src/test_script.py` (green, 4 federates,
-  `dh_district_jan_base`) and `OMP_NUM_THREADS=1 python src/test_script_rl.py`
-  (green, 3 brokers/3 federates, `bui0_heatingpower_DQN`).
-- `python -m pytest tests/test_rl_config.py -q` → **78 passed, 1 skipped** (up
-  from 76 — the two new BK4 demo YAMLs are picked up by the scenario
-  parse-gate glob automatically).
-- Cleaned up scratch `results/`/`logs/` for all four scenarios run during
-  verification (`m5_bk4_demo_a_full_sim`, `m5_bk4_demo_b_digital_twin`,
-  `dh_district_jan_base`, `bui0_heatingpower_DQN`).
+**Verified:** `mkdocs build --strict` — no broken links/anchors (fixed two
+anchor-slug mismatches: `#` links must match the auto-generated slug, which
+strips repeated hyphens differently than a naive guess — e.g.
+`type-interface-interface-federate-digital-twin-bridge`, not
+`type-interface--interface-...`). `pytest tests/test_rl_config.py` still 78
+passed / 1 skipped (docs-only change, no config/code touched).
 
-**Your action:** review the staged diff, commit (e.g. `feat(digital-twin): M5
-live dashboard, BK4 config-swap demo, docs`), then say continue — I'll tick M5.
-**That completes Plan 1.**
+**Your action:** review the staged diff, commit (e.g. `docs(digital-twin):
+surface streaming/interface federate features across README, overview,
+scenario-config, custom-models, running-scenarios, troubleshooting docs`),
+then say continue — I'll confirm the doc commit landed. This does not need a
+Progress Tracker box (it's not a plan milestone), just confirmation before
+the branch is considered fully wrapped up.
 
-## Next step (after you commit M5)
+## Testing this branch end-to-end (quick guide)
 
-Plan 1 (M0-M5) is fully done. Plan 2 (`nonblocking_storage`, S0-S4) is a
-**separate, independent effort** — per the plan, start it fresh off `main`
-(`git checkout main && git checkout -b nonblocking_storage`), **not** built on
-this branch. Its own handoff doc will be `docs/handoffs/nonblocking_storage.md`.
-Not yet started. If you want to merge `digitaltwin_interfaces` into `main`
-first, that's a separate decision or open question to make with the user —
-not something to do unprompted.
+```bash
+cd /media/space/rando/CODE/CosimGym
+conda activate cosim_gym
+docker compose -f src/docker-compose.yaml up -d   # redis, minio, mosquitto (host 11883)
 
-## Files touched across M0-M5
+# 1. Regressions — must be unaffected (everything in Plan 1 is opt-in):
+python src/test_script.py
+OMP_NUM_THREADS=1 python src/test_script_rl.py
 
-**New:** `src/adapters/__init__.py`, `src/adapters/base_adapter.py`,
-`src/adapters/mqtt_adapter.py`, `src/core/InterfaceFederate.py`,
-`src/core/override_registry.py`, `src/mosquitto/mosquitto.conf`,
-`src/dashboard/live_dashboard.py` (staged), `src/dashboard/run_live_dashboard.sh`
-(staged), `docs/user_guide/digital_twin_interfaces.md` (staged), seven smoke/demo
-scenarios (`m0`...`m4_interface_override_smoke_test.yaml` committed;
-`m5_bk4_demo_a_full_sim.yaml`, `m5_bk4_demo_b_digital_twin.yaml`,
-`bk4_demo_external_sensor.py` staged).
-**Modified (committed M0-M4):** `environment.yml`, `src/core/federate_launcher.py`,
-`src/core/mappings.yaml`, `src/docker-compose.yaml` (mosquitto @ host 11883),
-`catalog_loader.py`, `catalog.yaml` (mqtt_adapter entry), `src/core/BaseFederate.py`,
-`src/models/base_model.py`, `src/utils/config_dataclasses.py`, `tests/test_rl_config.py`.
-**Modified (staged, M5):** `CLAUDE.md`, `docs/user_guide/dashboard.md`, `mkdocs.yml`.
+# 2. Config/parse gate:
+python -m pytest tests/test_rl_config.py -v      # expect 78 passed, 1 skipped
 
-## State of the tree
+# 3. BK4 demo — the headline feature (config-only sim-to-real swap):
+#    run from the REPO ROOT, never `cd src` first (see Blockers #8 below)
+PYTHONPATH=src python -c "from core.ScenarioManager import main; main('m5_bk4_demo_a_full_sim')"
+#    then, concurrently:
+PYTHONPATH=src python -c "from core.ScenarioManager import main; main('m5_bk4_demo_b_digital_twin')" &
+sleep 3 && python src/scenarios/bk4_demo_external_sensor.py --duration 18
+#    compare force in results/m5_bk4_demo_b_digital_twin/*/federation_1/spring_federate_test_storage.json
+#    against the sensor script's printed tick values — they should match once messages arrive.
 
-On `digitaltwin_interfaces`, 6 commits ahead of `main` (`3db608d`, `868fb6c`,
-`b56fe1f`, `d9f0eba`, `0cd8d15`, `47648ce`). M5's changes are `git add`ed but
-**uncommitted** — waiting on you. `git status --short` currently shows only
-the M5 files staged plus an unrelated pre-existing modification to
-`.claude/scheduled_tasks.lock` (not part of this plan — left untouched,
-not staged).
+# 4. Live dashboard (open in a browser while step 3's run (b) or any
+#    `streaming.stream: true` scenario is executing):
+./src/dashboard/run_live_dashboard.sh    # http://localhost:8053
 
-## Blockers / deviations from the plan
+# 5. Docs build check:
+mkdocs build --strict -d /tmp/mkdocs_out
+
+# Clean up scratch results/logs afterwards (gitignored, local hygiene only):
+rm -rf results/m5_bk4_demo_a_full_sim results/m5_bk4_demo_b_digital_twin \
+       logs/m5_bk4_demo_a_full_sim logs/m5_bk4_demo_b_digital_twin
+```
+
+## Next: Plan 2 (`nonblocking_storage`) — separate, independent branch
+
+Plan 1 is fully done. Plan 2 is unrelated work (non-blocking Parquet storage)
+on its **own branch off `main`**, per the plan file's own instructions —
+**not** built on `digitaltwin_interfaces`. Kickoff commands for a fresh
+session:
+
+```bash
+cd /media/space/rando/CODE/CosimGym
+git checkout main
+git pull                                    # if digitaltwin_interfaces has been merged/reviewed upstream
+git checkout -b nonblocking_storage
+mkdir -p docs/handoffs                      # docs/handoffs/nonblocking_storage.md will live here
+docker compose -f src/docker-compose.yaml up -d
+conda activate cosim_gym
+python src/test_script.py                   # confirm green baseline before any change
+```
+
+Then resume at box **S0** in the plan file's Progress Tracker
+(`sink` field on `MemoryConfig` + plumb through, default `json` = unchanged)
+and follow the same per-milestone loop: implement → check → regression →
+**stage, do not commit** → update `docs/handoffs/nonblocking_storage.md` →
+wait for the user's commit + "continue" before ticking the box.
+
+### One-line kickoff prompt for Plan 2's first fresh session
+
+> "Read `/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md`
+> in full — Plan 1 (`digitaltwin_interfaces`) is complete, all milestones
+> committed. Start Plan 2 (`nonblocking_storage`): create a new branch off
+> `main` (`git checkout main && git checkout -b nonblocking_storage`,
+> independent of the Plan-1 branch), confirm a green baseline
+> (`python src/test_script.py`), then implement the lowest unchecked box
+> (S0) in the Progress Tracker. Follow the per-milestone loop exactly: run
+> the milestone's Check + regression test, then stage the change (`git add`)
+> — do NOT commit, the user commits — write `docs/handoffs/nonblocking_storage.md`,
+> and stop to wait for the user's commit + 'continue' signal before ticking
+> the box and starting the next milestone."
+
+## Blockers / deviations from the plan (Plan 1, for reference)
 
 1. **Process change (from M1 onward):** agent stages, user commits.
 2. **Commit-message/milestone mismatch:** `d9f0eba` says "M3", contains M2's
    diff. Trust the diff / handoff / Progress Tracker, not commit messages.
-3. Earlier deviations (branch-first ordering at M0, mosquitto port remap to
-   11883, `model_configs` guard on `InterfaceFederateConfig`, drop-oldest
-   outbound queue, the two M4 override-registry bugs) — see
-   `git log -p -- docs/handoffs/digitaltwin_interfaces.md` for the full prior
-   write-ups; summarized here so this doc stays a current pointer, not a
-   history log.
-4. **`BridgeSpec.helics_key` is overloaded by `scope`**: for `scope: input`
-   it's a HELICS publication name; for `scope: output`/`param` it's an
-   override-registry target string parsed by `parse_target` — no HELICS
-   registration at all for those. Documented at each point of use; flagging in
-   case it needs unifying/renaming later.
-5. **Live dashboard uses a polling rerun (`time.sleep` + `st.rerun()`)**, not
-   `streamlit-autorefresh` or websockets — avoids a new dependency, at the
-   cost of the whole page redrawing every refresh tick rather than partial
-   updates. Fine for a first live-view path; revisit if it needs to be
-   smoother/less flickery.
-6. **BK4 demo's first ~9 ticks show HELICS's `-1e+49` "unconnected" sentinel**
-   for `spring_federate.0/force` before `bk4_demo_external_sensor.py`'s first
-   MQTT message arrives (`mode: replace` bridges publish nothing until an
-   external value shows up — same behavior M3 already established). This is
-   expected/documented, not a bug — but if the demo is used for a live
-   presentation, start the sensor script *before* the scenario, or add a few
-   seconds of startup lead, to avoid an awkward sentinel-value stretch at the
-   start.
-7. **Redis logging noise (from M4, still not fixed):** `RedisClient.get_json`
+3. Branch-first ordering at M0, mosquitto port remap to 11883,
+   `model_configs` guard on `InterfaceFederateConfig`, drop-oldest outbound
+   queue — see `git log -p -- docs/handoffs/digitaltwin_interfaces.md` for
+   the full prior write-ups.
+4. **`BridgeSpec.helics_key` is overloaded by `scope`**: HELICS pub name for
+   `scope: input`; an override-registry target string for `scope:
+   output`/`param` (parsed by `parse_target`, no HELICS registration at all).
+5. **Two M4 override-registry bugs**, both fixed and regression-tested:
+   `parse_target` originally reconstructed entity as the bare instance number
+   instead of `"federate.instance"`; output override wasn't written back into
+   `self.outputs`, so storage didn't reflect it even though HELICS delivery
+   was correct.
+6. **Live dashboard uses `time.sleep` + `st.rerun()` polling**, not
+   `streamlit-autorefresh` or websockets — avoids a new dependency at the
+   cost of a full-page redraw each tick.
+7. **BK4 demo's first ~9 ticks show HELICS's `-1e+49` sentinel** before the
+   external sensor script's first MQTT message arrives (`mode: replace`
+   publishes nothing until then) — expected, not a bug; start the sensor
+   script first for a live demo/presentation to avoid this stretch.
+8. **Never `cd src` before running `ScenarioManager`** — federate subprocesses
+   resolve config paths relative to the **repo root**. `cd src` produces a
+   `FileNotFoundError: 'src/core/mappings.yaml'` in each federate's
+   `.stdio.log` while the manager hangs "Monitoring N federates" (federates
+   died, broker didn't). Now documented in `docs/user_guide/troubleshooting.md`.
+9. **Redis logging noise (from M4, still not fixed):** `RedisClient.get_json`
    logs a WARNING on every absent-key lookup — noisy for every
    `override_enabled` federate's per-tick checks with no active override.
-   Left untouched (shared utility); revisit with a `log_missing: bool` param
-   if it becomes a problem in practice.
-8. **Scenario run gotcha (new, hit during M5 verification):** running
-   `ScenarioManager` from a `cd src` shell breaks federate subprocesses — they
-   read config paths like `src/core/mappings.yaml` relative to the **repo
-   root**, not `src/`. Always run from the repo root, either as
-   `python src/test_script.py`-style (script itself under `src/`, cwd stays
-   root) or `PYTHONPATH=src python -c "from core.ScenarioManager import main; ..."`
-   from the root. A `cd src` first produces a `FileNotFoundError:
-   'src/core/mappings.yaml'` in each federate's `.stdio.log`, while the
-   manager process itself hangs "Monitoring N federates" indefinitely because
-   the federates die immediately but the broker (started from the same,
-   correct cwd) stays up — kill the stray broker/manager PIDs if this happens.
+   Revisit with a `log_missing: bool` param if it becomes a problem.
 
 ## How to verify current state
 
 ```bash
 cd /media/space/rando/CODE/CosimGym
-git status && git branch --show-current   # digitaltwin_interfaces; M5 files staged, not committed
-git log --oneline -7                       # 47648ce, 0cd8d15, d9f0eba, b56fe1f, 868fb6c, 3db608d on top of 38948b3 (main)
-git diff --staged --stat                   # M5's staged changes
-
-conda activate cosim_gym
-docker compose -f src/docker-compose.yaml up -d   # redis, minio, mosquitto (host 11883)
-
-# Regression — must match main behavior exactly (streaming/interface/override are opt-in):
-python src/test_script.py
-OMP_NUM_THREADS=1 python src/test_script_rl.py
-
-# M5 check — BK4 demo pair (run from repo root, NOT from src/ — see Blockers #8):
-PYTHONPATH=src python -c "from core.ScenarioManager import main; main('m5_bk4_demo_a_full_sim')"
-# then, in one terminal:
-PYTHONPATH=src python -c "from core.ScenarioManager import main; main('m5_bk4_demo_b_digital_twin')" &
-# and within a couple seconds, in another:
-python src/scenarios/bk4_demo_external_sensor.py --duration 18
-# compare results/m5_bk4_demo_b_digital_twin/*/federation_1/spring_federate_test_storage.json
-# inputs.spring_federate.0.force against the sensor script's printed values.
-
-# Live dashboard:
-./src/dashboard/run_live_dashboard.sh   # http://localhost:8053, while a stream/interface scenario runs
-
-# Config parse-gate tests:
-python -m pytest tests/test_rl_config.py -v   # 78 passed, 1 skipped
-
-# Clean up scratch results/logs after verifying (all gitignored, local hygiene only):
-rm -rf results/m5_bk4_demo_a_full_sim results/m5_bk4_demo_b_digital_twin \
-       logs/m5_bk4_demo_a_full_sim logs/m5_bk4_demo_b_digital_twin
+git status && git branch --show-current   # digitaltwin_interfaces; docs pass staged, not committed
+git log --oneline -7                       # 797f618, 47648ce, 0cd8d15, d9f0eba, b56fe1f, 868fb6c, 3db608d
+git diff --staged --stat                   # the docs-pass diff
 ```
 
-## One-line kickoff prompt for a fresh session
+## One-line kickoff prompt to resume THIS branch (if the docs pass isn't committed yet)
 
 > "Read `/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md`
 > and `docs/handoffs/digitaltwin_interfaces.md`. We're on branch
-> `digitaltwin_interfaces`. M0-M4 are committed; M5 (live dashboard, BK4
-> config-swap demo pair, docs) is implemented and verified but staged, not
-> committed — review and commit it yourself first (see 'Staged, awaiting your
-> commit' above), then tell the agent to tick the M5 box. **That completes
-> Plan 1** — the agent should stop there and wait for direction on Plan 2
-> (`nonblocking_storage`, a separate branch/effort) rather than starting it
-> unprompted. Remember: the agent stages changes and never runs `git commit`
-> — you do."
+> `digitaltwin_interfaces`. Plan 1 (M0-M5) is fully committed. A follow-up
+> documentation pass (README, overview docs, scenario-config reference,
+> custom-models, running-scenarios, troubleshooting) is staged but not
+> committed — review and commit it, then say continue. After that, Plan 1 on
+> this branch is done; Plan 2 (`nonblocking_storage`) is a separate branch,
+> see the 'Next: Plan 2' section above for kickoff commands."

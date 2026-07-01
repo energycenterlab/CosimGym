@@ -37,7 +37,8 @@ With this framework you can setup co-simulation scenario by plugging your own mo
 - 🧩 **Plug-and-Play Models**: Rely on a standardized `BaseModel` interface and a centralized Model Catalog to easily drop in custom physics models, data readers, FMUs, or arbitrary RL algorithms.
 - 🤖 **Gymnasium Compatibility**: The built-in `HelicsGymEnv` wrapper automatically binds HELICS pub/sub variables to standard Observation and Action spaces, making it out-of-the-box compatible with popular RL libraries (e.g. stablebaseline3, RLlib).
 - 🔄 **Flexible Workflows**: Run standard physics-only co-simulations, conduct live online RL training (with built-in agents like **DQN** or **SAC**), or evaluate pre-trained policies within a single unified framework.
-- 📊 **Built-in Dashboard**: Monitor simulation metrics and analyze RL performance through an interactive, ready-to-use **Streamlit** dashboard.
+- 📊 **Built-in Dashboard**: Monitor simulation metrics and analyze RL performance through an interactive, ready-to-use **Streamlit** dashboard, including a **live view** for data as it streams during a run.
+- 🔌 **Digital-Twin Interfaces**: Mirror any federate's data to MQTT for live observability, or swap a simulated federate for an `interface` federate bridging to real sensors/actuators — a one-line, config-only sim-to-real change (see [Digital-Twin Interfaces & Live Streaming](docs/user_guide/digital_twin_interfaces.md)).
 
 ---
 
