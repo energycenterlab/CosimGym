@@ -3,119 +3,146 @@
 **Plan file:** `/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md`
 **Branch:** `digitaltwin_interfaces` (created off `main`, `git checkout main && git checkout -b digitaltwin_interfaces`)
 
-> **Process change (mid-plan):** the agent no longer runs `git commit`. It stages
-> (`git add`) and hands off; **you** run the commit. The plan file's per-milestone
-> loop and this doc were both updated to reflect that. A milestone's box in the
-> Progress Tracker only gets ticked once you've confirmed the commit landed.
+> **Process (mid-plan change, in effect since M1):** the agent never runs `git commit`.
+> It stages (`git add`) and hands off; **you** run the commit. A milestone's box in
+> the Progress Tracker only gets ticked once you've confirmed the commit landed.
 
 ## Last **committed** milestone
 
-**M0 — Shared scaffolding** ✅ ticked in the plan file. Commit: `3db608d`
-(preceded by cleanup commit `626e03b`).
+**M1 — `stream` flag outbound mirror** ✅ ticked. Commit: `b56fe1f`.
+(M0 — `3db608d`, `868fb6c`.)
 
-## Staged, awaiting your commit: M1 — `stream` flag outbound mirror
+## Staged, awaiting your commit: M2 — Interface federate outbound (co-sim → external)
 
-Implemented and verified, but **not committed** — `git status` on this branch
-will show these staged (not the working tree, already `git add`ed):
+Implemented and verified, **staged not committed**:
 
-- `src/adapters/mqtt_adapter.py` — real outbound path: `publish()` now enqueues
-  into a bounded `queue.Queue` (drop-oldest when full), drained by a dedicated
-  background thread (separate from paho's own `loop_start()` network thread)
-  that calls `client.publish(topic, json.dumps(payload), qos=...)`.
-- `src/core/BaseFederate.py`:
-  - `__init__`: `self._stream_adapter = None` (lazy).
-  - new `_stream_outbound()` method: no-op unless `config.streaming.stream` is
-    `True`; respects `every_n_ticks`; lazily creates+connects an `MqttAdapter`
-    (host/port from `MQTT_HOST`/`MQTT_PORT` env vars, default `localhost`/`11883`
-    to match this repo's docker-compose mosquitto remap); publishes one message
-    per input/output variable to topic
-    `{stream_topic_prefix or f"cosim/{sim_id}/{federate_name}"}/{inputs|outputs}/{entity_id}/{var_name}`
-    with payload `{sim_id, key, value, sim_time, wall_time}`.
-  - called from `run()` right after `update_storage()`.
-  - `finalize()` now closes `self._stream_adapter` if one was created.
-- `src/scenarios/m1_stream_smoke_test.yaml` — new smoke-test scenario (spring +
-  input federate, `streaming.stream: true` on `spring_federate`) kept as a
-  permanent fixture; the config parse-gate test in `tests/test_rl_config.py`
-  picks it up automatically (62 passed, 1 skipped — Adelaide known-broken YAML,
-  pre-existing).
+- `src/core/InterfaceFederate.py` — full rewrite for M2:
+  - `_register_entities()`: resolves the adapter from `interface_config.adapter`
+    via the catalog (`self.catalog.get_model_metadata(name)` → dynamic import,
+    same mechanism `BaseFederate._register_entities` uses for physics models),
+    instantiates it with `{**catalog_defaults, **interface_config.adapter.params}`,
+    calls `.connect()`. Returns `[]` (still no physics entities).
+  - `initialize()`: now keys `self.inputs`/`self.outputs`/`self._deferred_inputs`
+    by `self.name` (the federate has no physics entities, so it's its own
+    implicit "entity" for bookkeeping).
+  - `_register_connections()`: builds one HELICS global input per
+    `interface_config.streams[i]` (topic name `f"{self.name}/stream_{i}"`,
+    target = `stream.helics_key`) — the streams-only half of what the plan
+    calls "build HELICS pubs/subs from an `interface_config` block"; `bridges`
+    (external → co-sim pubs) is M3/M4.
+  - `_receive_inputs()`: calls `super()` then, per stream (respecting
+    `every_n_ticks`), reads the just-updated value and calls
+    `self._adapter.publish(stream.topic, {sim_id, key: stream.helics_key,
+    value, sim_time, wall_time})`.
+  - `finalize()`: closes `self._adapter` before calling `super().finalize()`.
+- `src/utils/config_dataclasses.py`:
+  - `FedTimingConfig` gained `rt_lag`/`rt_lead: Optional[float] = None`.
+  - `StreamSpec` gained `type: str = "double"` and `units: str = ""` (needed to
+    register the HELICS input; both optional/defaulted, additive not breaking).
+- `src/core/BaseFederate.py` — `_register_federate()`: if `timing_configs.rt_lag`/
+  `rt_lead` are not `None`, sets `helics_property_time_rt_lag`/`rt_lead` on the
+  federate info (opt-in, `None` default = unchanged HELICS behavior everywhere
+  else).
+- `src/scenarios/m2_interface_outbound_smoke_test.yaml` — new fixture: spring +
+  input federates unchanged, plus `dt_bridge_relay` (`type: interface`,
+  `flags.realtime: true`, `rt_lag/rt_lead: 1.0`) subscribing to
+  `spring_federate.0/position` and relaying it to
+  `cosim/m2_smoke/relay/position`.
+- `tests/test_rl_config.py` — `TestInterfaceOutboundConfig` (3 new tests:
+  `StreamSpec` defaults, `rt_lag`/`rt_lead` default-None and explicit).
 
 **Verified (see "How to verify" below for exact commands):**
-- `mosquitto_sub` on `cosim/#` showed live JSON messages for every step while
-  `m1_stream_smoke_test` ran (position/velocity/force/disturbance/acceleration,
-  one message per var per tick).
-- `python src/test_script.py` and `test_script_rl.py` both still match `main`
-  exactly (streaming defaults to `False`, so the hook is a no-op there).
-- `tests/test_rl_config.py`: 62 passed, 1 skipped.
+- `mosquitto_sub -t 'cosim/m2_smoke/#'` showed spring's `position` relayed out
+  once per tick, `wall_time` spaced ~1s apart across 5 ticks (real_period=1,
+  realtime pacing active) — `simulation_duration` was 7.6s for a 5-tick scenario
+  vs ~2.5s unpaced in M0/M1 fixtures, confirming realtime is actually engaged.
+- Model federates (`spring_federate`/`input_federate`) wrote their usual result
+  JSONs unchanged; `dt_bridge_relay` wrote none (still a storage no-op).
+- `python src/test_script.py` and `test_script_rl.py` unchanged vs main.
+- `tests/test_rl_config.py`: 66 passed, 1 skipped.
 
-**Your action:** review the staged diff, commit it (Conventional Commits, e.g.
-`feat(digital-twin): M1 stream flag outbound MQTT mirror`), then tell me to
-continue — I'll tick the M1 box in the plan file and move to M2.
+**Your action:** review the staged diff, commit (e.g.
+`feat(digital-twin): M2 interface federate outbound relay + realtime pacing`),
+then say continue — I'll tick M2 and move to M3.
 
-## Next step (after you commit M1)
+## Next step (after you commit M2)
 
-**M2 — Interface federate outbound (co-sim → external)**. Per the plan:
-override `_register_connections`/`_register_pubs`/`_register_subs` on
-`InterfaceFederate` to build HELICS subscriptions from `interface_config.streams`
-(instead of the inherited empty-entities behavior from M0), relay each to the
-adapter resolved from `interface_config.adapter` (catalog dynamic-import, same
-mechanism `BaseFederate._register_entities` uses for physics models — see
-`RedisCatalog.get_model_metadata`), and enable realtime pacing
-(`flags.realtime` + `helics_property_time_rt_lag`/`rt_lead`, per
-`BaseFederate.py:246-248` today only sets flags generically — an optional
-timing field for rt_lag/rt_lead tuning needs adding to `_register_federate`).
+**M3 — Interface federate inbound = INPUT injection (external → co-sim)**:
+- `MqttAdapter.subscribe()`/`.latest()`: implement inbound — subscribe to
+  `interface_config.bridges[*].topic`, keep a lock-guarded latest-value dict
+  fed by `on_message`, exposed via `latest(topic)`.
+- `InterfaceFederate`: register a HELICS **publication** per `bridges[i]`
+  (`scope: input` only for M3 — output/param scopes are M4) targeting
+  `bridges[i].helics_key`; each step, read `adapter.latest(bridges[i].topic)`,
+  clip to `bridges[i].bounds` if set, and `pub.publish(value)` before the
+  model federates read it. `mode: replace` (repoint target) vs `mode:
+  passthrough` (subscribe the real source too, only override when an MQTT
+  message has actually arrived) — passthrough needs a "have we ever received
+  anything on this topic" check, `latest()` returning `None` until first
+  message is the natural signal for that.
+- **Check:** `mosquitto_pub` a sensor value mid-run on a bridge's topic; the
+  target federate's input follows it (clipped to bounds); before any message
+  arrives, `mode: passthrough` falls back to the real source unchanged.
 
-First concrete action: read `src/core/InterfaceFederate.py` (currently just the
-M0 shell) and start there.
+First concrete action: implement `MqttAdapter.subscribe()`/`latest()` (currently
+`raise NotImplementedError`), then wire `InterfaceFederate._register_connections()`
+to also build `bridges` pubs alongside the M2 `streams` subs.
 
-## Files touched across M0+M1
+## Files touched across M0+M1+M2
 
-**New (M0):** `src/adapters/__init__.py`, `src/adapters/base_adapter.py`,
+**New:** `src/adapters/__init__.py`, `src/adapters/base_adapter.py`,
 `src/core/InterfaceFederate.py`, `src/mosquitto/mosquitto.conf`,
-`src/scenarios/m0_interface_smoke_test.yaml`.
-**New (M1, staged):** `src/scenarios/m1_stream_smoke_test.yaml`.
-**Modified (M0, committed):** `environment.yml`, `src/core/BaseFederate.py`
-(model_configs guard), `src/core/federate_launcher.py`, `src/core/mappings.yaml`,
-`src/docker-compose.yaml` (mosquitto @ host 11883), `catalog_loader.py`,
-`catalog.yaml` (mqtt_adapter entry), `src/utils/config_dataclasses.py`
-(`StreamingConfig`/`InterfaceConfig`/`InterfaceFederateConfig`),
+`src/scenarios/m0_interface_smoke_test.yaml`,
+`src/scenarios/m1_stream_smoke_test.yaml` (all committed),
+`src/scenarios/m2_interface_outbound_smoke_test.yaml` (staged).
+**Modified (committed M0+M1):** `environment.yml`, `src/core/federate_launcher.py`,
+`src/core/mappings.yaml`, `src/docker-compose.yaml` (mosquitto @ host 11883),
+`catalog_loader.py`, `catalog.yaml` (mqtt_adapter entry).
+**Modified (staged, M2):** `src/core/BaseFederate.py` (rt_lag/rt_lead wiring —
+on top of the already-committed model_configs guard + `_stream_outbound` hook),
+`src/utils/config_dataclasses.py` (rt_lag/rt_lead, StreamSpec type/units),
 `tests/test_rl_config.py`.
-**Modified (M1, staged):** `src/adapters/mqtt_adapter.py` (real `publish()`),
-`src/core/BaseFederate.py` (`_stream_outbound` hook + finalize cleanup).
 
 ## State of the tree
 
-On `digitaltwin_interfaces`, 2 commits ahead of `main` (`3db608d`, `868fb6c`).
-M1's changes are `git add`ed but **uncommitted** — waiting on you.
+On `digitaltwin_interfaces`, 3 commits ahead of `main` (`3db608d`, `868fb6c`,
+`b56fe1f`). M2's changes are `git add`ed but **uncommitted** — waiting on you.
 
 ## Blockers / deviations from the plan
 
-1. **Process change:** agent stages, user commits (see banner at top) — added
-   mid-plan by explicit user instruction; the plan file itself was updated to
-   match (per-milestone loop, Handoff protocol, kickoff prompt).
-2. **Branch-first ordering (M0):** cleanup commit (`HANDOFF.md` etc.) was done
-   on `digitaltwin_interfaces`, not `main`, because the auto-mode classifier
-   blocked deleting tracked files directly on `main`. `main` was never touched.
-3. **Port conflicts on this shared server:** host `1883` is occupied by a
-   pre-existing system-wide mosquitto service — ours is remapped to host
-   `11883` (container side stays `1883`), same pattern as the existing MinIO
-   9101 remap. `MqttAdapter`/catalog defaults and the `_stream_outbound` env
-   vars (`MQTT_HOST`/`MQTT_PORT`) all default to `11883` to match.
-4. **`ScenarioManager._enrich_dynamic_catalog_metadata`** required adding
-   `model_configs: Optional[ModelConfig] = None` to `InterfaceFederateConfig`
-   (M0, already committed) — not a plan deviation, just an undocumented detail.
-5. Chose **paho's own `loop_start()` thread for network I/O** plus a **separate
-   drain thread** for our bounded drop-oldest outbound queue (M1) rather than
-   relying on paho's built-in `max_queued_messages_set` — paho's internal queue
-   is reject-newest when full, not drop-oldest, which is wrong for a live
-   telemetry mirror (you want the latest value, not the oldest queued one).
+1. **Process change (from M1 onward):** agent stages, user commits.
+2. **Branch-first ordering (M0):** cleanup commit done on `digitaltwin_interfaces`,
+   not `main` — classifier blocked deleting tracked files directly on `main`.
+3. **Port conflicts on this shared server:** mosquitto remapped to host `11883`
+   (container side stays `1883`) — `1883` is owned by a pre-existing system-wide
+   mosquitto service. All adapter/env-var defaults (`MQTT_HOST`/`MQTT_PORT`,
+   catalog `mqtt_adapter` params) point at `11883`.
+4. **`ScenarioManager._enrich_dynamic_catalog_metadata`** required
+   `model_configs: Optional[ModelConfig] = None` on `InterfaceFederateConfig` (M0).
+5. **M1's outbound queue** uses our own bounded drop-oldest `queue.Queue` +
+   dedicated drain thread rather than paho's built-in `max_queued_messages_set`
+   (which is reject-newest, not drop-oldest — wrong for live telemetry).
+6. **M2's HELICS input topic naming**: interface federate's own subscription
+   topics are synthetic (`f"{self.name}/stream_{i}"`), not derived from the
+   variable name — this is fine because both the write side
+   (`BaseFederate._receive_inputs`, inherited via `super()`) and the read side
+   (`InterfaceFederate._receive_inputs`) derive the same dict key
+   (`subid.name.split('/')[-1]`) from the same `subid`, so they stay consistent;
+   the *actual* variable identity for downstream consumers (MQTT payload,
+   logging) comes from `stream.helics_key`/`stream.topic`, not from that
+   synthetic key.
+7. Realtime pacing is opt-in per-federate (HELICS allows mixed realtime/non-realtime
+   federates in one federation) — only `dt_bridge_relay` is paced in the M2
+   fixture; `spring_federate`/`input_federate` are not, and that's expected/fine
+   since the bridge has no dependents relying on its timing.
 
 ## How to verify current state
 
 ```bash
 cd /media/space/rando/CODE/CosimGym
-git status && git branch --show-current   # digitaltwin_interfaces; M1 files staged, not committed
-git log --oneline -5                       # 868fb6c, 3db608d, 626e03b on top of 38948b3 (main)
-git diff --staged --stat                   # M1's staged changes
+git status && git branch --show-current   # digitaltwin_interfaces; M2 files staged, not committed
+git log --oneline -5                       # b56fe1f, 868fb6c, 3db608d on top of 38948b3 (main)
+git diff --staged --stat                   # M2's staged changes
 
 conda activate cosim_gym
 docker compose -f src/docker-compose.yaml up -d   # redis, minio, mosquitto (host 11883)
@@ -124,22 +151,25 @@ docker compose -f src/docker-compose.yaml up -d   # redis, minio, mosquitto (hos
 python src/test_script.py
 OMP_NUM_THREADS=1 python src/test_script_rl.py
 
-# M1 check — live MQTT mirror while streaming.stream:true:
-mosquitto_sub -h localhost -p 11883 -t 'cosim/#' -C 8 -W 25 &
-PYTHONPATH=src python -c "from core.ScenarioManager import main; main('m1_stream_smoke_test')"
-# then: rm -rf results/m1_stream_smoke_test logs/m1_stream_smoke_test (gitignored, local hygiene only)
+# M2 check — bridge relays spring's position out to MQTT, paced to wall-clock:
+mosquitto_sub -h localhost -p 11883 -t 'cosim/m2_smoke/#' -C 6 -W 20 &
+PYTHONPATH=src python -c "from core.ScenarioManager import main; main('m2_interface_outbound_smoke_test')"
+# expect ~5-7s simulation_duration (paced) vs ~2.5s if unpaced; wall_time in the
+# captured messages should be ~1s apart.
+# then: rm -rf results/m2_interface_outbound_smoke_test logs/m2_interface_outbound_smoke_test (gitignored, local hygiene only)
 
 # Config parse-gate tests:
-python -m pytest tests/test_rl_config.py -v   # 62 passed, 1 skipped
+python -m pytest tests/test_rl_config.py -v   # 66 passed, 1 skipped
 ```
 
 ## One-line kickoff prompt for a fresh session
 
 > "Read `/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md`
 > and `docs/handoffs/digitaltwin_interfaces.md`. We're on branch
-> `digitaltwin_interfaces`. M0 is committed; M1 ('stream' flag outbound MQTT
-> mirror) is implemented and verified but staged, not committed — review and
-> commit it yourself first (see 'Staged, awaiting your commit' above), then
-> tell the agent to tick the M1 box and continue to M2 (Interface federate
-> outbound) exactly as scoped in the plan and in this handoff's 'Next step'.
-> Remember: the agent stages changes and never runs `git commit` — you do."
+> `digitaltwin_interfaces`. M0/M1 are committed; M2 (interface federate outbound
+> relay + realtime pacing) is implemented and verified but staged, not committed
+> — review and commit it yourself first (see 'Staged, awaiting your commit'
+> above), then tell the agent to tick the M2 box and continue to M3 (interface
+> federate inbound / INPUT injection) exactly as scoped in the plan and in this
+> handoff's 'Next step'. Remember: the agent stages changes and never runs
+> `git commit` — you do."

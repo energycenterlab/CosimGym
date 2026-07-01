@@ -64,6 +64,9 @@ class FedTimingConfig(BaseModel):
     time_offset: Optional[float] = 0.0
     int_max_iterations: Optional[int] = 10000
     time_offset_explicit: bool = False
+    # Realtime pacing tolerance (only meaningful with flags.realtime: true). None = HELICS default.
+    rt_lag: Optional[float] = None
+    rt_lead: Optional[float] = None
 
     @model_validator(mode='before')
     @classmethod
@@ -447,6 +450,8 @@ class StreamSpec(BaseModel):
 
     helics_key: str
     topic: str
+    type: str = "double"
+    units: str = ""
     every_n_ticks: int = 1
 
 

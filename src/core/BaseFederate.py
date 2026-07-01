@@ -208,7 +208,11 @@ class BaseFederate():
             h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_offset, offset)
             h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_delta, delta)
             # h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_stoptime, timing_configs.time_stop )
-            # h.helics_time_maxtime = timing_configs.time_stop 
+            # h.helics_time_maxtime = timing_configs.time_stop
+            if getattr(timing_configs, "rt_lag", None) is not None:
+                h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_rt_lag, float(timing_configs.rt_lag))
+            if getattr(timing_configs, "rt_lead", None) is not None:
+                h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_rt_lead, float(timing_configs.rt_lead))
 
             self.logger.debug(f'Setting federate timing configs: {pp.pformat(timing_configs)}')
         else:

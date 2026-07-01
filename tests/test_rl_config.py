@@ -30,6 +30,8 @@ from utils.config_dataclasses import (
     StreamingConfig,
     InterfaceConfig,
     InterfaceFederateConfig,
+    StreamSpec,
+    FedTimingConfig,
 )
 from utils.config_reader import read_scenario_config
 
@@ -241,3 +243,25 @@ class TestStreamingAndInterfaceConfig:
         })
         fed = cfg.federations["f"].federate_configs["dt_bridge"]
         assert isinstance(fed, InterfaceFederateConfig)
+
+
+# ── digitaltwin_interfaces plan (M2): StreamSpec type/units, rt_lag/rt_lead ──
+
+
+class TestInterfaceOutboundConfig:
+
+    def test_stream_spec_defaults(self):
+        s = StreamSpec.model_validate({"helics_key": "fed.0/x", "topic": "cosim/x"})
+        assert s.type == "double"
+        assert s.units == ""
+        assert s.every_n_ticks == 1
+
+    def test_timing_config_rt_lag_lead_default_none(self):
+        cfg = FedTimingConfig(real_period=1)
+        assert cfg.rt_lag is None
+        assert cfg.rt_lead is None
+
+    def test_timing_config_rt_lag_lead_explicit(self):
+        cfg = FedTimingConfig(real_period=1, rt_lag=1.0, rt_lead=2.0)
+        assert cfg.rt_lag == 1.0
+        assert cfg.rt_lead == 2.0
