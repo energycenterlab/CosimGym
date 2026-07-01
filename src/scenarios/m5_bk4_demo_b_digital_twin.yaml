@@ -1,0 +1,124 @@
+# M5 BK4 demo, side (b) — digital twin (digitaltwin_interfaces plan).
+# The ONLY change from m5_bk4_demo_a_full_sim.yaml is input_federate's block: `type: base` ->
+# `type: interface`, with `model_configs` replaced by `interface_config`. Its two `scope: input`
+# bridges register the SAME HELICS global publication keys the model federate used
+# (input_federate.0/force, input_federate.0/disturbance), fed from external MQTT ("real
+# sensor") values instead of a physics model. spring_federate below is byte-identical to (a) —
+# it does not know or care whether its input is simulated or real ("config-only sim-to-real",
+# BK4, docs/paper/BREAKTHROUGH_INNOVATIONS.md:79-92).
+#
+# Drive it with: python src/scenarios/bk4_demo_external_sensor.py
+
+version: "1.0.0"
+name: "m5_bk4_demo_b_digital_twin"
+scenario_description: M5 BK4 demo (b) — input_federate swapped for an interface federate bridging to an external MQTT sensor process.
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T00:00:20"
+log_level: INFO
+
+memory_config:
+  batch_size: 1000
+  attrs: ["position", "velocity", "force", "disturbance"]
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23498
+      federates: 2
+      log_level: INFO
+
+    federate_configs:
+      spring_federate:
+        name: "spring_federate"
+        type: "base"
+        log_level: INFO
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: true
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "force"
+              type: "double"
+              units: "N"
+              targets:
+                '0': [input_federate.0/force]
+            - key: "disturbance"
+              type: "double"
+              units: "N"
+              targets:
+                '0': [input_federate.0/disturbance]
+
+          publishes:
+            - key: "position"
+              type: "double"
+              units: "N"
+            - key: "velocity"
+              type: "double"
+              units: "N"
+
+        model_configs:
+          instantiation:
+            model_name: "spring_mass_damper"
+            n_instances: 1
+            prefix: "spring"
+            parallel_execution: false
+
+          parameters:
+            mass: 5
+            damping: 2.0
+            stiffness: 10.0
+
+          init_state:
+            force: 10.0
+            disturbance: 0.0
+            position: 0.0
+            velocity: 0.0
+
+          user_defined:
+            solver: "rk4"
+            integrator: "fixed-step"
+
+      input_federate:
+        name: "input_federate"
+        type: "interface"
+        log_level: INFO
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+          rt_lag: 1.0
+          rt_lead: 1.0
+
+        flags:
+          terminate_on_error: true
+          realtime: true
+
+        interface_config:
+          adapter:
+            name: mqtt_adapter
+            params:
+              client_id: input_federate_dt
+              host: localhost
+              port: 11883
+          bridges:
+            - helics_key: "input_federate.0/force"
+              topic: "cosim/bk4_demo/sensor/force"
+              bounds: [-20, 20]
+              scope: input
+              mode: replace
+            - helics_key: "input_federate.0/disturbance"
+              topic: "cosim/bk4_demo/sensor/disturbance"
+              bounds: [-5, 5]
+              scope: input
+              mode: replace

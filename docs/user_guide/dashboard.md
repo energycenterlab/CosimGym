@@ -28,3 +28,17 @@ Once running on `localhost:8501`, the interface provides several core panels:
 
 Because Streamlit binds dynamically to local disk folders, if you are running CosimGym on a remote AWS/SLURM cluster, ensure you forward port `8501` to your local machine:
 `ssh -L 8501:localhost:8501 target_host`
+
+## Live View (during a run)
+
+The panels above read `results/` files written **after** a run finishes. To watch data as it is
+produced, run the separate live dashboard, which subscribes to the Mosquitto broker instead of the
+filesystem:
+
+```bash
+./src/dashboard/run_live_dashboard.sh    # http://localhost:8053
+```
+
+It shows whatever is being published to `cosim/#` — any federate's `streaming.stream: true`
+telemetry, or an interface federate's `interface_config` bridges. See
+[Digital-Twin Interfaces & Live Streaming](digital_twin_interfaces.md) for the full picture.

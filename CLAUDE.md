@@ -66,6 +66,18 @@ Federates buffer timeseries in memory in `self.storage` (partitioned by `train`/
 
 When a scenario has more than one federation, `ScenarioManager` automatically inserts a hierarchy broker (`helics_broker --sub_brokers=N`) above the per-federation brokers and assigns TCP ports dynamically.
 
+### Digital-Twin Interfaces & Live Streaming (opt-in, off by default)
+
+Two MQTT-backed mechanisms (Mosquitto broker, `src/adapters/mqtt_adapter.py`, background thread — never blocks the sim) externalize data while a run is in progress. Full reference: `docs/user_guide/digital_twin_interfaces.md`.
+
+- **`streaming: { stream: true }`** on any `base`/`rl` federate (`StreamingConfig`) mirrors its inputs/outputs to MQTT each step (`<prefix>/<inputs|outputs>/<entity_id>/<var>`), alongside normal HELICS traffic. Purely for external observers/dashboards; changes nothing in the co-sim.
+- **`type: interface`** federate (`InterfaceFederate(BaseFederate)`, `InterfaceFederateConfig`, no physics model) relays its wired connections to/from the external world via `interface_config`:
+  - `adapter`: catalog-resolved transport (`mqtt_adapter`).
+  - `streams`: HELICS subscription → MQTT publish (co-sim → external).
+  - `bridges`: `scope: input` registers a normal HELICS global publication (`mode: replace` = external value only; `mode: passthrough` + `source_key` = real source until an external value arrives, then follows it). `scope: output`/`param` have no HELICS representation — the bridge instead writes bounds-clipped values into the Redis-backed `OverrideRegistry` (`src/core/override_registry.py`); a target federate opts in with `override_enabled: true` to substitute them in `_publish_outputs()`/`BaseModel.set_parameter()`. Clearing the external value restores computed behavior next step.
+- **BK4 pattern (config-only sim-to-real):** since a model federate and an interface federate register identical HELICS key names, swapping simulated hardware for real is a change to *one* federate's block (`type: base` → `type: interface`) — every subscriber is untouched. Demo pair: `src/scenarios/m5_bk4_demo_a_full_sim.yaml` / `m5_bk4_demo_b_digital_twin.yaml`.
+- **Live dashboard:** `./src/dashboard/run_live_dashboard.sh` (`src/dashboard/live_dashboard.py`) subscribes to `cosim/#` and shows both mechanisms' data as it's published — separate from the post-run `dashboard_app.py`.
+
 ## Config Reference
 
 Scenario YAML top-level keys:

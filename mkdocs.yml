@@ -30,6 +30,7 @@ nav:
     - Custom Models & Catalog: user_guide/custom_models.md
     - FMU Models: user_guide/fmu_models.md
     - Reinforcement Learning Integration: user_guide/rl_integration.md
+    - Digital-Twin Interfaces & Live Streaming: user_guide/digital_twin_interfaces.md
     - Dashboard & Analytics: user_guide/dashboard.md
     - Troubleshooting: user_guide/troubleshooting.md
   - Examples: 
