@@ -26,6 +26,7 @@ from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, Inter
 from models.model_catalog.RedisCatalog import RedisCatalog
 from utils.influxdb_client import InfluxClient
 from adapters.mqtt_adapter import MqttAdapter
+from core.override_registry import OverrideRegistry
 pp = pprint.PrettyPrinter(indent=4)
 
 # TODO make an abstract class for base federate and change the name of this one as simplefederate
@@ -79,6 +80,9 @@ class BaseFederate():
 
         # lazily created on first use only if config.streaming.stream is enabled
         self._stream_adapter = None
+
+        # lazily created on first use only if config.override_enabled is set (M4 digital-twin overrides)
+        self._override_registry = None
 
 
         # co.simualtion time management
@@ -428,6 +432,8 @@ class BaseFederate():
             self._apply_deferred_inputs()
             self._receive_inputs()
 
+            self._apply_param_overrides() # opt-in digital-twin PARAMETER override (config.override_enabled)
+
             # update models & do step & get outputs TODO manage multithreading for severla modle instances and intensive step methods
             if self.config.model_configs and self.config.model_configs.instantiation.parallel_execution:
             
@@ -728,13 +734,50 @@ class BaseFederate():
         '''
         Method to publish outputs to publications and endpoints. Thought to be overridden by special federates
         '''
-        
+
         for pub in self.pubs:
-            data = self.outputs[pub['entity_name']].get(pub['topic'].split('/')[-1], None)
+            entity_id = pub['entity_name']
+            var_name = pub['topic'].split('/')[-1]
+            data = self.outputs[entity_id].get(var_name, None)
+
+            if self.config.override_enabled:
+                override = self._get_output_override(entity_id, var_name)
+                if override is not None:
+                    data = override
+                    # Keep recorded/observed state consistent with what actually got
+                    # published — the digital-twin override IS this step's output.
+                    self.outputs[entity_id][var_name] = data
+
             # self.logger.debug(f" 3333 pub_entity_name:{pub['entity_name']} - pub_var_name: {pub['topic'].split('/')[-1]} - data to publish: {data}")
             if data is not None:
                 pub['pubid'].publish(data)
                 self.logger.debug(f"Published output on {pub['topic']}: {data}")
+
+    def _get_output_override(self, entity_id, var_name):
+        """Opt-in digital-twin OUTPUT override (M4) — None unless a bridge is
+        actively targeting this (entity, var) via the shared override registry."""
+        if self._override_registry is None:
+            self._override_registry = OverrideRegistry(logger=self.logger)
+        return self._override_registry.get_override(
+            'output', self.simulation_id, self.federation_name, self.name, entity_id, var_name
+        )
+
+    def _apply_param_overrides(self):
+        """Opt-in digital-twin PARAMETER override (M4) — applied before this
+        tick's model step so it takes effect immediately, like a real setpoint change."""
+        if not self.config.override_enabled:
+            return
+        if self._override_registry is None:
+            self._override_registry = OverrideRegistry(logger=self.logger)
+        for entity in self.entities:
+            entity_id = entity['id']
+            model = entity['object']
+            for param_name in model.state.parameters.keys():
+                value = self._override_registry.get_override(
+                    'param', self.simulation_id, self.federation_name, self.name, entity_id, param_name
+                )
+                if value is not None:
+                    model.set_parameter(param_name, value)
 
     def _publish_init_state(self):
         # TODO check that this is not fucking all the normal co-simulation

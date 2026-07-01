@@ -13,8 +13,16 @@ M3 adds inbound INPUT injection (external -> co-sim): `interface_config.bridges`
 entries with `scope: input` register a HELICS publication that mirrors the
 adapter's latest external value (bounds-clipped), for `mode: replace` (only the
 external value, once one has arrived) or `mode: passthrough` (falls back to a
-real HELICS source until an external value arrives). `scope: output`/`param`
-land in M4.
+real HELICS source until an external value arrives).
+M4 adds `scope: output`/`param` bridges: these have no HELICS representation
+(the target federate already computes that value/parameter itself), so instead
+this federate writes the bounds-clipped external value into the shared
+`core.override_registry.OverrideRegistry` (Redis-backed), keyed at the target
+(federation, federate, entity, var) parsed from `bridge.helics_key`. The target
+federate (any `BaseFederate` with `config.override_enabled: true`) substitutes
+it in `_publish_outputs()` (output) or `_apply_param_overrides()` (param).
+`mode` is moot for these scopes — absence of an override already means "use
+the computed value", so passthrough and replace behave identically.
 
 Author: Pietro Rando Mazzarino
 Email: pietro.randomazzarino@polito.it
@@ -27,6 +35,7 @@ from datetime import datetime
 import helics as h
 
 from core.BaseFederate import BaseFederate
+from core.override_registry import OverrideRegistry, parse_target
 from models.model_catalog.ModelCatalog import InterfaceType
 
 
@@ -36,6 +45,8 @@ class InterfaceFederate(BaseFederate):
     def _register_entities(self):
         # No physics model to instantiate — resolve the transport adapter instead,
         # via the same catalog dynamic-import mechanism used for physics models.
+        self._override_registry = None
+        self._override_bridges = []
         interface_config = self.config.interface_config
         if not interface_config:
             self._adapter = None
@@ -92,9 +103,13 @@ class InterfaceFederate(BaseFederate):
         inbound_topics = []
         for i, bridge in enumerate(interface_config.bridges):
             if bridge.scope != "input":
-                self.logger.info(
-                    f"Interface federate {self.name}: bridge '{bridge.helics_key}' scope "
-                    f"'{bridge.scope}' not yet supported (lands in M4); skipping."
+                # output/param scopes have no HELICS registration — routed via the
+                # override registry instead, handled in _publish_outputs().
+                self._override_bridges.append(bridge)
+                inbound_topics.append(bridge.topic)
+                self.logger.debug(
+                    f"Interface federate {self.name}: bridging '{bridge.topic}' -> "
+                    f"override target '{bridge.helics_key}' (scope={bridge.scope})"
                 )
                 continue
 
@@ -172,12 +187,53 @@ class InterfaceFederate(BaseFederate):
             pub['pubid'].publish(value)
             self.logger.debug(f"Interface federate {self.name}: published {value} onto '{bridge.helics_key}'")
 
+        self._publish_override_bridges()
+
+    def _publish_override_bridges(self):
+        """`scope: output`/`param` bridges: write (or clear) the shared override
+        registry so the target federate substitutes/restores each step."""
+        if not self._override_bridges:
+            return
+        if self._override_registry is None:
+            self._override_registry = OverrideRegistry(logger=self.logger)
+
+        for bridge in self._override_bridges:
+            federation, federate, entity, var = parse_target(bridge.helics_key, self.federation_name)
+            external = self._adapter.latest(bridge.topic) if self._adapter is not None else None
+
+            if external is None:
+                self._override_registry.clear_override(
+                    bridge.scope, self.simulation_id, federation, federate, entity, var
+                )
+                continue
+
+            value = external.get('value')
+            if value is None:
+                continue
+            if bridge.bounds is not None:
+                lo, hi = bridge.bounds
+                value = max(lo, min(hi, value))
+
+            self._override_registry.set_override(
+                bridge.scope, self.simulation_id, federation, federate, entity, var, value
+            )
+            self.logger.debug(
+                f"Interface federate {self.name}: {bridge.scope} override {value} -> "
+                f"{federation}.{federate}.{entity}/{var}"
+            )
+
     def update_storage(self):
         # No entities/model state to record. Left empty (rather than inherited)
         # so store_local_file() stays a no-op for this federate.
         pass
 
     def finalize(self):
+        if getattr(self, '_override_registry', None) is not None:
+            for bridge in self._override_bridges:
+                federation, federate, entity, var = parse_target(bridge.helics_key, self.federation_name)
+                self._override_registry.clear_override(
+                    bridge.scope, self.simulation_id, federation, federate, entity, var
+                )
         if getattr(self, '_adapter', None) is not None:
             self._adapter.close()
         super().finalize()

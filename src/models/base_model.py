@@ -222,13 +222,30 @@ class BaseModel(ABC):
     def _get_outputs(self) -> Dict[str, Any]:
         """
         Get output values from the model.
-        
+
         Returns:
             Dictionary containing the current model outputs
         """
         self.logger.debug(f"Getting outputs: {self.outputs}")
         return self.state.outputs
-        
+
+    def set_parameter(self, name: str, value: Any) -> None:
+        """
+        Override a live parameter value, clipped to the catalog's declared
+        min/max bounds. Unknown parameter names are ignored (logged).
+        Used by the digital-twin interface federate's PARAMETER override (M4).
+        """
+        spec = self.metadata.parameters.get(name) if self.metadata else None
+        if spec is None:
+            self.logger.warning(f"set_parameter: unknown parameter '{name}', ignoring")
+            return
+        if spec.min_value is not None and value < spec.min_value:
+            value = spec.min_value
+        if spec.max_value is not None and value > spec.max_value:
+            value = spec.max_value
+        self.state.parameters[name] = value
+
+
     def reset(self, mode='full', ts= None, time=None) -> None:
         """
         Reset the model to its initial state.

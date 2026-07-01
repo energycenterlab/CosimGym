@@ -33,6 +33,7 @@ from utils.config_dataclasses import (
     StreamSpec,
     FedTimingConfig,
     BridgeSpec,
+    BaseFederateConfig,
 )
 from utils.config_reader import read_scenario_config
 
@@ -291,3 +292,50 @@ class TestInterfaceInboundConfig:
             "mode": "passthrough", "source_key": "input_federate.0/force",
         })
         assert b.source_key == "input_federate.0/force"
+
+
+# ── digitaltwin_interfaces plan (M4): override_enabled, output/param bridges, registry parsing ──
+
+
+class TestInterfaceOverrideConfig:
+
+    def test_override_enabled_default_false(self):
+        cfg = BaseFederateConfig.model_validate({
+            "name": "f", "id": "fed_f", "type": "base",
+            "timing_configs": {"real_period": 1},
+            "model_configs": {"instantiation": {"model_name": "spring_mass_damper"}},
+            "memory_config": {},
+        })
+        assert cfg.override_enabled is False
+
+    def test_bridge_spec_output_scope_passthrough_no_source_key_needed(self):
+        # Only scope 'input' requires source_key for passthrough (M4 relaxation).
+        b = BridgeSpec.model_validate({
+            "helics_key": "spring_federate.0/velocity", "topic": "cosim/x",
+            "scope": "output", "mode": "passthrough",
+        })
+        assert b.source_key is None
+
+    def test_bridge_spec_param_scope_ok(self):
+        b = BridgeSpec.model_validate({
+            "helics_key": "spring_federate.0/damping", "topic": "cosim/x",
+            "scope": "param", "bounds": [0.0, 10.0],
+        })
+        assert b.scope == "param"
+        assert b.bounds == (0.0, 10.0)
+
+    def test_parse_target_same_federation_reconstructs_entity_id(self):
+        from core.override_registry import parse_target
+        federation, federate, entity, var = parse_target("spring_federate.0/velocity", "federation_1")
+        assert federation == "federation_1"
+        assert federate == "spring_federate"
+        assert entity == "spring_federate.0"  # NOT "0" — matches BaseFederate's entity id convention
+        assert var == "velocity"
+
+    def test_parse_target_cross_federation(self):
+        from core.override_registry import parse_target
+        federation, federate, entity, var = parse_target("plant.spring_federate.0/velocity", "ignored")
+        assert federation == "plant"
+        assert federate == "spring_federate"
+        assert entity == "spring_federate.0"
+        assert var == "velocity"

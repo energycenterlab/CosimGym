@@ -477,8 +477,10 @@ class BridgeSpec(BaseModel):
 
     @model_validator(mode='after')
     def _check_passthrough_source(self) -> 'BridgeSpec':
-        if self.mode == "passthrough" and not self.source_key:
-            raise ValueError("bridge mode 'passthrough' requires 'source_key'")
+        # Only scope 'input' has a live HELICS value to fall back to; output/param
+        # overrides have no "real source" — absence of an override IS the fallback.
+        if self.mode == "passthrough" and self.scope == "input" and not self.source_key:
+            raise ValueError("bridge mode 'passthrough' with scope 'input' requires 'source_key'")
         return self
 
 
@@ -512,6 +514,9 @@ class _FederateConfigBase(BaseModel):
     reset_observation_defaults: Optional[Dict[str, Any]] = None
     rl_task: Optional[ReinforcementLearningConfig] = None
     streaming: StreamingConfig = Field(default_factory=StreamingConfig)
+    # Opt-in: allow an interface federate's `bridges[scope: output|param]` to override this
+    # federate's computed outputs/parameters (M4). False = zero override-registry lookups.
+    override_enabled: bool = False
 
 
 class BaseFederateConfig(_FederateConfigBase):
