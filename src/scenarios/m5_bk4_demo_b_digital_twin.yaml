@@ -6,6 +6,8 @@
 # sensor") values instead of a physics model. spring_federate below is byte-identical to (a) —
 # it does not know or care whether its input is simulated or real ("config-only sim-to-real",
 # BK4, docs/paper/BREAKTHROUGH_INNOVATIONS.md:79-92).
+# spring_federate also has `streaming.stream: true` (same as in (a)), mirroring its own I/O
+# to MQTT so the live dashboard shows the co-sim side alongside the sensor bridge topics.
 #
 # Drive it with: python src/scenarios/bk4_demo_external_sensor.py
 
@@ -43,6 +45,10 @@ federations:
         flags:
           terminate_on_error: true
           wait_for_current_time_update: true
+
+        streaming:
+          stream: true
+          stream_topic_prefix: "cosim/bk4_demo/spring"
 
         connections:
           endpoints: []

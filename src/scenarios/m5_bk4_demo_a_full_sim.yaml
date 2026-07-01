@@ -3,6 +3,9 @@
 # randomized disturbance). Compare against m5_bk4_demo_b_digital_twin.yaml, where only
 # input_federate's block changes (type: base -> type: interface) — spring_federate's YAML
 # below is byte-identical between the two files, demonstrating the BK4 config-only swap.
+# spring_federate also has `streaming.stream: true`, so its own I/O is mirrored to MQTT
+# (cosim/bk4_demo/spring/...) too -- watch it live with src/dashboard/run_live_dashboard.sh
+# alongside the interface federate's sensor bridge topics.
 
 version: "1.0.0"
 name: "m5_bk4_demo_a_full_sim"
@@ -38,6 +41,10 @@ federations:
         flags:
           terminate_on_error: true
           wait_for_current_time_update: true
+
+        streaming:
+          stream: true
+          stream_topic_prefix: "cosim/bk4_demo/spring"
 
         connections:
           endpoints: []
