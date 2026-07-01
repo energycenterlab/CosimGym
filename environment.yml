@@ -17,6 +17,7 @@ dependencies:
   - pandas
   - matplotlib
   - scipy
+  - pyarrow>=14.0.0
   
   # Pip packages (faster resolution and better for high-level packages)
   - pip:

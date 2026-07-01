@@ -26,6 +26,7 @@ from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, Inter
 from models.model_catalog.RedisCatalog import RedisCatalog
 from utils.influxdb_client import InfluxClient
 from utils.async_storage import AsyncStorageWriter
+from utils.parquet_storage import ParquetStorageWriter
 pp = pprint.PrettyPrinter(indent=4)
 
 # TODO make an abstract class for base federate and change the name of this one as simplefederate
@@ -76,8 +77,8 @@ class BaseFederate():
                         'params':{},
                         'time':[]}
         self.batch_size = self.config.memory_config.batch_size
-        self._async_storage_writer = None  # lazily created only when memory_config.sink == 'parquet' (S1)
-        self._async_rows_flushed = 0
+        self._async_storage_writer = None  # lazily created only when memory_config.sink == 'parquet'
+        self._parquet_storage_writer = None
 
 
         # co.simualtion time management
@@ -457,9 +458,16 @@ class BaseFederate():
 
         # flush remaining storage at the end of the simulation
         if self._async_storage_writer is not None:
-            self._async_storage_writer.close()  # drain remaining queued rows before proceeding (no data loss)
+            self._async_storage_writer.close()  # drain remaining queued rows first (no data loss)
+            self._parquet_storage_writer.close()  # finalize (close) the per-mode Parquet file(s)
         self.store_local_file() # TODO store the local file with the storage data, this is for testing purpose and will be substituted by the flushing to the database8
-               
+
+    def _results_base_dir(self) -> str:
+        scenario_name = self.simulation_id[:-16]
+        sim_id = self.simulation_id[-15:]
+        repo_root = Path(__file__).resolve().parents[2]
+        return os.path.join(str(repo_root / "results"), scenario_name, sim_id, self.federation_name)
+
     def store_local_file(self):
         '''Store each mode partition as a separate JSON file (train / test).
         Will be substituted by flushing to database in the future.'''
@@ -468,18 +476,12 @@ class BaseFederate():
             self.logger.info("memory_config.sink='none' — skipping local file storage")
             return
         if sink == 'parquet':
-            raise NotImplementedError(
-                "memory_config.sink='parquet' is not implemented yet (nonblocking_storage "
-                "plan, milestone S2) — use 'json' (default) or 'none' for now."
-            )
+            # Already written incrementally: update_storage() -> AsyncStorageWriter (S1) ->
+            # ParquetStorageWriter.on_batch (S2), finalized in run() just before this call.
+            self.logger.info("memory_config.sink='parquet' — storage already flushed via ParquetStorageWriter")
+            return
         import json
-        scenario_name = self.simulation_id[:-16]
-        sim_id = self.simulation_id[-15:]
-        repo_root = Path(__file__).resolve().parents[2]
-        base_dir = os.path.join(
-            str(repo_root / "results"),
-            scenario_name, sim_id, self.federation_name,
-        )
+        base_dir = self._results_base_dir()
         os.makedirs(base_dir, exist_ok=True)
 
         for mode_key, partition in self.storage.items():
@@ -806,24 +808,23 @@ class BaseFederate():
 
     def _enqueue_async_storage_row(self, row: dict) -> None:
         """Hands a per-tick row snapshot to the background AsyncStorageWriter
-        (S1 plumbing). The batch callback doesn't write Parquet yet — that's
-        S2 — it only counts/logs, proving rows flow through the queue and
-        drain thread without blocking or being lost."""
+        (S1), which batches rows and hands each batch to a ParquetStorageWriter
+        (S2) that flattens them into the dashboard's tidy schema and writes
+        them incrementally to `results/.../<federate>_<mode>_storage.parquet`."""
         if self._async_storage_writer is None:
+            self._parquet_storage_writer = ParquetStorageWriter(
+                base_dir=self._results_base_dir(),
+                federate_name=self.name,
+                federation_name=self.federation_name,
+                logger=self.logger,
+            )
             self._async_storage_writer = AsyncStorageWriter(
                 batch_size=self.config.memory_config.batch_size,
-                on_batch=self._on_storage_batch,
+                on_batch=self._parquet_storage_writer.on_batch,
                 logger=self.logger,
             )
             self._async_storage_writer.start()
         self._async_storage_writer.enqueue(row)
-
-    def _on_storage_batch(self, batch: list) -> None:
-        self._async_rows_flushed += len(batch)
-        self.logger.debug(
-            f"AsyncStorageWriter: flushed batch of {len(batch)} rows "
-            f"(total {self._async_rows_flushed}) — pyarrow write not implemented yet (S2)"
-        )
 
     def flush_storage(self):
         # TODO implement the flushing of the storage to the database, this method can be called at the end of the simulation or during the simulation if the batch size is reached to avoid storing too much data in memory
