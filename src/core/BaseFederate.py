@@ -25,6 +25,7 @@ from utils.config_dataclasses import FederateConfig, StartupSyncConfig
 from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, InterfaceType
 from models.model_catalog.RedisCatalog import RedisCatalog
 from utils.influxdb_client import InfluxClient
+from utils.async_storage import AsyncStorageWriter
 pp = pprint.PrettyPrinter(indent=4)
 
 # TODO make an abstract class for base federate and change the name of this one as simplefederate
@@ -75,6 +76,8 @@ class BaseFederate():
                         'params':{},
                         'time':[]}
         self.batch_size = self.config.memory_config.batch_size
+        self._async_storage_writer = None  # lazily created only when memory_config.sink == 'parquet' (S1)
+        self._async_rows_flushed = 0
 
 
         # co.simualtion time management
@@ -453,6 +456,8 @@ class BaseFederate():
             #     self.flush_storage()
 
         # flush remaining storage at the end of the simulation
+        if self._async_storage_writer is not None:
+            self._async_storage_writer.close()  # drain remaining queued rows before proceeding (no data loss)
         self.store_local_file() # TODO store the local file with the storage data, this is for testing purpose and will be substituted by the flushing to the database8
                
     def store_local_file(self):
@@ -772,15 +777,53 @@ class BaseFederate():
         partition = self.storage.get(mode, self.storage['test'])
 
         partition['time'].append(self.date_time)
+        row = None
+        if self.config.memory_config.sink == 'parquet':
+            row = {'ts': self.ts, 'time': self.date_time, 'mode': mode,
+                   'inputs': {}, 'outputs': {}, 'params': {}}
+
         for entity in self.entities:
             entity_id = entity['id']
             model = entity['object']
             for var_name in partition['inputs'].get(entity_id, {}).keys():
-                partition['inputs'][entity_id][var_name].append(self.inputs[entity_id].get(var_name, None))
+                value = self.inputs[entity_id].get(var_name, None)
+                partition['inputs'][entity_id][var_name].append(value)
+                if row is not None:
+                    row['inputs'].setdefault(entity_id, {})[var_name] = value
             for var_name in partition['outputs'].get(entity_id, {}).keys():
-                partition['outputs'][entity_id][var_name].append(self.outputs[entity_id].get(var_name, None))
+                value = self.outputs[entity_id].get(var_name, None)
+                partition['outputs'][entity_id][var_name].append(value)
+                if row is not None:
+                    row['outputs'].setdefault(entity_id, {})[var_name] = value
             for var_name in partition['params'].get(entity_id, {}).keys():
-                partition['params'][entity_id][var_name].append(model.state.parameters.get(var_name, None))
+                value = model.state.parameters.get(var_name, None)
+                partition['params'][entity_id][var_name].append(value)
+                if row is not None:
+                    row['params'].setdefault(entity_id, {})[var_name] = value
+
+        if row is not None:
+            self._enqueue_async_storage_row(row)
+
+    def _enqueue_async_storage_row(self, row: dict) -> None:
+        """Hands a per-tick row snapshot to the background AsyncStorageWriter
+        (S1 plumbing). The batch callback doesn't write Parquet yet — that's
+        S2 — it only counts/logs, proving rows flow through the queue and
+        drain thread without blocking or being lost."""
+        if self._async_storage_writer is None:
+            self._async_storage_writer = AsyncStorageWriter(
+                batch_size=self.config.memory_config.batch_size,
+                on_batch=self._on_storage_batch,
+                logger=self.logger,
+            )
+            self._async_storage_writer.start()
+        self._async_storage_writer.enqueue(row)
+
+    def _on_storage_batch(self, batch: list) -> None:
+        self._async_rows_flushed += len(batch)
+        self.logger.debug(
+            f"AsyncStorageWriter: flushed batch of {len(batch)} rows "
+            f"(total {self._async_rows_flushed}) — pyarrow write not implemented yet (S2)"
+        )
 
     def flush_storage(self):
         # TODO implement the flushing of the storage to the database, this method can be called at the end of the simulation or during the simulation if the batch size is reached to avoid storing too much data in memory

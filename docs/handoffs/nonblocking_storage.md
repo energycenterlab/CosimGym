@@ -9,137 +9,167 @@
 
 ## Last committed milestone
 
-None yet — this is the first session on this branch. Branch point: `main`
-`38948b3`.
+**S0 — `sink` field on `MemoryConfig`** ✅ ticked. Commit: `9f63cad`.
 
-## Staged, awaiting your commit: S0 — `sink` field on `MemoryConfig`
+## Staged, awaiting your commit: S1 — background writer thread + bounded queue
 
-- **`src/utils/config_dataclasses.py`** — `MemoryConfig` gets a new
-  `sink: Literal['json', 'parquet', 'none'] = 'json'` field. Default `'json'`
-  = today's behavior, unchanged.
-- **`src/core/BaseFederate.py`** (`store_local_file`) and
-  **`src/core/RL_Federate.py`** (its own separate `store_local_file`
-  override — `RL_Federate` doesn't call `super()` here, so both needed the
-  same guard) now branch on `self.config.memory_config.sink`:
-  - `'json'` (default): existing behavior, byte-for-byte unchanged.
-  - `'none'`: skips writing the per-federate JSON file entirely (logs an
-    info line instead) — free to add now since it needs no new writer.
-  - `'parquet'`: raises a clear `NotImplementedError` pointing at S2, rather
-    than silently falling back to JSON or doing nothing. Deliberate: nobody
-    should think they got Parquet output when the writer doesn't exist yet.
-- **`tests/test_rl_config.py`** — new `TestMemoryConfigSink` (4 tests):
-  default `'json'`, explicit `'parquet'`/`'none'` accepted, invalid value
-  (`'csv'`) rejected.
+- **New `src/utils/async_storage.py`** — `AsyncStorageWriter`: one background
+  drain thread + a `queue.Queue`, batching rows by `batch_size` before
+  calling a pluggable `on_batch(batch)` callback. **Deliberately does not
+  write Parquet** — that callback is a placeholder until S2 wires pyarrow;
+  this class only owns the thread/queue/batching mechanics (S1's scope).
+  Key design choice, called out in the module docstring: unlike Plan 1's MQTT
+  outbound queue (telemetry, drop-oldest is fine), `enqueue()` **blocks**
+  under backpressure instead of dropping — losing a result row would be a
+  correctness bug, not a UX nuisance. `close()` flushes any trailing partial
+  batch and joins the thread, so nothing is lost at shutdown.
+- **`src/core/BaseFederate.py`**:
+  - `__init__`: `self._async_storage_writer = None`, `self._async_rows_flushed = 0`.
+  - `update_storage()`: when `self.config.memory_config.sink == 'parquet'`,
+    builds a per-tick row snapshot (`{ts, time, mode, inputs, outputs, params}`,
+    nested by entity — a simple placeholder shape; S2 will decide the actual
+    flat/columnar schema when it designs the pyarrow write) **alongside** the
+    existing in-memory `self.storage` append (unchanged for `sink: json`),
+    and hands it to `_enqueue_async_storage_row()`, which lazily creates and
+    starts the writer on first use.
+  - `_on_storage_batch(batch)`: S1's placeholder consumer — just counts and
+    logs (`AsyncStorageWriter: flushed batch of N rows (total M) — pyarrow
+    write not implemented yet (S2)`). No file I/O yet.
+  - `run()`: closes the async writer (flushing any remainder) **before**
+    calling `store_local_file()` — so by the time `store_local_file` raises
+    its `NotImplementedError` for `sink: parquet` (unchanged from S0), every
+    row from the run has already been drained through the queue with zero
+    loss. The external contract (parquet still hard-fails at run's end) is
+    intentionally **unchanged** — S1 only proves the plumbing underneath it.
+  - **`RL_Federate.update_storage`/`run` were NOT wired in this milestone** —
+    its storage partition schema (observations/actions/rewards/episodes) is
+    structurally different from `BaseFederate`'s (inputs/outputs/params), so
+    it needs its own row-builder design rather than reusing this one as-is.
+    Deferred to when S2 designs the actual Parquet schema (a natural point to
+    decide both federate types' row shapes together) — flagged here so it
+    isn't forgotten, not because it's out of scope for Plan 2 overall.
+- **New `tests/test_async_storage.py`** (6 tests, isolated — no HELICS):
+  batching triggers at `batch_size`; zero data loss across 1000 rapid
+  enqueues; `close()` flushes a trailing partial batch; `close()` is
+  idempotent; producer isn't meaningfully slowed by the drain thread; an
+  exception inside `on_batch` is logged but doesn't kill the drain thread
+  (subsequent batches still process).
 
 **Verified:**
-- Config gate: `pytest tests/test_rl_config.py -q` → 58 passed, 1 skipped
-  (this branch is off `main`, before Plan 1's scenario/test additions — don't
-  be surprised the count differs from `digitaltwin_interfaces`' 78).
-- Regression: `python src/test_script.py` (green, `dh_district_jan_base`,
-  4 federates) and `OMP_NUM_THREADS=1 python src/test_script_rl.py` (green,
-  `bui0_heatingpower_DQN`, 3 brokers/3 federates) — both use the default
-  `sink: json` implicitly, confirming zero behavior change.
-- **Runtime plumbing smoke test** (not just the pydantic schema): a scratch
-  scenario (`spring_mass_damper`, single federate, 10 ticks) run three times
-  with `memory_config.sink` set to each of the three values:
-  - `'json'` (implicit default): unchanged.
-  - `'none'`: `results/<scenario>/<sim_id>/federation_1/` has `metadata.json`
-    (written by `ScenarioManager`, unaffected) but **no**
-    `spring_federate_test_storage.json` — the federate's own log shows
-    `"memory_config.sink='none' — skipping local file storage"`.
-  - `'parquet'`: the federate subprocess raises the `NotImplementedError`
-    exactly as designed — confirmed in the federate's `.log` file (full
-    traceback rooted at `BaseFederate.store_local_file`), which the manager
-    correctly reports as `✗ Federate failed with code 1`. This is the
-    intended "fail loud, not silent" behavior for an unimplemented sink.
+- `pytest tests/test_async_storage.py -v` → 6 passed.
+- `pytest tests/test_rl_config.py -q` → 58 passed, 1 skipped (unaffected —
+  no config schema changes this milestone).
+- Regression: `python src/test_script.py` green (`sink: json` default path,
+  byte-for-byte unaffected by the new `parquet`-only code path).
+- **Runtime integration check**: scratch scenario (`spring_mass_damper`,
+  single federate, 30 ticks, `memory_config: {sink: parquet, batch_size: 7}`).
+  Federate log shows 4 full batches of 7 + one trailing batch of 2 via
+  `close()` = **30 rows total, exactly matching the 30 ticks — zero loss**.
+  The run still ends with the same `NotImplementedError` from `store_local_file`
+  as it did before this milestone (S0's contract, unchanged), confirmed via
+  the federate's `.log` traceback.
 
-**Your action:** review the staged diff, commit (e.g. `feat(storage): S0 add
-memory_config.sink field (json default unchanged, none, parquet stub)`),
-then say continue — I'll tick S0 and move to S1.
+**Your action:** review the staged diff, commit (e.g. `feat(storage): S1
+background writer thread + bounded queue fed from update_storage`), then say
+continue — I'll tick S1 and move to S2.
 
-## Next step (after you commit S0)
+## Next step (after you commit S1)
 
-**S1 — Background writer thread + bounded queue fed from `update_storage`.**
-Per the plan's Design section: the producer is the existing per-step
-`update_storage` hook (`BaseFederate.py:761`, called each tick from `run()`);
-it should enqueue rows onto a bounded in-process `queue.Queue` instead of (or
-alongside) the current in-memory list appends, and a background thread drains
-the queue. S1 itself doesn't need to write Parquet yet (that's S2) — it
-just needs the threading/queueing plumbing in place, verified not to disturb
-`sink: json`'s behavior (which should probably keep using the direct
-in-memory `self.storage` path, since S1/S2 are additive for `sink: parquet`
-specifically, not a replacement of the JSON path). Re-read the plan's
-"Design" and "Locked decisions" subsections under Plan 2 before starting —
-the rationale for one-thread-per-federate + in-process queue (not a
-separate process, to avoid pickling cost) is spelled out there.
+**S2 — Parquet sink via pyarrow (batched), same `results/` layout.** Wire a
+real pyarrow writer as the `on_batch` callback passed into
+`AsyncStorageWriter` (replacing/extending `_on_storage_batch`'s placeholder
+in `BaseFederate`), writing to
+`results/<scenario>/<sim_id>/<federation>/<federate>_<mode>_storage.parquet`
+(or `.parquet`-per-batch files merged, or an Arrow dataset — this is the
+actual design decision S2 needs to make; the plan says "same `results/`
+layout used today" and notes `dashboard_parquet_cache.py` is "already
+Parquet-based," worth reading first to align schemas). Concretely:
+1. Decide the on-disk row/column schema (the current S1 row shape is nested
+   by entity — flatten it however's most convenient for pyarrow + the
+   dashboard reader).
+2. Replace `store_local_file`'s `NotImplementedError` for `sink == 'parquet'`
+   with the real write path (probably: nothing to do there anymore, since
+   the async writer already wrote everything incrementally via `on_batch` —
+   `store_local_file` for `sink: parquet` should become close to a no-op,
+   maybe just closing out any final metadata).
+3. Also wire `RL_Federate` (see the note above — deferred from S1 for this
+   exact reason).
+4. Verify the dashboard renders `sink: parquet` results identically to
+   `sink: json` ones for the same scenario.
 
-First concrete action: read `BaseFederate.update_storage` (`BaseFederate.py:761`)
-and decide where a `sink == 'parquet'` branch would enqueue a row without
-touching the `sink == 'json'` code path at all.
+First concrete action: read `src/dashboard/dashboard_parquet_cache.py` to see
+the Parquet schema/layout it already expects, so S2's writer produces
+directly-compatible files rather than needing a translation step.
 
-## Files touched so far (S0)
+## Files touched so far
 
-**Modified:** `src/utils/config_dataclasses.py`, `src/core/BaseFederate.py`,
-`src/core/RL_Federate.py`, `tests/test_rl_config.py`.
-**New:** none yet.
+**S0 (committed `9f63cad`):** `src/utils/config_dataclasses.py`,
+`src/core/BaseFederate.py`, `src/core/RL_Federate.py`, `tests/test_rl_config.py`.
+**S1 (staged):** `src/core/BaseFederate.py` (further changes), new
+`src/utils/async_storage.py`, new `tests/test_async_storage.py`.
 
 ## State of the tree
 
-On `nonblocking_storage`, 0 commits ahead of `main` (`38948b3`) — S0's
-changes are `git add`ed but **uncommitted**, waiting on you.
+On `nonblocking_storage`, 1 commit ahead of `main` (`9f63cad`). S1's changes
+are `git add`ed but **uncommitted**, waiting on you.
 
 ## Blockers / deviations from the plan
 
-1. **`RL_Federate.store_local_file` is a full override, not a `super()` call**
-   — had to duplicate the `sink` guard there rather than putting it in one
-   place. If S1/S2 need more logic here, consider whether it's worth
-   refactoring the common part into a shared helper at that point (not done
-   now — S0 is schema + minimal plumbing only, avoid scope creep).
-2. **`memory_config.sink='parquet'` currently hard-fails** (`NotImplementedError`)
-   rather than silently doing nothing or falling back to JSON. This is a
-   deliberate choice, not a bug — revisit only if S2 wants a softer rollout
-   path (e.g. a warning + JSON fallback while Parquet is being rolled out
-   incrementally across scenarios).
-3. **This branch does not include Plan 1's `digitaltwin_interfaces` work**
-   (not merged into `main` yet) — the two plans are intentionally decoupled,
-   per the plan file. `MemoryConfig` here has no `streaming`/`interface_config`
-   siblings; don't expect them.
+1. **`RL_Federate` async wiring deferred to S2** (see above) — its storage
+   schema differs enough from `BaseFederate`'s that reusing S1's row-builder
+   as-is would be the wrong shape; better decided alongside S2's actual
+   Parquet schema design.
+2. **`memory_config.sink='parquet'` still hard-fails** at the very end of a
+   run (`store_local_file`'s `NotImplementedError`, unchanged from S0) even
+   though S1 now silently drains and counts every row underneath that. This
+   is intentional — the external contract (no working Parquet output yet)
+   hasn't changed, only the internal plumbing feeding the eventual writer.
+3. **S1's row shape is a placeholder** (`{ts, time, mode, inputs: {entity:
+   {var: value}}, outputs: {...}, params: {...}}`) — nested by entity, not
+   flattened to columns. S2 should feel free to redesign this entirely when
+   it builds the real pyarrow schema; nothing downstream depends on this
+   shape yet (the `on_batch` callback is the only consumer, and it's a
+   throwaway counter/logger in S1).
+4. **This branch does not include Plan 1's `digitaltwin_interfaces` work**
+   (not merged into `main`) — the two plans are intentionally decoupled.
 
 ## How to verify current state
 
 ```bash
 cd /media/space/rando/CODE/CosimGym
-git status && git branch --show-current   # nonblocking_storage; S0 staged, not committed
-git log --oneline -3                       # 38948b3 (main) at HEAD, no new commits yet
-git diff --staged --stat                   # S0's staged changes
+git status && git branch --show-current   # nonblocking_storage; S1 staged, not committed
+git log --oneline -3                       # 9f63cad (S0) on top of 38948b3 (main)
+git diff --staged --stat                   # S1's staged changes
 
 conda activate cosim_gym
 docker compose -f src/docker-compose.yaml up -d   # redis, minio (no mosquitto on this branch)
 
-# Regression — must match main behavior exactly (sink defaults to json):
+# Unit tests for the new plumbing (fast, no HELICS):
+python -m pytest tests/test_async_storage.py -v   # 6 passed
+
+# Config gate + regression — must be unaffected (sink defaults to json):
+python -m pytest tests/test_rl_config.py -q       # 58 passed, 1 skipped
 python src/test_script.py
 OMP_NUM_THREADS=1 python src/test_script_rl.py
 
-# Config gate:
-python -m pytest tests/test_rl_config.py -v   # 58 passed, 1 skipped
-
-# Runtime plumbing check (sink=none / sink=parquet) — build a tiny scratch
-# scenario (see any src/scenarios/*.yaml for the spring_mass_damper shape),
-# set memory_config.sink accordingly, and run it via:
+# Runtime integration check (sink: parquet) — build a small scratch scenario
+# (spring_mass_damper, single federate) with memory_config: {sink: parquet,
+# batch_size: <small>}, then:
 PYTHONPATH=src python -c "from core.ScenarioManager import main; main('/absolute/path/to/scratch.yaml')"
-# sink: none  -> no <federate>_<mode>_storage.json written, federate log says so
-# sink: parquet -> federate subprocess raises NotImplementedError (by design, S2 not built yet)
+# check the federate's .log: batches should sum to exactly the tick count
+# (zero loss), and the run should still end with the same NotImplementedError
+# as S0 (external contract unchanged).
 ```
 
 ## One-line kickoff prompt for a fresh session
 
 > "Read `/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md`
 > (Plan 2 section) and `docs/handoffs/nonblocking_storage.md`. We're on branch
-> `nonblocking_storage` (off `main`, independent of `digitaltwin_interfaces`).
-> S0 (`sink` field on `MemoryConfig`) is implemented and verified but staged,
-> not committed — review and commit it yourself first, then tell the agent
-> to tick S0 and continue to S1 (background writer thread + bounded queue).
-> Follow the per-milestone loop: implement, run the milestone's check +
-> regression tests, stage (don't commit), update the handoff doc, then stop
-> and wait for the user's commit + 'continue' signal before ticking the box
-> and starting S2."
+> `nonblocking_storage`. S0 and S1 are implemented; S1 (background writer
+> thread + bounded queue, `src/utils/async_storage.py`) is staged, not
+> committed — review and commit it yourself first, then tell the agent to
+> tick S1 and continue to S2 (real Parquet writer via pyarrow, replacing S1's
+> placeholder `on_batch` counter). Follow the per-milestone loop: implement,
+> run the milestone's check + regression tests, stage (don't commit), update
+> the handoff doc, then stop and wait for the user's commit + 'continue'
+> signal before ticking the box and starting S3."
