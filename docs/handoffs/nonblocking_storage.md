@@ -33,6 +33,66 @@ existing per-federate results pipeline:
   canonical `sink` reference; federate.md, dashboard.md, running_scenarios.md
   cross-reference it).
 
+## Benchmark: json vs parquet sink (stress test, pre-merge)
+
+Before merging to `main`, ran a stress comparison: `stress_multi_building_json`
+/ `stress_multi_building_parquet` (twins of `multi_building_grid_test`, 50
+`rc_building` instances across 5 federates + weather + grid, extended to a
+full year hourly = 8760 ticks, `attrs: "all"`). 2 runs each, on this machine
+(local SSD, no contention).
+
+**Two real bugs surfaced by the stress test, fixed in this pass:**
+
+1. **`update_storage()` grew the JSON-shaped `self.storage` partitions every
+   tick regardless of `sink`** (`BaseFederate.py`, now fixed) — `sink:
+   parquet` was building the row dict for the async writer *in addition to*
+   the legacy per-instance/per-var Python lists, which were never read
+   (`store_local_file()` no-ops for parquet) but never stopped growing
+   either. Fixed: JSON partitions are now only populated when
+   `sink != 'parquet'`.
+2. **`AsyncStorageWriter`'s queue was unbounded in production** — the class
+   supports a `maxsize` bound (and its own docstring says storage rows
+   "block under backpressure... the queue bound protects memory"), but
+   `BaseFederate._enqueue_async_storage_row()` never passed one, so the
+   queue was always `maxsize=0` (infinite) — the bound existed in code but
+   was never wired up. Fixed: now bounded to `batch_size * 3`.
+
+**Results (after both fixes):**
+
+| Metric | json sink | parquet sink | Notes |
+|---|---|---|---|
+| `simulation_duration` (8760 ticks) | 246.7s / 248.7s | 252.7s / 246.7s | No meaningful difference — dominated by HELICS/pandapower stepping, not storage I/O, at this scale. |
+| Peak RSS — each `building_federate_N` (10 instances) | ~113–115 MB | ~178–185 MB | Parquet is **higher**, not lower. |
+| Peak RSS — `grid_federate` / `weather_federate` | ~265–338 MB | ~278–352 MB | Roughly flat between sinks — dominated by pandapower/pandas baseline overhead, not timeseries storage. |
+| Result dir size on disk | 30.34 MB | 11.11 MB | Parquet's columnar+compressed long format is ~2.7x smaller than the JSON dump, as expected. |
+
+**Why parquet's per-federate RSS didn't drop after fix #2:** re-ran twice
+after bounding the queue (`maxsize=batch_size*3`) — peak RSS barely moved
+(182.5→181.5→180.2→183.3 MB across repeats), which rules out an unbounded
+Python-side backlog as the dominant cause (that hypothesis predicted a much
+larger drop once bounded). The remaining ~65-70MB gap vs. json is most
+likely **pyarrow's own C++ memory-pool overhead** (arena allocation that
+isn't necessarily released back to the OS between batches) rather than
+data actually held live in Python — i.e. a fixed cost of depending on
+pyarrow at all, not something that scales with instance/tick count. Fix #2
+is still worth keeping (it's a real correctness gap vs. the documented
+design — without it, a writer thread that falls badly behind under a much
+heavier workload than this one *would* backlog unboundedly), just not the
+explanation for what this particular benchmark measured.
+
+**Bottom line for the merge decision:**
+- **Benefit of `sink: parquet`, confirmed:** non-blocking incremental writes
+  (no single large blocking `json.dump` at run end), ~2.7x smaller result
+  files, and (after fix #1) no longer double-storing every tick.
+- **Limit, confirmed:** at this scale, parquet sink uses *more* peak memory
+  per building-federate process than json (pyarrow's own overhead), and
+  wall-clock timing is a wash — it is not a memory-usage win in absolute
+  terms, only relative to what it *would* have used pre-fix (double
+  storage). Don't oversell it as a memory optimization; the real benefit is
+  non-blocking I/O and much smaller result artifacts.
+- Both known deferred gaps below (RL federate, dashboard) are unaffected by
+  this benchmark and remain out of scope for this merge.
+
 ## Deliberately deferred (not part of Plan 2 — need your go-ahead before anyone touches them)
 
 1. **Dashboard Parquet read-support** — `load_all_records()`

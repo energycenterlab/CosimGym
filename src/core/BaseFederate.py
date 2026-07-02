@@ -773,9 +773,16 @@ class BaseFederate():
         mode = getattr(self, 'mode', 'test') or 'test'  # default to 'test' if mode not set
         partition = self.storage.get(mode, self.storage['test'])
 
-        partition['time'].append(self.date_time)
+        # sink='parquet' streams rows to the async writer instead — growing the
+        # legacy JSON-shaped partition lists too would double memory for nothing,
+        # since store_local_file() never reads them in that mode.
+        sink = self.config.memory_config.sink
+        json_backed = sink != 'parquet'
         row = None
-        if self.config.memory_config.sink == 'parquet':
+
+        if json_backed:
+            partition['time'].append(self.date_time)
+        else:
             row = {'ts': self.ts, 'time': self.date_time, 'mode': mode,
                    'inputs': {}, 'outputs': {}, 'params': {}}
 
@@ -784,18 +791,21 @@ class BaseFederate():
             model = entity['object']
             for var_name in partition['inputs'].get(entity_id, {}).keys():
                 value = self.inputs[entity_id].get(var_name, None)
-                partition['inputs'][entity_id][var_name].append(value)
-                if row is not None:
+                if json_backed:
+                    partition['inputs'][entity_id][var_name].append(value)
+                else:
                     row['inputs'].setdefault(entity_id, {})[var_name] = value
             for var_name in partition['outputs'].get(entity_id, {}).keys():
                 value = self.outputs[entity_id].get(var_name, None)
-                partition['outputs'][entity_id][var_name].append(value)
-                if row is not None:
+                if json_backed:
+                    partition['outputs'][entity_id][var_name].append(value)
+                else:
                     row['outputs'].setdefault(entity_id, {})[var_name] = value
             for var_name in partition['params'].get(entity_id, {}).keys():
                 value = model.state.parameters.get(var_name, None)
-                partition['params'][entity_id][var_name].append(value)
-                if row is not None:
+                if json_backed:
+                    partition['params'][entity_id][var_name].append(value)
+                else:
                     row['params'].setdefault(entity_id, {})[var_name] = value
 
         if row is not None:
@@ -813,9 +823,14 @@ class BaseFederate():
                 federation_name=self.federation_name,
                 logger=self.logger,
             )
+            # Bound the queue so a writer thread that falls behind applies
+            # backpressure (enqueue() blocks) instead of backlogging rows in
+            # memory without limit — unbounded (maxsize=0) defeats the point
+            # of a memory-conscious sink under sustained high-throughput load.
             self._async_storage_writer = AsyncStorageWriter(
                 batch_size=self.config.memory_config.batch_size,
                 on_batch=self._parquet_storage_writer.on_batch,
+                maxsize=self.config.memory_config.batch_size * 3,
                 logger=self.logger,
             )
             self._async_storage_writer.start()
