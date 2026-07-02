@@ -217,6 +217,7 @@ class MemoryConfig(BaseModel):
 
     batch_size: int = 100
     attrs: Union[Literal['all'], List[str]] = Field(default_factory=lambda: ['all'])
+    sink: Literal['json', 'parquet', 'none'] = 'json'
 
 
 # ==============================================================================

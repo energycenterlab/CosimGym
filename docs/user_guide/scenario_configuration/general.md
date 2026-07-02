@@ -64,25 +64,33 @@ Scenario-level log level applied to all federates and the ScenarioManager proces
 ### `memory_config`
 - **Required:** yes
 
-Controls what simulation variables are stored to disk at the end of a run.
+Controls what simulation variables are recorded and how/when they're written to disk.
 
 ```yaml
 memory_config:
-  batch_size: 100      # number of timesteps buffered in memory before flushing
+  batch_size: 100      # rows per batch (buffer size before write)
   attrs: "all"         # record every variable
   # OR
   attrs:               # record only named variables
     - "position"
     - "velocity"
     - "force"
+  sink: json           # json (default) | parquet | none
 ```
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
-| `batch_size` | int | `100` | In-memory buffer size before write |
+| `batch_size` | int | `100` | Rows buffered before a write. For `sink: json` this is just the in-memory buffer size (everything is written once at the end regardless). For `sink: parquet` it's the actual flush granularity — every `batch_size` ticks are written as one Parquet row group. |
 | `attrs` | `"all"` or list of strings | `["all"]` | Variables to record; `"all"` records everything |
+| `sink` | `json` \| `parquet` \| `none` | `json` | Where/how recorded data lands on disk — see below |
 
-This `memory_config` is automatically propagated to every federate that does not define its own. To override for a specific federate, add a `memory_config` block inside that federate's config.
+**`sink` options:**
+
+- **`json`** (default, today's behavior, unchanged): buffered fully in memory, written once at the end of the run to `results/<scenario>/<sim_id>/<federation>/<federate>_<mode>_storage.json`.
+- **`parquet`**: non-blocking. A background thread drains a queue of per-tick rows fed by the sim loop and writes them incrementally, batched every `batch_size` ticks, to `results/<scenario>/<sim_id>/<federation>/<federate>_<mode>_storage.parquet` (one file per `train`/`test` mode, same directory layout as `json`). Use this for long runs or large `attrs` sets where buffering everything in memory until the end is wasteful — measured negligible added sim-thread time vs `json`. **Not yet supported for `type: rl` federates** (raises `NotImplementedError` — RL's storage schema isn't wired to this path yet). **Not yet readable by the Streamlit dashboard** (it currently only loads `.json` result files) — use `json` if you need to view results in the dashboard.
+- **`none`**: skip local file storage entirely (nothing written to `results/`) — useful for throwaway/smoke-test runs.
+
+This `memory_config` is automatically propagated to every federate that does not define its own. To override for a specific federate (e.g. `sink: parquet` for one high-frequency federate while others stay `json`), add a `memory_config` block inside that federate's config.
 
 ---
 

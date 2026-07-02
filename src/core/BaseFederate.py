@@ -24,7 +24,8 @@ from datetime import datetime, timedelta
 from utils.config_dataclasses import FederateConfig, StartupSyncConfig
 from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, InterfaceType
 from models.model_catalog.RedisCatalog import RedisCatalog
-from utils.influxdb_client import InfluxClient
+from utils.async_storage import AsyncStorageWriter
+from utils.parquet_storage import ParquetStorageWriter
 pp = pprint.PrettyPrinter(indent=4)
 
 # TODO make an abstract class for base federate and change the name of this one as simplefederate
@@ -75,6 +76,8 @@ class BaseFederate():
                         'params':{},
                         'time':[]}
         self.batch_size = self.config.memory_config.batch_size
+        self._async_storage_writer = None  # lazily created only when memory_config.sink == 'parquet'
+        self._parquet_storage_writer = None
 
 
         # co.simualtion time management
@@ -448,24 +451,32 @@ class BaseFederate():
             if self.mode == 'train' and self.episode_length is not None and self.ts > 0 and self.ts % self.episode_length == 0:
                 self._track_episodes() #TODO track the episodes and manage the end of episode conditions, this should be called at the end of the step after the reset to update the episode count and manage the end of episode conditions like setting a flag in the outputs or something like that, this is for now a simple episode tracking based on the number of steps but in the future it could be more complex and depend on specific conditions on the outputs or inputs
             
-            # flush storage at batch size using influxdb client too slow
-            # if len(self.storage['time']) >= self.batch_size:
-            #     self.flush_storage()
-
         # flush remaining storage at the end of the simulation
+        if self._async_storage_writer is not None:
+            self._async_storage_writer.close()  # drain remaining queued rows first (no data loss)
+            self._parquet_storage_writer.close()  # finalize (close) the per-mode Parquet file(s)
         self.store_local_file() # TODO store the local file with the storage data, this is for testing purpose and will be substituted by the flushing to the database8
-               
-    def store_local_file(self):
-        '''Store each mode partition as a separate JSON file (train / test).
-        Will be substituted by flushing to database in the future.'''
-        import json
+
+    def _results_base_dir(self) -> str:
         scenario_name = self.simulation_id[:-16]
         sim_id = self.simulation_id[-15:]
         repo_root = Path(__file__).resolve().parents[2]
-        base_dir = os.path.join(
-            str(repo_root / "results"),
-            scenario_name, sim_id, self.federation_name,
-        )
+        return os.path.join(str(repo_root / "results"), scenario_name, sim_id, self.federation_name)
+
+    def store_local_file(self):
+        '''Store each mode partition as a separate JSON file (train / test).
+        Will be substituted by flushing to database in the future.'''
+        sink = self.config.memory_config.sink
+        if sink == 'none':
+            self.logger.info("memory_config.sink='none' — skipping local file storage")
+            return
+        if sink == 'parquet':
+            # Already written incrementally: update_storage() -> AsyncStorageWriter (S1) ->
+            # ParquetStorageWriter.on_batch (S2), finalized in run() just before this call.
+            self.logger.info("memory_config.sink='parquet' — storage already flushed via ParquetStorageWriter")
+            return
+        import json
+        base_dir = self._results_base_dir()
         os.makedirs(base_dir, exist_ok=True)
 
         for mode_key, partition in self.storage.items():
@@ -762,88 +773,69 @@ class BaseFederate():
         mode = getattr(self, 'mode', 'test') or 'test'  # default to 'test' if mode not set
         partition = self.storage.get(mode, self.storage['test'])
 
-        partition['time'].append(self.date_time)
+        # sink='parquet' streams rows to the async writer instead — growing the
+        # legacy JSON-shaped partition lists too would double memory for nothing,
+        # since store_local_file() never reads them in that mode.
+        sink = self.config.memory_config.sink
+        json_backed = sink != 'parquet'
+        row = None
+
+        if json_backed:
+            partition['time'].append(self.date_time)
+        else:
+            row = {'ts': self.ts, 'time': self.date_time, 'mode': mode,
+                   'inputs': {}, 'outputs': {}, 'params': {}}
+
         for entity in self.entities:
             entity_id = entity['id']
             model = entity['object']
             for var_name in partition['inputs'].get(entity_id, {}).keys():
-                partition['inputs'][entity_id][var_name].append(self.inputs[entity_id].get(var_name, None))
+                value = self.inputs[entity_id].get(var_name, None)
+                if json_backed:
+                    partition['inputs'][entity_id][var_name].append(value)
+                else:
+                    row['inputs'].setdefault(entity_id, {})[var_name] = value
             for var_name in partition['outputs'].get(entity_id, {}).keys():
-                partition['outputs'][entity_id][var_name].append(self.outputs[entity_id].get(var_name, None))
+                value = self.outputs[entity_id].get(var_name, None)
+                if json_backed:
+                    partition['outputs'][entity_id][var_name].append(value)
+                else:
+                    row['outputs'].setdefault(entity_id, {})[var_name] = value
             for var_name in partition['params'].get(entity_id, {}).keys():
-                partition['params'][entity_id][var_name].append(model.state.parameters.get(var_name, None))
+                value = model.state.parameters.get(var_name, None)
+                if json_backed:
+                    partition['params'][entity_id][var_name].append(value)
+                else:
+                    row['params'].setdefault(entity_id, {})[var_name] = value
 
-    def flush_storage(self):
-        # TODO implement the flushing of the storage to the database, this method can be called at the end of the simulation or during the simulation if the batch size is reached to avoid storing too much data in memory
-        try:
-            bucket = 'simulation_data'
-            measurement = 'sim_ts'
-            time_series_data = []
-            
-            for ts in self.storage['time']:
-                for entity in self.entities:
-                    entity_id = entity['id']
-                    for var_name, values in self.storage['inputs'][entity_id].items():
-                        if len(values) > 0:
-                            time_series_data.append({
-                                'measurement': measurement,
-                                'tags': {
-                                    'simulation_id': self.simulation_id,
-                                    'federate': entity_id.split('.')[0],
-                                    'model_instance': entity_id.split('.')[1],
-                                    'type': 'input',
-                                    'attribute': var_name
-                                },
-                                'time': ts,
-                                'fields': {
-                                    'value': values.pop(0)  # Get the first value and remove it from the list
-                                }
-                            })
-                    for var_name, values in self.storage['outputs'][entity_id].items():
-                        if len(values) > 0:
-                            time_series_data.append({
-                                'measurement': measurement,
-                                'tags': {
-                                    'simulation_id': self.simulation_id,
-                                    'federate': entity_id.split('.')[0],
-                                    'model_instance': entity_id.split('.')[1],
-                                    'type': 'output',
-                                    'attribute': var_name
-                                },
-                                'time': ts,
-                                'fields': {
-                                    'value': values.pop(0)  # Get the first value and remove it from the list
-                                }
-                            })
-                    for var_name, values in self.storage['params'][entity_id].items():
-                        if len(values) > 0:
-                            time_series_data.append({
-                                'measurement': measurement,
-                                'tags': {
-                                    'simulation_id': self.simulation_id,
-                                    'federate': entity_id.split('.')[0],
-                                    'model_instance': entity_id.split('.')[1],
-                                    'type': 'param',
-                                    'attribute': var_name
-                                },
-                                'time': ts,
-                                'fields': {
-                                    'value': values.pop(0)  # Get the first value and remove it from the list
-                                }
-                            })
-            self.storage['time'] = []
-            if len(time_series_data) > 0:
-                # Log first and last timestamps being written
-                first_time = time_series_data[0]['time']
-                last_time = time_series_data[-1]['time']
-                self.logger.info(f"💾 Flushing {len(time_series_data)} points - Time range: {first_time} to {last_time}")
-                self.infl_client.write_time_series_batch(bucket,measurement, time_series_data)
-            else:
-                self.logger.warning("⚠️  No data to flush (storage empty)")
-        
-        except Exception as e:       
-            self.logger.error(f"Failed to flush storage to InfluxDB: {e}")
-    
+        if row is not None:
+            self._enqueue_async_storage_row(row)
+
+    def _enqueue_async_storage_row(self, row: dict) -> None:
+        """Hands a per-tick row snapshot to the background AsyncStorageWriter
+        (S1), which batches rows and hands each batch to a ParquetStorageWriter
+        (S2) that flattens them into the dashboard's tidy schema and writes
+        them incrementally to `results/.../<federate>_<mode>_storage.parquet`."""
+        if self._async_storage_writer is None:
+            self._parquet_storage_writer = ParquetStorageWriter(
+                base_dir=self._results_base_dir(),
+                federate_name=self.name,
+                federation_name=self.federation_name,
+                logger=self.logger,
+            )
+            # Bound the queue so a writer thread that falls behind applies
+            # backpressure (enqueue() blocks) instead of backlogging rows in
+            # memory without limit — unbounded (maxsize=0) defeats the point
+            # of a memory-conscious sink under sustained high-throughput load.
+            self._async_storage_writer = AsyncStorageWriter(
+                batch_size=self.config.memory_config.batch_size,
+                on_batch=self._parquet_storage_writer.on_batch,
+                maxsize=self.config.memory_config.batch_size * 3,
+                logger=self.logger,
+            )
+            self._async_storage_writer.start()
+        self._async_storage_writer.enqueue(row)
+
     def _reset(self):
         # check if reset time has been reached
         if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
@@ -890,11 +882,6 @@ class BaseFederate():
         self.logger.info(f'federate {self.name} finalizing')
         status = h.helicsFederateDisconnect(self.federate)
         h.helicsFederateDestroy(self.federate)
-        # Flush and close the InfluxDB client AFTER HELICS is done so that
-        # all buffered async writes are delivered before the process exits.
-        if hasattr(self, 'infl_client') and self.infl_client:
-            self.logger.info('Flushing InfluxDB write buffer...')
-            self.infl_client.close()
         self.logger.info("Federate finalized\n")
 
  # def time_to_request(self):

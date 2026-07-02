@@ -283,5 +283,8 @@ federate_configs:
       attrs:
         - "position"
         - "velocity"
+      sink: parquet   # json (default) | parquet | none — see general.md
     ...
 ```
+
+`sink: parquet` is useful here to isolate a single high-frequency federate onto the non-blocking writer while others keep the simpler `json` default. Not supported for `type: "rl"` federates yet. See [General Scenario Configuration](general.md#memory_config) for full `sink` semantics.
