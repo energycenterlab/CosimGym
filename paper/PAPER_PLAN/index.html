@@ -1,0 +1,1808 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for CosimGym, a co-simulation framework for reinforcement learning">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CosimGym — Scientific Paper Plan - CosimGym Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cosimgym-scientific-paper-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CosimGym Documentation" class="md-header__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosimGym Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CosimGym — Scientific Paper Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CosimGym Documentation" class="md-nav__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    CosimGym Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Installation_Setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Overview
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/core_concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/terminology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terminology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Configuration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scenario Configuration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/general/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    General Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/federate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/custom_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Models & Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/rl_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/examples_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples List
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/example_base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 1 (Base Simulation)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/example_rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 2 (RL Training)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0-one-paragraph-pitch-the-abstract-seed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. One-paragraph pitch (the abstract seed)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-technical-anatomy-grounded-in-the-codebase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Technical anatomy (grounded in the codebase)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Technical anatomy (grounded in the codebase)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-execution-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Execution model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-declarative-scenario-typed-config-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Declarative scenario → typed config → runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-model-catalog-the-extensibility-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Model Catalog (the extensibility core)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-the-two-pieces-of-genuine-engineering-depth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 The two pieces of genuine engineering depth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-honest-current-state-caveats-must-shape-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Honest current-state caveats (must shape claims)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-novelty-gap-analysis-vs-literature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Novelty &amp; gap analysis vs. literature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Novelty &amp; gap analysis vs. literature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-landscape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The landscape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-where-cosimgym-is-genuinely-novel-fills-gaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Where CosimGym is genuinely novel / fills gaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-defensible-framing-dont-oversell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Defensible framing (don't oversell)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-latex-paper-outline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. LaTeX paper outline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-journal-targets-ranked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Journal targets (ranked)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Journal targets (ranked)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tier-1-best-ranking-higher-bar-need-strong-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 1 — best ranking, higher bar (need strong results)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier-2-softwareframework-friendly-strong-ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 2 — software/framework-friendly, strong ranking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier-3-simulationcse-venues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 3 — simulation/CSE venues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommended-publication-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended publication path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-storytelling-spine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Storytelling spine
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-case-studies-to-prove-each-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Case studies (to prove each claim)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-future-enhancements-raise-significance-each-is-a-paper-strengthener" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Future enhancements (raise significance; each is a paper-strengthener)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-seed-bibliography-verify-expand-with-dois" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Seed bibliography (verify + expand with DOIs)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-immediate-next-actions-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Immediate next actions (checklist)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Immediate next actions (checklist)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sources-consulted-literature-grounding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources consulted (literature grounding)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="cosimgym-scientific-paper-plan">CosimGym — Scientific Paper Plan</h1>
+<blockquote>
+<p>Working document. Planning only — no code changes implied. Author target: P. Rando Mazzarino et al., EC-Lab / Politecnico di Torino.
+Date drafted: 2026-06-15.</p>
+</blockquote>
+<p>This document turns the CosimGym repository into a publishable research artifact. It contains:
+1. Technical anatomy of the repo (what it actually does, grounded in the code).
+2. Novelty + gap analysis vs. the literature.
+3. LaTeX paper outline.
+4. Ranked journal targets.
+5. Storytelling spine.
+6. Case studies to prove the claims.
+7. Future enhancements that raise significance.
+8. Seed bibliography.</p>
+<hr />
+<h2 id="0-one-paragraph-pitch-the-abstract-seed">0. One-paragraph pitch (the abstract seed)</h2>
+<blockquote>
+<p>Data-driven control of cyber-physical energy systems requires agents that learn against <em>realistic, multi-domain, multi-rate</em> physics. Today these two worlds are bridged ad hoc: co-simulation middleware (HELICS, FMI) speaks publish/subscribe and federated time, while reinforcement-learning (RL) tooling (Gymnasium, Stable-Baselines3, RLlib) speaks <code>reset()</code>/<code>step()</code>. Existing RL testbeds either hard-wire a single simulator (Sinergym→EnergyPlus, CityLearn, BOPTEST) or expose a lightweight, <em>synchronous fixed-frequency</em> power-systems gym (PowerGridworld). We present <strong>CosimGym</strong>, a declarative, model-agnostic orchestration framework that compiles a single YAML scenario into a running HELICS federation and <em>automatically</em> presents it as a standard Gymnasium environment. Its contributions are: (i) a <strong>declarative scenario compiler</strong> that resolves brokers, ports, multi-rate timing, causality, and hierarchical multi-federation topologies with no orchestration code; (ii) a <strong>catalog-driven model abstraction</strong> that unifies native Python models, FMI 2.0/3.0 FMUs, CSV/data feeders, and RL agents behind one interface, with I/O bounds that <em>auto-derive</em> observation/action spaces; and (iii) a principled treatment of the <strong>episode-reset problem in co-simulation</strong>, where federates cannot be cheaply rewound — implemented as configurable <code>full | soft | rolling | random</code> reset strategies with causality-aware observation staging. We demonstrate CosimGym across thermal-building HVAC control and PV+battery dispatch, training DQN and SAC agents against the same composable physics that a pure co-simulation would use for verification.</p>
+</blockquote>
+<hr />
+<h2 id="1-technical-anatomy-grounded-in-the-codebase">1. Technical anatomy (grounded in the codebase)</h2>
+<p>This section is the factual backbone. Every claim below maps to source.</p>
+<h3 id="11-execution-model">1.1 Execution model</h3>
+<ul>
+<li><strong><code>ScenarioManager</code></strong> (<code>src/core/ScenarioManager.py</code>): reads YAML → Pydantic v2 config → starts HELICS broker(s) as subprocesses → spawns one OS process per federate via <code>federate_launcher.py</code>. Config is serialized to <strong>Redis</strong> so each subprocess self-configures. This is a <em>compiler + process orchestrator</em>, not a monolithic sim loop.</li>
+<li><strong><code>federate_launcher.py</code></strong>: per-federate entrypoint; pulls config from Redis; instantiates <code>BaseFederate</code> (<code>type: base</code>) or <code>RL_Federate</code> (<code>type: rl</code>).</li>
+<li><strong><code>BaseFederate</code></strong> (<code>src/core/BaseFederate.py</code>): owns the HELICS pub/sub lifecycle, time stepping, input staging, storage, reset.</li>
+<li><strong><code>RL_Federate</code> / <code>HelicsGymEnv</code></strong> (<code>src/core/RL_Federate.py</code>): subclass of <code>BaseFederate</code> that <em>is</em> a <code>gymnasium.Env</code>. It routes HELICS subscriptions → observations and actions → HELICS publications.</li>
+</ul>
+<h3 id="12-declarative-scenario-typed-config-runtime">1.2 Declarative scenario → typed config → runtime</h3>
+<ul>
+<li>YAML scenarios live in <code>src/scenarios/</code> (16 example scenarios already present: spring-mass-damper, building+HP+PID, building+HP+RL, PV+battery+RB, PV+battery+RL, multi-federation, FMU feedthrough, EnergyPlus FMU "Adelaide").</li>
+<li>Parsed into <strong>Pydantic v2</strong> models in <code>src/utils/config_dataclasses.py</code>. Discriminated union on <code>type</code> (<code>BaseFederateConfig</code> | <code>RLFederateConfig</code>); validators enforce unique IDs, federate counts, RL training-or-test presence, checkpoint path normalization, auto-injection of federation/federate names and IDs.</li>
+<li>For RL, <code>ScenarioManager._modify_config_for_online_training()</code> <em>synthesizes</em> an extra <code>rl_federation</code> containing an <code>rl_agent</code> federate, wiring its pub/sub from the <code>reinforcement_learning_config</code> block. <strong>The user never writes the agent's HELICS plumbing.</strong></li>
+</ul>
+<h3 id="13-model-catalog-the-extensibility-core">1.3 Model Catalog (the extensibility core)</h3>
+<ul>
+<li><code>src/models/model_catalog/catalog.yaml</code>: static registry. Each entry = <code>class_name</code> + <code>module_path</code> + typed I/O spec (inputs/outputs/parameters, each with <code>type</code>, <code>min_value</code>, <code>max_value</code>, <code>unit</code>, <code>tags</code>).</li>
+<li>Loaded into Redis at startup (<code>catalog_loader.py</code>); resolved at runtime by <code>RedisCatalog</code>.</li>
+<li>Built-in models already span: thermal building (1R1C), heat pump (Carnot-fraction COP), PID controller, rule-based BEMS, PV (<code>pv_dest</code>), battery, weather/CSV readers, spring-mass-damper, plus <strong>FMI 2.0 EnergyPlus</strong> (<code>bui0_building_fmu</code>, <code>adelaide_test</code>) and <strong>FMI 3.0 feedthrough</strong> FMUs via <code>base_FMU_model</code> (fmpy). FMU artifacts can be pulled from <strong>MinIO</strong> object storage (see <code>adelaide_test</code>).</li>
+<li>New model = inherit <code>BaseModel</code> (<code>initialize</code>/<code>step</code>/<code>finalize</code>) + one catalog entry. Same interface for physics, controllers, and RL agents.</li>
+</ul>
+<h3 id="14-the-two-pieces-of-genuine-engineering-depth">1.4 The two pieces of genuine engineering depth</h3>
+<p><strong>(A) Timing / causality engine.</strong>
+- <code>real_period</code> (seconds) is the only required timing field; HELICS time is normalized to integer ticks against the minimum <code>real_period</code> (multi-rate support out of the box).
+- <code>time_offset</code> shifts a federate's first tick to break same-step algebraic loops; <code>synchronization.auto_offset</code> computes offsets via <strong>topological sort</strong> of the dependency graph.
+- <code>subscription.causality: same_step | next_step</code> controls whether a value is consumed immediately or deferred one tick — with cycle validation (<code>validate_causality_cycles</code>). <code>BaseFederate</code> implements deferred-input staging (<code>_apply_deferred_inputs</code>, <code>staged_value</code>).
+- <strong>Multi-federation</strong>: when &gt;1 federation, <code>ScenarioManager</code> inserts a HELICS <strong>hierarchy broker</strong> (<code>--sub_brokers=N</code>) and assigns TCP ports dynamically.</p>
+<p><strong>(B) RL episode semantics under co-simulation.</strong>
+- Spaces are <strong>auto-built</strong> from catalog I/O bounds (<code>_prepare_obs_dict</code>, <code>_prepare_act_dict</code>, <code>build_space</code>) — Box/Discrete derived from <code>min_value</code>/<code>max_value</code>/type; float→discrete bin remapping supported.
+- <code>reset_mode: full | soft | rolling | random</code> plus <code>rolling_window</code> — this is the framework's answer to "you cannot truly <code>reset()</code> a federation cheaply." Reset uses <code>reset_observation_defaults</code>, deferred-input clearing, and forced re-read so the next action is chosen from the <em>reset</em> state, not the terminal state.
+- Pluggable reward functions referenced by dotted path (<code>reward_functions.py</code>).
+- Agents: PyTorch DQN, Stable-Baselines3 SAC, simple agent — all catalog entries.
+- Storage is partitioned <code>train</code>/<code>test</code>, records obs-before/after action, actions, rewards, per-episode aggregates → JSON → Streamlit dashboard (parquet-cached).</p>
+<h3 id="15-honest-current-state-caveats-must-shape-claims">1.5 Honest current-state caveats (must shape claims)</h3>
+<ul>
+<li>README marks it <strong>early prototype</strong>; several <code>TODO</code>s in RL space handling (discrete remapping, <code>include_prev_obs</code>, truncation can't yet vary episode length dynamically).</li>
+<li>Tests are thin (dashboard tests only). <strong>A paper needs a reproducibility + validation harness</strong> (see §6, §7).</li>
+<li>Single-machine focus (multi-computer config scaffolded but not the headline).</li>
+</ul>
+<hr />
+<h2 id="2-novelty-gap-analysis-vs-literature">2. Novelty &amp; gap analysis vs. literature</h2>
+<h3 id="21-the-landscape">2.1 The landscape</h3>
+<table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Physics backend</th>
+<th>Coupling</th>
+<th>Multi-rate / multi-domain</th>
+<th>Multi-agent</th>
+<th>Model abstraction</th>
+<th>Declarative config</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sinergym</strong></td>
+<td>EnergyPlus only</td>
+<td>Direct (BCVTB/py)</td>
+<td>No</td>
+<td>Limited</td>
+<td>EnergyPlus-bound</td>
+<td>Partial</td>
+</tr>
+<tr>
+<td><strong>BOPTEST</strong></td>
+<td>Modelica emulators</td>
+<td>REST/Gym wrapper</td>
+<td>No</td>
+<td>No</td>
+<td>Test-case bound</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>CityLearn</strong></td>
+<td>Built-in data models</td>
+<td>Native Gym</td>
+<td>No (fixed hourly)</td>
+<td><strong>Yes (district)</strong></td>
+<td>Domain-fixed</td>
+<td>Schema-based</td>
+</tr>
+<tr>
+<td><strong>Energym</strong></td>
+<td>Modelica/EnergyPlus</td>
+<td>FMU + wrapper</td>
+<td>Limited</td>
+<td>No</td>
+<td>Library of cases</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>PowerGridworld</strong></td>
+<td>OpenDSS + components</td>
+<td>Native Gym</td>
+<td><strong>No — synchronous fixed-frequency</strong> (acknowledged limitation)</td>
+<td><strong>Yes (MARL)</strong></td>
+<td>Component gyms</td>
+<td>Partial (Python)</td>
+</tr>
+<tr>
+<td><strong>GridLAB-D+HELICS+Gym</strong> (Vertical FRL)</td>
+<td>GridLAB-D</td>
+<td>HELICS, bespoke</td>
+<td>Yes (HELICS)</td>
+<td>Yes</td>
+<td>Hand-wired per study</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>CosimGym</strong></td>
+<td><strong>Any: Python / FMI 2&amp;3 / CSV / EnergyPlus</strong></td>
+<td><strong>HELICS, generic</strong></td>
+<td><strong>Yes (native multi-rate + hierarchical multi-federation)</strong></td>
+<td>Roadmap (single-agent now)</td>
+<td><strong>Catalog-driven, domain-agnostic</strong></td>
+<td><strong>Yes — full YAML compiler</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-where-cosimgym-is-genuinely-novel-fills-gaps">2.2 Where CosimGym is genuinely novel / fills gaps</h3>
+<ol>
+<li>
+<p><strong>Declarative co-sim→RL compilation.</strong> Most HELICS+RL papers (e.g., resilient microgrid FRL on GridLAB-D) hand-build a bespoke Gym wrapper per study. CosimGym makes the <em>entire</em> federation, timing, and the agent's pub/sub wiring a YAML artifact. <strong>Gap filled: reproducibility + zero-boilerplate composition.</strong> This is the strongest, most defensible novelty.</p>
+</li>
+<li>
+<p><strong>Domain-agnostic, multi-formalism model catalog.</strong> Sinergym is EnergyPlus-locked; CityLearn/PowerGridworld are domain-locked. CosimGym treats native Python models, <strong>FMI 2.0/3.0 FMUs</strong>, EnergyPlus FMUs, data feeders, and RL agents through one <code>BaseModel</code> interface + typed catalog. <strong>Gap filled: cross-domain, cross-tool RL benchmarking on one substrate</strong> (the FMI standard is the lingua franca of &gt;100 tools — a natural reach for energy + beyond).</p>
+</li>
+<li>
+<p><strong>Native multi-rate, causality-aware, hierarchical orchestration.</strong> PowerGridworld explicitly lists <em>synchronous, fixed-frequency time stepping</em> and a <em>limited communication model</em> as limitations. CosimGym inherits HELICS multi-rate time + adds <code>same_step/next_step</code> causality, topological auto-offset to break algebraic loops, and hierarchical multi-federation brokers. <strong>Gap filled: realistic multi-timescale dynamics for RL</strong> (e.g., 1 s controller vs. 1 h weather).</p>
+</li>
+<li>
+<p><strong>First-class treatment of the co-simulation reset problem.</strong> Gymnasium assumes a cheap <code>reset()</code>. A HELICS federation can't be rewound for free. CosimGym's <code>full/soft/rolling/random</code> reset modes + observation staging are a <em>contribution to RL-on-co-simulation methodology</em>, not just plumbing. <strong>Gap filled: episodic RL semantics over non-resettable federated simulators.</strong> Worth its own subsection / micro-benchmark.</p>
+</li>
+<li>
+<p><strong>Spaces auto-derived from physical I/O bounds.</strong> Observation/action spaces are generated from catalog <code>min/max/unit</code>, not hand-coded. This couples <em>physical validity</em> to the RL interface (units, bounds, clipping) — reduces a common source of silent RL-on-physics bugs.</p>
+</li>
+</ol>
+<h3 id="23-defensible-framing-dont-oversell">2.3 Defensible framing (don't oversell)</h3>
+<ul>
+<li>HELICS+RL has prior art; <strong>the novelty is the abstraction layer + declarative compiler + reset methodology</strong>, not "first to connect HELICS to a gym."</li>
+<li>Single-agent today; position MARL as roadmap (HELICS makes it natural — strong future-work story, see §7).</li>
+<li>Lead with <em>reproducibility, composability, multi-formalism, multi-rate, reset semantics</em> — these are uncontested.</li>
+</ul>
+<hr />
+<h2 id="3-latex-paper-outline">3. LaTeX paper outline</h2>
+<pre><code class="language-latex">\documentclass[review]{elsarticle} % or IEEEtran / mdpi
+\title{CosimGym: A Declarative, Model-Agnostic Framework for
+       Reinforcement Learning on HELICS Co-Simulations}
+
+%==================================================================
+\section{Introduction}                                 % ~1.5 pp
+  \subsection{Motivation: learning control on realistic CPS physics}
+  \subsection{The co-sim / RL impedance mismatch}
+  \subsection{Contributions}     % the 5 bullets from §2.2
+  \subsection{Paper structure}
+
+\section{Background and Related Work}                   % ~2 pp
+  \subsection{Co-simulation: HELICS and the FMI standard}
+  \subsection{RL environments for energy systems}
+        % Sinergym, BOPTEST, CityLearn, Energym, BEAR
+  \subsection{RL on co-simulation / power systems}
+        % PowerGridworld, GridLAB-D+HELICS FRL, CommonPower
+  \subsection{Gap analysis}      % Table 1 (the comparison matrix)
+
+\section{Framework Architecture}                        % ~3 pp (core)
+  \subsection{Declarative scenario model (YAML $\to$ typed config)}
+  \subsection{Orchestration: brokers, processes, Redis state}
+  \subsection{Model Catalog and the BaseModel abstraction}
+        % Python / FMI 2&amp;3 / EnergyPlus / data / agents
+  \subsection{Timing and causality engine}
+        % multi-rate ticks, auto-offset (topo-sort), same/next-step,
+        % hierarchical multi-federation brokers
+  \subsection{Gymnasium integration}
+        % HelicsGymEnv, auto-derived spaces from physical bounds
+
+\section{Episodic RL over Non-Resettable Co-Simulations} % ~1.5 pp (novel)
+  \subsection{The reset problem in federated simulation}
+  \subsection{Reset strategies: full / soft / rolling / random}
+  \subsection{Causality-aware observation staging}
+  \subsection{Reward and storage model}
+
+\section{Case Studies}                                   % ~3-4 pp
+  \subsection{CS0: Verification on spring-mass-damper (single \&amp; multi-federation)}
+  \subsection{CS1: Building HVAC control (1R1C + HP + weather)}
+        % RB/PID baseline vs DQN vs SAC; comfort vs energy
+  \subsection{CS2: EnergyPlus-FMU building (BUI0 / Adelaide)}  % multi-formalism proof
+  \subsection{CS3: PV + battery dispatch}
+        % RB BEMS baseline vs DQN/SAC; self-consumption
+  \subsection{CS4 (optional): multi-rate / multi-federation coupling}
+
+\section{Results and Discussion}                         % ~2-3 pp
+  \subsection{Control performance vs. baselines}
+  \subsection{Effect of reset strategy on learning (ablation)}   % unique
+  \subsection{Multi-rate fidelity \&amp; reproducibility}
+  \subsection{Engineering effort: LOC / config-only comparison}  % composability evidence
+  \subsection{Limitations}
+
+\section{Conclusions and Future Work}                    % ~1 pp
+        % MARL, distributed multi-host, ML-FMU surrogates, safe-RL,
+        % standard benchmark suite
+
+\appendix
+\section{Reproducibility}   % scenario YAMLs, seeds, env, hashes
+</code></pre>
+<p><strong>Target length:</strong> 14–20 pages (journal). Figures: architecture diagram, data-flow per case study, learning curves, reset-ablation, multi-rate timeline, comparison table.</p>
+<hr />
+<h2 id="4-journal-targets-ranked">4. Journal targets (ranked)</h2>
+<p>Strategy: this is a <strong>framework/software + applications</strong> paper. Two viable identities — (a) <em>software/tools</em> paper, (b) <em>applied energy + RL</em> paper. Pick based on how much quantitative control performance you can show.</p>
+<h3 id="tier-1-best-ranking-higher-bar-need-strong-results">Tier 1 — best ranking, higher bar (need strong results)</h3>
+<ol>
+<li><strong>Applied Energy</strong> (Elsevier, IF ~10–11, Q1). Best home if HVAC + PV/battery results are quantitatively strong (energy savings, comfort, self-consumption). Loves data-driven control of energy systems. <em>Highest impact, most competitive.</em></li>
+<li><strong>Energy and Buildings</strong> (Elsevier, Q1). Excellent fit for the building-HVAC + EnergyPlus-FMU case studies; very receptive to RL+co-simulation for buildings. <em>High acceptance odds for this exact content.</em></li>
+<li><strong>IEEE Transactions on Smart Grid</strong> (Q1) — only if you lean into the PV/battery/grid + multi-federation MARL angle. Stronger if you add a grid/OPF federate.</li>
+</ol>
+<h3 id="tier-2-softwareframework-friendly-strong-ranking">Tier 2 — software/framework-friendly, strong ranking</h3>
+<ol>
+<li><strong>SoftwareX</strong> (Elsevier, Q1/Q2, open access). <em>Purpose-built for research software.</em> Short format, fast, citable software artifact. <strong>Excellent low-risk first publication</strong> to stake the claim; can be followed by an Applied Energy applications paper. Strongly recommended as the framework-paper home.</li>
+<li><strong>Energies</strong> (MDPI, Q2/Q3, open access, fast). Receptive to RL+co-sim energy frameworks; lower bar, quick turnaround. Good fallback / fast option.</li>
+<li><strong>Journal of Building Performance Simulation</strong> (Taylor &amp; Francis, Q2) — buildings-focused, methodology-friendly.</li>
+</ol>
+<h3 id="tier-3-simulationcse-venues">Tier 3 — simulation/CSE venues</h3>
+<ol>
+<li><strong>SIMPAT — Simulation Modelling Practice and Theory</strong> (Elsevier, Q1/Q2). Strong fit for the <em>co-simulation orchestration + timing/causality</em> contribution, less dependent on energy results.</li>
+<li><strong>SoftwareX</strong> (again, as artifact) / <strong>Journal of Open Source Software (JOSS)</strong> — lightweight software credit, pairs with any of the above.</li>
+</ol>
+<h3 id="recommended-publication-path">Recommended publication path</h3>
+<ul>
+<li><strong>Step 1 (now-ish):</strong> SoftwareX or SIMPAT — establish the framework + reset methodology + multi-formalism proof. Lower bar, fast, gives a citable artifact.</li>
+<li><strong>Step 2 (after stronger case studies):</strong> Applied Energy or Energy and Buildings — applications paper with quantitative control wins, citing Step 1.</li>
+<li>This two-paper strategy maximizes total impact and de-risks the high-bar venue.</li>
+</ul>
+<hr />
+<h2 id="5-storytelling-spine">5. Storytelling spine</h2>
+<p>The narrative arc that makes reviewers nod:</p>
+<ol>
+<li><strong>Hook (the pain):</strong> "RL promises better control of energy CPS, but every team rebuilds the same fragile bridge between their simulator and their RL stack — and each rebuild is unreproducible and simulator-locked."</li>
+<li><strong>Tension (why existing tools don't solve it):</strong> building gyms are simulator-locked (Sinergym/BOPTEST); grid gyms are domain-locked and <em>synchronous fixed-frequency</em> (PowerGridworld); HELICS+RL studies are bespoke and unreproducible. None give you <em>declarative composition of arbitrary, multi-rate, multi-formalism physics</em> with a standard RL interface.</li>
+<li><strong>Insight (the idea):</strong> treat the scenario as a <em>compilation target</em>. A single YAML declares physics, wiring, timing, causality, and the RL task; the framework compiles it into a HELICS federation that <em>is</em> a Gymnasium env. Models — Python, FMU, EnergyPlus, data, agents — are interchangeable catalog entries.</li>
+<li><strong>The hard part (credibility):</strong> co-simulations don't <code>reset()</code> cheaply, and multi-rate physics creates algebraic loops. Show the reset-strategy methodology and the causality/auto-offset engine as the non-obvious contributions.</li>
+<li><strong>Proof (it works):</strong> same composable physics used for (a) pure co-sim verification and (b) RL training; DQN/SAC beat rule-based/PID baselines on buildings and PV-battery; reset-strategy ablation shows it matters; EnergyPlus-FMU case proves multi-formalism.</li>
+<li><strong>Payoff (the vision):</strong> a shared, declarative substrate for reproducible RL-on-physics across energy and beyond — the "Gymnasium for co-simulation." Future: MARL, distributed, ML surrogates, safe-RL, a standard benchmark suite.</li>
+</ol>
+<p><strong>Through-line sentence:</strong> <em>"Make the realistic physics the easy part, so the research can be about the agent."</em></p>
+<hr />
+<h2 id="6-case-studies-to-prove-each-claim">6. Case studies (to prove each claim)</h2>
+<p>Map each case study to the contribution it defends. Use the scenarios already in <code>src/scenarios/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Scenario (existing YAML)</th>
+<th>Proves</th>
+<th>Key metrics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CS0</strong></td>
+<td><code>simple_test.yaml</code>, <code>simple_test_multifederations.yaml</code></td>
+<td>Correctness + multi-federation + multi-rate orchestration</td>
+<td>Analytical vs. simulated trajectory error; tick alignment; broker hierarchy works</td>
+</tr>
+<tr>
+<td><strong>CS1</strong></td>
+<td><code>bui_hp_test_base.yaml</code> → <code>bui_hp_DQN.yaml</code>, <code>bui_hp_SAC.yaml</code>, <code>*_rollingreset.yaml</code></td>
+<td>RL beats RB/PID on realistic thermal physics; <strong>reset-strategy ablation</strong></td>
+<td>Comfort violation (°C·h), heating energy (kWh), reward curves, full vs rolling vs soft vs random reset</td>
+</tr>
+<tr>
+<td><strong>CS2</strong></td>
+<td><code>bui0_fmu_test.yaml</code>, <code>Adelaide_test.yaml</code> (EnergyPlus FMU)</td>
+<td><strong>Multi-formalism</strong>: identical RL pipeline on an FMI 2.0 EnergyPlus model</td>
+<td>Same agent API; control performance on FMU; FMU pulled from MinIO</td>
+</tr>
+<tr>
+<td><strong>CS3</strong></td>
+<td><code>pv_batt_test_base.yaml</code> → <code>pv_batt_DQN.yaml</code>, <code>pv_batt_SAC.yaml</code></td>
+<td>RL energy management beats rule-based BEMS</td>
+<td>Self-consumption %, grid import (kWh), SOC behavior, cost</td>
+</tr>
+<tr>
+<td><strong>CS4</strong></td>
+<td>FMI 3.0 <code>fmu_feedthrough_test.yaml</code> + a multi-rate combo</td>
+<td>Timing/causality engine: <code>same/next_step</code>, auto-offset, type coverage</td>
+<td>No algebraic-loop deadlock; correct deferred-input alignment; all FMI types round-trip</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Strongest single figure:</strong> the same building physics driven by (i) PID baseline, (ii) DQN, (iii) SAC, overlaid temperature + energy, with the comfort band shaded.</p>
+<p><strong>The ablation that makes it a methods paper, not a demo:</strong> learning curves for <code>full</code> vs <code>soft</code> vs <code>rolling</code> vs <code>random</code> reset on CS1 — quantify sample efficiency and final performance. <em>No competing framework can even pose this question.</em></p>
+<p><strong>Quantify composability:</strong> report lines-of-YAML vs. lines-of-Python a user writes to go from a base co-sim to a trained agent (vs. estimated effort in a bespoke HELICS+Gym wrapper). Concrete evidence for the "zero-boilerplate" claim.</p>
+<hr />
+<h2 id="7-future-enhancements-raise-significance-each-is-a-paper-strengthener">7. Future enhancements (raise significance; each is a paper-strengthener)</h2>
+<p>Ordered by impact-per-effort for the paper:</p>
+<ol>
+<li><strong>Reproducibility + validation harness</strong> <em>(do before submission).</em> Seeded runs, golden-trajectory tests for physics models, CI, a <code>make reproduce</code> that regenerates every figure. Reviewers of framework papers demand this; current repo has only dashboard tests.</li>
+<li><strong>Standard benchmark suite + leaderboard.</strong> Freeze CS1–CS3 as versioned benchmarks with baselines (RB, PID, MPC, random) and a scoring script. Turns "a framework" into "a benchmark the community can cite" — large citation multiplier.</li>
+<li><strong>Multi-agent RL (MARL).</strong> HELICS already routes many federates; expose multiple <code>rl_agent</code> federates → PettingZoo/RLlib MARL. Directly answers PowerGridworld's domain and CityLearn's district angle; opens IEEE TSG. <em>Highest scientific upside.</em></li>
+<li><strong>MPC baseline + safe-RL / action shielding.</strong> Compare against MPC (the de facto strong baseline in BOPTEST) and add constraint shielding using catalog bounds. Makes results credible to control reviewers.</li>
+<li><strong>ML-surrogate FMUs (learned models as FMUs).</strong> Catalog already abstracts FMUs; add learned surrogates exported as FMUs (cf. DNV/Fraunhofer FMU-from-ML) → fast training, then transfer to high-fidelity FMU. Strong "digital twin" framing.</li>
+<li><strong>Distributed / multi-host execution.</strong> <code>multi_computer_config</code> is scaffolded; demonstrate scaling a large federation across machines → scalability section, appeals to CSE/SIMPAT.</li>
+<li><strong>Sim-to-real / hardware-in-the-loop.</strong> HELICS supports real-time; a small HIL demo (even a Raspberry-Pi thermostat) would be a standout figure and a transfer-learning story.</li>
+<li><strong>Offline RL + dataset export.</strong> Config already has <code>RLOfflineTrainingConfig</code>; ship logged datasets → offline-RL benchmark, a hot subfield.</li>
+<li><strong>Uncertainty / domain randomization</strong> via <code>random</code> reset + parameter sampling from catalog bounds → robustness study.</li>
+</ol>
+<p><strong>Minimum set for a strong first submission:</strong> #1 (reproducibility) + the reset ablation (CS1) + CS2 multi-formalism + CS3. <strong>For a top-tier (Applied Energy/TSG) submission:</strong> add #3 (MARL) or #4 (MPC + safe-RL).</p>
+<hr />
+<h2 id="8-seed-bibliography-verify-expand-with-dois">8. Seed bibliography (verify + expand with DOIs)</h2>
+<p>Co-simulation / standards:
+- Hardy et al., <em>HELICS: A Co-Simulation Framework for Scalable Multi-Domain Modeling and Analysis</em>, IEEE Access, 2024.
+- FMI Standard / Blochwitz et al., <em>Functional Mock-up Interface</em> (FMI 2.0, 3.0); Wikipedia/fmi-standard.org for the standard overview.
+- T&amp;D / SMTD multi-timescale HELICS co-simulation, IEEE 2021/2022.</p>
+<p>RL energy environments:
+- Jiménez-Raboso et al., <em>Sinergym: a building simulation and control framework for training RL agents</em>, BuildSys 2021.
+- Vázquez-Canteli et al., <em>CityLearn</em> (Gymnasium env for district energy MARL).
+- Arroyo et al., <em>An OpenAI-Gym environment for BOPTEST</em>, 2021.
+- <em>Energym</em> (building model library for controller benchmarking).
+- <em>BEAR: Physics-Principled Building Environment for Control and RL</em>, 2022.</p>
+<p>RL on co-simulation / power systems:
+- Biagioni et al., <em>PowerGridworld: A Framework for Multi-Agent RL in Power Systems</em>, NREL, arXiv:2111.05969 (cite its time-stepping limitation explicitly).
+- <em>Resilient Control of Networked Microgrids using Vertical Federated RL</em> (GridLAB-D+HELICS+Gym), arXiv:2311.12264 / 2212.08973.
+- <em>CommonPower: A Framework for Safe Data-Driven Smart Grid Control</em>, arXiv:2406.03231.</p>
+<p>RL tooling:
+- Towers et al., <em>Gymnasium</em> (Farama).
+- Raffin et al., <em>Stable-Baselines3</em>, JMLR 2021.
+- Liang et al., <em>RLlib / Ray</em>, ICML 2018.</p>
+<p>Algorithms (as used): Mnih et al. DQN 2015; Haarnoja et al. SAC 2018.</p>
+<blockquote>
+<p>Action: pull exact DOIs/years; add 10–15 more domain refs (DRL for HVAC reviews, demand response RL surveys) to satisfy Applied Energy/Energy &amp; Buildings reviewers.</p>
+</blockquote>
+<hr />
+<h2 id="9-immediate-next-actions-checklist">9. Immediate next actions (checklist)</h2>
+<ul>
+<li>[ ] Decide identity: SoftwareX/SIMPAT (framework-first) vs. Applied Energy (results-first). Recommend framework-first, then applications paper.</li>
+<li>[ ] Build reproducibility harness (#7.1) — gating item.</li>
+<li>[ ] Run CS1 reset-strategy ablation → the signature result.</li>
+<li>[ ] Run CS2 (EnergyPlus FMU) end-to-end → multi-formalism proof.</li>
+<li>[ ] Generate architecture + data-flow figures from the existing scenarios.</li>
+<li>[ ] Quantify config-only vs. bespoke-wrapper effort.</li>
+<li>[ ] Draft §3–§4 (architecture + reset) first; they are the contribution core.
+```</li>
+</ul>
+<hr />
+<h3 id="sources-consulted-literature-grounding">Sources consulted (literature grounding)</h3>
+<ul>
+<li><a href="https://faculty.sites.iastate.edu/tesfatsi/archive/tesfatsi/HELICSCoSimFramework.HardyEtAl.IEEEAccess2024.pdf">HELICS: A Co-Simulation Framework (IEEE Access 2024)</a></li>
+<li><a href="https://arxiv.org/pdf/2111.05969">PowerGridworld (arXiv:2111.05969)</a> — note acknowledged synchronous fixed-frequency limitation</li>
+<li><a href="https://dl.acm.org/doi/10.1145/3486611.3488729">Sinergym (BuildSys 2021)</a></li>
+<li><a href="https://www.citylearn.net/">CityLearn</a></li>
+<li><a href="https://www.researchgate.net/publication/354386346_An_OpenAI-Gym_environment_for_the_Building_Optimization_Testing_BOPTEST_framework">OpenAI-Gym environment for BOPTEST</a></li>
+<li><a href="https://arxiv.org/pdf/2211.14744">BEAR: Physics-Principled Building Environment for RL (arXiv:2211.14744)</a></li>
+<li><a href="https://arxiv.org/pdf/2311.12264">Resilient Networked Microgrids via Vertical Federated RL (arXiv:2311.12264)</a></li>
+<li><a href="https://arxiv.org/html/2406.03231">CommonPower: Safe Data-Driven Smart Grid Control (arXiv:2406.03231)</a></li>
+<li><a href="https://publica.fraunhofer.de/entities/publication/d2324e95-fbe6-4cac-8f46-3697155f5400">FMI standard / FMU for digital twins (Fraunhofer)</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

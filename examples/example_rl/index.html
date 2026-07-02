@@ -832,6 +832,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../user_guide/dashboard/" class="md-nav__link">
         
   
@@ -1276,42 +1304,53 @@
     # no targets — filled at runtime with the rl_agent publication
 </code></pre>
 <h3 id="2-the-reinforcement_learning_config-block">2. The <code>reinforcement_learning_config</code> block</h3>
-<p>Added at the top level of the YAML. The agent is referenced by its catalog <code>model_name</code>; observations and actions use dot notation <code>&lt;federation&gt;.&lt;federate&gt;.&lt;instance&gt;.&lt;variable&gt;</code>:</p>
+<p>Added at the top level of the YAML, organized into four axes (<code>environment</code>, <code>agent</code>, <code>run</code>, <code>experiment</code>). Observations and actions are <strong>keyed mappings</strong> using dot notation <code>&lt;federation&gt;.&lt;federate&gt;.&lt;instance&gt;.&lt;variable&gt;</code>:</p>
 <pre><code class="language-yaml">reinforcement_learning_config:
+  environment:
+    observations:
+      federation_1.spring_federate.0.position: { causality: next_step }
+      federation_1.spring_federate.0.velocity: { causality: next_step }
+      federation_1.spring_federate.0.acceleration: { causality: next_step }
+    actions:
+      federation_1.spring_federate.0.force:
+        space: discrete
+        bins: 5
+    reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
   agent:
-    model_name: &quot;rl_simple_DQN&quot;
-    reward_function: &quot;models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward&quot;
-    env:
-      observations:
-        - federation_1.spring_federate.0.position
-        - federation_1.spring_federate.0.velocity
-        - federation_1.spring_federate.0.acceleration
-      actions: [federation_1.spring_federate.0.force]
-      action_spaces_type: [&quot;discrete&quot;]
+    model_name: rl_simple_DQN
+    backend: custom_torch
+    algorithm: DQN
     hyperparameters:
       gamma: 0.99
       learning_rate: 0.001
       batch_size: 64
+    params:
       target_update_interval: 100
-
-  training:
-    mode: &quot;online&quot;
-    episode_length: 100        # HELICS steps before the episode resets
-    n_episodes: 1000
-    exploration:
-      strategy: &quot;epsilon_greedy&quot;
-      initial_epsilon: 1.0
-      final_epsilon: 0.05
-      epsilon_decay_steps: 5000
-    replay_buffer:
-      buffer_size: 100000
-      prefill_steps: 1000
+      exploration:
+        strategy: epsilon_greedy
+        initial_epsilon: 1.0
+        final_epsilon: 0.05
+        epsilon_decay_steps: 5000
+      replay_buffer:
+        buffer_size: 100000
+        prefill_steps: 1000
+  run:
+    train:
+      episodes: 1000
+      episode_length: 100        # HELICS steps before the episode resets
+    test:
+      episodes: 1
+      episode_length: 100
+      deterministic: true
 </code></pre>
 <blockquote>
 <p>Full reference for every RL field: <a href="../../user_guide/scenario_configuration/rl/">Reinforcement Learning Configuration</a>.</p>
 </blockquote>
 <h3 id="3-the-reward">3. The reward</h3>
-<p>The reward is computed by the function named in <code>agent.reward_function</code> (here <code>spring_oscillation_reward</code> in <code>src/models/model_catalog/RL_agents/reward_functions.py</code>). It penalizes spring oscillation, so the agent learns to apply a damping force.</p>
+<p>The reward is computed by the function named in <code>environment.reward</code> (here <code>spring_oscillation_reward</code> in <code>src/models/model_catalog/RL_agents/reward_functions.py</code>). It penalizes spring oscillation, so the agent learns to apply a damping force.</p>
+<blockquote>
+<p><strong>Same MDP, different solver:</strong> <code>bui0_setpoint_DQN.yaml</code> and <code>bui0_setpoint_SAC.yaml</code> show one declarative <code>environment</code> block solved by two algorithms — only the <code>agent</code> block and the action <code>space</code>/<code>bins</code> change.</p>
+</blockquote>
 <h2 id="execution">Execution</h2>
 <p>RL scenarios run from the dedicated entry point, which also sets thread-limiting env vars:</p>
 <pre><code class="language-python"># src/test_script_rl.py

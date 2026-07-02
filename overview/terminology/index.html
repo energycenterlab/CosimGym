@@ -477,6 +477,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#interface-federate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface Federate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapter
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -938,6 +960,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../user_guide/dashboard/" class="md-nav__link">
         
   
@@ -1213,6 +1263,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#interface-federate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface Federate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapter
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1257,6 +1329,12 @@
 <h2 id="rl-agent">RL Agent</h2>
 <p>A specific model intended for Artificial Intelligence endpoints.
 - When an RL agent configuration exists, CosimGym dynamically spins up an isolated <code>RL_Federation</code> and wires a discrete Gym episode loop, enabling algorithms like <code>DQN</code> or <code>SAC</code> to interoperate directly with the standard physics Models.</p>
+<h2 id="interface-federate">Interface Federate</h2>
+<p>A <code>Federate</code> (<code>type: interface</code>) whose "model" is a network bridge instead of physics.
+- Hosts an <strong>Adapter</strong> (e.g. MQTT) instead of a <code>Model</code>, relaying its HELICS connections to/from the external world.
+- Enables <strong>digital-twin</strong> setups: real sensor-in-the-loop, actuator-out, and runtime output/parameter override — see <a href="../../user_guide/digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a>.</p>
+<h2 id="adapter">Adapter</h2>
+<p>A pluggable transport (<code>InterfaceAdapter</code>, e.g. <code>MqttAdapter</code>) resolved from the same Model Catalog mechanism as physics Models, via the <code>interface_adapter</code> category. Used by both the <code>streaming.stream</code> outbound mirror and the Interface Federate.</p>
 
 
 

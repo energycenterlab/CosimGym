@@ -604,6 +604,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#digital-twin-streaming-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digital-twin / streaming scenarios
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -927,6 +938,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dashboard/" class="md-nav__link">
         
   
@@ -1191,6 +1230,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#digital-twin-streaming-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digital-twin / streaming scenarios
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1265,11 +1315,13 @@ make run-dashboard      # launch the Streamlit dashboard afterwards
 <h2 id="where-output-goes">Where output goes</h2>
 <ul>
 <li><strong>Logs:</strong> <code>logs/</code></li>
-<li><strong>Results:</strong> <code>results/&lt;scenario_name&gt;/&lt;sim_id&gt;/&lt;federation_name&gt;/</code> as JSON (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.json</code>). The dashboard reads these and caches them as Parquet.</li>
+<li><strong>Results:</strong> <code>results/&lt;scenario_name&gt;/&lt;sim_id&gt;/&lt;federation_name&gt;/</code>, format controlled by <code>memory_config.sink</code> — JSON by default (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.json</code>, read by the dashboard) or Parquet (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.parquet</code>, written incrementally by a non-blocking background writer; not yet read by the dashboard). See <a href="../scenario_configuration/general/#memory_config"><code>memory_config</code></a>.</li>
 </ul>
 <blockquote>
 <p>The <code>main()</code> function takes a single argument (<code>scenario_name</code>). It does <strong>not</strong> accept an <code>enable_progress_bar</code> keyword — that option was removed.</p>
 </blockquote>
+<h2 id="digital-twin-streaming-scenarios">Digital-twin / streaming scenarios</h2>
+<p>Scenarios using <code>streaming.stream: true</code> or a <code>type: interface</code> federate additionally need Mosquitto running (already included in <code>docker compose -f src/docker-compose.yaml up -d</code>). See <a href="../digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a> for the config reference, and <code>src/scenarios/m5_bk4_demo_a_full_sim.yaml</code> / <code>m5_bk4_demo_b_digital_twin.yaml</code> for a runnable example pair.</p>
 
 
 

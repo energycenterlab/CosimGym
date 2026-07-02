@@ -14,7 +14,7 @@
         <link rel="prev" href="../fmu_models/">
       
       
-        <link rel="next" href="../dashboard/">
+        <link rel="next" href="../digital_twin_interfaces/">
       
       
         
@@ -891,10 +891,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#supported-rl-libraries" class="md-nav__link">
+  <a href="#supported-rl-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported RL Libraries
+        Supported RL Backends
       
     </span>
   </a>
@@ -921,6 +921,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1177,10 +1205,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#supported-rl-libraries" class="md-nav__link">
+  <a href="#supported-rl-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported RL Libraries
+        Supported RL Backends
       
     </span>
   </a>
@@ -1231,39 +1259,79 @@
 - An <code>observation</code> is <strong>subscribed</strong> from the federates' output sensors over the local network.
 - The <code>step(action)</code> command essentially halts the agent process and advances the global HELICS time clock until the physics federates respond with the next state snapshot.</p>
 <h2 id="adding-rl-to-your-scenario">Adding RL to your Scenario</h2>
-<p>To execute a training loop, you do not write a Python pipeline. Instead, inject the <code>reinforcement_learning_config</code> block directly into the scenario YAML. The agent is referenced by its catalog <code>model_name</code>; its observation and action spaces are wired from <code>env</code>:</p>
+<p>To execute a training loop, you do not write a Python pipeline. Instead, inject the <code>reinforcement_learning_config</code> block directly into the scenario YAML. It is organized into <strong>four orthogonal axes</strong> — <code>environment</code> (the MDP), <code>agent</code> (the solver), <code>run</code> (the schedule), and <code>experiment</code> (infra). The agent is referenced by its catalog <code>model_name</code>; its observation and action spaces are wired from <code>environment.observations</code> / <code>environment.actions</code>, which are <strong>keyed mappings</strong> (one spec per variable, no parallel arrays):</p>
 <pre><code class="language-yaml">reinforcement_learning_config:
+  environment:
+    observations:
+      federation_1.spring_federate.0.position: { causality: next_step }
+      federation_1.spring_federate.0.velocity: { causality: next_step }
+    actions:
+      federation_1.spring_federate.0.force:
+        space: box                     # box | discrete | multidiscrete | multibinary
+        bounds: [-10.0, 10.0]
+    reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
+    reset:
+      mode: full                       # full | rolling | none
   agent:
-    model_name: &quot;rl_simple_SACsb3&quot;     # key in catalog.yaml
-    reward_function: &quot;models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward&quot;
-    env:
-      observations: [federation_1.spring_federate.0.position, federation_1.spring_federate.0.velocity]
-      actions:      [federation_1.spring_federate.0.force]
-      action_spaces_type: [&quot;box&quot;]      # &quot;discrete&quot; | &quot;box&quot;
-    hyperparameters:
+    model_name: rl_simple_SACsb3       # key in catalog.yaml
+    backend: stable_baselines3
+    algorithm: SAC
+    hyperparameters:                   # all Optional → omit to use the backend default
       learning_rate: 0.0003
       gamma: 0.99
       batch_size: 256
-  training:
-    mode: &quot;online&quot;
-    episode_length: 96                 # simulation steps per episode
-    n_episodes: 1000
-  checkpointing:
-    enabled: true
-    directory: &quot;src/models/model_catalog/RL_agents/checkpoints&quot;
-    save_frequency: 5000
+  run:
+    mode: online
+    train:
+      episodes: 1000
+      episode_length: 96               # simulation steps per episode
+  experiment:
+    checkpoint:
+      dir: src/models/model_catalog/RL_agents/checkpoints
+      best: best_sac_sb3_model.pth
 </code></pre>
 <blockquote>
-<p>For the complete field reference (training, exploration, replay buffer, test, logging), see <a href="../scenario_configuration/rl/">Reinforcement Learning Configuration</a>.</p>
+<p>For the complete field reference (environment, agent, run, experiment), see <a href="../scenario_configuration/rl/">Reinforcement Learning Configuration</a>. Every RL key is <code>extra='forbid'</code> — typos fail loudly at parse time.</p>
 </blockquote>
-<h3 id="supported-rl-libraries">Supported RL Libraries</h3>
-<p>CosimGym includes out-of-the-box wrappers for:
-- <strong>Stable-Baselines3</strong> (e.g., DQN, SAC)
-- Example implementations: <code>rl_simple_DQN.py</code>, <code>rl_simple_SACsb3.py</code> located in <code>src/models/model_catalog/RL_agents/</code>.</p>
-<p>Because the internal translation implements a standard <code>gymnasium.Env</code>, it is relatively trivial to bolt on libraries like <strong>Ray RLlib</strong> with minor modifications.</p>
+<h3 id="supported-rl-backends">Supported RL Backends</h3>
+<p>CosimGym ships three working agents, all sharing the reusable component layer in
+<code>RL_agents/components/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Catalog key</th>
+<th>Backend</th>
+<th>Algorithm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rl_simple_SACsb3</code></td>
+<td>Stable-Baselines3</td>
+<td>SAC</td>
+</tr>
+<tr>
+<td><code>rl_simple_DQN</code></td>
+<td>custom PyTorch</td>
+<td>DQN</td>
+</tr>
+<tr>
+<td><code>rl_simple_rllib</code></td>
+<td>Ray RLlib (standalone RLModule)</td>
+<td>PPO</td>
+</tr>
+</tbody>
+</table>
+<p>Because the internal translation implements a standard <code>gymnasium.Env</code>, adding a new backend
+means subclassing <code>RLAgent</code> and adding a <code>catalog.yaml</code> entry — not rewriting the pipeline.</p>
 <h2 id="understanding-episode-logic-resets">Understanding Episode Logic &amp; Resets</h2>
-<p>Because the models executing the physics might be compiled FMUs or distributed systems, "resetting" an episode is complex.</p>
-<p>CosimGym implements <strong><code>rolling_reset</code></strong>: Instead of killing physics states, the agent considers the scenario as an arbitrarily long continuous timeline. A "reset" for the Gym environment merely signifies the start of a logical new trajectory segment without forcing physical simulators to reboot completely over the network. </p>
+<p>Because the models executing the physics might be compiled FMUs or distributed systems, "resetting" an episode is complex. Reset semantics live in one place — <code>environment.reset</code>:</p>
+<pre><code class="language-yaml">environment:
+  reset:
+    mode: rolling          # full | rolling | none
+    rolling_window: 96     # required when mode == rolling
+</code></pre>
+<p>With <strong><code>mode: rolling</code></strong>, instead of killing physics states the agent treats the scenario as an arbitrarily long continuous timeline. A "reset" merely starts a new logical trajectory segment without forcing the physical simulators to reboot over the network. <code>mode: full</code> forces the configured <code>reset_default</code> values; <code>mode: none</code> never resets. </p>
 
 
 

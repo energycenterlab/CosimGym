@@ -1,0 +1,117 @@
+\begin{abstract}
+The increasing complexity of modern energy systems, driven by decentralization, large-scale renewable integration, sector coupling, and active user participation, has made co-simulation of energy systems a key methodological approach for system-level analysis [1]. In particular, co-simulation enables the coordinated use of heterogeneous simulation paradigms, including electromagnetic and electromechanical transient simulation, dynamic phasor simulation, load flow–based energy systems analysis, and real-time simulation, across multiple domains such as electric grids, buildings, and gas and thermal networks. By coupling models, tools, and time scales, co-simulation allows researchers and practitioners to analyze complex interactions that are difficult to design, modify, or scale using monolithic simulators alone.
+In parallel, Reinforcement Learning (RL) has emerged as a powerful data-driven and AI/ML-based modelling paradigm for designing adaptive control strategies in energy systems[2], with applications spanning building simulation and control, grid management, demand response, and energy communities. However, testing RL-based controllers in realistic, heterogeneous, and multi-domain environments remains challenging. Most existing approaches rely on tightly coupled or ad-hoc simulation setups, simplified problem formulations, or closed toolchains, limiting reproducibility, scalability, interoperability, and transferability of results across different energy system configurations.
+
+\end{abstract}
+
+%\begin{graphicalabstract}
+%\includegraphics{figs/cas-grabs.pdf}
+%\end{graphicalabstract}
+
+\begin{highlights}
+\item Custom and flexible Co-simulation platform
+\item Integration of Reinforcement learning into co-sim platform
+\item BOH
+\end{highlights}
+
+\begin{keywords}
+Reinforcement Learning \sep Co-simulation \sep Multi-energy systems \sep CPES
+\end{keywords}
+
+
+\maketitle
+
+\section{Introduction}
+The transition to decentralized and smart energy systems requires advanced control strategies, with Reinforcement Learning (RL) emerging as a promising solution for energy optimization, demand response, and smart building management. However, training and evaluating RL agents in realistic, multi-domain environments presents a significant software engineering challenge. 
+
+Existing physical simulators (e.g., EnergyPlus, Modelica) do not natively support the episodic, trial-and-error training loops required by RL algorithms. Conversely, standard AI environments like OpenAI Gym/Gymnasium lack the capabilities to natively synchronize complex, distributed, continuous-time co-simulations spanning multiple heterogeneous models. 
+
+\textbf{Contributions:}\\
+This paper introduces \textit{CosimGym}, a generalized, extensible, and declarative software framework explicitly designed to bridge this gap. Rather than hard-coding specific simulation logic, CosimGym abstracts the complexities of distributed co-simulation behind a standardized architecture. Utilizing HELICS (Hierarchical Engine for Large-scale Infrastructure Co-Simulation) as a communication backbone, CosimGym encapsulates distributed multi-federations into a unified Python Gymnasium interface. The platform's generalized design empowers researchers to:
+\begin{enumerate}
+    \item \textbf{Declarative Workflow:} Seamlessly define and configure multi-federation scenarios, timing, and data flows using pure YAML configurations without altering underlying control code.
+    \item \textbf{Extensible Model Cataloging:} Dynamically integrate and reuse a variety of models—ranging from simple Python classes to standard Functional Mock-up Units (FMUs)—treating them as plug-and-play components.
+    \item \textbf{Algorithm-Agnostic RL Wrapper:} Train state-of-the-art RL agents (e.g., DQN, SAC via Stable Baselines 3 or Ray RLlib) on arbitrary distributed systems through a standardized wrapper that automatically handles time synchronization and state mapping.
+\end{enumerate}
+
+\textbf{[PLACEHOLDER: Add specific motivating examples of where generalized environments solve immediate research bottlenecks. Cite relevant literature on the necessity of standardized co-simulation interfaces in energy networks.]}
+
+\section{Related Work}
+\textbf{[PLACEHOLDER: Conduct a literature review on existing frameworks. Compare CosimGym against:
+- Pure co-simulation engines (HELICS, Mosaik, FMI standard).
+- RL-specific energy environments (Sinergym, CityLearn, Energym).
+Highlight that most existing RL environments are domain-specific and monolithic, whereas pure co-simulation tools lack native AI integration. Position CosimGym as the missing generalized, configurable middleware between the two paradigms.]}
+
+\section{Core Architecture and Generalized Design Principles}
+To achieve domain-agnostic flexibility, CosimGym is built upon a modular architecture that enforces strict separation of concerns among configuration, execution orchestration, and physical modeling.
+
+\subsection{Declarative Orchestration Layer}
+The foundation of CosimGym's flexibility is its declarative approach to system modeling. Users define the complete topology of the simulation—including federations, federate execution rates, pub/sub communication hooks, and RL hyper-parameters—entirely via YAML files.
+The \texttt{ScenarioManager} automatically parses these definitions into strictly typed Python dataclasses, provisions the required HELICS broker hierarchy, and launches the requisite independent sub-processes. This ensures that scaling from a simple two-node model to a complex multi-domain system requires zero changes to the underlying execution logic.
+
+\subsection{Extensible Model Catalog and State Management}
+CosimGym employs a centralized \texttt{ModelCatalog} synchronized across all distributed nodes via a Redis database. This design abstracts model execution into a generic interface (\texttt{base\_model}). 
+When a federate initializes, it queries Redis for its specific parameters and initial states, loading the correct Python model or dynamically unpacking an FMU. This generalized cataloging allows researchers to share, reuse, and scale models across different scenarios seamlessly, fostering a standard library approach to co-simulation components.
+
+\subsection{The Universal RL Federate Wrapper}
+Standard co-simulation relies on asynchronous time-stepping, whereas RL algorithms demand a synchronous, blocking \texttt{step(action) -> observation, reward, done} loop.
+CosimGym resolves this fundamental impedance mismatch via the \texttt{RL\_Federate}. This universal wrapper transforms the entire distributed HELICS network into a standard \texttt{gymnasium.Env}.
+\begin{enumerate}
+    \item \textbf{Dynamic State Construction:} Observations and action spaces are not hard-coded; they are constructed dynamically based on the YAML mapping. The wrapper aggregates subscribed HELICS topics into the state vector.
+    \item \textbf{Synchronized Actuation:} Once an action is provided, the wrapper publishes the control signals and explicitly advances the HELICS simulation time, blocking the RL algorithm until the distributed network reaches the next discrete physics step.
+    \item \textbf{Pluggable Rewards:} Reward functions are abstracted into cataloged callables, allowing rapid iteration of optimization objectives natively from the configuration file.
+\end{enumerate}
+
+\textbf{[PLACEHOLDER: Create an architectural diagram showing the separation of concerns: User YAML -> Orchestrator/Redis -> HELICS Broker -> Heterogeneous Base Federates (FMU, PyModels) <-> Universal RL Federate.]}
+
+\section{Platform Usability and Standardized Monitoring}
+
+\subsection{Rapid Iteration and Swapability}
+The declarative nature of CosimGym allows for rapid research iteration. Swapping a rule-based baseline controller for an offline RL training session, or altering physical model parameters, is achieved by modifying strings in the YAML scenario configuration. The system automatically handles the mapping of continuous action boundaries, discrete spaces, and the translation of RL outputs back to physical engineering units.
+
+\subsection{Centralized Telemetry and Validation}
+Given the distributed nature of the tool, monitoring relies on centralized, time-series telemetry. All simulation outputs, agent actions, and episodic rewards are automatically ingested into an InfluxDB database. This is paired with a generalized Streamlit dashboard, providing researchers with standard visualization tools for both physical constraints (e.g., temperature bounds) and RL convergence metrics out of the box, regardless of the underlying domain.
+
+\textbf{[PLACEHOLDER: Insert an example YAML snippet demonstrating how an internal building temperature variable is generically mapped to an RL Observation Space.]}
+
+\section{Showcase: Energy Control Demonstrations}
+To validate the generalized architecture, we implement showcase scenarios mapping directly to energy systems—specifically, Building Thermal Management. While these implementations focus on HVAC systems, the platform's abstractions apply equally to grid edge devices or EV charging networks.
+
+\subsection{Case Study 1: Architectural Validation via Baseline Control}
+\begin{itemize}
+    \item \textbf{Purpose}: To validate the generic \texttt{ScenarioManager}, the automated multi-sub-broker HELICS orchestration, and the dynamic loading of models via the Redis Catalog.
+    \item \textbf{Setup}: A fully distributed simulation where a simplified building thermal model interacts with a deterministic PID-controlled heat pump, executing across isolated federates without AI integration.
+    \item \textbf{[PLACEHOLDER: Provide baseline execution results. Highlight the ease of configuration and validate that HELICS time-synchronization strictly matches the expected physical temporal dynamics without drift.]}
+\end{itemize}
+
+\subsection{Case Study 2: Seamless Integration of Deep Reinforcement Learning}
+\begin{itemize}
+    \item \textbf{Purpose}: To demonstrate the \texttt{RL\_Federate} wrapper's ability to seamlessly override deterministic controllers and facilitate direct RL training over the co-simulation network.
+    \item \textbf{Setup}: The deterministic PID controller is replaced solely via YAML reconfiguration. We train and evaluate standard Stable Baselines 3 agents (Continuous Soft Actor-Critic and Discrete Deep Q-Network) to manage building comfort while minimizing power consumption.
+    \item \textbf{[PLACEHOLDER: Provide comparative results: Training convergence curves, inference phase performance plots showing the RL agent respecting boundary conditions, and a comparative table of energy metrics versus the baseline.]}
+\end{itemize}
+
+\section{Discussion}
+
+\subsection{Generalization and Robustness}
+The primary strength of CosimGym is its agnosticism. By leveraging the FMI standard conceptually through \texttt{base\_FMU\_model} and HELICS for message passing, researchers are not locked into specific modeling languages (like Python). The platform serves as a universal translator between complex, legacy engineering tools (like EnergyPlus) and modern AI libraries. 
+
+\subsection{Limitations and Trade-offs}
+\begin{itemize}
+    \item \textbf{Simulation Overhead}: The explicit requirement to route every sub-step and variable assignment through the Redis state manager and HELICS brokers introduces computational overhead compared to tightly coupled, pure Python simulators. 
+    \item \textbf{Infrastructure Complexity}: Achieving this generalized abstraction natively requires a robust execution environment, including local Docker containers for caching/telemetry and OS-level HELICS binaries.
+\end{itemize}
+
+\textbf{[PLACEHOLDER: Expand on any specific design trade-offs encountered, specifically regarding time-step resolution versus communication overhead in HELICS.]}
+
+\section{Conclusions and Future Extensibility}
+CosimGym offers a systematic, declarative solution to the complexities of integrating modern artificial intelligence with multi-domain energy simulations. By abstracting execution orchestration, data logging, and temporal synchronization behind a versatile Gymnasium paradigm, the platform dramatically lowers the barrier to entry for RL application in complex engineering systems.
+
+\textbf{Future Extensibility:}
+\begin{enumerate}
+    \item \textbf{Kubernetes-Native Distributed Scaling}: Evolving the orchestrator to natively deploy distributed federates across networked clusters.
+    \item \textbf{Federated and Multi-Agent Learning (MARL)}: Expanding the \texttt{RL\_Federate} to instantiate multiple decentralized Gymnasium environments concurrently to support multi-agent research paradigms.
+    \item \textbf{Automated FMU Parsing}: Enhancing the \texttt{ModelCatalog} to automatically introspect and register action/observation boundaries cleanly directly from imported \texttt{.fmu} packages.
+\end{enumerate}
+
+\textbf{[PLACEHOLDER: Conclude with final thoughts synthesizing the utility of the platform as a foundational standard for future research.]}

@@ -965,6 +965,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../user_guide/dashboard/" class="md-nav__link">
         
   
@@ -1296,9 +1324,19 @@ cd CosimGym
 <h4 id="pre-requisites">pre-requisites</h4>
 <ul>
 <li>python 3.12 installed</li>
-<li>
-<p>docker installed</p>
-</li>
+<li>docker installed</li>
+<li><strong>Docker Compose v2</strong> (the <code>docker compose</code> plugin, <strong>not</strong> the legacy <code>docker-compose</code> v1 binary). Verify with <code>docker compose version</code> — must report <code>v2.x</code>. The <code>src/docker-compose.yaml</code> file uses the Compose Spec and is rejected by v1 (errors like <code>Unsupported config option for services: 'minio-init'</code>).</li>
+</ul>
+<blockquote>
+<p><strong>No-sudo / shared-server install</strong> — install the plugin into your user home only (does not affect other users or the system <code>docker</code>):
+<code>bash
+mkdir -p ~/.docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 \
+  -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
+docker compose version   # verify v2.x</code></p>
+</blockquote>
+<ol>
 <li>
 <p><strong>Create Conda Environment</strong>:
     <code>bash
@@ -1308,7 +1346,10 @@ cd CosimGym
 <li>
 <p><strong>Start Infrastructure</strong>:
     <code>bash
-    docker compose -f src/docker-compose.yaml up -d</code></p>
+    docker compose -f src/docker-compose.yaml up -d</code>
+    Brings up Redis (config/catalog distribution, port <code>6379</code>), MinIO, and Mosquitto
+    (MQTT broker for the opt-in digital-twin/streaming features, host port <code>11883</code> —
+    see <a href="../user_guide/digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a>).</p>
 </li>
 <li>
 <p><strong>Run Simulation</strong>:
@@ -1319,9 +1360,10 @@ cd CosimGym
 <p><strong>Run Dashboard</strong>:
     <code>bash
     streamlit run src/dashboard/streamlit_dashboard.py</code>
-    Access at http://localhost:8501</p>
+    Access at http://localhost:8501. For a <strong>live</strong> view of a running simulation
+    (rather than post-run results), see <a href="../user_guide/dashboard/#live-view-during-a-run">Dashboard &amp; Analytics → Live View</a>.</p>
 </li>
-</ul>
+</ol>
 <h2 id="dev-container-vs-code">Dev Container + VS Code</h2>
 <h4 id="pre-requisites_1">pre-requisites</h4>
 <ul>
@@ -1786,6 +1828,9 @@ If you prefer manual setup without automation tools:
     ```bash
     docker compose -f src/docker-compose.yaml up -d
     ```
+    Brings up Redis (config/catalog distribution, port `6379`), MinIO, and Mosquitto
+    (MQTT broker for the opt-in digital-twin/streaming features, host port `11883` —
+    see [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
 
 3.  **Run Simulation**:
     ```bash
@@ -1796,7 +1841,8 @@ If you prefer manual setup without automation tools:
     ```bash
     streamlit run src/dashboard/streamlit_dashboard.py
     ```
-    Access at http://localhost:8501
+    Access at http://localhost:8501. For a **live** view of a running simulation
+    (rather than post-run results), see [Dashboard & Analytics → Live View](user_guide/dashboard.md#live-view-during-a-run).
 
 ---
 

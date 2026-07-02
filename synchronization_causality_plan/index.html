@@ -1,0 +1,1782 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for CosimGym, a co-simulation framework for reinforcement learning">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/cosimgym_icon_transparent.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Synchronization & Causality — Overview, Bug Fix, and Generalization Plan - CosimGym Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#synchronization-causality-overview-bug-fix-and-generalization-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="CosimGym Documentation" class="md-header__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosimGym Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Synchronization &amp; Causality — Overview, Bug Fix, and Generalization Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="CosimGym Documentation" class="md-nav__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    CosimGym Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Installation_Setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Overview
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/core_concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/terminology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terminology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Configuration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scenario Configuration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/general/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    General Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/federate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/custom_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Models & Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/rl_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/examples_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples List
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/example_base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 1 (Base Simulation)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/example_rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 2 (RL Training)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-how-synchronization-works-today-definitive-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. How synchronization works today (definitive overview)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. How synchronization works today (definitive overview)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-time-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Time model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-offsets-tie-breaking-within-a-tick" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Offsets (tie-breaking within a tick)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-causality-per-subscription" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Causality (per-subscription)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-per-step-loop-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Per-step loop order
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-cycle-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Cycle validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#16-where-causality-is-resolved-two-independent-code-paths-the-root-of-the-bug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6 Where causality is resolved (two independent code paths — the root of the bug)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-bug-why-default_subscription_causality-next_step-is-ignored" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The bug (why default_subscription_causality: next_step is ignored)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The bug (why default_subscription_causality: next_step is ignored)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Mechanism
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-concrete-cycle-in-bui0_heatingpower_dqnyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The concrete cycle in bui0_heatingpower_DQN.yaml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-second-latent-half-of-the-bug-runtime-vs-validation-disagreement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Second, latent half of the bug (runtime vs validation disagreement)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-bug-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Bug fix
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Bug fix">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-immediate-declarative-unblock-no-code-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Immediate, declarative unblock (no code change)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-proper-fix-code-single-causality-resolution-pass-persisted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Proper fix (code) — single causality resolution pass, persisted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-generalized-sequentiality-plan-points-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Generalized sequentiality plan (points 1–4)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Generalized sequentiality plan (points 1–4)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-point-1-let-the-co-simulation-run-while-avoiding-cycles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Point 1 — let the co-simulation run while avoiding cycles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-point-2-split-observations-pre-action-state-vs-post-action-consequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Point 2 — split observations: pre-action state vs post-action consequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-point-3-auto-fix-cycles-by-relaxing-one-link-the-last-feedback-edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Point 3 — auto-fix cycles by relaxing one link (the "last" / feedback edge)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-point-4-works-for-arbitrary-meshes-multiple-federates-any-wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Point 4 — works for arbitrary meshes / multiple federates / any wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-implementation-order-suggested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Implementation order (suggested)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-code-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key code references
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="synchronization-causality-overview-bug-fix-and-generalization-plan">Synchronization &amp; Causality — Overview, Bug Fix, and Generalization Plan</h1>
+<p>Status: design doc. Covers points 1–4 of the request. Point 5 (algebraic-loop /
+iterative federate) lives in a separate doc: <code>algebraic_loop_federate_plan.md</code>.</p>
+<hr />
+<h2 id="1-how-synchronization-works-today-definitive-overview">1. How synchronization works today (definitive overview)</h2>
+<h3 id="11-time-model">1.1 Time model</h3>
+<ul>
+<li>HELICS time is <strong>unitless integer ticks</strong>. There is no wall-clock in the solver.</li>
+<li><code>ScenarioManager._scenario_setup_timing_vars()</code> (<code>src/core/ScenarioManager.py:1097</code>)
+  computes <code>min_real_period = min(real_period over all federates)</code>. That minimum
+  becomes <strong>tick 1</strong>.</li>
+<li>Each federate gets <code>time_period = int(real_period / min_real_period)</code>
+  (<code>ScenarioManager.py:1118</code>). A federate with <code>real_period=600</code> and a scenario
+  minimum of <code>600</code> advances <code>time_period = 1</code> tick per step. A slower federate
+  (<code>real_period=1200</code>) advances <code>2</code> ticks per step.</li>
+<li><code>n_steps = duration / real_period</code> → <code>time_stop</code> per federate.</li>
+</ul>
+<h3 id="12-offsets-tie-breaking-within-a-tick">1.2 Offsets (tie-breaking within a tick)</h3>
+<ul>
+<li><code>time_offset</code> (fractional tick, e.g. <code>0.1</code>) shifts a federate's first grant so
+  two federates that would otherwise be granted the <strong>same</strong> tick get a
+  deterministic order. Applied to HELICS via
+  <code>helics_property_time_offset</code> (<code>BaseFederate.py:204</code>).</li>
+<li><code>time_offset_explicit</code> (<code>config_dataclasses.py:66</code>) is set automatically by a
+  model-validator when YAML specifies <code>time_offset</code> (<code>config_dataclasses.py:71</code>).
+  It tells auto-offset "the user pinned this, don't overwrite unless
+  <code>override_existing_offsets</code>".</li>
+<li><code>synchronization.auto_offset</code> (<code>ScenarioManager._apply_auto_time_offsets()</code>,
+  <code>:997</code>) topologically orders federates by their <strong>same_step</strong> dependency graph,
+  assigns each a stage, and sets <code>time_offset = stage * offset_step</code>. This makes a
+  producer get granted <strong>before</strong> its same-step consumer inside one tick, so the
+  consumer reads a fresh value.</li>
+</ul>
+<h3 id="13-causality-per-subscription">1.3 Causality (per-subscription)</h3>
+<p>Each <code>FedSubscription</code> carries <code>causality ∈ {same_step, next_step}</code>
+(<code>config_dataclasses.py:161</code>).</p>
+<ul>
+<li><strong><code>same_step</code></strong>: the received value is written straight into <code>self.inputs</code> and
+  consumed by the model <strong>this</strong> step (<code>BaseFederate._receive_inputs</code>,
+  <code>:700</code>). The producer must be granted earlier in the same tick (that is what
+  offsets guarantee). Semantics: <em>instantaneous</em> coupling.</li>
+<li><strong><code>next_step</code></strong>: the received value is staged into <code>self._deferred_inputs</code>
+  (<code>:698</code>) and only promoted into <code>self.inputs</code> at the <strong>start of the next step</strong>
+  via <code>_apply_deferred_inputs()</code> (<code>:664</code>), which runs <em>before</em> <code>_receive_inputs</code>
+  in the loop (<code>BaseFederate.run</code>, <code>:420-421</code>). Semantics: <em>one-tick-delayed</em>
+  coupling. This is what makes a feedback edge safe — it removes the same-tick
+  ordering requirement.</li>
+</ul>
+<h3 id="14-per-step-loop-order">1.4 Per-step loop order</h3>
+<p><code>BaseFederate.run()</code> (<code>:406</code>):</p>
+<pre><code>while ts &lt; stop:
+    request_time_advance()      # ts += 1, grant next tick
+    _apply_deferred_inputs()    # promote last step's next_step values
+    _receive_inputs()           # read same_step now; stage new next_step
+    model._step()
+    _publish_outputs()
+    _reset()                    # episode reset (train)
+    update_storage()
+</code></pre>
+<p><code>RLFederate.step()</code> (<code>RL_Federate.py:644</code>) reorders for the agent:</p>
+<pre><code>_action_to_publish(action)
+_publish_outputs()              # publish action FIRST
+request_time_advance()
+_apply_deferred_inputs()
+_receive_inputs()
+obs = _inputs_to_observations(use_staged_next_step=True)  # consume next_step now
+reward = compute_reward(obs, action)
+</code></pre>
+<p>The <code>use_staged_next_step=True</code> flag (<code>RL_Federate.py:627</code>) is important: for a
+<code>next_step</code> observation, the agent uses the <strong>just-read staged</strong> value for the
+transition rather than waiting an extra step. So the storage transition is aligned
+even though the plant federate sees the value one tick later. (See §3.2.)</p>
+<h3 id="15-cycle-validation">1.5 Cycle validation</h3>
+<ul>
+<li><code>_build_federate_dependency_graph(include_next_step=False)</code> (<code>:904</code>) builds a
+  directed graph <strong>producer → consumer</strong> using <strong>only same_step edges</strong>
+  (<code>next_step</code> edges are skipped, <code>:922</code>). Nodes are <code>(federation, federate)</code>.</li>
+<li><code>_validate_causality_cycles()</code> (<code>:937</code>) runs Tarjan SCC (<code>_compute_sccs</code>,
+  <code>:958</code>). Any SCC with <code>&gt;1</code> node is a same-step cycle that non-iterative HELICS
+  <code>requestTime</code> cannot resolve → <strong><code>RuntimeError</code></strong> (<code>:951</code>).</li>
+<li>The same graph drives <code>_apply_auto_time_offsets()</code>.</li>
+</ul>
+<p>So <code>next_step</code> is the <strong>declarative escape valve</strong>: marking one edge of every cycle
+<code>next_step</code> removes it from the graph and breaks the SCC.</p>
+<h3 id="16-where-causality-is-resolved-two-independent-code-paths-the-root-of-the-bug">1.6 Where causality is resolved (two independent code paths — the root of the bug)</h3>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Default when value absent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ScenarioManager._normalize_subscription_causality</code> (<code>:888</code>)</td>
+<td>scenario <code>default_subscription_causality</code>, else <code>same_step</code></td>
+</tr>
+<tr>
+<td><code>BaseFederate._normalize_subscription_causality</code> (<code>:513</code>)</td>
+<td>hard-coded <code>same_step</code></td>
+</tr>
+<tr>
+<td>Pydantic field <code>FedSubscription.causality</code> (<code>:161</code>)</td>
+<td><code>same_step</code></td>
+</tr>
+</tbody>
+</table>
+<p>These three do <strong>not</strong> agree, and that is the bug.</p>
+<hr />
+<h2 id="2-the-bug-why-default_subscription_causality-next_step-is-ignored">2. The bug (why <code>default_subscription_causality: next_step</code> is ignored)</h2>
+<h3 id="21-mechanism">2.1 Mechanism</h3>
+<p><code>FedSubscription.causality</code> has a Pydantic <strong>field default of <code>"same_step"</code></strong>
+(<code>config_dataclasses.py:161</code>). So a YAML subscription that omits <code>causality</code> does
+<strong>not</strong> arrive as <code>None</code> — it arrives as the string <code>"same_step"</code>.</p>
+<p><code>ScenarioManager._normalize_subscription_causality(raw)</code> only substitutes the
+scenario default when <code>raw</code> is falsy:</p>
+<pre><code class="language-python">causality = (raw_value or default_causality or &quot;same_step&quot;).lower()
+</code></pre>
+<p>Since <code>raw_value == "same_step"</code> is truthy, the scenario
+<code>default_subscription_causality: "next_step"</code> is <strong>never applied</strong>. The documented
+"set a scenario-wide default" knob is dead for every subscription that doesn't
+spell out its own causality.</p>
+<h3 id="22-the-concrete-cycle-in-bui0_heatingpower_dqnyaml">2.2 The concrete cycle in <code>bui0_heatingpower_DQN.yaml</code></h3>
+<ul>
+<li><code>_get_rl_pubsubs</code> retargets <code>building_federate</code>'s <code>OthEquRadWatt</code> subscription to
+  read from the agent (<code>ScenarioManager.py:408</code>). That subscription declares no
+  <code>causality</code> → Pydantic gives it <code>same_step</code>. Edge: <strong>rl_agent → building</strong>
+  (same_step).</li>
+<li>The agent's observation <code>HeatingLoadTarget</code> is declared <code>causality: same_step</code>
+  and is produced by <code>building_federate</code>. Edge: <strong>building → rl_agent</strong> (same_step).</li>
+<li>Two same_step edges in opposite directions ⇒ SCC <code>{building_federate,
+  rl_agent}</code> ⇒</li>
+</ul>
+<pre><code>Detected same_step dependency cycles that cannot be resolved with non-iterative
+HELICS time requests: [[('federation_1','building_federate'),('rl_federation','rl_agent')]].
+</code></pre>
+<h3 id="23-second-latent-half-of-the-bug-runtime-vs-validation-disagreement">2.3 Second, latent half of the bug (runtime vs validation disagreement)</h3>
+<p>Even if the ScenarioManager graph were fixed to honor the scenario default, nothing
+<strong>writes the resolved causality back</strong> into the <code>FedSubscription</code>. The config is
+serialized to Redis as-is (<code>_upload_config_on_redis</code>, <code>:637</code>), and at runtime
+<code>BaseFederate._normalize_subscription_causality</code> (<code>:513</code>) applies its <strong>own</strong>
+hard-coded <code>same_step</code> fallback. So validation could decide "next_step" while the
+running federate behaves "same_step" — a silent divergence. Any fix must resolve
+causality <strong>once</strong> and <strong>persist it</strong> so graph, offsets, and runtime all read the
+same concrete value.</p>
+<hr />
+<h2 id="3-bug-fix">3. Bug fix</h2>
+<h3 id="31-immediate-declarative-unblock-no-code-change">3.1 Immediate, declarative unblock (no code change)</h3>
+<p>Mark the loop's incoming-action edge <code>next_step</code> on the plant subscription:</p>
+<pre><code class="language-yaml"># building_federate.connections.subscribes, key OthEquRadWatt
+- key: &quot;OthEquRadWatt&quot;
+  type: &quot;double&quot;
+  units: &quot;W&quot;
+  causality: &quot;next_step&quot;
+</code></pre>
+<p>This removes the <code>rl_agent → building</code> edge from the same_step graph, breaks the
+SCC, and gives exactly the sequentiality wanted: <strong>agent acts at T → plant consumes
+at T+1 → plant emits <code>HeatingLoadTarget</code> at T+1 → agent reads it same-step at T+1.</strong></p>
+<h3 id="32-proper-fix-code-single-causality-resolution-pass-persisted">3.2 Proper fix (code) — single causality resolution pass, persisted</h3>
+<p>Goal: make <code>default_subscription_causality</code> actually work, and guarantee
+validation/offsets/runtime never disagree.</p>
+<p><strong>Step A — make "unset" distinguishable.</strong> Change the field to an explicit sentinel
+plus an explicitness flag, mirroring the existing <code>time_offset</code> / <code>time_offset_explicit</code>
+pattern:</p>
+<pre><code class="language-python">class FedSubscription(BaseModel):
+    causality: Optional[str] = None            # None = &quot;not specified by author&quot;
+    causality_explicit: bool = False           # set by validator below
+
+    @model_validator(mode='before')
+    @classmethod
+    def _mark_causality_explicit(cls, data):
+        if isinstance(data, dict) and data.get('causality') is not None:
+            data['causality_explicit'] = True
+        return data
+</code></pre>
+<p>(Mirror the same idea for <code>ObservationSpec.causality</code> only if you want the scenario
+default to reach RL observations; otherwise leave RL obs explicit-by-convention.)</p>
+<p><strong>Step B — one resolution pass that writes back.</strong> Add
+<code>ScenarioManager._resolve_subscription_causalities()</code> that runs <strong>before</strong>
+<code>_validate_causality_cycles</code> and <strong>before</strong> <code>_upload_config_on_redis</code>. For every
+subscription in every federation (including the injected <code>rl_federation</code>):</p>
+<pre><code class="language-python">sub.causality = self._normalize_subscription_causality(
+    sub.causality if sub.causality_explicit else None
+)
+</code></pre>
+<p>After this pass every <code>FedSubscription.causality</code> is a concrete <code>same_step</code> /
+<code>next_step</code> string that already reflects the scenario default. Then:</p>
+<ul>
+<li><code>_build_federate_dependency_graph</code> reads the concrete value (no behavior change).</li>
+<li><code>BaseFederate</code> reads the concrete value from Redis. Its local fallback becomes
+  dead code but harmless; optionally drop it.</li>
+</ul>
+<p><strong>Step C — keep <code>_normalize_subscription_causality</code> as the single source of the
+default</strong> so there is one place that knows the precedence
+<code>explicit &gt; scenario default &gt; same_step</code>.</p>
+<p>This is the recommended fix: it is small, mirrors an existing pattern
+(<code>time_offset_explicit</code>), and closes the validation/runtime gap in §2.3.</p>
+<hr />
+<h2 id="4-generalized-sequentiality-plan-points-14">4. Generalized sequentiality plan (points 1–4)</h2>
+<h3 id="41-point-1-let-the-co-simulation-run-while-avoiding-cycles">4.1 Point 1 — let the co-simulation run while avoiding cycles</h3>
+<p>Two complementary mechanisms already exist; formalize them:</p>
+<ul>
+<li><strong>same_step edge</strong> = instantaneous, ordered by offsets, must be acyclic.</li>
+<li><strong>next_step edge</strong> = one-tick delay, removed from the cycle graph, always safe.</li>
+</ul>
+<p>Rule: <em>the same_step subgraph must be a DAG</em>. Every cycle in the full coupling graph
+must contain <strong>at least one</strong> <code>next_step</code> edge. Validation (§1.5) enforces it; auto
+relaxation (§4.3) can satisfy it automatically.</p>
+<h3 id="42-point-2-split-observations-pre-action-state-vs-post-action-consequence">4.2 Point 2 — split observations: pre-action state vs post-action consequence</h3>
+<p>This is a <strong>causality + bookkeeping</strong> distinction, already partly implemented:</p>
+<ul>
+<li><strong>Pre-action / state observations</strong> (the state the policy conditions on): these are
+  values that exist <em>before</em> the agent acts this tick. In MDP terms they are <code>s_t</code>.
+  In the loop they are the values read at the start of the agent step (or carried as
+  <code>obs_before_action</code>, <code>RL_Federate.py:679</code>).</li>
+<li><strong>Post-action / consequence observations</strong> (the result of the action): values the
+  plant produces <em>because of</em> the action, i.e. part of <code>s_{t+1}</code> and the reward
+  signal. The loop variable <code>HeatingLoadTarget</code> is exactly this.</li>
+</ul>
+<p>Mapping to the framework:</p>
+<ul>
+<li>A consequence variable that closes a loop back to the agent should be <strong>same_step</strong>
+  <em>on the agent side</em> (agent wants the immediate result) <strong>and</strong> the action it
+  depends on should be <strong>next_step into the plant</strong> (plant consumes the action next
+  tick). That is the §3.1 wiring and it is the canonical "action affects next state"
+  MDP shape.</li>
+<li>Storage already separates the two: <code>observations_before_action</code> and
+  <code>observations_after_action</code> (<code>RL_Federate.py:286-287</code>, written in
+  <code>update_storage</code>, <code>:295</code>). The transition recorded is
+  <code>(obs_before, action, reward, obs_after)</code>.</li>
+</ul>
+<p>Proposed declarative surface (additive, optional): give <code>ObservationSpec</code> an explicit
+<strong><code>phase</code></strong> hint so intent is self-documenting and validation can check wiring:</p>
+<pre><code class="language-yaml">observations:
+  federation_1.building_federate.0.TBuilding:
+    role: state
+    phase: pre_action      # part of s_t; default
+    causality: next_step
+  federation_1.building_federate.0.HeatingLoadTarget:
+    role: state
+    phase: post_action     # consequence of the action; closes the loop
+    causality: same_step
+</code></pre>
+<p><code>phase</code> would be advisory metadata + a validation cross-check
+(<code>post_action</code> + <code>same_step</code> is the expected consequence pattern; <code>post_action</code>
+that does <strong>not</strong> participate in a relaxed loop is suspicious and warns). It does
+<strong>not</strong> change the runtime read path — <code>use_staged_next_step</code> already aligns the
+transition. Implement <code>phase</code> only if the self-documentation/validation value is
+wanted; the mechanics work without it.</p>
+<h3 id="43-point-3-auto-fix-cycles-by-relaxing-one-link-the-last-feedback-edge">4.3 Point 3 — auto-fix cycles by relaxing one link (the "last" / feedback edge)</h3>
+<p>Replace the hard <code>RuntimeError</code> with an opt-in <strong>auto-relax</strong> policy:</p>
+<pre><code class="language-yaml">synchronization:
+  cycle_policy: relax        # one of: error (current default) | relax
+</code></pre>
+<p>Algorithm <code>_auto_relax_cycles()</code> (runs after resolution §3.2B, before validation):</p>
+<ol>
+<li>Build same_step graph. Compute SCCs (reuse <code>_compute_sccs</code>).</li>
+<li>For each SCC with <code>&gt;1</code> node, choose <strong>one edge to demote</strong> to <code>next_step</code>:</li>
+<li>Build a topo-ish order of the SCC nodes using the same deterministic key as
+     <code>_apply_auto_time_offsets._cycle_sort_key</code> (<code>:1033</code>): explicit offset, then
+     name. The intended forward chain is <code>n0 → n1 → ... → nk</code>.</li>
+<li>The <strong>back-edge</strong> is the edge from the latest node to an earlier node
+     (<code>nk → n_j</code>, <code>j ≤ k</code>) — i.e. the link that <em>closes</em> the loop. Demote that one.
+     "Relax the last link" = relax the feedback edge of the chain, leaving the
+     forward sequential chain intact.</li>
+<li>Tie-break deterministically; prefer demoting an edge <strong>into</strong> the chain's
+     source (the federate the user clearly wants to run first).</li>
+<li>Write <code>sub.causality = "next_step"</code> back on the chosen subscription, log a
+   <code>WARNING</code> naming the demoted edge, and recompute SCCs. Repeat until the same_step
+   graph is a DAG (each iteration strictly removes ≥1 edge → terminates).</li>
+<li>Re-run <code>_validate_causality_cycles</code> as a safety net (should now pass).</li>
+</ol>
+<p>Author override: a per-subscription <code>relax_priority: low|normal|high</code> (or
+<code>pin_same_step: true</code>) lets the user protect an edge that must stay instantaneous,
+forcing the relaxer to pick a different edge in that SCC. If every edge of an SCC is
+pinned <code>same_step</code>, fall back to <code>error</code> for that SCC with a clear message.</p>
+<p>Default stays <code>error</code> so existing scenarios are unaffected; <code>relax</code> is opt-in.</p>
+<h3 id="44-point-4-works-for-arbitrary-meshes-multiple-federates-any-wiring">4.4 Point 4 — works for arbitrary meshes / multiple federates / any wiring</h3>
+<p>The machinery above is already topology-agnostic because it is <strong>graph-based</strong>, not
+pattern-based:</p>
+<ul>
+<li>Nodes = every <code>(federation, federate)</code> across every federation, including the
+  runtime-injected <code>rl_federation</code> (<code>_build_federate_dependency_graph</code>, <code>:905</code>).</li>
+<li>Cross-federation targets resolve through <code>_resolve_target_federate_node</code> (<code>:857</code>),
+  so meshes spanning federations are handled identically.</li>
+<li>SCC + condensation already supports <strong>multiple independent cycles</strong>, <strong>nested
+  chains</strong>, and <strong>diamonds</strong>: <code>_apply_auto_time_offsets</code> condenses each SCC to a
+  super-node and topologically stages the condensation (<code>:1013-1068</code>). Auto-relax
+  reuses the same SCC machinery, so it scales to any number of cycles.</li>
+<li>For a <strong>chain of N simulators with one feedback</strong> (<code>s0→s1→...→sN→s0</code>), §4.3 demotes
+  only the <code>sN→s0</code> feedback edge, preserving the N-long same-step pipeline and
+  delaying just the loop closure by one tick — the desired behavior.</li>
+</ul>
+<p>Validation/coverage to add:
+- Unit tests over synthetic graphs: single 2-cycle, 3-chain+feedback, two disjoint
+  cycles, diamond with one cycle, fully meshed triple. Assert (a) which edge gets
+  relaxed, (b) resulting graph is a DAG, (c) offsets stage correctly.
+- A test asserting <code>default_subscription_causality: next_step</code> actually flips an
+  un-annotated subscription (regression for §2).
+- A test asserting validation and <code>BaseFederate</code> runtime read the <strong>same</strong> resolved
+  causality (regression for §2.3).</p>
+<hr />
+<h2 id="5-implementation-order-suggested">5. Implementation order (suggested)</h2>
+<ol>
+<li><strong>§3.2</strong> causality resolution pass + <code>causality_explicit</code> (fixes the live bug,
+   closes validation/runtime gap). Smallest, highest value.</li>
+<li>Regression tests for §2 and §2.3.</li>
+<li><strong>§4.3</strong> opt-in <code>cycle_policy: relax</code> with deterministic back-edge selection +
+   override knob.</li>
+<li>Graph/mesh tests (§4.4).</li>
+<li><strong>§4.2</strong> optional <code>phase</code> metadata + advisory validation.</li>
+<li>Point 5 (iterative/algebraic-loop federate) — see
+   <code>algebraic_loop_federate_plan.md</code>. Independent, speculative.</li>
+</ol>
+<h2 id="key-code-references">Key code references</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cycle error</td>
+<td><code>ScenarioManager.py:937</code> <code>_validate_causality_cycles</code></td>
+</tr>
+<tr>
+<td>Same_step graph</td>
+<td><code>ScenarioManager.py:904</code> <code>_build_federate_dependency_graph</code></td>
+</tr>
+<tr>
+<td>SCC (Tarjan)</td>
+<td><code>ScenarioManager.py:958</code> <code>_compute_sccs</code></td>
+</tr>
+<tr>
+<td>Auto offsets / staging</td>
+<td><code>ScenarioManager.py:997</code> <code>_apply_auto_time_offsets</code></td>
+</tr>
+<tr>
+<td>Causality default (SM)</td>
+<td><code>ScenarioManager.py:888</code></td>
+</tr>
+<tr>
+<td>RL sub/pub wiring</td>
+<td><code>ScenarioManager.py:381</code> <code>_get_rl_pubsubs</code> (retarget at <code>:408</code>)</td>
+</tr>
+<tr>
+<td>next_step staging</td>
+<td><code>BaseFederate.py:664</code> <code>_apply_deferred_inputs</code>, <code>:679</code> <code>_receive_inputs</code></td>
+</tr>
+<tr>
+<td>Causality default (runtime)</td>
+<td><code>BaseFederate.py:513</code></td>
+</tr>
+<tr>
+<td>Field default <code>same_step</code></td>
+<td><code>config_dataclasses.py:161</code></td>
+</tr>
+<tr>
+<td><code>time_offset_explicit</code> pattern to mirror</td>
+<td><code>config_dataclasses.py:66,71</code></td>
+</tr>
+<tr>
+<td>Obs before/after storage</td>
+<td><code>RL_Federate.py:286,295,679</code></td>
+</tr>
+<tr>
+<td>next_step transition alignment</td>
+<td><code>RL_Federate.py:616</code> <code>_inputs_to_observations</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

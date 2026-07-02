@@ -866,6 +866,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#streaming-opt-in-outbound-mqtt-mirror-all-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        streaming (opt-in outbound MQTT mirror, all types)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-interface-interface-federate-digital-twin-bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        type: "interface" — interface federate (digital-twin bridge)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#memory_config-per-federate-override" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1020,6 +1042,34 @@
     
   
     Reinforcement Learning Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
   
 
     
@@ -1405,6 +1455,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#streaming-opt-in-outbound-mqtt-mirror-all-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        streaming (opt-in outbound MQTT mirror, all types)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-interface-interface-federate-digital-twin-bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        type: "interface" — interface federate (digital-twin bridge)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#memory_config-per-federate-override" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1433,12 +1505,12 @@
 
 
 <h1 id="federate-configuration">Federate Configuration</h1>
-<p>Each entry in <code>federate_configs</code> is a <code>FederateConfig</code>. The <code>type</code> field is the discriminator: <code>"base"</code> for physics federates, <code>"rl"</code> for the RL agent federate.</p>
+<p>Each entry in <code>federate_configs</code> is a <code>FederateConfig</code>. The <code>type</code> field is the discriminator: <code>"base"</code> for physics federates, <code>"rl"</code> for the RL agent federate, <code>"interface"</code> for a digital-twin bridge federate (see <a href="#type-interface-interface-federate-digital-twin-bridge"><code>type: "interface"</code></a> below, and the full <a href="../../digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a> reference).</p>
 <hr />
 <h2 id="full-example-type-base">Full example — <code>type: "base"</code></h2>
 <pre><code class="language-yaml">federate_configs:
   spring_federate:
-    type: &quot;base&quot;              # required — &quot;base&quot; | &quot;rl&quot;
+    type: &quot;base&quot;              # required — &quot;base&quot; | &quot;rl&quot; | &quot;interface&quot;
     log_level: DEBUG          # optional — overrides scenario-level log_level
     core_type: &quot;zmq&quot;          # optional — default &quot;zmq&quot;
     core_name: &quot;fed1&quot;         # optional — HELICS core identifier
@@ -1500,7 +1572,7 @@
 <td><code>type</code></td>
 <td>yes</td>
 <td>—</td>
-<td><code>"base"</code> | <code>"rl"</code></td>
+<td><code>"base"</code> | <code>"rl"</code> | <code>"interface"</code></td>
 <td>Federate class discriminator</td>
 </tr>
 <tr>
@@ -1538,6 +1610,20 @@
 <td>StartupSyncConfig</td>
 <td>Per-federate startup sync override</td>
 </tr>
+<tr>
+<td><code>streaming</code></td>
+<td>no</td>
+<td><code>{stream: false}</code></td>
+<td>StreamingConfig</td>
+<td>Opt-in outbound MQTT mirror of this federate's I/O. All types. See <a href="../../digital_twin_interfaces/">Digital-Twin Interfaces</a>.</td>
+</tr>
+<tr>
+<td><code>override_enabled</code></td>
+<td>no</td>
+<td><code>false</code></td>
+<td>bool</td>
+<td><code>base</code>/<code>rl</code> federates only: opt in to accepting output/param overrides from an interface federate's <code>bridges</code>.</td>
+</tr>
 </tbody>
 </table>
 <blockquote>
@@ -1550,6 +1636,8 @@
   time_offset: 0.0       # optional — fractional HELICS units; set by auto_offset if enabled
   timeout: 30            # optional — max seconds to wait for HELICS grant (default: 30)
   int_max_iterations: 10000  # optional — max HELICS iterations per step (default: 10000)
+  rt_lag: 1.0            # optional — realtime lag tolerance (seconds); requires flags.realtime: true
+  rt_lead: 1.0           # optional — realtime lead tolerance (seconds); requires flags.realtime: true
 </code></pre>
 <table>
 <thead>
@@ -1584,6 +1672,12 @@
 <td>no</td>
 <td><code>10000</code></td>
 <td>Max HELICS iteration count per time step.</td>
+</tr>
+<tr>
+<td><code>rt_lag</code> / <code>rt_lead</code></td>
+<td>no</td>
+<td><code>null</code></td>
+<td>Tunable wall-clock pacing tolerance (HELICS <code>time_rt_lag</code>/<code>time_rt_lead</code>), only applied when <code>flags.realtime: true</code>. Used by interface federates to give an external process a wall-clock window to publish/react each step.</td>
 </tr>
 </tbody>
 </table>
@@ -1823,6 +1917,81 @@
 </code></pre>
 <p>For <code>type: "rl"</code>, <code>model_configs</code> is optional (unlike <code>type: "base"</code> where it is required).</p>
 <hr />
+<h2 id="streaming-opt-in-outbound-mqtt-mirror-all-types"><code>streaming</code> (opt-in outbound MQTT mirror, all types)</h2>
+<p>Mirrors this federate's inputs/outputs to MQTT each step, alongside normal HELICS traffic — for live dashboards/observers. Does not change the co-simulation itself.</p>
+<pre><code class="language-yaml">federate_configs:
+  spring_federate:
+    type: &quot;base&quot;
+    streaming:
+      stream: true                # default: false (opt-in)
+      # stream_topic_prefix: cosim/${sim_id}/spring   # default: cosim/&lt;sim_id&gt;/&lt;federate_name&gt;
+      # every_n_ticks: 1
+    ...
+</code></pre>
+<p>Requires Mosquitto running (<code>docker compose -f src/docker-compose.yaml up -d</code>). See <a href="../../digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a>.</p>
+<hr />
+<h2 id="type-interface-interface-federate-digital-twin-bridge"><code>type: "interface"</code> — interface federate (digital-twin bridge)</h2>
+<p>An interface federate has no physics model — instead of <code>model_configs</code>, it declares <code>interface_config</code>, and relays its wired HELICS connections to/from an external adapter (MQTT by default).</p>
+<pre><code class="language-yaml">federate_configs:
+  dt_bridge:
+    type: &quot;interface&quot;
+    timing_configs:
+      real_period: 1
+      rt_lag: 1.0
+      rt_lead: 1.0
+    flags:
+      realtime: true        # wall-clock pacing so an external process has time to react
+
+    interface_config:
+      adapter:
+        name: mqtt_adapter                # catalog key (interface_adapter category)
+        params: { host: localhost, port: 11883, qos: 0, client_id: cosim_dt }
+
+      streams:                            # co-sim -&gt; external (HELICS subscribe, MQTT publish)
+        - helics_key: plant.spring_federate.0/position
+          topic: cosim/${sim_id}/spring/position
+          every_n_ticks: 1
+
+      bridges:                            # external -&gt; co-sim, or override registry
+        - helics_key: plant.spring_federate.0/force
+          topic: cosim/${sim_id}/sensor/force
+          bounds: [-10, 10]
+          scope: input          # input | output | param
+          mode: replace          # replace external value | passthrough (real source + override)
+          # source_key: plant.driver.0/force   # required for mode: passthrough, scope: input only
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adapter.name</code></td>
+<td>Catalog key resolved from the <code>interface_adapter</code> category (e.g. <code>mqtt_adapter</code>), dynamic-imported like a physics model.</td>
+</tr>
+<tr>
+<td><code>streams[].helics_key</code></td>
+<td>A HELICS key this federate subscribes to; its value is relayed out to <code>topic</code>.</td>
+</tr>
+<tr>
+<td><code>bridges[].scope: input</code></td>
+<td>Registers a normal HELICS global publication at <code>helics_key</code>. <code>mode: replace</code> publishes only once an external value arrives; <code>mode: passthrough</code> (needs <code>source_key</code>) relays a real HELICS source until an external value shows up.</td>
+</tr>
+<tr>
+<td><code>bridges[].scope: output</code> | <code>param</code></td>
+<td>No HELICS registration — the target federate already computes this value/parameter. Instead writes the bounds-clipped external value into a Redis-backed override registry; the target opts in with <code>override_enabled: true</code>.</td>
+</tr>
+<tr>
+<td><code>bridges[].bounds</code></td>
+<td><code>[min, max]</code> clip applied to any external value before use.</td>
+</tr>
+</tbody>
+</table>
+<p>Because a physics-model federate and an interface federate register identical HELICS key names, swapping simulated hardware for real hardware ("config-only sim-to-real") is a change to <strong>one federate's block</strong> — every subscriber is untouched. See the worked example (<code>m5_bk4_demo_a_full_sim.yaml</code> / <code>m5_bk4_demo_b_digital_twin.yaml</code>) and full reference in <a href="../../digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a>.</p>
+<hr />
 <h2 id="memory_config-per-federate-override"><code>memory_config</code> (per-federate override)</h2>
 <p>Each federate inherits <code>memory_config</code> from the scenario level. Override it for a specific federate:</p>
 <pre><code class="language-yaml">federate_configs:
@@ -1833,8 +2002,10 @@
       attrs:
         - &quot;position&quot;
         - &quot;velocity&quot;
+      sink: parquet   # json (default) | parquet | none — see general.md
     ...
 </code></pre>
+<p><code>sink: parquet</code> is useful here to isolate a single high-frequency federate onto the non-blocking writer while others keep the simpler <code>json</code> default. Not supported for <code>type: "rl"</code> federates yet. See <a href="../general/#memory_config">General Scenario Configuration</a> for full <code>sink</code> semantics.</p>
 
 
 

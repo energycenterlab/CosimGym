@@ -894,6 +894,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#4-interface-adapters-transport-not-physics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Interface Adapters (transport, not physics)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -946,6 +957,34 @@
     
   
     Reinforcement Learning Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
   
 
     
@@ -1269,6 +1308,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#4-interface-adapters-transport-not-physics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Interface Adapters (transport, not physics)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1404,6 +1454,21 @@ class Gain(BaseModel):
 <pre><code class="language-bash">python src/models/model_catalog/catalog_loader.py
 </code></pre>
 <p>(The Docker / Makefile setups run this step for you.)</p>
+<hr />
+<h2 id="4-interface-adapters-transport-not-physics">4. Interface Adapters (transport, not physics)</h2>
+<p>An <strong>interface federate</strong> (<code>type: interface</code>, see <a href="../scenario_configuration/federate/#type-interface-interface-federate-digital-twin-bridge">Federate Configuration</a>) instantiates a <strong>transport adapter</strong> instead of a <code>BaseModel</code> — but through the identical catalog mechanism: <code>category: interface_adapter</code> entries in <code>catalog.yaml</code> (mapped to their own Redis key prefix in <code>catalog_loader.py</code>'s <code>CATEGORY_MAP</code>), dynamic-imported by class name/module path.</p>
+<pre><code class="language-yaml">models:
+  mqtt_adapter:
+    class_name: MqttAdapter
+    module_path: adapters.mqtt_adapter
+    category: interface_adapter
+    parameters:
+      client_id: { type: str, default_value: cosim_dt }
+      host: { type: str, default_value: localhost }
+      port: { type: int, default_value: 11883 }
+      qos: { type: int, default_value: 0 }
+</code></pre>
+<p>To add a new transport (e.g. Kafka, Modbus, OPC-UA), implement <code>InterfaceAdapter</code> (<code>src/adapters/base_adapter.py</code>: <code>connect</code>, <code>publish</code>, <code>subscribe</code>, <code>latest</code>, <code>close</code>) and register it the same way. See <a href="../digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a> for the adapter's role in both the <code>streaming</code> mirror and the interface federate.</p>
 
 
 

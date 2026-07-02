@@ -1,0 +1,1619 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for CosimGym, a co-simulation framework for reinforcement learning">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CosimGym — Two-Paper Execution Plan - CosimGym Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cosimgym-two-paper-execution-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CosimGym Documentation" class="md-header__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosimGym Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CosimGym — Two-Paper Execution Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CosimGym Documentation" class="md-nav__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    CosimGym Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Installation_Setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Overview
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/core_concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/terminology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terminology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Configuration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scenario Configuration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/general/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    General Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/federate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/custom_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Models & Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/rl_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/examples_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples List
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/example_base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 1 (Base Simulation)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/example_rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 2 (RL Training)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0-strategy-in-one-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. Strategy in one picture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-shared-foundation-prerequisite-for-both-papers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Shared foundation (prerequisite for BOTH papers)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Shared foundation (prerequisite for BOTH papers)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#f1-reproducibility-experiment-harness-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F1. Reproducibility + experiment harness (gating)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f2-physics-validation-credibility-of-every-downstream-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F2. Physics validation (credibility of every downstream result)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f3-metrics-baselines-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F3. Metrics + baselines library
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f4-ci-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F4. CI + quality
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f5-figures-diagrams-toolkit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F5. Figures + diagrams toolkit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-paper-a-software-framework-paper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. PAPER A — Software / Framework paper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. PAPER A — Software / Framework paper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-contributions-what-reviewers-must-remember" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-contributions (what reviewers must remember)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-figures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-figures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-exit-criterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-exit criterion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-paper-b-application-paper-incremental-case-studies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. PAPER B — Application paper (incremental case studies)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. PAPER B — Application paper (incremental case studies)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stage-b1-multi-rate-building-energyplus-fmu-rl-minimum-viable-application-paper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage B1 — Multi-rate building + EnergyPlus-FMU + RL (minimum viable application paper)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stage-b2-add-generation-storage-pv-battery-coupling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage B2 — Add generation + storage (PV + battery coupling)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stage-b3-coupled-district-multi-federation-high-ceiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage B3 — Coupled district / multi-federation (high ceiling)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-narrative-spine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-narrative spine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-division-of-content-avoid-self-overlap-salami-concerns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Division of content (avoid self-overlap / salami concerns)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-consolidated-checklist-ordered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Consolidated checklist (ordered)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-risks-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Risks &amp; mitigations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Risks &amp; mitigations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pointers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pointers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="cosimgym-two-paper-execution-plan">CosimGym — Two-Paper Execution Plan</h1>
+<blockquote>
+<p>Companion to <code>PAPER_PLAN.md</code>. This file is the <strong>what-needs-to-be-done</strong> roadmap for two papers:
+- <strong>Paper A — Software/Framework paper</strong> (the tool itself).
+- <strong>Paper B — Application paper</strong> (an interesting case study made easy <em>because of</em> the tool).</p>
+<p>Case studies in Paper B are planned <strong>incrementally</strong>: each stage reuses the previous one's
+assets and raises ambition. Date drafted: 2026-06-15. Status: planning, no code changes implied.</p>
+</blockquote>
+<hr />
+<h2 id="0-strategy-in-one-picture">0. Strategy in one picture</h2>
+<pre><code>              ┌─────────────────────────────┐
+              │  Shared foundation (do once) │
+              │  repro harness · CI · figures│
+              │  validated physics · metrics │
+              └───────────────┬─────────────┘
+                              │
+         ┌────────────────────┴────────────────────┐
+         ▼                                          ▼
+  PAPER A (software)                         PAPER B (application)
+  &quot;Here is the tool&quot;                         &quot;Look what the tool makes easy&quot;
+  Venue: SoftwareX / SIMPAT                  Venue: Energy &amp; Buildings → Applied Energy
+  Sells: architecture, declarative           Sells: a result that is hard/impossible
+         compiler, multi-formalism,                 elsewhere, obtained with config-only
+         multi-rate, reset methodology              effort. Incremental case studies.
+</code></pre>
+<p><strong>Sequencing:</strong> build the shared foundation first → submit <strong>Paper A</strong> (lower bar, stakes the claim, gives a citable artifact) → use the <em>same</em> validated scenarios to grow <strong>Paper B</strong> through Stages B1→B2→B3 and submit when results are strong. Paper B cites Paper A.</p>
+<p><strong>Golden rule for both:</strong> every claim is backed by a script that regenerates the figure from a YAML scenario + seed. If it is not reproducible, it is not in the paper.</p>
+<hr />
+<h2 id="1-shared-foundation-prerequisite-for-both-papers">1. Shared foundation (prerequisite for BOTH papers)</h2>
+<p>Do this once. Both papers depend on it. This is also the weakest part of the repo today (tests are dashboard-only, README says "early prototype").</p>
+<h3 id="f1-reproducibility-experiment-harness-gating">F1. Reproducibility + experiment harness  <em>(gating)</em></h3>
+<ul>
+<li>[ ] <code>experiments/</code> dir: one subfolder per experiment, each with <code>scenario.yaml</code>, <code>seed</code>, <code>run.sh</code>, expected outputs.</li>
+<li>[ ] Deterministic seeding end-to-end (env, agent, numpy, torch); record seeds in results.</li>
+<li>[ ] <code>make reproduce</code> (or <code>python -m experiments.run_all</code>) regenerates every figure + table.</li>
+<li>[ ] Pin environment: export exact <code>environment.yml</code> / lockfile; record HELICS, fmpy, SB3, torch versions; log a config + code git hash into each results folder.</li>
+<li>[ ] Results manifest (JSON) per run: scenario hash, seed, wall-time, metrics.</li>
+</ul>
+<h3 id="f2-physics-validation-credibility-of-every-downstream-result">F2. Physics validation (credibility of every downstream result)</h3>
+<ul>
+<li>[ ] Golden-trajectory tests for built-in models (spring-mass-damper vs analytical; 1R1C building step response; heat-pump COP curve; battery SOC energy balance).</li>
+<li>[ ] FMU round-trip test (FMI 2.0 EnergyPlus + FMI 3.0 feedthrough all types) — already have <code>fmu_feedthrough_test.yaml</code>.</li>
+<li>[ ] Multi-rate + causality correctness test: deferred-input alignment, auto-offset breaks algebraic loops, tick normalization.</li>
+</ul>
+<h3 id="f3-metrics-baselines-library">F3. Metrics + baselines library</h3>
+<ul>
+<li>[ ] Standard metric functions: comfort violation (°C·h), energy (kWh), cost (€), self-consumption %, grid import/export, constraint violations.</li>
+<li>[ ] Baseline controllers as catalog models: random, rule-based, PID (have it), <strong>MPC</strong> (build — the strong baseline reviewers expect), and a "do-nothing".</li>
+<li>[ ] Common evaluation protocol: fixed test horizon, same weather/data split, N seeds, report mean±std.</li>
+</ul>
+<h3 id="f4-ci-quality">F4. CI + quality</h3>
+<ul>
+<li>[ ] GitHub Actions: install, run fast tests, run one tiny end-to-end scenario headless.</li>
+<li>[ ] Smoke test that every <code>src/scenarios/*.yaml</code> at least loads + validates (Pydantic) and runs K steps.</li>
+<li>[ ] Lint/format; bump README status from "prototype" once green.</li>
+</ul>
+<h3 id="f5-figures-diagrams-toolkit">F5. Figures + diagrams toolkit</h3>
+<ul>
+<li>[ ] Architecture diagram (ScenarioManager → brokers → federates → Redis → catalog).</li>
+<li>[ ] Auto data-flow diagram generator from any scenario YAML (pub/sub graph) — also a <em>feature</em> worth mentioning in Paper A.</li>
+<li>[ ] Plotting module producing publication-ready learning curves, trajectory overlays, ablation bars.</li>
+</ul>
+<p><strong>Exit criterion for foundation:</strong> <code>make reproduce</code> regenerates the spring-mass-damper verification figure + the CS1 building learning curves on a clean machine.</p>
+<hr />
+<h2 id="2-paper-a-software-framework-paper">2. PAPER A — Software / Framework paper</h2>
+<p><strong>Identity:</strong> research-software paper. <strong>Target:</strong> SoftwareX (fast, citable artifact) or SIMPAT (if you want a fuller architecture/co-sim treatment). <strong>Length:</strong> SoftwareX is short (~6 pp + metadata); SIMPAT allows full treatment.</p>
+<p><strong>Thesis:</strong> <em>CosimGym compiles a declarative YAML scenario into a running HELICS federation that is simultaneously a Gymnasium environment, unifying arbitrary multi-formalism, multi-rate physics behind one RL interface — with a principled solution to episodic reset over non-resettable co-simulations.</em></p>
+<h3 id="a-contributions-what-reviewers-must-remember">A-contributions (what reviewers must remember)</h3>
+<ol>
+<li>Declarative scenario compiler (YAML → typed Pydantic → orchestrated processes).</li>
+<li>Catalog-driven, multi-formalism model abstraction (Python / FMI 2&amp;3 / EnergyPlus / data / agents).</li>
+<li>Multi-rate + causality + hierarchical multi-federation engine.</li>
+<li>Episodic-reset methodology for non-resettable federations (<code>full/soft/rolling/random</code>).</li>
+<li>Auto-derived RL spaces from physical I/O bounds.</li>
+</ol>
+<h3 id="a-tasks">A-tasks</h3>
+<ul>
+<li>[ ] <strong>Minimal but complete validation</strong> (not full case-study depth): one verification scenario (spring-mass-damper analytical match), one RL scenario (building, DQN+SAC beat PID), one FMU scenario (proves multi-formalism), one multi-rate/causality demo. These exist as YAMLs — wire them to <code>make reproduce</code>.</li>
+<li>[ ] <strong>Reset-strategy micro-benchmark</strong> — the signature methodological figure. Even small: full vs soft vs rolling vs random on CS1, learning curves + final performance. <em>No competitor can pose this.</em></li>
+<li>[ ] <strong>Composability evidence</strong> — table: lines-of-YAML + lines-of-Python to go base co-sim → trained agent, vs estimated effort for a hand-built HELICS+Gym wrapper. Concrete "zero-boilerplate" proof.</li>
+<li>[ ] <strong>Software-paper requisites:</strong> clear install, API/extension docs ("add a model in N lines"), licensing, versioned release + DOI (Zenodo), code metadata, example gallery.</li>
+<li>[ ] Write architecture section (the core), reset section (the novelty), short results.</li>
+<li>[ ] Honest limitations: single-agent now, single-host focus, prototype maturity → frame as roadmap.</li>
+</ul>
+<h3 id="a-figures">A-figures</h3>
+<ol>
+<li>Architecture diagram. 2. YAML→runtime compilation flow. 3. Reset-strategy ablation. 4. One learning curve + trajectory. 5. Comparison table (from <code>PAPER_PLAN.md</code> §2.1).</li>
+</ol>
+<h3 id="a-exit-criterion">A-exit criterion</h3>
+<p>Reviewer can <code>pip/conda install</code>, run an example from the paper, and reproduce one figure. Artifact has a DOI.</p>
+<hr />
+<h2 id="3-paper-b-application-paper-incremental-case-studies">3. PAPER B — Application paper (incremental case studies)</h2>
+<p><strong>Identity:</strong> applied-energy results paper. The case study must show a result that is <strong>hard or impossible to obtain elsewhere</strong> but <strong>easy in CosimGym</strong> — multi-formalism + multi-rate + reset semantics doing real work.</p>
+<p><strong>Build it in three stages.</strong> Each stage is publishable-on-its-own evidence and a strict superset of the previous. Submit when Stage B1 (minimum) or B1+B2 (strong) is solid; B3 is the high-ceiling extension.</p>
+<h3 id="stage-b1-multi-rate-building-energyplus-fmu-rl-minimum-viable-application-paper">Stage B1 — Multi-rate building + EnergyPlus-FMU + RL  <em>(minimum viable application paper)</em></h3>
+<p><strong>Why first:</strong> highest realism-per-effort, uses existing FMU assets (<code>bui0_fmu_test.yaml</code>, <code>Adelaide_test.yaml</code>), and directly showcases the FMU + multi-rate combo that Sinergym/BOPTEST can't compose.</p>
+<ul>
+<li>[ ] Compose federation: weather (1 h) → EnergyPlus-FMU building (10 min) → heat pump (1 min) → RL agent. Different <code>real_period</code> per federate = multi-rate proof.</li>
+<li>[ ] Train DQN + SAC; baselines PID + <strong>MPC</strong> + rule-based.</li>
+<li>[ ] Metrics: comfort violation (°C·h), heating energy (kWh), cost, COP utilization.</li>
+<li>[ ] <strong>Reset-strategy ablation on a real FMU</strong> (full/soft/rolling/random) — the methodological differentiator carried into application.</li>
+<li>[ ] Robustness: test on a different weather year / climate (TO vs Adelaide) — generalization story.</li>
+<li>[ ] <strong>Effort claim:</strong> show the entire study is config-only (diff between base-cosim YAML and RL YAML).</li>
+</ul>
+<p><strong>B1 venue:</strong> Energy and Buildings (best fit) or Journal of Building Performance Simulation.</p>
+<h3 id="stage-b2-add-generation-storage-pv-battery-coupling">Stage B2 — Add generation + storage (PV + battery coupling)</h3>
+<p><strong>Why second:</strong> turns "control one building" into "manage a prosumer," adds an economic objective, broadens to Applied Energy.</p>
+<ul>
+<li>[ ] Couple PV (<code>pv_dest</code>) + battery + load with the B1 building (cross-federation subscriptions).</li>
+<li>[ ] RL jointly controls HVAC modulation + battery dispatch (multi-variable action space — auto-derived from catalog bounds).</li>
+<li>[ ] Baselines: rule-based BEMS (have <code>rb_bems</code>) + PID + MPC.</li>
+<li>[ ] Metrics: self-consumption %, grid import/export (kWh), energy cost under a tariff, comfort kept.</li>
+<li>[ ] Show multi-objective trade-off (comfort vs cost vs self-consumption) — Pareto-ish frontier across reward weightings.</li>
+</ul>
+<p><strong>B2 venue:</strong> Applied Energy (strong) — the multi-objective prosumer result is its sweet spot.</p>
+<h3 id="stage-b3-coupled-district-multi-federation-high-ceiling">Stage B3 — Coupled district / multi-federation (high ceiling)</h3>
+<p><strong>Why last:</strong> showcases the unique hierarchical multi-federation feature; opens IEEE TSG; natural MARL extension. Needs the most new work.</p>
+<ul>
+<li>[ ] Multiple buildings (each its own federation) + shared PV/storage/grid federation, coupled by the hierarchy broker (<code>--sub_brokers</code>).</li>
+<li>[ ] Single-agent coordinator first; then <strong>MARL</strong> (one <code>rl_agent</code> federate per building) once multi-agent support lands (see <code>PAPER_PLAN.md</code> §7.3).</li>
+<li>[ ] Add a simple grid/OPF or power-balance federate for grid-aware rewards (cf. PowerGridworld's OPF-in-the-loop, but multi-rate + multi-formalism).</li>
+<li>[ ] Metrics: peak shaving, transformer/feeder limit violations, fairness across buildings, total cost.</li>
+<li>[ ] Scalability: runtime vs number of federations/federates; optionally multi-host (<code>multi_computer_config</code>).</li>
+</ul>
+<p><strong>B3 venue:</strong> IEEE Transactions on Smart Grid / Applied Energy.</p>
+<h3 id="b-narrative-spine">B-narrative spine</h3>
+<p>"Realistic control studies usually force a choice: realistic physics (hard to wire to RL) <em>or</em> a convenient RL interface (toy physics). With CosimGym the realistic, multi-rate, multi-formalism physics is config-only — so we can study [B1 building → B2 prosumer → B3 district] with the same agent code, and we quantify what that realism buys (and what reset strategy / multi-rate fidelity costs)."</p>
+<hr />
+<h2 id="4-division-of-content-avoid-self-overlap-salami-concerns">4. Division of content (avoid self-overlap / salami concerns)</h2>
+<table>
+<thead>
+<tr>
+<th>Content</th>
+<th>Paper A (software)</th>
+<th>Paper B (application)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Architecture, compiler, catalog</td>
+<td><strong>Full</strong></td>
+<td>Cite A, 1 short paragraph</td>
+</tr>
+<tr>
+<td>Reset methodology</td>
+<td><strong>Full (method)</strong></td>
+<td><strong>Use + ablate on real FMU (result)</strong></td>
+</tr>
+<tr>
+<td>Multi-rate/causality engine</td>
+<td><strong>Full</strong></td>
+<td>Cite + exploit</td>
+</tr>
+<tr>
+<td>Verification (spring-mass-damper)</td>
+<td>Yes (brief)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Quantitative control wins vs MPC</td>
+<td>Minimal (1 demo)</td>
+<td><strong>Full, multiple baselines/stages</strong></td>
+</tr>
+<tr>
+<td>Multi-objective / district results</td>
+<td>No</td>
+<td><strong>Full (B2/B3)</strong></td>
+</tr>
+<tr>
+<td>Effort/composability claim</td>
+<td><strong>Headline</strong></td>
+<td>Supporting</td>
+</tr>
+</tbody>
+</table>
+<p>Two papers are distinct: A is <em>method + tool</em>, B is <em>scientific result enabled by the tool</em>. The reset ablation appears in both but in different roles (method demo vs applied result) — acceptable and common.</p>
+<hr />
+<h2 id="5-consolidated-checklist-ordered">5. Consolidated checklist (ordered)</h2>
+<p><strong>Phase 0 — Foundation (blocks everything)</strong>
+- [ ] F1 repro harness + seeding + <code>make reproduce</code>
+- [ ] F2 physics golden tests + FMU round-trip + multi-rate correctness
+- [ ] F3 metrics lib + baselines (incl. MPC)
+- [ ] F4 CI + scenario smoke tests
+- [ ] F5 figure/diagram toolkit + architecture diagram</p>
+<p><strong>Phase 1 — Paper A (software)</strong>
+- [ ] Wire 4 minimal scenarios to repro harness
+- [ ] Reset micro-benchmark figure
+- [ ] Composability table
+- [ ] Docs + Zenodo DOI release
+- [ ] Draft A → submit SoftwareX/SIMPAT</p>
+<p><strong>Phase 2 — Paper B (incremental)</strong>
+- [ ] B1 building+FMU+multi-rate, DQN/SAC vs PID/MPC, reset ablation, climate generalization
+- [ ] (strong) B2 add PV+battery, multi-objective prosumer
+- [ ] (high ceiling) B3 district multi-federation, optional MARL + grid federate + scalability
+- [ ] Draft B → submit Energy and Buildings (B1) or Applied Energy (B1+B2)</p>
+<hr />
+<h2 id="6-risks-mitigations">6. Risks &amp; mitigations</h2>
+<ul>
+<li><strong>Maturity/repro gap</strong> → Phase 0 is non-negotiable; do not draft results before <code>make reproduce</code> works.</li>
+<li><strong>Reviewer asks "why not Sinergym/BOPTEST?"</strong> → lead with multi-formalism + multi-rate + composability; B1 is literally a thing they cannot compose.</li>
+<li><strong>MPC baseline missing</strong> → build it in F3; without it, applied-energy reviewers discount RL wins.</li>
+<li><strong>Salami-slicing concern</strong> → §4 division table; A=method, B=result; cite each other.</li>
+<li><strong>Single-agent limitation</strong> → keep B3/MARL as explicit roadmap; don't claim MARL until implemented.</li>
+</ul>
+<hr />
+<h3 id="pointers">Pointers</h3>
+<ul>
+<li>Novelty/gap analysis, journal tiers, bibliography: see <code>PAPER_PLAN.md</code>.</li>
+<li>Existing scenarios to reuse: <code>src/scenarios/</code> (building+HP+RL, PV+battery+RL, FMU tests, multi-federation).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

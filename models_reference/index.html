@@ -1,0 +1,2421 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for CosimGym, a co-simulation framework for reinforcement learning">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/cosimgym_icon_transparent.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CosimGym Models Reference - CosimGym Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cosimgym-models-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="CosimGym Documentation" class="md-header__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosimGym Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CosimGym Models Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="CosimGym Documentation" class="md-nav__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    CosimGym Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Installation_Setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Overview
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/core_concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/terminology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terminology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Configuration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scenario Configuration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/general/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    General Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/federate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/scenario_configuration/rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/custom_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Models & Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/rl_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/examples_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples List
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/example_base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 1 (Base Simulation)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/example_rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 2 (RL Training)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-rc_building-5r1c-iso-13790-building-thermal-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. rc_building — 5R1C ISO 13790 Building Thermal Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. rc_building — 5R1C ISO 13790 Building Thermal Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-declare-in-subscribes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs (declare in subscribes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputs-declare-in-publishes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs (declare in publishes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-pandapower_grid-power-grid-acdc-power-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. pandapower_grid — Power Grid AC/DC Power Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. pandapower_grid — Power Grid AC/DC Power Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-settable-per-component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs (settable per component)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputs-per-result-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs (per result table)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-pandapipes_grid-fluid-gas-network-pipeflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. pandapipes_grid — Fluid / Gas Network Pipeflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. pandapipes_grid — Fluid / Gas Network Pipeflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-settable-per-component_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs (settable per component)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputs-per-result-table_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs (per result table)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-integration-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Integration Notes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Integration Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wiring-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#only-declare-what-you-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Only declare what you need
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#catalog-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catalog reload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoke-test-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Smoke-test scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="cosimgym-models-reference">CosimGym Models Reference</h1>
+<p>Three physical models available in the catalog. All follow the same integration pattern:
+- <strong>Parameters</strong> → fixed at initialization from scenario YAML (<code>model_configs.parameters</code>)
+- <strong>Inputs</strong> → received each step via HELICS subscriptions (scenario <code>subscribes</code>)
+- <strong>Outputs</strong> → published each step via HELICS publications (scenario <code>publishes</code>)</p>
+<hr />
+<h2 id="1-rc_building-5r1c-iso-13790-building-thermal-model">1. <code>rc_building</code> — 5R1C ISO 13790 Building Thermal Model</h2>
+<p>Single-zone building using the 5-resistance 1-capacitance thermal network (ISO 13790 Annex C / Crank–Nicolson integration). Computes indoor temperatures and HVAC demand each step.</p>
+<p><strong>Scenario snippet:</strong></p>
+<pre><code class="language-yaml">model_configs:
+  instantiation:
+    model_name: &quot;rc_building&quot;
+  parameters:
+    floor_area: 50.0
+    t_set_heating: 21.0
+    cop_heating: 3.0
+</code></pre>
+<h3 id="parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Unit</th>
+<th>Default</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>floor_area</code></td>
+<td>m²</td>
+<td>35.0</td>
+<td>✓</td>
+<td>Conditioned floor area</td>
+</tr>
+<tr>
+<td><code>window_area</code></td>
+<td>m²</td>
+<td>4.0</td>
+<td></td>
+<td>Total window area</td>
+</tr>
+<tr>
+<td><code>walls_area</code></td>
+<td>m²</td>
+<td>11.0</td>
+<td></td>
+<td>Total opaque external wall area</td>
+</tr>
+<tr>
+<td><code>room_vol</code></td>
+<td>m³</td>
+<td>105.0</td>
+<td></td>
+<td>Air volume of zone</td>
+</tr>
+<tr>
+<td><code>total_internal_area</code></td>
+<td>m²</td>
+<td>142.0</td>
+<td></td>
+<td>Total internal surface area (A_t)</td>
+</tr>
+<tr>
+<td><code>u_walls</code></td>
+<td>W/(m²K)</td>
+<td>0.2</td>
+<td></td>
+<td>U-value of opaque walls</td>
+</tr>
+<tr>
+<td><code>u_windows</code></td>
+<td>W/(m²K)</td>
+<td>1.1</td>
+<td></td>
+<td>U-value of windows</td>
+</tr>
+<tr>
+<td><code>ach_vent</code></td>
+<td>1/h</td>
+<td>1.5</td>
+<td></td>
+<td>Mechanical ventilation air changes per hour</td>
+</tr>
+<tr>
+<td><code>ach_infl</code></td>
+<td>1/h</td>
+<td>0.5</td>
+<td></td>
+<td>Infiltration air changes per hour</td>
+</tr>
+<tr>
+<td><code>ventilation_efficiency</code></td>
+<td>–</td>
+<td>0.6</td>
+<td></td>
+<td>Heat recovery efficiency</td>
+</tr>
+<tr>
+<td><code>thermal_capacitance_per_floor_area</code></td>
+<td>J/(m²K)</td>
+<td>165000</td>
+<td></td>
+<td>Effective thermal capacitance per floor area (c_m)</td>
+</tr>
+<tr>
+<td><code>t_set_heating</code></td>
+<td>°C</td>
+<td>20.0</td>
+<td></td>
+<td>Heating setpoint fallback (used when not connected)</td>
+</tr>
+<tr>
+<td><code>t_set_cooling</code></td>
+<td>°C</td>
+<td>26.0</td>
+<td></td>
+<td>Cooling setpoint fallback (used when not connected)</td>
+</tr>
+<tr>
+<td><code>max_heating_power_per_floor_area</code></td>
+<td>W/m²</td>
+<td>500.0</td>
+<td></td>
+<td>Max deliverable heating power density</td>
+</tr>
+<tr>
+<td><code>max_cooling_power_per_floor_area</code></td>
+<td>W/m²</td>
+<td>−500.0</td>
+<td></td>
+<td>Max deliverable cooling power density (negative)</td>
+</tr>
+<tr>
+<td><code>cop_heating</code></td>
+<td>–</td>
+<td>3.0</td>
+<td></td>
+<td>COP for heating thermal→electrical conversion</td>
+</tr>
+<tr>
+<td><code>cop_cooling</code></td>
+<td>–</td>
+<td>3.0</td>
+<td></td>
+<td>COP/EER for cooling thermal→electrical conversion</td>
+</tr>
+<tr>
+<td><code>default_solar_gains</code></td>
+<td>W</td>
+<td>0.0</td>
+<td></td>
+<td>Solar gains used when <code>solar_gains</code> input not connected</td>
+</tr>
+<tr>
+<td><code>default_internal_gains</code></td>
+<td>W</td>
+<td>0.0</td>
+<td></td>
+<td>Internal gains used when <code>internal_gains</code> input not connected</td>
+</tr>
+<tr>
+<td><code>t_m_initial</code></td>
+<td>°C</td>
+<td>20.0</td>
+<td></td>
+<td>Initial thermal mass temperature</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inputs-declare-in-subscribes">Inputs (declare in <code>subscribes</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Unit</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>T_ext</code></td>
+<td>°C</td>
+<td>✓</td>
+<td>Outdoor air temperature</td>
+</tr>
+<tr>
+<td><code>solar_gains</code></td>
+<td>W</td>
+<td></td>
+<td>Solar heat gains entering zone</td>
+</tr>
+<tr>
+<td><code>internal_gains</code></td>
+<td>W</td>
+<td></td>
+<td>Internal heat gains (occupants, equipment)</td>
+</tr>
+<tr>
+<td><code>t_set_heating</code></td>
+<td>°C</td>
+<td></td>
+<td><strong>Optional control input</strong> — heating setpoint; overrides parameter if connected</td>
+</tr>
+<tr>
+<td><code>t_set_cooling</code></td>
+<td>°C</td>
+<td></td>
+<td><strong>Optional control input</strong> — cooling setpoint; overrides parameter if connected</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><code>t_set_heating</code> and <code>t_set_cooling</code> are dual-mode: when subscribed they act as live dynamic inputs; when not subscribed they fall back to the parameter defaults.</p>
+</blockquote>
+<h3 id="outputs-declare-in-publishes">Outputs (declare in <code>publishes</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>T_indoor</code></td>
+<td>°C</td>
+<td>Indoor air temperature</td>
+</tr>
+<tr>
+<td><code>T_mass</code></td>
+<td>°C</td>
+<td>Thermal mass node temperature</td>
+</tr>
+<tr>
+<td><code>T_surface</code></td>
+<td>°C</td>
+<td>Internal surface node temperature</td>
+</tr>
+<tr>
+<td><code>T_operative</code></td>
+<td>°C</td>
+<td>Operative comfort temperature (0.3 · T_air + 0.7 · T_s)</td>
+</tr>
+<tr>
+<td><code>Q_heating</code></td>
+<td>W</td>
+<td>Heating power delivered (≥ 0)</td>
+</tr>
+<tr>
+<td><code>Q_cooling</code></td>
+<td>W</td>
+<td>Cooling power extracted (≥ 0)</td>
+</tr>
+<tr>
+<td><code>energy_demand</code></td>
+<td>W</td>
+<td>Signed demand (+ heating / − cooling)</td>
+</tr>
+<tr>
+<td><code>P_elec</code></td>
+<td>W</td>
+<td>Electrical consumption = demand / COP</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-pandapower_grid-power-grid-acdc-power-flow">2. <code>pandapower_grid</code> — Power Grid AC/DC Power Flow</h2>
+<p>Wraps <a href="https://pandapower.readthedocs.io">pandapower</a>. Loads any IEEE/MATPOWER case or custom JSON network, applies per-component setpoints each step, runs power flow or OPF, and publishes results. Topology and number of I/O are determined by the loaded case — keys are declared in the scenario YAML, not pre-fixed in the catalog.</p>
+<p><strong>Key naming convention:</strong></p>
+<pre><code>inputs  →  {component}.{index}.{column}       e.g.  load.0.p_mw
+outputs →  res.{component}.{index}.{column}   e.g.  res.bus.3.vm_pu
+scalars →  convergence | total_loss_mw | total_gen_mw | total_load_mw
+</code></pre>
+<p><strong>Scenario snippet:</strong></p>
+<pre><code class="language-yaml">model_configs:
+  instantiation:
+    model_name: &quot;pandapower_grid&quot;
+  parameters:
+    case_file: &quot;case14&quot;
+    case_file_format: &quot;builtin&quot;
+    solver_mode: &quot;pf&quot;
+subscribes:
+  - key: &quot;load.0.p_mw&quot;
+    type: &quot;double&quot;
+    units: &quot;MW&quot;
+    targets: {'0': [other_federate.0/signal_key]}
+publishes:
+  - key: &quot;res.bus.0.vm_pu&quot;
+    type: &quot;double&quot;
+    units: &quot;p.u.&quot;
+  - key: &quot;convergence&quot;
+    type: &quot;double&quot;
+    units: &quot;-&quot;
+</code></pre>
+<h3 id="parameters_1">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>case_file</code></td>
+<td><code>"case14"</code></td>
+<td>Builtin case name (<code>case14</code>, <code>case118</code>, …) or path to network file</td>
+</tr>
+<tr>
+<td><code>case_file_format</code></td>
+<td><code>"builtin"</code></td>
+<td><code>builtin</code> | <code>json</code> | <code>pickle</code> | <code>excel</code> | <code>sqlite</code> | <code>matpower</code> | <code>pypower</code></td>
+</tr>
+<tr>
+<td><code>solver_mode</code></td>
+<td><code>"pf"</code></td>
+<td><code>pf</code> (AC NR) | <code>dc_pf</code> | <code>opf</code> | <code>dc_opf</code></td>
+</tr>
+<tr>
+<td><code>pf_algorithm</code></td>
+<td><code>"nr"</code></td>
+<td><code>nr</code> | <code>bfsw</code> | <code>gs</code> | <code>iwamoto_nr</code> — AC PF only</td>
+</tr>
+<tr>
+<td><code>pf_max_iteration</code></td>
+<td><code>10</code></td>
+<td>Max Newton–Raphson iterations</td>
+</tr>
+<tr>
+<td><code>pf_tolerance_mva</code></td>
+<td><code>1e-8</code></td>
+<td>Convergence tolerance [MVA]</td>
+</tr>
+<tr>
+<td><code>enforce_q_lims</code></td>
+<td><code>false</code></td>
+<td>Enforce generator reactive power limits</td>
+</tr>
+<tr>
+<td><code>fail_on_divergence</code></td>
+<td><code>true</code></td>
+<td>Raise exception on non-convergence; set <code>false</code> to publish <code>convergence=0</code> and continue</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inputs-settable-per-component">Inputs (settable per component)</h3>
+<p>Index <code>N</code> = 0-based row in the corresponding pandapower DataFrame.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Input key pattern</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Load</td>
+<td><code>load.N.p_mw</code></td>
+<td>MW</td>
+<td>Active power demand</td>
+</tr>
+<tr>
+<td>Load</td>
+<td><code>load.N.q_mvar</code></td>
+<td>Mvar</td>
+<td>Reactive power demand</td>
+</tr>
+<tr>
+<td>Load</td>
+<td><code>load.N.scaling</code></td>
+<td>–</td>
+<td>Demand scaling factor</td>
+</tr>
+<tr>
+<td>Load</td>
+<td><code>load.N.in_service</code></td>
+<td>bool</td>
+<td>Connect/disconnect load</td>
+</tr>
+<tr>
+<td>Static gen</td>
+<td><code>sgen.N.p_mw</code></td>
+<td>MW</td>
+<td>Active power injection</td>
+</tr>
+<tr>
+<td>Static gen</td>
+<td><code>sgen.N.q_mvar</code></td>
+<td>Mvar</td>
+<td>Reactive power injection</td>
+</tr>
+<tr>
+<td>Static gen</td>
+<td><code>sgen.N.scaling</code></td>
+<td>–</td>
+<td>Output scaling factor</td>
+</tr>
+<tr>
+<td>Sync gen</td>
+<td><code>gen.N.p_mw</code></td>
+<td>MW</td>
+<td>Active power setpoint</td>
+</tr>
+<tr>
+<td>Sync gen</td>
+<td><code>gen.N.vm_pu</code></td>
+<td>p.u.</td>
+<td>Terminal voltage setpoint</td>
+</tr>
+<tr>
+<td>Sync gen</td>
+<td><code>gen.N.in_service</code></td>
+<td>bool</td>
+<td>Connect/disconnect generator</td>
+</tr>
+<tr>
+<td>External grid</td>
+<td><code>ext_grid.N.vm_pu</code></td>
+<td>p.u.</td>
+<td>Slack bus voltage magnitude</td>
+</tr>
+<tr>
+<td>External grid</td>
+<td><code>ext_grid.N.va_degree</code></td>
+<td>°</td>
+<td>Slack bus voltage angle</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td><code>storage.N.p_mw</code></td>
+<td>MW</td>
+<td>Active power (+ charge / − discharge)</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td><code>storage.N.soc_percent</code></td>
+<td>%</td>
+<td>State of charge</td>
+</tr>
+<tr>
+<td>Switch</td>
+<td><code>switch.N.closed</code></td>
+<td>bool</td>
+<td>Switch open/close state</td>
+</tr>
+<tr>
+<td>Transformer</td>
+<td><code>trafo.N.tap_pos</code></td>
+<td>–</td>
+<td>Tap changer position</td>
+</tr>
+<tr>
+<td>Bus</td>
+<td><code>bus.N.in_service</code></td>
+<td>bool</td>
+<td>Connect/disconnect bus</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Any column writable in the corresponding pandapower DataFrame can be used as an input key.</p>
+</blockquote>
+<h3 id="outputs-per-result-table">Outputs (per result table)</h3>
+<table>
+<thead>
+<tr>
+<th>Output key pattern</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>res.bus.N.vm_pu</code></td>
+<td>p.u.</td>
+<td>Bus voltage magnitude</td>
+</tr>
+<tr>
+<td><code>res.bus.N.va_degree</code></td>
+<td>°</td>
+<td>Bus voltage angle</td>
+</tr>
+<tr>
+<td><code>res.bus.N.p_mw</code></td>
+<td>MW</td>
+<td>Net active power injection at bus</td>
+</tr>
+<tr>
+<td><code>res.bus.N.q_mvar</code></td>
+<td>Mvar</td>
+<td>Net reactive power injection at bus</td>
+</tr>
+<tr>
+<td><code>res.line.N.loading_percent</code></td>
+<td>%</td>
+<td>Line thermal loading</td>
+</tr>
+<tr>
+<td><code>res.line.N.p_from_mw</code></td>
+<td>MW</td>
+<td>Active power flow (from-bus end)</td>
+</tr>
+<tr>
+<td><code>res.line.N.p_to_mw</code></td>
+<td>MW</td>
+<td>Active power flow (to-bus end)</td>
+</tr>
+<tr>
+<td><code>res.line.N.pl_mw</code></td>
+<td>MW</td>
+<td>Active power loss in line</td>
+</tr>
+<tr>
+<td><code>res.line.N.i_from_ka</code></td>
+<td>kA</td>
+<td>Current magnitude (from-bus end)</td>
+</tr>
+<tr>
+<td><code>res.trafo.N.loading_percent</code></td>
+<td>%</td>
+<td>Transformer thermal loading</td>
+</tr>
+<tr>
+<td><code>res.trafo.N.p_hv_mw</code></td>
+<td>MW</td>
+<td>Active power (HV side)</td>
+</tr>
+<tr>
+<td><code>res.gen.N.p_mw</code></td>
+<td>MW</td>
+<td>Generator active power dispatch</td>
+</tr>
+<tr>
+<td><code>res.gen.N.q_mvar</code></td>
+<td>Mvar</td>
+<td>Generator reactive power dispatch</td>
+</tr>
+<tr>
+<td><code>res.gen.N.vm_pu</code></td>
+<td>p.u.</td>
+<td>Generator terminal voltage</td>
+</tr>
+<tr>
+<td><code>res.load.N.p_mw</code></td>
+<td>MW</td>
+<td>Load active power consumed</td>
+</tr>
+<tr>
+<td><code>res.sgen.N.p_mw</code></td>
+<td>MW</td>
+<td>Static gen active power</td>
+</tr>
+<tr>
+<td><code>res.ext_grid.N.p_mw</code></td>
+<td>MW</td>
+<td>Slack bus active power exchange</td>
+</tr>
+<tr>
+<td><code>res.ext_grid.N.q_mvar</code></td>
+<td>Mvar</td>
+<td>Slack bus reactive power exchange</td>
+</tr>
+<tr>
+<td><code>res.storage.N.p_mw</code></td>
+<td>MW</td>
+<td>Storage power (+ charge / − discharge)</td>
+</tr>
+<tr>
+<td><strong><code>convergence</code></strong></td>
+<td>–</td>
+<td>1.0 = converged, 0.0 = diverged</td>
+</tr>
+<tr>
+<td><strong><code>total_loss_mw</code></strong></td>
+<td>MW</td>
+<td>System-wide active power losses (lines + trafos)</td>
+</tr>
+<tr>
+<td><strong><code>total_gen_mw</code></strong></td>
+<td>MW</td>
+<td>Total generation (gens + ext_grids)</td>
+</tr>
+<tr>
+<td><strong><code>total_load_mw</code></strong></td>
+<td>MW</td>
+<td>Total active load in service</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-pandapipes_grid-fluid-gas-network-pipeflow">3. <code>pandapipes_grid</code> — Fluid / Gas Network Pipeflow</h2>
+<p>Wraps <a href="https://www.pandapipes.org">pandapipes</a>. Loads any pandapipes network (built-in gas/heat cases or custom JSON), applies per-component setpoints, runs hydraulic or thermal pipeflow, and publishes results. Same dynamic I/O convention as pandapower_grid.</p>
+<p><strong>Key naming convention:</strong></p>
+<pre><code>inputs  →  {component}.{index}.{column}           e.g.  sink.0.mdot_kg_per_s
+outputs →  res.{component}.{index}.{column}       e.g.  res.junction.0.p_bar
+scalars →  convergence | total_supply_mdot_kg_per_s | total_demand_mdot_kg_per_s
+</code></pre>
+<p><strong>Scenario snippet:</strong></p>
+<pre><code class="language-yaml">model_configs:
+  instantiation:
+    model_name: &quot;pandapipes_grid&quot;
+  parameters:
+    case_file: &quot;gas_tcross1&quot;
+    case_file_format: &quot;builtin&quot;
+    pf_mode: &quot;hydraulics&quot;
+subscribes:
+  - key: &quot;sink.0.mdot_kg_per_s&quot;
+    type: &quot;double&quot;
+    units: &quot;kg/s&quot;
+    targets: {'0': [other_federate.0/signal_key]}
+publishes:
+  - key: &quot;res.junction.0.p_bar&quot;
+    type: &quot;double&quot;
+    units: &quot;bar&quot;
+  - key: &quot;convergence&quot;
+    type: &quot;double&quot;
+    units: &quot;-&quot;
+</code></pre>
+<h3 id="parameters_2">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>case_file</code></td>
+<td><code>"gas_tcross1"</code></td>
+<td>Builtin network name or path to network file</td>
+</tr>
+<tr>
+<td><code>case_file_format</code></td>
+<td><code>"builtin"</code></td>
+<td><code>builtin</code> | <code>json</code> | <code>pickle</code></td>
+</tr>
+<tr>
+<td><code>pf_mode</code></td>
+<td><code>"hydraulics"</code></td>
+<td><code>hydraulics</code> | <code>heat</code> | <code>sequential</code> | <code>bidirectional</code></td>
+</tr>
+<tr>
+<td><code>max_iter_hyd</code></td>
+<td><code>10</code></td>
+<td>Max hydraulic solver iterations</td>
+</tr>
+<tr>
+<td><code>max_iter_therm</code></td>
+<td><code>10</code></td>
+<td>Max thermal solver iterations (heat/sequential modes)</td>
+</tr>
+<tr>
+<td><code>friction_model</code></td>
+<td><code>"nikuradse"</code></td>
+<td><code>nikuradse</code> | <code>colebrook</code> — friction factor correlation</td>
+</tr>
+<tr>
+<td><code>fail_on_divergence</code></td>
+<td><code>true</code></td>
+<td>Raise exception on non-convergence; set <code>false</code> to publish <code>convergence=0</code> and continue</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Available builtin networks:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gas_one_pipe1</code></td>
+<td>Single pipe, 2 junctions, 1 sink</td>
+</tr>
+<tr>
+<td><code>gas_one_pipe2</code></td>
+<td>Single pipe variant</td>
+</tr>
+<tr>
+<td><code>gas_strand_2pipes</code></td>
+<td>Two-pipe strand, 3 junctions</td>
+</tr>
+<tr>
+<td><code>gas_strand_pump</code></td>
+<td>Strand with pump</td>
+</tr>
+<tr>
+<td><code>gas_tcross1</code></td>
+<td>T-cross, 4 junctions, 3 pipes, 2 sinks</td>
+</tr>
+<tr>
+<td><code>gas_tcross2</code></td>
+<td>T-cross variant</td>
+</tr>
+<tr>
+<td><code>gas_meshed_square</code></td>
+<td>Meshed loop (4-node)</td>
+</tr>
+<tr>
+<td><code>gas_meshed_delta</code></td>
+<td>Meshed delta topology</td>
+</tr>
+<tr>
+<td><code>gas_meshed_pumps</code></td>
+<td>Meshed with pumps</td>
+</tr>
+<tr>
+<td><code>gas_meshed_two_valves</code></td>
+<td>Meshed with valves</td>
+</tr>
+<tr>
+<td><code>gas_2eg_hnet</code></td>
+<td>Two external grids, heat network</td>
+</tr>
+<tr>
+<td><code>gas_3parallel</code></td>
+<td>3 parallel pipes</td>
+</tr>
+<tr>
+<td><code>gas_stanet_path</code></td>
+<td>Real STANET path network</td>
+</tr>
+<tr>
+<td><code>gas_versatility</code></td>
+<td>Multi-component test network</td>
+</tr>
+<tr>
+<td><code>heat_transfer_delta</code></td>
+<td>Heat transfer delta</td>
+</tr>
+<tr>
+<td><code>heat_transfer_delta_2sinks</code></td>
+<td>Heat transfer with 2 sinks</td>
+</tr>
+<tr>
+<td><code>heat_tranfer_modelica_path</code></td>
+<td>Modelica heat path</td>
+</tr>
+<tr>
+<td><code>heat_transfer_heights</code></td>
+<td>Network with elevation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inputs-settable-per-component_1">Inputs (settable per component)</h3>
+<p>Index <code>N</code> = 0-based row in the component DataFrame.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Input key pattern</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sink</td>
+<td><code>sink.N.mdot_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow demand</td>
+</tr>
+<tr>
+<td>Sink</td>
+<td><code>sink.N.scaling</code></td>
+<td>–</td>
+<td>Demand scaling factor</td>
+</tr>
+<tr>
+<td>Sink</td>
+<td><code>sink.N.in_service</code></td>
+<td>bool</td>
+<td>Connect/disconnect sink</td>
+</tr>
+<tr>
+<td>Source</td>
+<td><code>source.N.mdot_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow injection</td>
+</tr>
+<tr>
+<td>Source</td>
+<td><code>source.N.scaling</code></td>
+<td>–</td>
+<td>Supply scaling factor</td>
+</tr>
+<tr>
+<td>Source</td>
+<td><code>source.N.in_service</code></td>
+<td>bool</td>
+<td>Connect/disconnect source</td>
+</tr>
+<tr>
+<td>External grid</td>
+<td><code>ext_grid.N.p_bar</code></td>
+<td>bar</td>
+<td>Supply pressure</td>
+</tr>
+<tr>
+<td>External grid</td>
+<td><code>ext_grid.N.t_k</code></td>
+<td>K</td>
+<td>Supply temperature</td>
+</tr>
+<tr>
+<td>External grid</td>
+<td><code>ext_grid.N.in_service</code></td>
+<td>bool</td>
+<td>Connect/disconnect ext_grid</td>
+</tr>
+<tr>
+<td>Valve</td>
+<td><code>valve.N.opened</code></td>
+<td>bool</td>
+<td>Open (true) / close (false)</td>
+</tr>
+<tr>
+<td>Pipe</td>
+<td><code>pipe.N.in_service</code></td>
+<td>bool</td>
+<td>Connect/disconnect pipe</td>
+</tr>
+<tr>
+<td>Pipe</td>
+<td><code>pipe.N.u_w_per_m2k</code></td>
+<td>W/(m²K)</td>
+<td>Heat transfer coefficient (heat mode)</td>
+</tr>
+<tr>
+<td>Pipe</td>
+<td><code>pipe.N.qext_w</code></td>
+<td>W</td>
+<td>External heat input/extraction</td>
+</tr>
+<tr>
+<td>Pump</td>
+<td><code>pump.N.in_service</code></td>
+<td>bool</td>
+<td>Enable/disable pump</td>
+</tr>
+<tr>
+<td>Compressor</td>
+<td><code>compressor.N.pressure_ratio</code></td>
+<td>–</td>
+<td>Compression ratio</td>
+</tr>
+<tr>
+<td>Circ pump (pressure)</td>
+<td><code>circ_pump_pressure.N.p_flow_bar</code></td>
+<td>bar</td>
+<td>Pressure setpoint</td>
+</tr>
+<tr>
+<td>Circ pump (mass)</td>
+<td><code>circ_pump_mass.N.mdot_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow setpoint</td>
+</tr>
+<tr>
+<td>Heat exchanger</td>
+<td><code>heat_exchanger.N.qext_w</code></td>
+<td>W</td>
+<td>Heat exchange power</td>
+</tr>
+<tr>
+<td>Pressure control</td>
+<td><code>press_control.N.controlled_p_bar</code></td>
+<td>bar</td>
+<td>Pressure setpoint</td>
+</tr>
+<tr>
+<td>Flow control</td>
+<td><code>flow_control.N.controlled_mdot_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Flow setpoint</td>
+</tr>
+</tbody>
+</table>
+<h3 id="outputs-per-result-table_1">Outputs (per result table)</h3>
+<table>
+<thead>
+<tr>
+<th>Output key pattern</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>res.junction.N.p_bar</code></td>
+<td>bar</td>
+<td>Junction pressure</td>
+</tr>
+<tr>
+<td><code>res.junction.N.t_k</code></td>
+<td>K</td>
+<td>Junction temperature</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.v_mean_m_per_s</code></td>
+<td>m/s</td>
+<td>Mean flow velocity</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.v_from_m_per_s</code></td>
+<td>m/s</td>
+<td>Velocity at from-end</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.v_to_m_per_s</code></td>
+<td>m/s</td>
+<td>Velocity at to-end</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.p_from_bar</code></td>
+<td>bar</td>
+<td>Pressure at from-end</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.p_to_bar</code></td>
+<td>bar</td>
+<td>Pressure at to-end</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.t_from_k</code></td>
+<td>K</td>
+<td>Temperature at from-end</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.t_to_k</code></td>
+<td>K</td>
+<td>Temperature at to-end</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.mdot_from_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow entering pipe</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.mdot_to_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow leaving pipe</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.vdot_norm_m3_per_s</code></td>
+<td>m³/s</td>
+<td>Volumetric flow (normalised)</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.dp_friction_loss_bar</code></td>
+<td>bar</td>
+<td>Frictional pressure loss</td>
+</tr>
+<tr>
+<td><code>res.pipe.N.reynolds</code></td>
+<td>–</td>
+<td>Reynolds number</td>
+</tr>
+<tr>
+<td><code>res.ext_grid.N.mdot_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow from ext_grid</td>
+</tr>
+<tr>
+<td><code>res.sink.N.mdot_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow consumed by sink</td>
+</tr>
+<tr>
+<td><code>res.source.N.mdot_kg_per_s</code></td>
+<td>kg/s</td>
+<td>Mass flow from source</td>
+</tr>
+<tr>
+<td><code>res.valve.N.v_mean_m_per_s</code></td>
+<td>m/s</td>
+<td>Mean velocity through valve</td>
+</tr>
+<tr>
+<td><code>res.pump.N.deltap_bar</code></td>
+<td>bar</td>
+<td>Pump pressure rise</td>
+</tr>
+<tr>
+<td><code>res.compressor.N.deltap_bar</code></td>
+<td>bar</td>
+<td>Compressor pressure rise</td>
+</tr>
+<tr>
+<td><strong><code>convergence</code></strong></td>
+<td>–</td>
+<td>1.0 = converged, 0.0 = diverged</td>
+</tr>
+<tr>
+<td><strong><code>total_supply_mdot_kg_per_s</code></strong></td>
+<td>kg/s</td>
+<td>Total supply from all ext_grids</td>
+</tr>
+<tr>
+<td><strong><code>total_demand_mdot_kg_per_s</code></strong></td>
+<td>kg/s</td>
+<td>Total demand from all sinks</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="common-integration-notes">Common Integration Notes</h2>
+<h3 id="wiring-pattern">Wiring pattern</h3>
+<p>The sub <code>key</code> name becomes the model input key. It does <strong>not</strong> need to match the publisher's key name — it maps via <code>targets</code>:</p>
+<pre><code class="language-yaml">subscribes:
+  - key: &quot;load.0.p_mw&quot;          # name the model receives in state.inputs
+    type: &quot;double&quot;
+    units: &quot;MW&quot;
+    targets:
+      '0': [other_federate.0/signal_float]   # actual pub topic to subscribe to
+</code></pre>
+<h3 id="only-declare-what-you-need">Only declare what you need</h3>
+<p>pandapower_grid and pandapipes_grid are <strong>dynamic I/O models</strong> — only keys listed in <code>subscribes</code>/<code>publishes</code> are active. Undeclared keys are ignored (no overhead, no errors). For exploration, declare a wide set; for production, trim to what's needed.</p>
+<h3 id="catalog-reload">Catalog reload</h3>
+<p>After any <code>catalog.yaml</code> edit:</p>
+<pre><code class="language-bash">python src/models/model_catalog/catalog_loader.py
+</code></pre>
+<h3 id="smoke-test-scenarios">Smoke-test scenarios</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Scenario file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rc_building</code></td>
+<td><code>src/scenarios/rc_building_test_base.yaml</code></td>
+</tr>
+<tr>
+<td><code>pandapower_grid</code></td>
+<td><code>src/scenarios/pandapower_grid_test_base.yaml</code></td>
+</tr>
+<tr>
+<td><code>pandapipes_grid</code></td>
+<td><code>src/scenarios/pandapipes_grid_test_base.yaml</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

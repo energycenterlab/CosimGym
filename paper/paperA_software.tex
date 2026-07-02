@@ -1,0 +1,504 @@
+%==============================================================================
+% PAPER A — SOFTWARE / FRAMEWORK PAPER
+% CosimGym: a declarative, model-agnostic framework for RL on HELICS co-simulation
+% Target: SoftwareX (short) or SIMPAT (full).
+% STATUS: first prose draft. Architecture/method sections are real draft text.
+% Results/validation contain real numbers ONLY after experiments -> marked [TODO].
+% Citations are \cite{...} placeholders; fill cosimgym.bib (see PAPER_PLAN.md §8).
+%==============================================================================
+\documentclass[preprint,12pt]{elsarticle}
+\usepackage{graphicx,booktabs,amsmath,listings,xcolor,hyperref}
+
+\journal{SoftwareX} % or Simulation Modelling Practice and Theory
+
+\begin{document}
+\begin{frontmatter}
+
+\title{CosimGym: A Declarative, Model-Agnostic Framework for\\
+Reinforcement Learning on HELICS Co-Simulations}
+
+\author[polito]{Pietro Rando Mazzarino\corref{cor}}
+\ead{pietro.randomazzarino@polito.it}
+\author[polito]{Co-authors}
+\address[polito]{EC-Lab, Politecnico di Torino, Turin, Italy}
+\cortext[cor]{Corresponding author.}
+
+\begin{abstract}
+The decarbonization of energy systems is driving them toward decentralized,
+renewable-rich, sector-coupled architectures whose system-level behavior can only
+be captured by coupling heterogeneous models across domains and time scales.
+Co-simulation has become the established method for this task, while reinforcement
+learning (RL) has emerged as a promising data-driven paradigm for adaptive control
+of such cyber-physical energy systems. Bridging the two, however, is repeatedly
+re-implemented by hand: co-simulation middleware speaks federated
+publish/subscribe and federated time, whereas RL tooling speaks the
+\texttt{reset()}/\texttt{step()} contract of Gymnasium. Existing RL testbeds are
+either locked to a single simulator and domain, or expose a lightweight,
+synchronous fixed-frequency environment, limiting realism and reproducibility. We
+present \textbf{CosimGym}, a framework that compiles a single declarative YAML
+scenario into a running HELICS co-simulation that is simultaneously a standard
+Gymnasium environment. Its contributions are a declarative scenario compiler; a
+catalog-driven, multi-formalism model abstraction unifying native Python models,
+FMI~2.0/3.0 Functional Mock-up Units, EnergyPlus models, data feeders, and RL
+agents; native multi-rate, causality-aware, hierarchical multi-federation
+orchestration; and a principled treatment of episodic reset over non-resettable
+co-simulations. We demonstrate the framework on building thermal control and
+PV--battery dispatch with DQN and SAC agents.
+% TODO: append one quantitative sentence after experiments.
+The framework is open source. % TODO: license + Zenodo DOI.
+\end{abstract}
+
+% NOTE: elsarticle has NO \begin{highlights} environment (Elsevier CAS class only).
+% For elsarticle, Elsevier wants Highlights as a SEPARATE file at submission.
+% Highlights (3-5, <=85 chars each):
+%  - Declarative YAML compiled into a HELICS co-simulation that is a Gymnasium env
+%  - Model-agnostic catalog unifies Python, FMI 2/3, EnergyPlus, data and RL agents
+%  - Native multi-rate, causality-aware, hierarchical multi-federation orchestration
+%  - Episodic reset strategies for non-resettable co-simulations (full/soft/rolling/random)
+%  - Observation/action spaces auto-derived from physical I/O bounds; telemetry built in
+
+\begin{keyword}
+co-simulation \sep reinforcement learning \sep HELICS \sep FMI \sep Gymnasium \sep
+cyber-physical energy systems \sep multi-energy systems \sep digital twin
+\end{keyword}
+\end{frontmatter}
+
+%------------------------------------------------------------------------------
+% Optional SoftwareX metadata table (required by that journal). Fill at submission:
+% version, repo URL, license, Python 3.12, deps (HELICS, fmpy, Redis, InfluxDB,
+% SB3, torch), Zenodo DOI, support email.
+%------------------------------------------------------------------------------
+
+%==============================================================================
+\section{Motivation and significance}\label{sec:intro}
+%==============================================================================
+The transition toward decarbonized energy systems is reshaping them into
+decentralized, renewable-dominated, and increasingly sector-coupled
+infrastructures. Photovoltaic generation, electrified heating, storage, electric
+mobility, and active prosumers couple the electrical grid to buildings and to
+thermal and gas networks, and these subsystems are most faithfully described by
+specialized tools operating at very different time scales---from sub-second
+power-electronic dynamics to hourly weather and market signals. Monolithic
+simulators cannot represent such cross-domain interactions, and co-simulation has
+consequently become the standard methodology for system-level analysis of
+cyber-physical energy systems (CPES)~\cite{helics,mosaik}. By coupling models,
+tools, and time scales through a common middleware, co-simulation exposes emergent
+behavior that is invisible to any single simulator.
+
+In parallel, reinforcement learning (RL) has become a prominent data-driven
+paradigm for adaptive control in energy systems, with applications in building
+climate control, demand response, energy communities, and grid
+operation~\cite{rl_energy_review}. Yet evaluating RL controllers in realistic,
+heterogeneous, multi-domain settings remains difficult. The two ecosystems were
+designed under different assumptions: co-simulation middleware such as
+HELICS~\cite{helics} organizes computation as a federation of processes that
+exchange values through publish/subscribe and advance a shared federated clock,
+whereas RL libraries such as Gymnasium~\cite{gymnasium},
+Stable-Baselines3~\cite{sb3}, and RLlib~\cite{rllib} expect a synchronous,
+blocking environment exposing \texttt{reset()} and \texttt{step(action)}. Bridging
+this impedance mismatch is, in current practice, re-implemented for every study,
+which limits reproducibility, interoperability, and transfer of results across
+system configurations.
+
+Existing RL environments only partially close the gap. Building-oriented testbeds
+such as Sinergym~\cite{sinergym}, BOPTEST~\cite{boptest}, Energym~\cite{energym},
+and CityLearn~\cite{citylearn} are powerful but are tied to a specific simulator
+or domain and to largely fixed time stepping. Power-systems environments such as
+PowerGridworld~\cite{powergridworld} provide multi-agent Gym interfaces but, by
+their authors' own account, rely on synchronous fixed-frequency time stepping and
+a limited communication model. Studies that connect HELICS to RL directly, for
+example for resilient microgrid control~\cite{frl_microgrid}, build a bespoke
+wrapper per experiment that is hard to reuse or reproduce. What is missing is a
+\emph{declarative} way to compose arbitrary, multi-rate, multi-formalism physics
+behind a standard RL interface---a generalized middleware positioned between pure
+co-simulation engines and AI environments, acting as a universal translator
+between established engineering tools (EnergyPlus, Modelica/FMU) and modern RL
+libraries.
+
+This paper introduces CosimGym, which fills that role. A single declarative YAML
+scenario is compiled into a running HELICS federation that is, at the same time, a
+standard \texttt{gymnasium.Env}. Its main contributions are:
+\begin{itemize}
+  \item a \textbf{declarative scenario compiler} that turns YAML into a strictly
+        typed configuration and provisions the brokers, processes, timing, and
+        data flows of a complete co-simulation without orchestration code;
+  \item a \textbf{catalog-driven, multi-formalism model abstraction} that unifies
+        native Python models, FMI~2.0/3.0 FMUs, EnergyPlus models, data feeders,
+        and RL agents behind one interface;
+  \item \textbf{native multi-rate, causality-aware, hierarchical
+        multi-federation} orchestration;
+  \item a principled treatment of \textbf{episodic reset over non-resettable
+        co-simulations}; and
+  \item RL \textbf{observation and action spaces auto-derived from physical I/O
+        bounds}, with built-in time-series telemetry and dashboards.
+\end{itemize}
+
+CosimGym targets researchers and engineers who need to train or benchmark control
+policies against realistic physics without rebuilding simulation infrastructure.
+The model catalog and scenario compiler are reusable assets that lower the barrier
+to reproducible RL-on-physics research, and the design is forward-looking: the same
+substrate extends naturally toward multi-agent and multi-timescale learning and
+toward sim-to-real deployment (Section~\ref{sec:future}). The remainder of the
+paper reviews background and related work (Section~\ref{sec:background}), details
+the architecture (Section~\ref{sec:arch}), formalizes the reset problem
+(Section~\ref{sec:reset}), reports illustrative validation
+(Section~\ref{sec:examples}), discusses impact (Section~\ref{sec:impact}), and
+concludes with limitations and future potential
+(Sections~\ref{sec:future}--\ref{sec:conclusion}).
+
+%==============================================================================
+\section{Background and related work}\label{sec:background}
+%==============================================================================
+\paragraph{Co-simulation and model-exchange standards}
+HELICS (Hierarchical Engine for Large-scale Infrastructure
+Co-Simulation)~\cite{helics} couples independent simulators, called federates,
+through brokers that mediate value and message exchange and coordinate a shared
+notion of federated time; federates may run at different rates and on different
+hosts, and brokers can be arranged hierarchically for scale. Mosaik~\cite{mosaik}
+addresses a similar need with a Python-centric scheduler. Orthogonally, the
+Functional Mock-up Interface (FMI)~\cite{fmi} standardizes the packaging of
+dynamic models as Functional Mock-up Units (FMUs), portable containers supported
+by more than one hundred tools and routinely used as digital-twin building
+blocks. These technologies provide interoperability and time coordination but
+deliberately offer no notion of episodes, rewards, or agent--environment
+interaction.
+
+\paragraph{RL environments for energy systems}
+Gymnasium~\cite{gymnasium} defines the de facto agent--environment contract, and
+libraries such as SB3~\cite{sb3} and RLlib~\cite{rllib} consume it. Within energy,
+Sinergym~\cite{sinergym} wraps EnergyPlus, BOPTEST~\cite{boptest} exposes Modelica
+emulators for building control, Energym~\cite{energym} offers an FMU-based model
+library, and CityLearn~\cite{citylearn} targets district-level, multi-agent
+demand response at fixed hourly resolution. These environments are valuable but
+each is bound to a particular simulator or domain and to a largely fixed temporal
+structure.
+
+\paragraph{RL on co-simulation}
+A smaller body of work places RL directly on co-simulation.
+PowerGridworld~\cite{powergridworld} composes component Gym environments with an
+OpenDSS power-flow solver and supports multi-agent training, but its authors
+identify synchronous fixed-frequency time stepping and a limited communication
+model as limitations. HELICS-based studies couple detailed grid simulators with
+RL for specific problems such as resilient microgrid control~\cite{frl_microgrid},
+and CommonPower~\cite{commonpower} emphasizes safe, model-based smart-grid
+control. Across this landscape, RL environments tend to be domain-specific and
+monolithic, while co-simulation tools lack native AI integration. CosimGym is
+designed as the generalized, configurable middleware between the two.
+Table~\ref{tab:compare} summarizes the comparison.
+
+\begin{table}[t]\centering
+\caption{Positioning of CosimGym against representative frameworks.}
+\label{tab:compare}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Framework & Physics backend & Multi-rate & Multi-domain & MARL & Declarative \\
+\midrule
+Sinergym       & EnergyPlus           & no  & no  & ltd & partial \\
+BOPTEST        & Modelica emulators   & no  & no  & no  & no \\
+CityLearn      & built-in data models & no  & district & yes & schema \\
+Energym        & Modelica/EnergyPlus  & ltd & no  & no  & no \\
+PowerGridworld & OpenDSS + components & no  & no  & yes & partial \\
+\textbf{CosimGym} & \textbf{Python/FMI/EnergyPlus} & \textbf{yes} & \textbf{yes} & roadmap & \textbf{yes} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Architecture and generalized design principles}\label{sec:arch}
+%==============================================================================
+CosimGym enforces a strict separation of concerns among \emph{configuration},
+\emph{execution orchestration}, and \emph{physical modeling}. This separation is
+what makes the framework domain-agnostic: the same execution machinery runs a
+two-node toy model and a multi-domain federation, and the same RL wrapper trains an
+agent on either. Figure~\ref{fig:arch} gives the end-to-end view.
+
+\begin{figure}[t]\centering
+% TODO: architecture diagram.
+% User YAML -> ScenarioManager (+ Redis state) -> HELICS broker hierarchy ->
+% heterogeneous base federates (FMU / Python / data) <-> universal RL federate ->
+% telemetry (InfluxDB) + dashboard (Streamlit).
+\fbox{\parbox{0.9\linewidth}{\centering\vspace{2.5cm}
+\textbf{[Figure 1: architecture / data flow]}\vspace{2.5cm}}}
+\caption{From a declarative YAML scenario to a running co-simulation that is also a
+Gymnasium environment. The compiler provisions brokers and processes; the model
+catalog (synchronized via Redis) supplies model code and metadata; the universal RL
+federate exposes the federation as a single environment; telemetry is logged
+centrally.}
+\label{fig:arch}
+\end{figure}
+
+\subsection{Declarative orchestration layer}
+The foundation of the framework is that the user describes \emph{what} to simulate,
+never \emph{how} to orchestrate it. A YAML scenario declares the federation
+topology, each federate's execution rate and publish/subscribe connections, the
+model to instantiate, and, for learning scenarios, the RL task. The
+\texttt{ScenarioManager} parses this description into strictly typed configuration
+objects (validated with Pydantic), provisions the required HELICS broker
+hierarchy, and launches each federate as an independent operating-system process
+through a common launcher. The full configuration is serialized to a Redis store so
+that every process can retrieve its own parameters at startup. Because scaling the
+system changes only the declarative description, moving from a single-federation
+example to a multi-domain, multi-federation study requires no change to the
+execution logic. Listing~\ref{lst:yaml} shows the structure of a minimal scenario.
+
+\begin{lstlisting}[language=,caption={Skeleton of a scenario (abridged).},label=lst:yaml,basicstyle=\ttfamily\footnotesize,frame=single]
+name: building_hp_rl
+start_time: "2024-01-01T00:00:00"
+end_time:   "2024-01-02T00:00:00"
+reinforcement_learning_config:
+  agent: {model_name: rl_simple_SACsb3, env: {observations: [...], actions: [...]}}
+  training: {mode: online, episode_length: 2880, reset_mode: rolling}
+federations:
+  federation_1:
+    federate_configs:
+      weather:  {type: base, timing_configs: {real_period: 60}, ...}
+      heatpump: {type: base, timing_configs: {real_period: 60}, ...}
+      building: {type: base, timing_configs: {real_period: 60}, ...}
+\end{lstlisting}
+
+\subsection{Extensible model catalog and state management}
+Model code is decoupled from scenarios through a central catalog. Each catalog
+entry maps a model name to an implementing class and module together with a typed
+specification of its inputs, outputs, and parameters; every variable carries a
+type, physical unit, optional bounds, and descriptive tags. At startup the catalog
+is loaded into Redis, and at runtime a federate resolves its model metadata,
+imports the corresponding class, or unpacks an FMU---loaded from local storage or
+pulled from an object store. All models implement the same minimal interface
+(\texttt{initialize}, \texttt{step}, \texttt{finalize}), so physical models,
+controllers, data readers, and RL agents are treated uniformly. Adding a model
+requires only a new class and one catalog entry, which encourages a shared,
+reusable library of co-simulation components. Table~\ref{tab:models} lists the
+built-in models, which already span several domains and three model formalisms
+(native Python, FMI~2.0/3.0, and EnergyPlus exported as an FMU).
+
+\begin{table}[t]\centering
+\caption{Representative built-in catalog models.}
+\label{tab:models}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Model & Domain & Formalism \\
+\midrule
+1R1C building, heat pump, PID & building energy & native Python \\
+PV, battery, rule-based BEMS   & generation/storage & native Python \\
+weather / CSV readers          & data & native Python \\
+spring--mass--damper           & generic dynamics & native Python \\
+EnergyPlus zone model          & building energy & FMI 2.0 (FMU) \\
+type/causality feedthrough     & testing & FMI 3.0 (FMU) \\
+DQN, SAC agents                & control & RL agent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Timing and causality engine}
+Realistic CPES studies require federates to advance at genuinely different rates.
+Each federate declares a real-world period; the framework normalizes these to
+integer HELICS ticks against the smallest period, so a one-minute controller and a
+one-hour weather feed coexist without manual bookkeeping. Because federates that
+exchange values within the same tick can form algebraic loops, CosimGym lets a
+subscription be marked \texttt{same\_step} or \texttt{next\_step}: the former is
+consumed immediately, the latter is staged and applied on the following tick,
+acting as a one-step delay. Small time offsets can also be applied to break
+same-tick cycles, and these offsets can be computed automatically by a topological
+sort of the dependency graph; declared causality cycles are validated before
+execution. For scenarios with more than one federation, a hierarchy broker is
+inserted automatically and ports are assigned dynamically. This timing model is the
+co-simulation depth that lightweight, synchronous fixed-frequency
+environments~\cite{powergridworld} lack.
+
+\subsection{The universal RL federate wrapper}
+A learning scenario adds one further federate that turns the entire federation into
+a single \texttt{gymnasium.Env}. The wrapper resolves the impedance mismatch in
+three ways. First, observation and action spaces are constructed dynamically from
+the scenario mapping and the catalog bounds rather than hard-coded: a bounded
+floating-point input becomes a \texttt{Box}, an integer or binned input becomes a
+\texttt{Discrete} space, and units and ranges are taken from the model metadata.
+Second, actuation is synchronized: on each \texttt{step} the wrapper publishes the
+agent's control signals, requests advancement of the federated clock, and blocks
+until the federation reaches the next tick before reading the resulting
+observations. Third, reward functions are pluggable callables selected by name from
+the configuration, so the optimization objective can be changed without touching
+code. Crucially, the user never writes the agent's HELICS wiring; the compiler
+synthesizes it from the RL configuration block.
+
+\subsection{Standardized telemetry and monitoring}
+Because execution is distributed, observability is centralized. Federates buffer
+their time series and persist them at the end of a run, partitioned by training and
+test phases, and RL federates additionally record the observation seen before and
+after each action together with per-episode rewards and lengths. Results can be
+streamed to a time-series database and inspected through a ready-made dashboard
+that visualizes both physical quantities (for example, indoor temperature against
+its comfort band) and learning metrics (for example, episode return), independently
+of the application domain.
+
+%==============================================================================
+\section{Episodic RL over non-resettable co-simulations}\label{sec:reset}
+%==============================================================================
+Gymnasium assumes that \texttt{reset()} returns the environment to an initial
+state cheaply and arbitrarily often. A co-simulation violates this assumption: each
+federate holds internal state, some FMUs do not support being rewound at all, and
+tearing down and restarting a federation between episodes is expensive and
+disruptive to the shared clock. Episodic RL must therefore be reconciled with a
+simulation whose clock only advances. We treat this explicitly as the
+\emph{reset problem for non-resettable co-simulations} and expose it as a
+first-class, configurable mechanism rather than hiding it.
+
+CosimGym offers four reset strategies, summarized in Table~\ref{tab:reset}. A
+\emph{full} reset restores models to their initial conditions and is the closest
+analogue to a classical environment reset, at the cost of discontinuity in the
+co-simulation. A \emph{soft} reset keeps the current physical state and simply
+begins a new episode boundary, which is appropriate when the process is naturally
+continuing. A \emph{rolling} reset advances the starting point forward by a fixed
+window each episode, sweeping the agent across the simulated horizon and improving
+coverage of operating conditions. A \emph{random} reset draws starting conditions
+from configured ranges, supporting domain randomization and robustness studies.
+
+\begin{table}[t]\centering
+\caption{Episode-reset strategies for non-resettable co-simulations.}
+\label{tab:reset}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Strategy & State handling & Typical use \\
+\midrule
+full    & restore initial conditions & classical episodic training \\
+soft    & keep current state         & naturally continuing processes \\
+rolling & shift start by a window     & broad coverage of the horizon \\
+random  & sample within bounds        & robustness / domain randomization \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At every episode boundary the framework also handles temporal causality
+consistently: staged \texttt{next\_step} inputs from the previous episode are
+cleared, current values are re-read, and configured reset defaults are applied so
+that the first action of a new episode is chosen from the reset state rather than
+from the terminal state of the previous one. Beyond plumbing, this mechanism is a
+reusable methodological contribution: the same problem arises for any streaming or
+irreversible simulator, including real-time digital twins and physical plants, so
+the strategies studied here transfer to sim-to-real settings.
+
+%==============================================================================
+\section{Usability and illustrative validation}\label{sec:examples}
+%==============================================================================
+This section illustrates correctness, breadth, and ease of use; exhaustive control
+results are the subject of a companion application study. Unless noted, each
+example corresponds to a scenario shipped with the framework, and every figure is
+regenerated by the reproducibility harness from its scenario file and a fixed seed.
+% TODO: confirm harness + fill all numbers/figures after running experiments.
+
+\subsection{Rapid iteration and swapability}
+Replacing a rule-based or PID baseline with an RL agent, or changing a physical
+parameter, is a change to the YAML scenario rather than to code; the framework
+automatically remaps action bounds and discrete spaces and translates agent
+outputs back into engineering units. Listing~\ref{lst:diff} shows the essential
+difference between a baseline co-simulation and its RL counterpart.
+
+\begin{lstlisting}[language=,caption={Baseline-to-RL change is declarative (illustrative).},label=lst:diff,basicstyle=\ttfamily\footnotesize,frame=single]
+- controller: {model_name: simple_pid_controller}
++ reinforcement_learning_config:
++   agent: {model_name: rl_simple_SACsb3, env: {actions: [..modulation]}}
+\end{lstlisting}
+
+\subsection{Verification: spring--mass--damper}
+A spring--mass--damper system, run as a single federation and again split across
+federations, validates orchestration, multi-rate stepping, and the hierarchical
+broker. We compare the simulated trajectory against the analytical solution.
+% TODO: Figure 3 (simulated vs analytical) + max trajectory error; confirm no time drift.
+
+\subsection{RL control on composable physics}
+A building zone coupled to a heat pump and a weather feed is controlled first by a
+PID baseline and then by DQN and SAC agents, using the same physical models.
+% TODO: Figure 4 (temperature + power) + comfort/energy metrics vs PID.
+
+\subsection{Multi-formalism: an EnergyPlus FMU}
+The identical RL pipeline drives a building modeled in EnergyPlus and exported as
+an FMI~2.0 FMU, with no change to the agent or training code, demonstrating the
+catalog abstraction in practice.
+% TODO: one figure or metrics row for the FMU-based control.
+
+\subsection{Reset-strategy micro-benchmark}
+Using the building task, we compare learning under the four reset strategies of
+Section~\ref{sec:reset}. This experiment is, to our knowledge, not expressible in
+existing co-simulation RL frameworks.
+% TODO: Figure 5 (learning curves full/soft/rolling/random) + sample-efficiency table.
+
+\subsection{Composability}
+Finally, we quantify engineering effort: the lines of declarative configuration
+and of Python needed to go from a base co-simulation to a trained agent, compared
+against the estimated effort of a hand-built HELICS-to-Gym wrapper.
+% TODO: Table 3 with the actual counts.
+
+%==============================================================================
+\section{Impact}\label{sec:impact}
+%==============================================================================
+CosimGym lowers the barrier to studying control of cyber-physical energy systems
+under realistic physics. By making the co-simulation a declarative artifact, it
+enables reproducible experiments that can be shared and re-run, and by abstracting
+the model layer it lets researchers reuse and combine components across domains and
+formalisms instead of rebuilding simulation infrastructure for each study. The
+catalog and scenario compiler are reusable beyond the examples shown here: any
+model that conforms to the minimal interface, or any FMU, becomes a composable
+environment building block. The framework is also suitable for teaching, since a
+complete distributed co-simulation can be specified and run from a single readable
+file. More broadly, it provides a substrate on which several open research
+directions---multi-agent and multi-timescale learning, sim-to-real transfer, and
+the systematic generation of diverse training environments---can be pursued without
+re-engineering the foundations (Section~\ref{sec:future}).
+
+%==============================================================================
+\section{Limitations, trade-offs and future potential}\label{sec:future}
+%==============================================================================
+\subsection{Limitations and trade-offs}
+The generality of the framework has costs. Routing every exchanged variable through
+a state store and the HELICS brokers introduces overhead relative to tightly
+coupled, single-process simulators, and the appropriate choice of time-step
+resolution trades fidelity against communication cost.
+% TODO: quantify overhead vs a pure-Python baseline if possible.
+Operationally, the framework relies on supporting services (a Redis store and,
+optionally, a time-series database) and on HELICS binaries, which adds setup
+complexity. The current implementation focuses on single-agent learning and
+single-host execution; these are engineering boundaries rather than architectural
+ones, as discussed next.
+
+\subsection{Future potential}
+The architecture is deliberately positioned to support developments that are
+difficult in existing tools:
+\begin{enumerate}
+  \item \textbf{Multi-agent and federated learning}, with one RL federate per
+        subsystem and inter-agent communication modeled explicitly over HELICS,
+        including latency and partial observability;
+  \item \textbf{multi-timescale and hierarchical RL} that exploits the native
+        multi-rate federation, for example a slow planning agent driving a fast
+        tracking agent;
+  \item \textbf{sim-to-real transfer}, replacing a simulated federate with a
+        real-time hardware federate through a configuration change while keeping
+        the agent and wiring unchanged;
+  \item \textbf{generalist control agents} trained by domain randomization over the
+        model catalog, turning the compiler into an environment-generation engine;
+  \item \textbf{automatic safety constraints} derived from the typed catalog bounds;
+        and
+  \item \textbf{automated FMU introspection} and distributed, cluster-native
+        scaling.
+\end{enumerate}
+
+%==============================================================================
+\section{Conclusion}\label{sec:conclusion}
+%==============================================================================
+CosimGym offers a declarative, model-agnostic substrate that makes realistic,
+multi-domain, multi-rate physics the easy part of a reinforcement-learning study,
+so that research effort can be directed at the agent rather than at simulation
+plumbing. By unifying co-simulation orchestration, model exchange, temporal
+synchronization, and episodic interaction behind a single Gymnasium-compatible
+interface, and by treating episodic reset over non-resettable simulations as a
+first-class concern, the framework provides a reproducible foundation for control
+research in cyber-physical energy systems and a basis for the multi-agent,
+multi-timescale, and sim-to-real extensions outlined above.
+
+%==============================================================================
+% \section*{Acknowledgements} Politecnico di Torino, EC-Lab.
+% \appendix \section{Reproducibility} scenario files, seeds, environment, hashes.
+\bibliographystyle{elsarticle-num}
+% \bibliography{cosimgym}
+\end{document}

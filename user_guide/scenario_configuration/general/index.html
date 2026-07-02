@@ -1012,6 +1012,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../dashboard/" class="md-nav__link">
         
   
@@ -1434,15 +1462,16 @@ federations:
 <ul>
 <li><strong>Required:</strong> yes</li>
 </ul>
-<p>Controls what simulation variables are stored to disk at the end of a run.</p>
+<p>Controls what simulation variables are recorded and how/when they're written to disk.</p>
 <pre><code class="language-yaml">memory_config:
-  batch_size: 100      # number of timesteps buffered in memory before flushing
+  batch_size: 100      # rows per batch (buffer size before write)
   attrs: &quot;all&quot;         # record every variable
   # OR
   attrs:               # record only named variables
     - &quot;position&quot;
     - &quot;velocity&quot;
     - &quot;force&quot;
+  sink: json           # json (default) | parquet | none
 </code></pre>
 <table>
 <thead>
@@ -1458,7 +1487,7 @@ federations:
 <td><code>batch_size</code></td>
 <td>int</td>
 <td><code>100</code></td>
-<td>In-memory buffer size before write</td>
+<td>Rows buffered before a write. For <code>sink: json</code> this is just the in-memory buffer size (everything is written once at the end regardless). For <code>sink: parquet</code> it's the actual flush granularity — every <code>batch_size</code> ticks are written as one Parquet row group.</td>
 </tr>
 <tr>
 <td><code>attrs</code></td>
@@ -1466,9 +1495,21 @@ federations:
 <td><code>["all"]</code></td>
 <td>Variables to record; <code>"all"</code> records everything</td>
 </tr>
+<tr>
+<td><code>sink</code></td>
+<td><code>json</code> | <code>parquet</code> | <code>none</code></td>
+<td><code>json</code></td>
+<td>Where/how recorded data lands on disk — see below</td>
+</tr>
 </tbody>
 </table>
-<p>This <code>memory_config</code> is automatically propagated to every federate that does not define its own. To override for a specific federate, add a <code>memory_config</code> block inside that federate's config.</p>
+<p><strong><code>sink</code> options:</strong></p>
+<ul>
+<li><strong><code>json</code></strong> (default, today's behavior, unchanged): buffered fully in memory, written once at the end of the run to <code>results/&lt;scenario&gt;/&lt;sim_id&gt;/&lt;federation&gt;/&lt;federate&gt;_&lt;mode&gt;_storage.json</code>.</li>
+<li><strong><code>parquet</code></strong>: non-blocking. A background thread drains a queue of per-tick rows fed by the sim loop and writes them incrementally, batched every <code>batch_size</code> ticks, to <code>results/&lt;scenario&gt;/&lt;sim_id&gt;/&lt;federation&gt;/&lt;federate&gt;_&lt;mode&gt;_storage.parquet</code> (one file per <code>train</code>/<code>test</code> mode, same directory layout as <code>json</code>). Use this for long runs or large <code>attrs</code> sets where buffering everything in memory until the end is wasteful — measured negligible added sim-thread time vs <code>json</code>. <strong>Not yet supported for <code>type: rl</code> federates</strong> (raises <code>NotImplementedError</code> — RL's storage schema isn't wired to this path yet). <strong>Not yet readable by the Streamlit dashboard</strong> (it currently only loads <code>.json</code> result files) — use <code>json</code> if you need to view results in the dashboard.</li>
+<li><strong><code>none</code></strong>: skip local file storage entirely (nothing written to <code>results/</code>) — useful for throwaway/smoke-test runs.</li>
+</ul>
+<p>This <code>memory_config</code> is automatically propagated to every federate that does not define its own. To override for a specific federate (e.g. <code>sink: parquet</code> for one high-frequency federate while others stay <code>json</code>), add a <code>memory_config</code> block inside that federate's config.</p>
 <hr />
 <h3 id="synchronization"><code>synchronization</code></h3>
 <ul>
@@ -1508,19 +1549,23 @@ federations:
 <ul>
 <li><strong>Required:</strong> no (omit entirely for plain co-simulation)</li>
 </ul>
-<p>Configures the RL agent, training loop, and test evaluation. When present, ScenarioManager injects a synthetic <code>rl_agent</code> federate into the appropriate federation at runtime. See <a href="../rl/">RL</a>.</p>
+<p>Configures the MDP, solver, run schedule, and experiment infra across four axes (<code>environment</code>, <code>agent</code>, <code>run</code>, <code>experiment</code>). When present, ScenarioManager injects a synthetic <code>rl_agent</code> federate into the appropriate federation at runtime. See <a href="../rl/">RL</a>.</p>
 <pre><code class="language-yaml">reinforcement_learning_config:
+  environment:
+    observations:
+      federation_1.spring_federate.0.position: { causality: next_step }
+    actions:
+      federation_1.spring_federate.0.force:
+        space: discrete
+        bounds: [-10.0, 10.0]
+        bins: 21
+    reward: models.model_catalog.RL_agents.reward_functions.spring_oscillation_reward
   agent:
-    model_name: &quot;rl_simple_DQN&quot;
-    env:
-      observations: [federation_1.spring_federate.0.position]
-      actions:      [federation_1.spring_federate.0.force]
-      action_spaces_type: [&quot;discrete&quot;]
-  training:
-    episode_length: 100
-    n_episodes: 500
-  test:
-    enabled: false
+    model_name: rl_simple_DQN
+  run:
+    train:
+      episodes: 500
+      episode_length: 100
 </code></pre>
 <hr />
 <h3 id="multi_computer-multi_computer_config"><code>multi_computer</code> / <code>multi_computer_config</code></h3>

@@ -905,6 +905,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../user_guide/dashboard/" class="md-nav__link">
         
   
@@ -1178,9 +1206,10 @@
 <li><strong>Federate Launching:</strong>
    The manager then triggers <code>federate_launcher.py</code> logic which spawns multiple async processes.</li>
 <li>Standard physics endpoints instantiate as standard <code>BaseFederate</code> objects.</li>
-<li>If Reinforcement Learning is configured, a final <code>RL_Federate</code> process is created, which boots up a tailored Gymnasium env wrapped into Stable-Baselines3 algorithms.</li>
+<li>If Reinforcement Learning is configured, a final <code>RL_Federate</code> process is created, which boots up a tailored Gymnasium env driving the configured agent backend (Stable-Baselines3, custom PyTorch, or Ray RLlib).</li>
+<li>A federate configured <code>type: interface</code> instantiates an <code>InterfaceFederate</code> instead: no physics model, just a transport adapter (MQTT by default) bridging its HELICS connections to/from the external world — see <a href="../../user_guide/digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a>.</li>
 <li><strong>Execution Loop:</strong>
-   For simulation duration, HELICS manages internal time stepping, ensuring synchronized <code>publish</code> / <code>subscribe</code> across processes. If an RL agent is present, episode resets are coordinated via a global <code>reset_mode</code> signal across federates.</li>
+   For simulation duration, HELICS manages internal time stepping, ensuring synchronized <code>publish</code> / <code>subscribe</code> across processes. If an RL agent is present, episode resets are coordinated via the <code>environment.reset</code> policy (<code>full | rolling | none</code>) across federates. Any federate can also opt into <code>streaming.stream: true</code> to mirror its I/O to MQTT each step, independent of HELICS, for live observability.</li>
 <li><strong>Graceful Teardown:</strong>
    Once the endpoint is reached, or the agent completes testing epochs, the <code>ScenarioManager</code> harvests logging output, kills the subprocesses gracefully, and shuts down the brokers.</li>
 </ol>

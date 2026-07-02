@@ -461,6 +461,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#digital-twin-interfaces-live-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digital-Twin Interfaces &amp; Live Streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -950,6 +961,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../user_guide/dashboard/" class="md-nav__link">
         
   
@@ -1237,6 +1276,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#digital-twin-interfaces-live-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digital-Twin Interfaces &amp; Live Streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1280,6 +1330,11 @@ It translates the continuous time-stepped simulation into discrete Episodes:
 1. RL action outputs are mapped to <strong>Publications</strong> heading to the simulated actuators.
 2. Simulated sensor <strong>Subscriptions</strong> are bundled into a Gymnasium <strong>Observation Space</strong>.
 3. During <code>step()</code>, the simulation advances its time clock to the next decision timestep, pausing until new observations are ready to be passed back to the agent.</p>
+<h2 id="digital-twin-interfaces-live-streaming">Digital-Twin Interfaces &amp; Live Streaming</h2>
+<p>By default a federation is a <strong>closed box</strong>: federates only exchange data over HELICS, and results are only written to disk once, at the end of a run. Two opt-in, MQTT-backed mechanisms open it up while it runs:
+- <strong><code>streaming.stream: true</code></strong> on any federate mirrors its inputs/outputs to MQTT each step, for a live dashboard or external observer — the co-simulation itself is unaffected.
+- An <strong>interface federate</strong> (<code>type: interface</code>) has no physics model; it relays its wired HELICS connections to and from an external adapter (real sensors/actuators, an operator, or another system), bidirectionally. Because it registers the same HELICS keys a physics-model federate would, swapping simulated hardware for real hardware is a change to <em>one</em> federate's block — the config-only sim-to-real pattern.</p>
+<p>See <a href="../../user_guide/digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a> for the full reference.</p>
 
 
 
