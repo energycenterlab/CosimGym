@@ -47,6 +47,7 @@ class InterfaceFederate(BaseFederate):
         # via the same catalog dynamic-import mechanism used for physics models.
         self._override_registry = None
         self._override_bridges = []
+        self._last_override_values = {}
         interface_config = self.config.interface_config
         if not interface_config:
             self._adapter = None
@@ -77,6 +78,44 @@ class InterfaceFederate(BaseFederate):
             'test': self._create_storage_partition(),
         }
         self.logger.info(f'interface federate {self.name} initialized')
+
+    def _create_storage_partition(self):
+        """No physics entities to loop over — instead record this federate's own
+        relayed streams/bridges under a single pseudo-entity `f"{self.name}.0"`:
+        streams -> inputs, input-scope bridges -> outputs, output-scope bridges ->
+        outputs, param-scope bridges -> params. Keeps the same tidy
+        {inputs/outputs/params: {entity_id: {var: [...]}}} shape BaseFederate uses,
+        so `update_storage()`/`ParquetStorageWriter` need no special-casing."""
+        entity_id = f"{self.name}.0"
+        inputs, outputs, params = {}, {}, {}
+
+        for sub in self.subs:
+            stream = sub.get('stream_spec')
+            if stream is None:
+                continue
+            # Use the stream's semantic source key for the storage label, not
+            # sub['subid'].name (a positional "stream_0"-style registration
+            # name unrelated to what the value actually represents).
+            var_name = stream.helics_key.split('/')[-1]
+            inputs[var_name] = []
+
+        for pub in self.pubs:
+            bridge = pub.get('bridge_spec')
+            if bridge is None:
+                continue
+            var_name = bridge.helics_key.split('/')[-1]
+            outputs[var_name] = []
+
+        for bridge in getattr(self, '_override_bridges', []):
+            var_name = bridge.helics_key.split('/')[-1]
+            (outputs if bridge.scope == 'output' else params)[var_name] = []
+
+        return {
+            'inputs': {entity_id: inputs},
+            'outputs': {entity_id: outputs},
+            'params': {entity_id: params},
+            'time': [],
+        }
 
     def _register_connections(self):
         """Build HELICS pubs/subs from `interface_config`: `streams` (co-sim -> external,
@@ -154,6 +193,7 @@ class InterfaceFederate(BaseFederate):
             value = self.inputs.get(sub['entity_name'], {}).get(var_name)
             if value is None:
                 continue
+            sub['last_value'] = value
             self._adapter.publish(stream.topic, {
                 'sim_id': self.simulation_id,
                 'key': stream.helics_key,
@@ -171,6 +211,7 @@ class InterfaceFederate(BaseFederate):
             if bridge is None:
                 continue
 
+            pub['last_value'] = None
             value = None
             external = self._adapter.latest(bridge.topic) if self._adapter is not None else None
             if external is not None:
@@ -184,6 +225,7 @@ class InterfaceFederate(BaseFederate):
                 lo, hi = bridge.bounds
                 value = max(lo, min(hi, value))
 
+            pub['last_value'] = value
             pub['pubid'].publish(value)
             self.logger.debug(f"Interface federate {self.name}: published {value} onto '{bridge.helics_key}'")
 
@@ -205,10 +247,12 @@ class InterfaceFederate(BaseFederate):
                 self._override_registry.clear_override(
                     bridge.scope, self.simulation_id, federation, federate, entity, var
                 )
+                self._last_override_values[bridge.helics_key] = None
                 continue
 
             value = external.get('value')
             if value is None:
+                self._last_override_values[bridge.helics_key] = None
                 continue
             if bridge.bounds is not None:
                 lo, hi = bridge.bounds
@@ -217,15 +261,60 @@ class InterfaceFederate(BaseFederate):
             self._override_registry.set_override(
                 bridge.scope, self.simulation_id, federation, federate, entity, var, value
             )
+            self._last_override_values[bridge.helics_key] = value
             self.logger.debug(
                 f"Interface federate {self.name}: {bridge.scope} override {value} -> "
                 f"{federation}.{federate}.{entity}/{var}"
             )
 
     def update_storage(self):
-        # No entities/model state to record. Left empty (rather than inherited)
-        # so store_local_file() stays a no-op for this federate.
-        pass
+        """Mirrors BaseFederate.update_storage()'s json/parquet branching, but
+        reads values already cached this tick by _receive_inputs/_publish_outputs/
+        _publish_override_bridges instead of looping self.entities (there are none)."""
+        mode = getattr(self, 'mode', 'test') or 'test'
+        partition = self.storage.get(mode, self.storage['test'])
+        entity_id = f"{self.name}.0"
+
+        sink = self.config.memory_config.sink
+        json_backed = sink != 'parquet'
+        row = None
+
+        if json_backed:
+            partition['time'].append(self.date_time)
+        else:
+            row = {'ts': self.ts, 'time': self.date_time, 'mode': mode,
+                   'inputs': {}, 'outputs': {}, 'params': {}}
+
+        def record(bucket_name, var_name, value):
+            bucket = partition[bucket_name].get(entity_id, {})
+            if var_name not in bucket:
+                return
+            if json_backed:
+                bucket[var_name].append(value)
+            else:
+                row[bucket_name].setdefault(entity_id, {})[var_name] = value
+
+        for sub in self.subs:
+            stream = sub.get('stream_spec')
+            if stream is None:
+                continue
+            var_name = stream.helics_key.split('/')[-1]
+            record('inputs', var_name, sub.get('last_value'))
+
+        for pub in self.pubs:
+            bridge = pub.get('bridge_spec')
+            if bridge is None:
+                continue
+            var_name = bridge.helics_key.split('/')[-1]
+            record('outputs', var_name, pub.get('last_value'))
+
+        for bridge in self._override_bridges:
+            var_name = bridge.helics_key.split('/')[-1]
+            bucket_name = 'outputs' if bridge.scope == 'output' else 'params'
+            record(bucket_name, var_name, self._last_override_values.get(bridge.helics_key))
+
+        if row is not None:
+            self._enqueue_async_storage_row(row)
 
     def finalize(self):
         if getattr(self, '_override_registry', None) is not None:

@@ -541,9 +541,8 @@ class InterfaceFederateConfig(_FederateConfigBase):
     # ScenarioManager._enrich_dynamic_catalog_metadata reads .model_configs on every
     # federate type generically (RLFederateConfig already declares it Optional=None).
     model_configs: Optional[ModelConfig] = None
-    # BaseFederate.__init__ reads config.memory_config.batch_size unconditionally;
-    # the interface federate keeps empty storage (see InterfaceFederate.update_storage),
-    # so this only needs to exist, not do anything.
+    # Drives InterfaceFederate.update_storage()'s json/parquet recording of its
+    # own relayed streams/bridges (see InterfaceFederate._create_storage_partition).
     memory_config: MemoryConfig = Field(default_factory=MemoryConfig)
 
 
