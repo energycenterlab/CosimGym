@@ -79,6 +79,21 @@ class InterfaceFederate(BaseFederate):
         }
         self.logger.info(f'interface federate {self.name} initialized')
 
+    def _storage_key(self, helics_key: str) -> str:
+        """Storage/attribute label for a relayed value: the full helics_key.
+        Using only the trailing var name would collide when two streams (or an
+        input- and output-scope bridge) relay the same variable name from
+        different federates — json would interleave both into one list, parquet
+        would silently drop one. The full key is unique per HELICS."""
+        return helics_key
+
+    def _attr_recorded(self, helics_key: str) -> bool:
+        """Honor memory_config.attrs like BaseFederate does: 'all' records
+        everything; a list matches against the bare trailing var name (the
+        form scenario authors write in attrs)."""
+        attrs = self.config.memory_config.attrs
+        return attrs == 'all' or helics_key.split('/')[-1] in attrs
+
     def _create_storage_partition(self):
         """No physics entities to loop over — instead record this federate's own
         relayed streams/bridges under a single pseudo-entity `f"{self.name}.0"`:
@@ -91,24 +106,21 @@ class InterfaceFederate(BaseFederate):
 
         for sub in self.subs:
             stream = sub.get('stream_spec')
-            if stream is None:
+            if stream is None or not self._attr_recorded(stream.helics_key):
                 continue
-            # Use the stream's semantic source key for the storage label, not
-            # sub['subid'].name (a positional "stream_0"-style registration
-            # name unrelated to what the value actually represents).
-            var_name = stream.helics_key.split('/')[-1]
-            inputs[var_name] = []
+            inputs[self._storage_key(stream.helics_key)] = []
 
         for pub in self.pubs:
             bridge = pub.get('bridge_spec')
-            if bridge is None:
+            if bridge is None or not self._attr_recorded(bridge.helics_key):
                 continue
-            var_name = bridge.helics_key.split('/')[-1]
-            outputs[var_name] = []
+            outputs[self._storage_key(bridge.helics_key)] = []
 
         for bridge in getattr(self, '_override_bridges', []):
-            var_name = bridge.helics_key.split('/')[-1]
-            (outputs if bridge.scope == 'output' else params)[var_name] = []
+            if not self._attr_recorded(bridge.helics_key):
+                continue
+            key = self._storage_key(bridge.helics_key)
+            (outputs if bridge.scope == 'output' else params)[key] = []
 
         return {
             'inputs': {entity_id: inputs},
@@ -186,6 +198,10 @@ class InterfaceFederate(BaseFederate):
             stream = sub.get('stream_spec')
             if stream is None:
                 continue
+            # Reset each tick so storage records None on ticks where nothing was
+            # relayed (every_n_ticks skip / no value), instead of re-recording a
+            # stale value under a fresh timestamp as though it were re-measured.
+            sub['last_value'] = None
             every_n_ticks = max(1, stream.every_n_ticks)
             if self.ts % every_n_ticks != 0:
                 continue
@@ -243,17 +259,21 @@ class InterfaceFederate(BaseFederate):
             federation, federate, entity, var = parse_target(bridge.helics_key, self.federation_name)
             external = self._adapter.latest(bridge.topic) if self._adapter is not None else None
 
-            if external is None:
-                self._override_registry.clear_override(
-                    bridge.scope, self.simulation_id, federation, federate, entity, var
-                )
+            if external is None or external.get('value') is None:
+                # Skip the Redis DEL when we already cleared (or never wrote) —
+                # absence already means "no override", so repeating the round-trip
+                # every tick is pure waste in the sim hot path. set_override below
+                # intentionally still runs every tick even when the value is
+                # unchanged: it refreshes the key's TTL, which a skip would let
+                # expire mid-run.
+                if self._last_override_values.get(bridge.helics_key) is not None:
+                    self._override_registry.clear_override(
+                        bridge.scope, self.simulation_id, federation, federate, entity, var
+                    )
                 self._last_override_values[bridge.helics_key] = None
                 continue
 
             value = external.get('value')
-            if value is None:
-                self._last_override_values[bridge.helics_key] = None
-                continue
             if bridge.bounds is not None:
                 lo, hi = bridge.bounds
                 value = max(lo, min(hi, value))
@@ -282,36 +302,34 @@ class InterfaceFederate(BaseFederate):
         if json_backed:
             partition['time'].append(self.date_time)
         else:
-            row = {'ts': self.ts, 'time': self.date_time, 'mode': mode,
+            row = {'time': self.date_time, 'mode': mode,
                    'inputs': {}, 'outputs': {}, 'params': {}}
 
-        def record(bucket_name, var_name, value):
+        def record(bucket_name, key, value):
             bucket = partition[bucket_name].get(entity_id, {})
-            if var_name not in bucket:
+            if key not in bucket:  # filtered out by memory_config.attrs
                 return
             if json_backed:
-                bucket[var_name].append(value)
+                bucket[key].append(value)
             else:
-                row[bucket_name].setdefault(entity_id, {})[var_name] = value
+                row[bucket_name].setdefault(entity_id, {})[key] = value
 
         for sub in self.subs:
             stream = sub.get('stream_spec')
             if stream is None:
                 continue
-            var_name = stream.helics_key.split('/')[-1]
-            record('inputs', var_name, sub.get('last_value'))
+            record('inputs', self._storage_key(stream.helics_key), sub.get('last_value'))
 
         for pub in self.pubs:
             bridge = pub.get('bridge_spec')
             if bridge is None:
                 continue
-            var_name = bridge.helics_key.split('/')[-1]
-            record('outputs', var_name, pub.get('last_value'))
+            record('outputs', self._storage_key(bridge.helics_key), pub.get('last_value'))
 
         for bridge in self._override_bridges:
-            var_name = bridge.helics_key.split('/')[-1]
             bucket_name = 'outputs' if bridge.scope == 'output' else 'params'
-            record(bucket_name, var_name, self._last_override_values.get(bridge.helics_key))
+            record(bucket_name, self._storage_key(bridge.helics_key),
+                   self._last_override_values.get(bridge.helics_key))
 
         if row is not None:
             self._enqueue_async_storage_row(row)

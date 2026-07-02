@@ -16,7 +16,6 @@ memory_config:
   attrs: ["position", "velocity", "acceleration", "force", "disturbance"]
 
 
-# TODO: add influxdb configs
 
 reinforcement_learning_config:
   seed: 42

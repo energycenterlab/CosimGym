@@ -97,10 +97,9 @@ class RedisClient:
         
         Args:
             key: Redis key
-            path: JSONPath expression (e.g., '.federations.federation_1', '.influxdb')
+            path: JSONPath expression (e.g., '.federations.federation_1')
                 Examples:
                 - '.' - get entire JSON
-                - '.influxdb' - get influxdb config
                 - '.federations.federation_1' - get specific federation
                 - '.start_time' - get start_time value
         

@@ -10,7 +10,6 @@ created: 2026-03-17
 
 """
 import os
-from pathlib import Path
 import numpy as np
 import importlib
 import gymnasium as gym
@@ -372,13 +371,7 @@ class RL_Federate(BaseFederate):
                 "plan, milestone S2) — use 'json' (default) or 'none' for now."
             )
         import json
-        scenario_name = self.simulation_id[:-16]
-        sim_id = self.simulation_id[-15:]
-        repo_root = Path(__file__).resolve().parents[2]
-        base_dir = os.path.join(
-            str(repo_root / "results"),
-            scenario_name, sim_id, self.federation_name,
-        )
+        base_dir = self._results_base_dir()
         os.makedirs(base_dir, exist_ok=True)
 
         for mode_key, partition in self.storage.items():

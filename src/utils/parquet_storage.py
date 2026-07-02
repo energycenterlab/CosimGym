@@ -4,7 +4,7 @@ parquet_storage.py — pyarrow-backed batch writer for `memory_config.sink='parq
 
 Consumes the row batches produced by `utils.async_storage.AsyncStorageWriter` (S1)
 — one row per tick, nested by entity:
-`{ts, time, mode, inputs: {entity: {var: value}}, outputs: {...}, params: {...}}`
+`{time, mode, inputs: {entity: {var: value}}, outputs: {...}, params: {...}}`
 — and flattens each into the SAME long/tidy schema
 `dashboard_data.load_all_records` already produces from the JSON sink
 (`TIME_SERIES_COLUMNS`: time, federation, federate, model_instance, attribute,

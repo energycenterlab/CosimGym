@@ -72,11 +72,9 @@ class BaseFederate():
         self._last_input_meta = {}
         self._deferred_inputs = {}
 
-        # storage buffer
-        self.storage = {'inputs':{},
-                        'outputs':{},
-                        'params':{},
-                        'time':[]}
+        # storage buffer — real train/test-partitioned structure is built by
+        # initialize_storage() once entities exist; empty until then.
+        self.storage = {}
         self.batch_size = self.config.memory_config.batch_size
         self._async_storage_writer = None  # lazily created only when memory_config.sink == 'parquet'
         self._parquet_storage_writer = None
@@ -158,6 +156,7 @@ class BaseFederate():
                 entity_id = entity['id']
                 partition['inputs'][entity_id] = {var: [] for var in entity['object'].state.inputs.keys()}
                 partition['outputs'][entity_id] = {var: [] for var in entity['object'].state.outputs.keys()}
+                partition['params'][entity_id] = {var: [] for var in entity['object'].state.parameters.keys()}
         else:
             for entity in self.entities:
                 entity_id = entity['id']
@@ -837,7 +836,7 @@ class BaseFederate():
         if json_backed:
             partition['time'].append(self.date_time)
         else:
-            row = {'ts': self.ts, 'time': self.date_time, 'mode': mode,
+            row = {'time': self.date_time, 'mode': mode,
                    'inputs': {}, 'outputs': {}, 'params': {}}
 
         for entity in self.entities:
