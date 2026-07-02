@@ -59,8 +59,9 @@ CATALOG_YAML = Path(__file__).parent / "catalog.yaml"
 
 # Map catalog 'category' field value -> Redis key prefix
 CATEGORY_MAP: dict = {
-    "physical_model": "physical_models",
-    "rl_agent":       "rl_agents",
+    "physical_model":    "physical_models",
+    "rl_agent":          "rl_agents",
+    "interface_adapter": "interface_adapters",
 }
 DEFAULT_CATEGORY = "other"
 

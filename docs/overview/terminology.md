@@ -31,3 +31,11 @@ A **Model** is the fundamental computational engine residing *inside* a Federate
 ## RL Agent
 A specific model intended for Artificial Intelligence endpoints.
 - When an RL agent configuration exists, CosimGym dynamically spins up an isolated `RL_Federation` and wires a discrete Gym episode loop, enabling algorithms like `DQN` or `SAC` to interoperate directly with the standard physics Models.
+
+## Interface Federate
+A `Federate` (`type: interface`) whose "model" is a network bridge instead of physics.
+- Hosts an **Adapter** (e.g. MQTT) instead of a `Model`, relaying its HELICS connections to/from the external world.
+- Enables **digital-twin** setups: real sensor-in-the-loop, actuator-out, and runtime output/parameter override — see [Digital-Twin Interfaces & Live Streaming](../user_guide/digital_twin_interfaces.md).
+
+## Adapter
+A pluggable transport (`InterfaceAdapter`, e.g. `MqttAdapter`) resolved from the same Model Catalog mechanism as physics Models, via the `interface_adapter` category. Used by both the `streaming.stream` outbound mirror and the Interface Federate.

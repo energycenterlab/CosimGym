@@ -54,3 +54,7 @@ make run-dashboard      # launch the Streamlit dashboard afterwards
 - **Results:** `results/<scenario_name>/<sim_id>/<federation_name>/`, format controlled by `memory_config.sink` — JSON by default (`<federate>_<train|test>_storage.json`, read by the dashboard) or Parquet (`<federate>_<train|test>_storage.parquet`, written incrementally by a non-blocking background writer; not yet read by the dashboard). See [`memory_config`](scenario_configuration/general.md#memory_config).
 
 > The `main()` function takes a single argument (`scenario_name`). It does **not** accept an `enable_progress_bar` keyword — that option was removed.
+
+## Digital-twin / streaming scenarios
+
+Scenarios using `streaming.stream: true` or a `type: interface` federate additionally need Mosquitto running (already included in `docker compose -f src/docker-compose.yaml up -d`). See [Digital-Twin Interfaces & Live Streaming](digital_twin_interfaces.md) for the config reference, and `src/scenarios/m5_bk4_demo_a_full_sim.yaml` / `m5_bk4_demo_b_digital_twin.yaml` for a runnable example pair.

@@ -57,13 +57,15 @@ ScenarioConfig
 └── federations: Dict[name → FederationConfig]
     ├── broker_config: BrokerConfig
     └── federate_configs: Dict[name → FederateConfig]
-        ├── type: "base" | "rl"           ← discriminator
+        ├── type: "base" | "rl" | "interface"   ← discriminator
         ├── timing_configs: FedTimingConfig
         ├── flags: FedFlags
+        ├── streaming: StreamingConfig      ← optional, all types (outbound MQTT mirror)
         ├── connections: FedConnections
         │   ├── publishes: [FedPublication]
         │   └── subscribes: [FedSubscription]
-        └── model_configs: ModelConfig     ← required for type "base"
+        ├── model_configs: ModelConfig      ← required for type "base"
+        └── interface_config: InterfaceConfig  ← only for type "interface"
 ```
 
 ---
@@ -133,3 +135,4 @@ federations:
 | [Federate](federate.md) | `FederateConfig`, timing, flags, connections, model_configs |
 | [Synchronization](synchronization.md) | Auto time-offset, startup sync, causality |
 | [RL](rl.md) | `reinforcement_learning_config` — environment, agent, run, experiment |
+| [Digital-Twin Interfaces](../digital_twin_interfaces.md) | `streaming`, `type: interface`, `interface_config` — MQTT mirror, sensor/actuator bridge, output/param override |

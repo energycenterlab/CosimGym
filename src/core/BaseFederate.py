@@ -26,6 +26,8 @@ from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, Inter
 from models.model_catalog.RedisCatalog import RedisCatalog
 from utils.async_storage import AsyncStorageWriter
 from utils.parquet_storage import ParquetStorageWriter
+from adapters.mqtt_adapter import MqttAdapter
+from core.override_registry import OverrideRegistry
 pp = pprint.PrettyPrinter(indent=4)
 
 # TODO make an abstract class for base federate and change the name of this one as simplefederate
@@ -78,6 +80,12 @@ class BaseFederate():
         self.batch_size = self.config.memory_config.batch_size
         self._async_storage_writer = None  # lazily created only when memory_config.sink == 'parquet'
         self._parquet_storage_writer = None
+
+        # lazily created on first use only if config.streaming.stream is enabled
+        self._stream_adapter = None
+
+        # lazily created on first use only if config.override_enabled is set (M4 digital-twin overrides)
+        self._override_registry = None
 
 
         # co.simualtion time management
@@ -207,7 +215,11 @@ class BaseFederate():
             h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_offset, offset)
             h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_delta, delta)
             # h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_stoptime, timing_configs.time_stop )
-            # h.helics_time_maxtime = timing_configs.time_stop 
+            # h.helics_time_maxtime = timing_configs.time_stop
+            if getattr(timing_configs, "rt_lag", None) is not None:
+                h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_rt_lag, float(timing_configs.rt_lag))
+            if getattr(timing_configs, "rt_lead", None) is not None:
+                h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_rt_lead, float(timing_configs.rt_lead))
 
             self.logger.debug(f'Setting federate timing configs: {pp.pformat(timing_configs)}')
         else:
@@ -423,8 +435,10 @@ class BaseFederate():
             self._apply_deferred_inputs()
             self._receive_inputs()
 
+            self._apply_param_overrides() # opt-in digital-twin PARAMETER override (config.override_enabled)
+
             # update models & do step & get outputs TODO manage multithreading for severla modle instances and intensive step methods
-            if self.config.model_configs.instantiation.parallel_execution:
+            if self.config.model_configs and self.config.model_configs.instantiation.parallel_execution:
             
                 self._step_models_parallel() #TODO implement parallel execution
                 
@@ -443,7 +457,10 @@ class BaseFederate():
             
             # upate storage
             self.update_storage() # TODO i want the flushing to a be a routine that is not coded here but embeded beacuse this is the method that will be overridden by other types of federates
-            
+
+            self._stream_outbound() # opt-in MQTT mirror of this step's inputs/outputs (config.streaming.stream)
+
+
             # no longer need of reset here its above
             # if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
             #     self.logger.info(f"Resetting federate {self.name} at step {self.ts} for training purposes.")
@@ -728,13 +745,50 @@ class BaseFederate():
         '''
         Method to publish outputs to publications and endpoints. Thought to be overridden by special federates
         '''
-        
+
         for pub in self.pubs:
-            data = self.outputs[pub['entity_name']].get(pub['topic'].split('/')[-1], None)
+            entity_id = pub['entity_name']
+            var_name = pub['topic'].split('/')[-1]
+            data = self.outputs[entity_id].get(var_name, None)
+
+            if self.config.override_enabled:
+                override = self._get_output_override(entity_id, var_name)
+                if override is not None:
+                    data = override
+                    # Keep recorded/observed state consistent with what actually got
+                    # published — the digital-twin override IS this step's output.
+                    self.outputs[entity_id][var_name] = data
+
             # self.logger.debug(f" 3333 pub_entity_name:{pub['entity_name']} - pub_var_name: {pub['topic'].split('/')[-1]} - data to publish: {data}")
             if data is not None:
                 pub['pubid'].publish(data)
                 self.logger.debug(f"Published output on {pub['topic']}: {data}")
+
+    def _get_output_override(self, entity_id, var_name):
+        """Opt-in digital-twin OUTPUT override (M4) — None unless a bridge is
+        actively targeting this (entity, var) via the shared override registry."""
+        if self._override_registry is None:
+            self._override_registry = OverrideRegistry(logger=self.logger)
+        return self._override_registry.get_override(
+            'output', self.simulation_id, self.federation_name, self.name, entity_id, var_name
+        )
+
+    def _apply_param_overrides(self):
+        """Opt-in digital-twin PARAMETER override (M4) — applied before this
+        tick's model step so it takes effect immediately, like a real setpoint change."""
+        if not self.config.override_enabled:
+            return
+        if self._override_registry is None:
+            self._override_registry = OverrideRegistry(logger=self.logger)
+        for entity in self.entities:
+            entity_id = entity['id']
+            model = entity['object']
+            for param_name in model.state.parameters.keys():
+                value = self._override_registry.get_override(
+                    'param', self.simulation_id, self.federation_name, self.name, entity_id, param_name
+                )
+                if value is not None:
+                    model.set_parameter(param_name, value)
 
     def _publish_init_state(self):
         # TODO check that this is not fucking all the normal co-simulation
@@ -836,6 +890,39 @@ class BaseFederate():
             self._async_storage_writer.start()
         self._async_storage_writer.enqueue(row)
 
+    def _stream_outbound(self):
+        """Opt-in MQTT mirror of this step's inputs/outputs for live dashboards.
+        Non-blocking (MqttAdapter.publish only enqueues); disabled by default."""
+        streaming = self.config.streaming
+        if not streaming.stream:
+            return
+        every_n_ticks = max(1, streaming.every_n_ticks)
+        if self.ts % every_n_ticks != 0:
+            return
+
+        if self._stream_adapter is None:
+            self._stream_adapter = MqttAdapter(
+                client_id=f"stream_{self.simulation_id}_{self.name}",
+                host=os.getenv('MQTT_HOST', 'localhost'),
+                port=int(os.getenv('MQTT_PORT', '11883')),
+                logger=self.logger,
+            )
+            self._stream_adapter.connect()
+
+        prefix = streaming.stream_topic_prefix or f"cosim/{self.simulation_id}/{self.name}"
+        wall_time = datetime.now().isoformat()
+        for kind, values_by_entity in (('inputs', self.inputs), ('outputs', self.outputs)):
+            for entity_id, values in values_by_entity.items():
+                for var_name, value in values.items():
+                    key = f"{entity_id}/{var_name}"
+                    self._stream_adapter.publish(f"{prefix}/{kind}/{key}", {
+                        'sim_id': self.simulation_id,
+                        'key': key,
+                        'value': value,
+                        'sim_time': self.time_granted,
+                        'wall_time': wall_time,
+                    })
+
     def _reset(self):
         # check if reset time has been reached
         if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
@@ -882,6 +969,8 @@ class BaseFederate():
         self.logger.info(f'federate {self.name} finalizing')
         status = h.helicsFederateDisconnect(self.federate)
         h.helicsFederateDestroy(self.federate)
+        if self._stream_adapter is not None:
+            self._stream_adapter.close()
         self.logger.info("Federate finalized\n")
 
  # def time_to_request(self):

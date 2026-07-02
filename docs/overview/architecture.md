@@ -16,8 +16,9 @@ When you run a simulation in CosimGym, here is what happens under the hood:
    The manager then triggers `federate_launcher.py` logic which spawns multiple async processes.
    - Standard physics endpoints instantiate as standard `BaseFederate` objects.
    - If Reinforcement Learning is configured, a final `RL_Federate` process is created, which boots up a tailored Gymnasium env driving the configured agent backend (Stable-Baselines3, custom PyTorch, or Ray RLlib).
+   - A federate configured `type: interface` instantiates an `InterfaceFederate` instead: no physics model, just a transport adapter (MQTT by default) bridging its HELICS connections to/from the external world — see [Digital-Twin Interfaces & Live Streaming](../user_guide/digital_twin_interfaces.md).
 5. **Execution Loop:**
-   For simulation duration, HELICS manages internal time stepping, ensuring synchronized `publish` / `subscribe` across processes. If an RL agent is present, episode resets are coordinated via the `environment.reset` policy (`full | rolling | none`) across federates.
+   For simulation duration, HELICS manages internal time stepping, ensuring synchronized `publish` / `subscribe` across processes. If an RL agent is present, episode resets are coordinated via the `environment.reset` policy (`full | rolling | none`) across federates. Any federate can also opt into `streaming.stream: true` to mirror its I/O to MQTT each step, independent of HELICS, for live observability.
 6. **Graceful Teardown:**
    Once the endpoint is reached, or the agent completes testing epochs, the `ScenarioManager` harvests logging output, kills the subprocesses gracefully, and shuts down the brokers.
 

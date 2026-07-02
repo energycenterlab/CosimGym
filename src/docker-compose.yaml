@@ -32,6 +32,17 @@ services:
              python src/models/model_catalog/catalog_loader.py"
     restart: "no"
 
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: cosim_mosquitto
+    ports:
+      # Host 1883 is occupied by a system-wide mosquitto service on shared servers;
+      # map the broker to 11883 on the host instead (container side stays 1883).
+      - "11883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+
   minio:
     image: minio/minio:latest
     container_name: cosim_minio

@@ -1,0 +1,146 @@
+# M2 interface-federate outbound smoke test (digitaltwin_interfaces plan):
+# dt_bridge_relay is a `type: interface` federate with an `interface_config.streams`
+# entry subscribing to spring_federate's `position` output and relaying it out to
+# MQTT, wall-clock paced (flags.realtime + rt_lag/rt_lead). Model federates
+# (spring_federate/input_federate) are unchanged from the M0/M1 scenarios.
+
+version: "1.0.0"
+name: "m2_interface_outbound_smoke_test"
+scenario_description: M2 check — interface federate relays a HELICS subscription out to MQTT, paced to wall-clock.
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T00:00:05"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: ["position", "velocity", "force", "disturbance"]
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23497
+      federates: 3
+      log_level: DEBUG
+
+    federate_configs:
+      spring_federate:
+        name: "spring_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: true
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "force"
+              type: "double"
+              units: "N"
+              targets:
+                '0': [input_federate.0/force]
+            - key: "disturbance"
+              type: "double"
+              units: "N"
+              targets:
+                '0': [input_federate.0/disturbance]
+
+          publishes:
+            - key: "position"
+              type: "double"
+              units: "N"
+            - key: "velocity"
+              type: "double"
+              units: "N"
+
+        model_configs:
+          instantiation:
+            model_name: "spring_mass_damper"
+            n_instances: 1
+            prefix: "spring"
+            parallel_execution: false
+
+          parameters:
+            mass: 5
+            damping: 2.0
+            stiffness: 10.0
+
+          init_state:
+            force: 10.0
+            disturbance: 0.0
+            position: 0.0
+            velocity: 0.0
+
+          user_defined:
+            solver: "rk4"
+            integrator: "fixed-step"
+
+      input_federate:
+        name: "input_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "force"
+              type: "double"
+              units: "N"
+            - key: "disturbance"
+              type: "double"
+              units: "N"
+
+        model_configs:
+          instantiation:
+            model_name: "inputs4spring"
+            n_instances: 1
+            prefix: "input"
+            parallel_execution: false
+
+          init_state: {}
+          params: {}
+
+      dt_bridge_relay:
+        name: "dt_bridge_relay"
+        type: "interface"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+          rt_lag: 1.0
+          rt_lead: 1.0
+
+        flags:
+          terminate_on_error: true
+          realtime: true
+
+        interface_config:
+          adapter:
+            name: mqtt_adapter
+            params:
+              client_id: dt_bridge_relay
+              host: localhost
+              port: 11883
+          streams:
+            - helics_key: "spring_federate.0/position"
+              topic: "cosim/m2_smoke/relay/position"
+              every_n_ticks: 1

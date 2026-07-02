@@ -2773,3 +2773,49 @@ models:
         tags:
           - system
           - demand
+
+  mqtt_adapter:
+    class_name: MqttAdapter
+    module_path: adapters.mqtt_adapter
+    version: 1.0.0
+    description: >
+      MQTT transport adapter (Mosquitto) for the `stream` outbound mirror and
+      the InterfaceFederate digital-twin bridge. Runs paho-mqtt's own
+      background thread so the sim thread never blocks on network I/O.
+    author: Pietro Rando Mazzarino
+    domain: digital_twin
+    category: interface_adapter
+    tags:
+      - mqtt
+      - transport
+      - digital_twin
+    dependencies:
+      - paho-mqtt
+    parameters:
+      client_id:
+        type: string
+        default_value: cosim_dt
+        description: MQTT client identifier
+        unit: "-"
+        required: false
+      host:
+        type: string
+        default_value: localhost
+        description: Mosquitto broker host
+        unit: "-"
+        required: false
+      port:
+        type: int
+        default_value: 11883
+        description: >
+          Mosquitto broker port. Defaults to 11883 (this repo's docker-compose
+          maps the broker there since host 1883 may be occupied by a
+          system-wide mosquitto service on shared servers).
+        unit: "-"
+        required: false
+      qos:
+        type: int
+        default_value: 0
+        description: MQTT quality-of-service level (0, 1, or 2)
+        unit: "-"
+        required: false

@@ -9,7 +9,7 @@ scenario_description: >
   Simulated over the full month of January at a 15-minute step.
 
 start_time: "2010-01-01T00:00:00"
-end_time:   "2010-02-01T00:00:00"
+end_time:   "2010-01-30T00:00:00"
 log_level: ERROR
 
 # 15-min step over 31 days = 2976 steps. "all" keeps every input/output in memory
@@ -57,6 +57,9 @@ federations:
         flags:
           terminate_on_error: true
           wait_for_current_time_update: false
+        streaming:
+          stream: true
+          stream_topic_prefix: "cosim/dh_demo/weather"
         connections:
           endpoints: []
           subscribes: []
@@ -245,6 +248,9 @@ federations:
         flags:
           terminate_on_error: true
           wait_for_current_time_update: false
+        streaming:
+          stream: true
+          stream_topic_prefix: "cosim/dh_demo/dh_network"
         connections:
           endpoints: []
           subscribes:

@@ -1,0 +1,153 @@
+# M3 interface-federate inbound smoke test (digitaltwin_interfaces plan):
+# dt_bridge_inbound is a `type: interface` federate with one `interface_config.bridges`
+# entry (mode: passthrough) that publishes onto "dt_bridge_inbound/force" — the key
+# spring_federate's `force` subscription now targets, instead of input_federate directly.
+# Before any MQTT message on the bridge's topic, it passes through the real source
+# (input_federate's constant force=10.0, unclipped — bounds are wide enough). After
+# `mosquitto_pub` sends an out-of-range sensor value, spring's force input follows
+# it, clipped to bounds [0, 20] (a distinctly different value from the passthrough
+# 10.0, so the transition is unambiguous in the recorded timeseries).
+
+version: "1.0.0"
+name: "m3_interface_inbound_smoke_test"
+scenario_description: M3 check — passthrough bridge relays real source, then follows an injected MQTT value (clipped).
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T00:00:25"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: ["position", "velocity", "force", "disturbance"]
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23496
+      federates: 3
+      log_level: DEBUG
+
+    federate_configs:
+      spring_federate:
+        name: "spring_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: true
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "force"
+              type: "double"
+              units: "N"
+              targets:
+                '0': [dt_bridge_inbound/force]
+            - key: "disturbance"
+              type: "double"
+              units: "N"
+              targets:
+                '0': [input_federate.0/disturbance]
+
+          publishes:
+            - key: "position"
+              type: "double"
+              units: "N"
+            - key: "velocity"
+              type: "double"
+              units: "N"
+
+        model_configs:
+          instantiation:
+            model_name: "spring_mass_damper"
+            n_instances: 1
+            prefix: "spring"
+            parallel_execution: false
+
+          parameters:
+            mass: 5
+            damping: 2.0
+            stiffness: 10.0
+
+          init_state:
+            force: 10.0
+            disturbance: 0.0
+            position: 0.0
+            velocity: 0.0
+
+          user_defined:
+            solver: "rk4"
+            integrator: "fixed-step"
+
+      input_federate:
+        name: "input_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "force"
+              type: "double"
+              units: "N"
+            - key: "disturbance"
+              type: "double"
+              units: "N"
+
+        model_configs:
+          instantiation:
+            model_name: "inputs4spring"
+            n_instances: 1
+            prefix: "input"
+            parallel_execution: false
+
+          init_state: {}
+          params: {}
+
+      dt_bridge_inbound:
+        name: "dt_bridge_inbound"
+        type: "interface"
+        log_level: DEBUG
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 1
+          rt_lag: 1.0
+          rt_lead: 1.0
+
+        flags:
+          terminate_on_error: true
+          realtime: true
+
+        interface_config:
+          adapter:
+            name: mqtt_adapter
+            params:
+              client_id: dt_bridge_inbound
+              host: localhost
+              port: 11883
+          bridges:
+            - helics_key: "dt_bridge_inbound/force"
+              topic: "cosim/m3_smoke/sensor/force"
+              bounds: [0, 20]
+              scope: input
+              mode: passthrough
+              source_key: "input_federate.0/force"

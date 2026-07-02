@@ -1,6 +1,6 @@
 # Federate Configuration
 
-Each entry in `federate_configs` is a `FederateConfig`. The `type` field is the discriminator: `"base"` for physics federates, `"rl"` for the RL agent federate.
+Each entry in `federate_configs` is a `FederateConfig`. The `type` field is the discriminator: `"base"` for physics federates, `"rl"` for the RL agent federate, `"interface"` for a digital-twin bridge federate (see [`type: "interface"`](#type-interface-interface-federate-digital-twin-bridge) below, and the full [Digital-Twin Interfaces & Live Streaming](../digital_twin_interfaces.md) reference).
 
 ---
 
@@ -9,7 +9,7 @@ Each entry in `federate_configs` is a `FederateConfig`. The `type` field is the 
 ```yaml
 federate_configs:
   spring_federate:
-    type: "base"              # required — "base" | "rl"
+    type: "base"              # required — "base" | "rl" | "interface"
     log_level: DEBUG          # optional — overrides scenario-level log_level
     core_type: "zmq"          # optional — default "zmq"
     core_name: "fed1"         # optional — HELICS core identifier
@@ -61,12 +61,14 @@ federate_configs:
 
 | Field | Required | Default | Type | Meaning |
 |---|---|---|---|---|
-| `type` | yes | — | `"base"` \| `"rl"` | Federate class discriminator |
+| `type` | yes | — | `"base"` \| `"rl"` \| `"interface"` | Federate class discriminator |
 | `log_level` | no | scenario `log_level` | LogLevel | Federate-level log verbosity |
 | `core_type` | no | `"zmq"` | string | HELICS transport: `"zmq"` \| `"tcp"` \| `"ipc"` |
 | `core_name` | no | `null` | string | HELICS core name (advanced) |
 | `broker_address` | no | set at runtime | string | Explicit broker address (set by ScenarioManager) |
 | `startup_sync` | no | scenario default | StartupSyncConfig | Per-federate startup sync override |
+| `streaming` | no | `{stream: false}` | StreamingConfig | Opt-in outbound MQTT mirror of this federate's I/O. All types. See [Digital-Twin Interfaces](../digital_twin_interfaces.md). |
+| `override_enabled` | no | `false` | bool | `base`/`rl` federates only: opt in to accepting output/param overrides from an interface federate's `bridges`. |
 
 > `name` and `id` are injected automatically from the dict key and federation name. Do not set them manually.
 
@@ -80,6 +82,8 @@ timing_configs:
   time_offset: 0.0       # optional — fractional HELICS units; set by auto_offset if enabled
   timeout: 30            # optional — max seconds to wait for HELICS grant (default: 30)
   int_max_iterations: 10000  # optional — max HELICS iterations per step (default: 10000)
+  rt_lag: 1.0            # optional — realtime lag tolerance (seconds); requires flags.realtime: true
+  rt_lead: 1.0           # optional — realtime lead tolerance (seconds); requires flags.realtime: true
 ```
 
 | Field | Required | Default | Meaning |
@@ -88,6 +92,7 @@ timing_configs:
 | `time_offset` | no | `0.0` | Fractional HELICS time units added to this federate's requests. Computed automatically by `auto_offset` unless you set it manually. |
 | `timeout` | no | `30` | Seconds before a HELICS time-grant request is considered failed. |
 | `int_max_iterations` | no | `10000` | Max HELICS iteration count per time step. |
+| `rt_lag` / `rt_lead` | no | `null` | Tunable wall-clock pacing tolerance (HELICS `time_rt_lag`/`time_rt_lead`), only applied when `flags.realtime: true`. Used by interface federates to give an external process a wall-clock window to publish/react each step. |
 
 ScenarioManager normalizes all federates to the same tick size (the minimum `real_period`). A federate with `real_period: 120` steps every 2 ticks; one with `real_period: 60` steps every tick.
 
@@ -267,6 +272,71 @@ federate_configs:
 ```
 
 For `type: "rl"`, `model_configs` is optional (unlike `type: "base"` where it is required).
+
+---
+
+## `streaming` (opt-in outbound MQTT mirror, all types)
+
+Mirrors this federate's inputs/outputs to MQTT each step, alongside normal HELICS traffic — for live dashboards/observers. Does not change the co-simulation itself.
+
+```yaml
+federate_configs:
+  spring_federate:
+    type: "base"
+    streaming:
+      stream: true                # default: false (opt-in)
+      # stream_topic_prefix: cosim/${sim_id}/spring   # default: cosim/<sim_id>/<federate_name>
+      # every_n_ticks: 1
+    ...
+```
+
+Requires Mosquitto running (`docker compose -f src/docker-compose.yaml up -d`). See [Digital-Twin Interfaces & Live Streaming](../digital_twin_interfaces.md).
+
+---
+
+## `type: "interface"` — interface federate (digital-twin bridge)
+
+An interface federate has no physics model — instead of `model_configs`, it declares `interface_config`, and relays its wired HELICS connections to/from an external adapter (MQTT by default).
+
+```yaml
+federate_configs:
+  dt_bridge:
+    type: "interface"
+    timing_configs:
+      real_period: 1
+      rt_lag: 1.0
+      rt_lead: 1.0
+    flags:
+      realtime: true        # wall-clock pacing so an external process has time to react
+
+    interface_config:
+      adapter:
+        name: mqtt_adapter                # catalog key (interface_adapter category)
+        params: { host: localhost, port: 11883, qos: 0, client_id: cosim_dt }
+
+      streams:                            # co-sim -> external (HELICS subscribe, MQTT publish)
+        - helics_key: plant.spring_federate.0/position
+          topic: cosim/${sim_id}/spring/position
+          every_n_ticks: 1
+
+      bridges:                            # external -> co-sim, or override registry
+        - helics_key: plant.spring_federate.0/force
+          topic: cosim/${sim_id}/sensor/force
+          bounds: [-10, 10]
+          scope: input          # input | output | param
+          mode: replace          # replace external value | passthrough (real source + override)
+          # source_key: plant.driver.0/force   # required for mode: passthrough, scope: input only
+```
+
+| Field | Meaning |
+|---|---|
+| `adapter.name` | Catalog key resolved from the `interface_adapter` category (e.g. `mqtt_adapter`), dynamic-imported like a physics model. |
+| `streams[].helics_key` | A HELICS key this federate subscribes to; its value is relayed out to `topic`. |
+| `bridges[].scope: input` | Registers a normal HELICS global publication at `helics_key`. `mode: replace` publishes only once an external value arrives; `mode: passthrough` (needs `source_key`) relays a real HELICS source until an external value shows up. |
+| `bridges[].scope: output` \| `param` | No HELICS registration — the target federate already computes this value/parameter. Instead writes the bounds-clipped external value into a Redis-backed override registry; the target opts in with `override_enabled: true`. |
+| `bridges[].bounds` | `[min, max]` clip applied to any external value before use. |
+
+Because a physics-model federate and an interface federate register identical HELICS key names, swapping simulated hardware for real hardware ("config-only sim-to-real") is a change to **one federate's block** — every subscriber is untouched. See the worked example (`m5_bk4_demo_a_full_sim.yaml` / `m5_bk4_demo_b_digital_twin.yaml`) and full reference in [Digital-Twin Interfaces & Live Streaming](../digital_twin_interfaces.md).
 
 ---
 
