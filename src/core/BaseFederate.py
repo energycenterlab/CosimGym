@@ -161,6 +161,8 @@ class BaseFederate():
             )
 
         if getattr(self.config, 'type', None) == 'rl':
+
+            # TODO : for now OK, need in future to understand how to deal with multi agents from one side and from the other even with single agent how to deal wit multiple parallel execution of the env to speed up experience collection
             raise NotImplementedError(
                 f"Federate '{self.name}': parallel_execution is not supported for "
                 "type: rl federates (RLFederate drives a single agent/env, not a "
