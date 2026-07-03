@@ -297,11 +297,13 @@ def _compute_run_fingerprint(run_path: Path) -> float:
     except OSError:
         pass
     
-    # Cache miss or invalid; recompute
+    # Cache miss or invalid; recompute. Runs store either JSON or Parquet result
+    # files (never both), so both globs must be hashed for cache invalidation to
+    # work regardless of `memory_config.sink`.
     max_mtime = -1.0
-    for json_file in run_path.rglob("*.json"):
+    for result_file in (*run_path.rglob("*.json"), *run_path.rglob("*.parquet")):
         try:
-            mtime = json_file.stat().st_mtime
+            mtime = result_file.stat().st_mtime
         except OSError:
             continue
         if mtime > max_mtime:

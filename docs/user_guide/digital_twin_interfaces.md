@@ -100,12 +100,13 @@ Watch both runs live with the live dashboard (below) to see (a)'s internally-gen
 
 ## Live dashboard
 
-`src/dashboard/live_dashboard.py` is a separate Streamlit page (`dashboard_app.py` remains the
-post-run historical explorer) that subscribes to `cosim/#` and shows the latest value per topic
-plus a rolling chart, refreshed on a timer:
+`src/dashboard/live_dashboard.py` is the "Live" page of the Streamlit dashboard (`dashboard_app.py`
+is the "Results" page, the post-run historical explorer — both are served by the same app via
+`st.navigation`). The Live page subscribes to `cosim/#` and shows the latest value per topic plus a
+rolling chart, refreshed on a timer:
 
 ```bash
-./src/dashboard/run_live_dashboard.sh    # http://localhost:8053
+./src/dashboard/run_dashboard.sh    # http://localhost:8052, then switch to the "Live" page
 ```
 
 It works with both mechanisms above — a `stream: true` federate's telemetry and an interface

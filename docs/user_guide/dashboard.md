@@ -33,11 +33,11 @@ Because Streamlit binds dynamically to local disk folders, if you are running Co
 ## Live View (during a run)
 
 The panels above read `results/` files written **after** a run finishes. To watch data as it is
-produced, run the separate live dashboard, which subscribes to the Mosquitto broker instead of the
-filesystem:
+produced, switch to the **Live** page in the same app (sidebar navigation), which subscribes to
+the Mosquitto broker instead of the filesystem:
 
 ```bash
-./src/dashboard/run_live_dashboard.sh    # http://localhost:8053
+./src/dashboard/run_dashboard.sh    # http://localhost:8052 — "Live" page in the sidebar
 ```
 
 It shows whatever is being published to `cosim/#` — any federate's `streaming.stream: true`

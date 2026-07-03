@@ -5,6 +5,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
+
 from src.dashboard.dashboard_data import (
     build_dataframe,
     build_episode_dataframe,
@@ -135,10 +138,90 @@ class DashboardDataLoadingTests(unittest.TestCase):
             self.assertEqual(list(dataframe["episode_reward"]), [1.0, 1.5, 2.0])
             self.assertEqual(list(dataframe["episode_length"]), [10, 9, 8])
 
+    def test_load_all_records_reads_parquet_storage_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            results_root = Path(tmpdir)
+            self._write_parquet(
+                results_root / "scenario_c" / "run_020" / "fed_gamma" / "hvac_train_storage.parquet",
+                [
+                    {
+                        "time": "2026-01-01T00:00:00",
+                        "federation": "fed_gamma",
+                        "federate": "hvac",
+                        "model_instance": "zone_1",
+                        "attribute": "temperature",
+                        "type": "input",
+                        "mode": "train",
+                        "value": 19.0,
+                    },
+                    {
+                        "time": "2026-01-01T00:05:00",
+                        "federation": "fed_gamma",
+                        "federate": "hvac",
+                        "model_instance": "zone_1",
+                        "attribute": "temperature",
+                        "type": "input",
+                        "mode": "train",
+                        "value": 20.0,
+                    },
+                ],
+            )
+
+            records = load_all_records("scenario_c", "run_020", results_path=results_root)
+
+            self.assertEqual(len(records), 2)
+            self.assertIn(
+                {
+                    "time": "2026-01-01T00:05:00",
+                    "federation": "fed_gamma",
+                    "federate": "hvac",
+                    "model_instance": "zone_1",
+                    "attribute": "temperature",
+                    "type": "input",
+                    "mode": "train",
+                    "value": 20.0,
+                },
+                records,
+            )
+            self.assertEqual(set(records[0].keys()), set(self.EXPECTED_RECORD_KEYS))
+
+            dataframe = build_dataframe(records, federations=("fed_gamma",))
+            self.assertEqual(list(dataframe["attribute"]), ["temperature", "temperature"])
+            self.assertTrue(dataframe["time"].is_monotonic_increasing)
+
+    EXPECTED_RECORD_KEYS = (
+        "time",
+        "federation",
+        "federate",
+        "model_instance",
+        "attribute",
+        "type",
+        "mode",
+        "value",
+    )
+
     @staticmethod
     def _write_json(path: Path, payload: dict) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload), encoding="utf-8")
+
+    @staticmethod
+    def _write_parquet(path: Path, rows: list[dict]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        schema = pa.schema(
+            [
+                ("time", pa.string()),
+                ("federation", pa.string()),
+                ("federate", pa.string()),
+                ("model_instance", pa.string()),
+                ("attribute", pa.string()),
+                ("type", pa.string()),
+                ("mode", pa.string()),
+                ("value", pa.float64()),
+            ]
+        )
+        table = pa.Table.from_pylist(rows, schema=schema)
+        pq.write_table(table, path)
 
 
 if __name__ == "__main__":

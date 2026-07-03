@@ -38,6 +38,10 @@ _FILE_PATTERNS = [
     (re.compile(r"^(.+)_(train|test)_rl_storage\.json$"), True),
     (re.compile(r"^(.+)_(train|test)_storage\.json$"), False),
     (re.compile(r"^(.+)_storage\.json$"), False),
+    # Parquet equivalents of the non-RL patterns only — RLFederate never writes
+    # `sink: parquet` (NotImplementedError), so no RL parquet pattern exists.
+    (re.compile(r"^(.+)_(train|test)_storage\.parquet$"), False),
+    (re.compile(r"^(.+)_storage\.parquet$"), False),
 ]
 
 
@@ -151,6 +155,17 @@ def load_all_records(
                 continue
 
             _append_standard_records(records, federation, mode, time_index, payload, section_type)
+
+        for parquet_file in sorted(federation_dir.glob("*.parquet")):
+            parsed = parse_storage_filename(parquet_file.name)
+            if parsed is None:
+                continue
+
+            parquet_records = _read_parquet_records(parquet_file)
+            if parquet_records is None:
+                continue
+
+            records.extend(parquet_records)
 
     return records
 
@@ -311,6 +326,23 @@ def _read_json_dict(path: Path) -> dict[str, Any] | None:
         return None
 
     return payload
+
+
+def _read_parquet_records(path: Path) -> list[dict[str, Any]] | None:
+    """
+    Read a result parquet file (``sink: parquet``) into flat records.
+
+    The on-disk schema (``time, federation, federate, model_instance, attribute,
+    type, mode, value`` — see ``src/utils/parquet_storage.py``) already matches the
+    record schema produced by ``_append_standard_records``, so no reshaping is
+    needed beyond a straight dataframe-to-records conversion.
+    """
+    try:
+        dataframe = pd.read_parquet(path)
+    except (OSError, ValueError):
+        return None
+
+    return dataframe.to_dict("records")
 
 
 def _append_rl_records(

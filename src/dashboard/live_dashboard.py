@@ -152,7 +152,9 @@ class _ScenarioRunner:
 
 
 def render_live_dashboard() -> None:
-    st.set_page_config(page_title="CosimGym Live View", layout="wide", initial_sidebar_state="expanded")
+    """Render the live-view page. Callable as an `st.Page` target — `st.set_page_config`
+    is intentionally not called here, since Streamlit only allows one call per app and
+    the entrypoint (`streamlit_dashboard.py`) already makes it before `pg.run()`."""
     st.title("CosimGym Live View")
     st.caption(
         "Live MQTT feed — shows values as they are streamed/bridged *during* a running "
@@ -246,4 +248,5 @@ def render_live_dashboard() -> None:
     st.rerun()
 
 
-render_live_dashboard()
+if __name__ == "__main__":
+    render_live_dashboard()

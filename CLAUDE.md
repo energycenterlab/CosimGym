@@ -84,7 +84,7 @@ Two MQTT-backed mechanisms (Mosquitto broker, `src/adapters/mqtt_adapter.py`, ba
   - `streams`: HELICS subscription → MQTT publish (co-sim → external).
   - `bridges`: `scope: input` registers a normal HELICS global publication (`mode: replace` = external value only; `mode: passthrough` + `source_key` = real source until an external value arrives, then follows it). `scope: output`/`param` have no HELICS representation — the bridge instead writes bounds-clipped values into the Redis-backed `OverrideRegistry` (`src/core/override_registry.py`); a target federate opts in with `override_enabled: true` to substitute them in `_publish_outputs()`/`BaseModel.set_parameter()`. Clearing the external value restores computed behavior next step.
 - **BK4 pattern (config-only sim-to-real):** since a model federate and an interface federate register identical HELICS key names, swapping simulated hardware for real is a change to *one* federate's block (`type: base` → `type: interface`) — every subscriber is untouched. Demo pair: `src/scenarios/m5_bk4_demo_a_full_sim.yaml` / `m5_bk4_demo_b_digital_twin.yaml`.
-- **Live dashboard:** `./src/dashboard/run_live_dashboard.sh` (`src/dashboard/live_dashboard.py`) subscribes to `cosim/#` and shows both mechanisms' data as it's published — separate from the post-run `dashboard_app.py`.
+- **Live dashboard:** the "Live" page of `./src/dashboard/run_dashboard.sh` (`src/dashboard/live_dashboard.py`, combined into the single Streamlit app via `st.navigation`) subscribes to `cosim/#` and shows both mechanisms' data as it's published — separate from the "Results" page's post-run `dashboard_app.py` view.
 
 ## Config Reference
 

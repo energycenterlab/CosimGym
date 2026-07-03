@@ -86,7 +86,7 @@ sleep 3 && python src/scenarios/bk4_demo_external_sensor.py --duration 18
 
 # 4. Live dashboard (open in a browser while step 3's run (b) or any
 #    `streaming.stream: true` scenario is executing):
-./src/dashboard/run_live_dashboard.sh    # http://localhost:8053
+./src/dashboard/run_dashboard.sh    # http://localhost:8052 — open the "Live" page
 
 # 5. Docs build check:
 mkdocs build --strict -d /tmp/mkdocs_out
