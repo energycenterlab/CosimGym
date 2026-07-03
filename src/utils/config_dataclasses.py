@@ -585,6 +585,8 @@ class _FederateConfigBase(BaseModel):
     # Opt-in: allow an interface federate's `bridges[scope: output|param]` to override this
     # federate's computed outputs/parameters (M4). False = zero override-registry lookups.
     override_enabled: bool = False
+    # Remote spawn: alias into deployment.machines. None = spawn locally (default, unchanged behavior).
+    host: Optional[str] = None
 
 
 class BaseFederateConfig(_FederateConfigBase):
@@ -695,6 +697,32 @@ class FederationConfig(BaseModel):
 
 
 # ==============================================================================
+# DEPLOYMENT — remote federate spawning over SSH (opt-in, absent = fully local)
+# ==============================================================================
+
+class MachineConfig(BaseModel):
+    """One `deployment.machines` entry: SSH target a federate's `host:` key can reference."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    host: str
+    user: Optional[str] = None
+    ssh_port: int = 22
+    workdir: str
+    conda_env: str = 'cosim_gym'
+    python: Optional[str] = None
+
+
+class DeploymentConfig(BaseModel):
+    """Scenario-level `deployment` block: LAN address remote machines reach the manager at, plus named machines."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    manager_address: Optional[str] = None
+    machines: Dict[str, MachineConfig] = Field(default_factory=dict)
+
+
+# ==============================================================================
 # TOP-LEVEL SCENARIO CONFIG
 # ==============================================================================
 
@@ -723,6 +751,35 @@ class ScenarioConfig(BaseModel):
     log_level: LogLevel = LogLevel.INFO
     multi_computer: bool = False
     multi_computer_config: Optional[MultiComputerConfig] = None
+    deployment: Optional[DeploymentConfig] = None
+
+    @model_validator(mode='after')
+    def _validate_deployment(self) -> 'ScenarioConfig':
+        """Validate `host:` references against `deployment.machines` and reject `host:` on rl federates (v1)."""
+        remote_feds = [
+            (fed_name, name, fed)
+            for fed_name, federation in self.federations.items()
+            for name, fed in federation.federate_configs.items()
+            if getattr(fed, 'host', None)
+        ]
+        if not remote_feds:
+            return self
+        if self.deployment is None:
+            raise ValueError("federate(s) set 'host:' but scenario has no top-level 'deployment' block")
+        if not self.deployment.manager_address:
+            raise ValueError("deployment.manager_address is required when any federate sets 'host:'")
+        for fed_name, name, fed in remote_feds:
+            if fed.host not in self.deployment.machines:
+                raise ValueError(
+                    f"federate '{fed_name}.{name}' references unknown host '{fed.host}' "
+                    f"(not in deployment.machines)"
+                )
+            if isinstance(fed, RLFederateConfig):
+                raise ValueError(
+                    f"federate '{fed_name}.{name}': remote 'host:' on type 'rl' federate is not "
+                    f"supported in v1 (RL agent must run on the manager machine)"
+                )
+        return self
 
     @model_validator(mode='before')
     @classmethod

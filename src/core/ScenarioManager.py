@@ -30,6 +30,7 @@ from utils.config_dataclasses import BrokerConfig, FederationConfig, FederateCon
 from utils.config_reader import read_scenario_config
 from utils.logging_config import FederationLogger
 from utils.redis_client import RedisClient
+from core.remote_executor import RemoteExecutor
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -79,6 +80,11 @@ class ScenarioManager:
         # Process management attributes
         self.broker_processes: List[subprocess.Popen] = []
         self.federate_processes: List[subprocess.Popen] = []
+
+        # Remote execution: alias -> RemoteExecutor, populated by _setup_remote_execution
+        # only when the scenario has ≥1 federate with a `host:` key. Empty dict = fully
+        # local scenario, everything remote-related is a no-op.
+        self.remote_executors: Dict[str, RemoteExecutor] = {}
         
         # Cleanup management
         self._cleanup_done = False
@@ -594,6 +600,76 @@ class ScenarioManager:
         self.config.end_time = self.end_time.isoformat() #probably redundant
         self.logger.debug(f"Modified scenario configuration for online training\n new start_time:{self.start_time} \n new end_time: {self.end_time}")
 
+    def _has_remote_federates(self) -> bool:
+        """True if any federate in the scenario sets `host:` (distributed SSH spawning)."""
+        return any(
+            getattr(fed, 'host', None)
+            for federation in self.config.federations.values()
+            for fed in federation.federate_configs.values()
+        )
+
+    def _setup_remote_execution(self):
+        """Preflight-verify and deploy code to every remote machine used by ≥1 federate.
+
+        Must run before any broker starts: a machine that fails preflight aborts the
+        whole scenario before any local process (broker or federate) has been spawned.
+        No-op when the scenario has no `host:`-tagged federates — `self.remote_executors`
+        stays empty and every later remote-dispatch check short-circuits to the existing
+        local code path, unchanged.
+        """
+        if not self._has_remote_federates():
+            return
+
+        deployment = self.config.deployment
+        control_dir = str(self.logger_system.scenario_log_dir / 'ssh_control')
+        project_root = str(Path(__file__).resolve().parents[2])
+
+        used_aliases = {
+            fed.host
+            for federation in self.config.federations.values()
+            for fed in federation.federate_configs.values()
+            if getattr(fed, 'host', None)
+        }
+
+        try:
+            for alias in used_aliases:
+                machine_conf = deployment.machines[alias]
+                executor = RemoteExecutor(
+                    machine_alias=alias,
+                    machine_conf=machine_conf,
+                    manager_address=deployment.manager_address,
+                    logger=self.logger,
+                    control_dir=control_dir,
+                )
+                self.logger.info(f"Opening ssh control master for remote machine '{alias}' ({machine_conf.host})...")
+                executor.open_master()
+                self.remote_executors[alias] = executor
+
+            scenario_log_dir_rel = str(self.logger_system.scenario_log_dir)
+            for alias, executor in self.remote_executors.items():
+                self.logger.info(f"Running preflight checks on remote machine '{alias}'...")
+                executor.verify()
+                self.logger.info(f"Deploying code to remote machine '{alias}'...")
+                executor.deploy(project_root)
+
+                # federate_launcher.py's FileHandler doesn't create parent dirs (matches
+                # local behavior, where FederationLogger pre-creates them) — the remote
+                # federates/ subdir must exist before any federate on this machine spawns.
+                machine_conf = deployment.machines[alias]
+                remote_federates_dir = os.path.join(machine_conf.workdir, scenario_log_dir_rel, 'federates')
+                rc, _, err = executor.run(['mkdir', '-p', remote_federates_dir], timeout=10)
+                if rc != 0:
+                    raise RuntimeError(f"[{alias}] failed to create remote federate log dir: {err.strip()}")
+        except Exception:
+            # Any single machine's preflight/deploy failure aborts the whole scenario.
+            # Close whatever control masters were already opened so we don't leak sockets.
+            for executor in self.remote_executors.values():
+                executor.close()
+            self.remote_executors = {}
+            raise
+
+        self.logger.info(f"Remote execution ready: {len(self.remote_executors)} machine(s) verified and deployed.")
+
     def _setup_classic_scenario(self):
         # Set up of timings, Synchronization variables
         self._scenario_setup_timing_vars()
@@ -601,6 +677,9 @@ class ScenarioManager:
         # This also automatically starts the co-simulation
         # 2 options - local or multi computer
         self._setup_results_folder()
+        # Distributed SSH spawning: verify + deploy to remote machines before any
+        # broker/federate process starts locally. No-op for fully local scenarios.
+        self._setup_remote_execution()
         if self.config.multi_computer and self.config.multi_computer_config:
             self._setup_multi_computer_scenario() # TODO: multi computer must be implemented
         else:
@@ -631,6 +710,10 @@ class ScenarioManager:
         redis_port = int(os.getenv('REDIS_PORT', '6379'))
         redis_db = int(os.getenv('REDIS_DB', '0'))
         self.redis_url = os.getenv('REDIS_URL', f'redis://{redis_host}:{redis_port}/{redis_db}')
+        # Kept for _redis_url_for: remote federates reach Redis at manager_address on the
+        # same port/db the manager itself uses (Redis always runs on the manager machine).
+        self._redis_port = redis_port
+        self._redis_db = redis_db
 
         config_dict = self.config.model_dump()
         self.logger.info(f"Storing scenario configuration in Redis. config={pp.pformat(config_dict)}")
@@ -1134,7 +1217,7 @@ class ScenarioManager:
         
         # Start all federates of one federation
         for federate_name, federate_config in federation_conf.federate_configs.items():
-            self._create_local_federate(federate_name, federate_config, federation_name)
+            self._create_federate(federate_name, federate_config, federation_name)
     
 
         self.logger.info("All federates started. Monitoring execution...")
@@ -1231,13 +1314,26 @@ class ScenarioManager:
         # ------------------------------------------------------------------
         # 3. Normalize each federation's broker and propagate protocol, broker
         #    address and a unique core name down to every federate it owns.
+        #    Brokers always run on the manager machine (placement rule: only
+        #    federates go remote). When ≥1 federate has `host:`, the broker's
+        #    default listen address becomes `deployment.manager_address`
+        #    (a LAN-reachable IP) instead of loopback, so remote federate
+        #    cores can dial in; an explicit YAML `broker_config.host` still
+        #    wins either way. HELICS' tcp core binds all interfaces by
+        #    default, so advertising the LAN address here is sufficient —
+        #    no `--local_interface` change needed.
         # ------------------------------------------------------------------
+        default_broker_host = (
+            self.config.deployment.manager_address
+            if self.config.deployment and self._has_remote_federates()
+            else '127.0.0.1'
+        )
         seen_core_names: Dict[str, str] = {}
         for federation_name, federation_conf in federations.items():
             broker_conf = federation_conf.broker_config
 
             broker_conf.core_type = core_type
-            broker_conf.host = broker_conf.host or '127.0.0.1'
+            broker_conf.host = broker_conf.host or default_broker_host
             if not broker_conf.port:
                 broker_conf.port = _next_free_port()
             broker_conf.address = f'{broker_conf.host}:{broker_conf.port}'
@@ -1311,11 +1407,11 @@ class ScenarioManager:
                     core_type=core_type,
                     port=main_port,
                     log_level=self.config.log_level,
-                    host='127.0.0.1',
-                    address=f'127.0.0.1:{main_port}',
+                    host=default_broker_host,
+                    address=f'{default_broker_host}:{main_port}',
                     sub_brokers=n_federations,
                 )
-                main_broker_address = f'{core_type}://127.0.0.1:{main_port}'
+                main_broker_address = f'{core_type}://{default_broker_host}:{main_port}'
                 for federation_conf in federations.values():
                     federation_conf.broker_config.broker_address = main_broker_address
 
@@ -1483,38 +1579,74 @@ class ScenarioManager:
             raise RuntimeError(f"{error_msg}. Please ensure HELICS is installed and in your PATH.")
         return broker_logger
     
+    def _build_federate_args(self, federate_name, federate_config, federation_name, redis_url, log_file):
+        """Build the federate_launcher.py CLI arg list, shared by the local and remote spawn paths.
+
+        Args:
+            redis_url: Redis URL this federate should use (see `_redis_url_for`).
+            log_file: path (local or remote) for the federate's own file logger.
+
+        Returns:
+            List[str]: args only, WITHOUT the leading interpreter/script tokens — the
+            local path prepends `['python', <local launcher path>]`, the remote path
+            prepends the remote python invocation + `'src/core/federate_launcher.py'`.
+        """
+        return [
+            '--name', federate_name,
+            '--scenario_name', self.scenario_name,
+            '--federation_name', federation_name,
+            '--type', federate_config.type,
+            '--simid', self.simulation_id,
+            '--redis-url', redis_url,
+            '--redis-key', self.redis_key,
+            '--log-file', log_file,
+            '--log-level', federate_config.log_level.value,
+        ]
+
+    def _redis_url_for(self, federate_config) -> str:
+        """Redis URL a federate should use: manager_address for a remote federate (Redis always
+        runs on the manager machine, alongside the manager itself), else the manager's own
+        `self.redis_url` unchanged."""
+        if getattr(federate_config, 'host', None):
+            return f'redis://{self.config.deployment.manager_address}:{self._redis_port}/{self._redis_db}'
+        return self.redis_url
+
+    def _create_federate(self, federate_name, federate_config, federation_name):
+        """Create and start one federate, dispatching to local Popen or remote ssh spawn.
+
+        Both paths append their process handle to `self.federate_processes`, so
+        `_monitor_processes`/`_emergency_cleanup` need no branching of their own.
+        """
+        host_alias = getattr(federate_config, 'host', None)
+        if host_alias:
+            return self._create_remote_federate(federate_name, federate_config, federation_name, host_alias)
+        return self._create_local_federate(federate_name, federate_config, federation_name)
+
     def _create_local_federate(self, federate_name, federate_config, federation_name):
         """
         Create and start a federate subprocess with logging support.
         Uses Redis for configuration distribution.
-        
+
         Args:
             federate_config: Configuration object for the federate
-            
+
         Returns:
             subprocess.Popen: The created federate process
         """
-        
+
         try:
             # Path to Federate class script depending on the type of federate
             federate_launcher = os.path.join(os.path.dirname(__file__), 'federate_launcher.py')
-            
+
             # Create log file path for this federate (this will be used by the subprocess)
             federate_log_file = self.logger_system.scenario_log_dir / "federates" / f"federate_{federate_name}.log"
-           
-            cmd = [
-                'python', federate_launcher,
-                '--name', federate_name,
-                '--scenario_name', self.scenario_name,
-                '--federation_name', federation_name,
-                '--type', federate_config.type,
-                '--simid', self.simulation_id,
-                '--redis-url', self.redis_url,
-                '--redis-key', self.redis_key,
-                '--log-file', str(federate_log_file),
-                '--log-level', federate_config.log_level.value
-            ]
 
+            args = self._build_federate_args(
+                federate_name, federate_config, federation_name,
+                redis_url=self.redis_url,
+                log_file=str(federate_log_file),
+            )
+            cmd = ['python', federate_launcher] + args
 
             self.logger.info(f"Creating local federate: {federate_name} (type: {federate_config.type})")
 
@@ -1533,16 +1665,64 @@ class ScenarioManager:
             )
             success_msg = f"Federate process started with PID: {process.pid}"
             self.logger.info(success_msg)
-            
+
             self.federate_processes.append(process)
             self.metrics['process_counts']['federates_started'] += 1
             return process
-        
+
         except Exception as e:
             error_msg = f"Exception during Local Federate Creation: {str(e)}"
             self.logger.error(error_msg)
             raise
-    
+
+    def _create_remote_federate(self, federate_name, federate_config, federation_name, host_alias):
+        """Create and start a federate on a remote machine via its RemoteExecutor.
+
+        Mirrors `_create_local_federate`'s log layout on the remote filesystem: since
+        `logger_system.scenario_log_dir` is already relative to the project root
+        (e.g. `logs/<scenario>/<run_timestamp>`), the identical relative path resolved
+        against the machine's `workdir` gives the remote log location — `T5`'s rsync-back
+        then merges it into the same local directory tree with no path translation needed.
+
+        Returns:
+            subprocess.Popen: the local ssh child that is this federate's process handle
+            (see `RemoteExecutor.spawn`).
+        """
+        try:
+            executor = self.remote_executors[host_alias]
+            machine_conf = self.config.deployment.machines[host_alias]
+            scenario_log_dir_rel = str(self.logger_system.scenario_log_dir)
+
+            remote_log_file = os.path.join(
+                machine_conf.workdir, scenario_log_dir_rel, 'federates', f'federate_{federate_name}.log'
+            )
+            remote_stdio_file = os.path.join(
+                machine_conf.workdir, scenario_log_dir_rel, 'federates', f'federate_{federate_name}.stdio.log'
+            )
+
+            args = self._build_federate_args(
+                federate_name, federate_config, federation_name,
+                redis_url=self._redis_url_for(federate_config),
+                log_file=remote_log_file,
+            )
+            launcher_args = ['src/core/federate_launcher.py'] + args
+
+            self.logger.info(
+                f"Creating remote federate: {federate_name} (type: {federate_config.type}) on '{host_alias}'"
+            )
+            process = executor.spawn(launcher_args, remote_stdio_file)
+            success_msg = f"Remote federate process started (ssh child PID: {process.pid}) on '{host_alias}'"
+            self.logger.info(success_msg)
+
+            self.federate_processes.append(process)
+            self.metrics['process_counts']['federates_started'] += 1
+            return process
+
+        except Exception as e:
+            error_msg = f"Exception during Remote Federate Creation ('{host_alias}'): {str(e)}"
+            self.logger.error(error_msg)
+            raise
+
 
 
 

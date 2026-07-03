@@ -96,7 +96,19 @@ def main():
         host_port = redis_url_parts[0].split(':')
         redis_host = host_port[0]
         redis_port = int(host_port[1]) if len(host_port) > 1 else 6379
-        redis_db = int(redis_url_parts[1]) if len(redis_url_parts) > 1 else 0 
+        redis_db = int(redis_url_parts[1]) if len(redis_url_parts) > 1 else 0
+
+        # OverrideRegistry (core/override_registry.py) and the opt-in streaming MqttAdapter
+        # (BaseFederate._stream_outbound) each build their own client later in this process,
+        # reading REDIS_HOST/REDIS_PORT/MQTT_HOST from the environment with a localhost
+        # default. --redis-url is already the correct manager-reachable address for both a
+        # local federate (localhost) and a remote one (deployment.manager_address) — Redis
+        # and Mosquitto always run together on the manager machine — so thread it through
+        # once here instead of adding new CLI args for the same information.
+        os.environ.setdefault('REDIS_HOST', redis_host)
+        os.environ.setdefault('REDIS_PORT', str(redis_port))
+        os.environ.setdefault('MQTT_HOST', redis_host)
+
         redis_client = RedisClient(host=redis_host, port=redis_port, db=redis_db, logger=logger)
         config_dict = redis_client.get_json_path(args.redis_key, path=f'$.federations.{args.federation_name}.federate_configs.{args.name}')[0]
         rl_task = redis_client.get_json_path(args.redis_key, path='$.reinforcement_learning_config')[0]
