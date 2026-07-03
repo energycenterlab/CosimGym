@@ -58,10 +58,10 @@ federations:
         model_configs:
           instantiation:
             model_name: "heavy_compute_dummy"
-            n_instances: 8
+            n_instances: 20
             prefix: "hc1"
             parallel_execution: true
-            max_parallel_workers: 8
+            max_parallel_workers: 20
           parameters:
             iterations: 1000000
           init_state: {}
@@ -88,10 +88,10 @@ federations:
         model_configs:
           instantiation:
             model_name: "heavy_compute_dummy"
-            n_instances: 8
+            n_instances: 20
             prefix: "hc2"
             parallel_execution: true
-            max_parallel_workers: 8
+            max_parallel_workers: 20
           parameters:
             iterations: 1000000
           init_state: {}
@@ -118,10 +118,10 @@ federations:
         model_configs:
           instantiation:
             model_name: "heavy_compute_dummy"
-            n_instances: 8
+            n_instances: 20
             prefix: "hc3"
             parallel_execution: true
-            max_parallel_workers: 8
+            max_parallel_workers: 20
           parameters:
             iterations: 1000000
           init_state: {}
@@ -148,10 +148,10 @@ federations:
         model_configs:
           instantiation:
             model_name: "heavy_compute_dummy"
-            n_instances: 8
+            n_instances: 20
             prefix: "hc4"
             parallel_execution: true
-            max_parallel_workers: 8
+            max_parallel_workers: 20
           parameters:
             iterations: 1000000
           init_state: {}

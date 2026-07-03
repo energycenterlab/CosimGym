@@ -47,3 +47,17 @@ feeder test for FMU3
 ### Working
 - YES
 
+
+## multi_building_grid_test
+multiple building rc connected to a grid model
+### tested features
+tested paralle execution in federate model instance. no convenient for this case
+### Working
+- YES
+
+## benchmark_parallel_par
+demo test with high computational model in several parallel processes under the same federate
+### tested features
+parallelization of modle instances where it is convenient because the model step method used is high computation demand
+### Working
+- YES

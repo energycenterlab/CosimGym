@@ -33,7 +33,9 @@ from core.ScenarioManager import main, ScenarioManager
 #main('bui_hp_test_base')
 #main ('bui0_fmu_test')
 #main('dh_district_jan_base')
-main('fmu_feedthrough_test')
+#main('fmu_feedthrough_test')
+#main ('multi_building_grid_test')
+main ('benchmark_parallel_par')
 
 #main('fmu_feedthrough_test')
 #main('bui0_fmu_test')

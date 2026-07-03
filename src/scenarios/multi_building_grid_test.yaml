@@ -106,7 +106,8 @@ federations:
             model_name: "rc_building"
             n_instances: 10
             prefix: "bld1"
-            parallel_execution: false
+            parallel_execution: true
+            max_parallel_workers: 10
           parameters:
             floor_area:  [200, 150, 250, 180, 300, 120, 220, 160, 280, 140]
             window_area: [24,  18,  30,  22,  36,  14,  26,  19,  34,  17]
@@ -159,7 +160,8 @@ federations:
             model_name: "rc_building"
             n_instances: 10
             prefix: "bld2"
-            parallel_execution: false
+            parallel_execution: true
+            max_parallel_workers: 10
           parameters:
             floor_area:  [800,  1200, 600,  1000, 1500, 700,  900,  1100, 500,  1300]
             window_area: [96,   144,  72,   120,  180,  84,   108,  132,  60,   156]
@@ -318,7 +320,8 @@ federations:
             model_name: "rc_building"
             n_instances: 10
             prefix: "bld5"
-            parallel_execution: false
+            parallel_execution: true
+            max_parallel_workers: 10
           parameters:
             floor_area:  [5000,  8000,  6000,  10000, 7000,  9000,  5500,  7500,  6500,  8500]
             window_area: [600,   960,   720,   1200,  840,   1080,  660,   900,   780,   1020]
