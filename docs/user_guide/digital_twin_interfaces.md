@@ -1,4 +1,4 @@
-# Digital-Twin Interfaces & Live Streaming
+# Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring
 
 CosimGym federates normally exchange data only over HELICS and write results once, at the end of
 a run. This page covers two opt-in, MQTT-backed mechanisms that externalize simulation data
