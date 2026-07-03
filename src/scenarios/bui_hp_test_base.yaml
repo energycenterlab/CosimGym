@@ -14,7 +14,7 @@ scenario_description: "Building thermal model controlled by a PID-driven heat pu
 
 start_time: "2024-01-01T00:00:00"
 end_time: "2024-01-02T00:00:00"
-log_level: ERROR
+log_level: DEBUG
 
 memory_config:
   batch_size: 1000
@@ -40,11 +40,11 @@ synchronization:
 federations:
   federation_1:
     broker_config:
-      core_type: "zmq"
+      core_type: "tcp"
       port: 23404
       host: "localhost"
       federates: 4
-      log_level: ERROR
+      log_level: DEBUG
 
     federate_configs:
 
@@ -54,9 +54,9 @@ federations:
       weather_federate:
         name: "weather_federate"
         type: "base"
-        log_level: ERROR
+        log_level: DEBUG
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60   # one CSV row per 60 s sim-step
@@ -96,9 +96,9 @@ federations:
       pid_federate:
         name: "pid_federate"
         type: "base"
-        log_level: ERROR
-        core_name: "fed1"
-        core_type: "zmq"
+        log_level: DEBUG
+        core_name: "fed2"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60
@@ -148,9 +148,9 @@ federations:
       heatpump_federate:
         name: "heatpump_federate"
         type: "base"
-        log_level: ERROR
-        core_name: "fed1"
-        core_type: "zmq"
+        log_level: DEBUG
+        core_name: "fed3"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60
@@ -214,9 +214,9 @@ federations:
       building_federate:
         name: "building_federate"
         type: "base"
-        log_level: ERROR
-        core_name: "fed1"
-        core_type: "zmq"
+        log_level: DEBUG
+        core_name: "fed4"
+        core_type: "tcp"
 
         timing_configs:
           real_period: 60

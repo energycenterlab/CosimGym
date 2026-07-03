@@ -30,9 +30,13 @@ from core.ScenarioManager import main, ScenarioManager
 
 
 #DEVELOPMENT TESTS - uncomment to run
+#main('bui_hp_test_base')
+#main ('bui0_fmu_test')
+#main('dh_district_jan_base')
+main('fmu_feedthrough_test')
+
 #main('fmu_feedthrough_test')
 #main('bui0_fmu_test')
-main('dh_district_jan_base')
 #main ('m5_bk4_demo_a_full_sim')
 #main ('m5_bk4_demo_b_digital_twin')
 

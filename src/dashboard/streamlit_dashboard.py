@@ -21,5 +21,4 @@ st.set_page_config(
 
 from src.dashboard.dashboard_app import run_dashboard
 
-
 run_dashboard()

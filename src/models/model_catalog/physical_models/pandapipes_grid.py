@@ -141,6 +141,16 @@ class PandapipesGrid(BaseModel):
                 self.logger.warning(f"Column '{col}' not in net.{table} — key '{key}' skipped")
                 continue
             tbl.at[idx, col] = val
+            self._in_service_rules(table,tbl, idx, col, val)
+    
+    def _in_service_rules(self, table, tbl, idx, col, val):
+        ''' here to implement any component specific rules for in_service 
+        e.g. heat_consumer with qext_w = 0 should be set to in_service = False'''
+
+        if table == 'heat_consumer' and col == 'qext_w' and val == 0:
+            self.logger.debug(f"Heat consumer {idx} qext_w = 0, setting in_service = False")
+            tbl.at[idx, 'in_service'] = False
+            
 
     def _run_solver(self):
         mode = self._param("pf_mode")

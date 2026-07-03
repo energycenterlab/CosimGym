@@ -507,7 +507,7 @@ class _FederateConfigBase(BaseModel):
     connections: FedConnections = Field(default_factory=FedConnections)
     log_level: LogLevel = LogLevel.INFO
     core_name: Optional[str] = None
-    core_type: Optional[str] = "zmq"
+    core_type: Optional[str] = "tcp"
     broker_address: Optional[str] = None
     rl_config: Optional[Dict] = None
     mode: Optional[str] = 'test'

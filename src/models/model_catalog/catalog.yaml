@@ -1435,7 +1435,7 @@ models:
     user_defined:
       fmu_source:
         type: local
-        path: /Users/pietrorandomazzarino/Documents/Projects/CosimGym/src/models/model_catalog/physical_models/resources/Feedthrough_FMI3.fmu
+        path: /media/space/rando/CODE/CosimGym/src/models/model_catalog/physical_models/resources/Feedthrough_FMI3.fmu
     parameters:
       Float64_fixed_parameter:
         type: float

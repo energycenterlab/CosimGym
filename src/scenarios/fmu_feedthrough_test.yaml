@@ -18,6 +18,7 @@ end_time: "2024-01-01T00:10:00"
 log_level: DEBUG
 
 memory_config:
+  sink: parquet
   batch_size: 1000
   attrs: ["signal_float", "signal_int", "signal_bool",
           "Float64_continuous_output", "Int32_output", "Boolean_output"]

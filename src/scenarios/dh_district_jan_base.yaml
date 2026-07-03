@@ -15,7 +15,6 @@ log_level: ERROR
 # 15-min step over 31 days = 2976 steps. "all" keeps every input/output in memory
 # (dumped to JSON at the end); at this scale the footprint is modest.
 memory_config:
-  sink: parquet
   batch_size: 1000
   attrs: "all"
 
@@ -39,7 +38,7 @@ federations:
       port: 23440
       host: "localhost"
       federates: 4
-      log_level: ERROR
+      log_level: DEBUG
 
     federate_configs:
 
@@ -240,7 +239,7 @@ federations:
       dh_network_federate:
         name: "dh_network_federate"
         type: "base"
-        log_level: ERROR
+        log_level: DEBUG
         core_name: "fed_dh"
         core_type: "zmq"
         timing_configs:
