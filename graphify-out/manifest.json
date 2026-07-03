@@ -35,9 +35,9 @@
     "semantic_hash": "0e69b554f433d8b2175507f6c35b6561"
   },
   "src/core/BaseFederate.py": {
-    "mtime": 1782994341.2215486,
-    "ast_hash": "fbd5e2c0739f1e8ca1c526dc5eb26d4e",
-    "semantic_hash": "fbd5e2c0739f1e8ca1c526dc5eb26d4e"
+    "mtime": 1783068060.0810893,
+    "ast_hash": "5217c9a73bdd8c9a2e9db8b1dce25fce",
+    "semantic_hash": ""
   },
   "src/core/InterfaceFederate.py": {
     "mtime": 1782994312.4021027,
@@ -105,9 +105,9 @@
     "semantic_hash": ""
   },
   "src/dashboard/run_dashboard.sh": {
-    "mtime": 1781008088.7699058,
-    "ast_hash": "18538ae3bb629c3cf937d2a396c2d1c0",
-    "semantic_hash": "18538ae3bb629c3cf937d2a396c2d1c0"
+    "mtime": 1783066357.144528,
+    "ast_hash": "a8a39b306f73096dfb04d638ea4e16f9",
+    "semantic_hash": ""
   },
   "src/dashboard/streamlit_dashboard.py": {
     "mtime": 1783065711.7810347,
@@ -355,8 +355,8 @@
     "semantic_hash": "45cd44be5249aac4db59b242af524581"
   },
   "src/utils/config_dataclasses.py": {
-    "mtime": 1783003505.2241933,
-    "ast_hash": "72809d2cb3fec71637183bbe6605909b",
+    "mtime": 1783067953.2472773,
+    "ast_hash": "35d4babd4fcc51e7f6618bf1c299ba82",
     "semantic_hash": ""
   },
   "src/utils/config_reader.py": {
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1783064295.8643467,
-    "ast_hash": "61b0b9a7d522c8e1387ceaf0ef7b78f4",
+    "mtime": 1783065834.8986561,
+    "ast_hash": "055ba9c44a83054d8c72fc00834f9729",
     "semantic_hash": ""
   },
   "docker-compose.setup.yml": {
@@ -450,9 +450,9 @@
     "semantic_hash": "8084e7f75691ad313c72c5bff58362ce"
   },
   "docs/handoffs/digitaltwin_interfaces.md": {
-    "mtime": 1782983869.3908865,
-    "ast_hash": "bea124d79ecd834a674924dd44c8f2f9",
-    "semantic_hash": "bea124d79ecd834a674924dd44c8f2f9"
+    "mtime": 1783066014.4671795,
+    "ast_hash": "47261195e2063ce10802414b0f32be44",
+    "semantic_hash": ""
   },
   "docs/handoffs/nonblocking_storage.md": {
     "mtime": 1782983833.891637,
@@ -460,8 +460,8 @@
     "semantic_hash": "a737de2151008942f7b474f438e45605"
   },
   "docs/index.md": {
-    "mtime": 1783064271.140832,
-    "ast_hash": "03029975165f33b84ce136516b589dcd",
+    "mtime": 1783065834.8986561,
+    "ast_hash": "19d5366b11c517eb435ae178b6542201",
     "semantic_hash": ""
   },
   "docs/models_reference.md": {
@@ -515,9 +515,9 @@
     "semantic_hash": "6ab1c718e50af5fb501c3858658fca74"
   },
   "docs/user_guide/dashboard.md": {
-    "mtime": 1782983869.4028864,
-    "ast_hash": "2303eacc27672b19e9c827bc619bd933",
-    "semantic_hash": "2303eacc27672b19e9c827bc619bd933"
+    "mtime": 1783066003.6753886,
+    "ast_hash": "c2cdcd7e30741fc81ad5ac9c6723d4e0",
+    "semantic_hash": ""
   },
   "docs/user_guide/digital_twin_interfaces.md": {
     "mtime": 1783065726.172757,
@@ -615,8 +615,8 @@
     "semantic_hash": "8a3fc64fac0cff3a7ba10279c912bef9"
   },
   "src/models/model_catalog/catalog.yaml": {
-    "mtime": 1783010998.6827579,
-    "ast_hash": "cce707632d8f78410e1e7c4335076640",
+    "mtime": 1783068100.0442736,
+    "ast_hash": "5c645dc4d91e2c6ea49736aacbd68ea9",
     "semantic_hash": ""
   },
   "src/models/model_catalog/catalog_old_backup.yaml": {
@@ -877,6 +877,36 @@
   "src/scenarios/scenario_tests.md": {
     "mtime": 1783012095.2922926,
     "ast_hash": "fe454ccfa77f659e29be0bd1648459da",
+    "semantic_hash": ""
+  },
+  "src/core/parallel_executor.py": {
+    "mtime": 1783067987.2025805,
+    "ast_hash": "7cad84e53f4495f33151dc6944be961f",
+    "semantic_hash": ""
+  },
+  "src/models/model_catalog/physical_models/heavy_compute_dummy.py": {
+    "mtime": 1783068078.948704,
+    "ast_hash": "8cbc16d6c6ff938e1d5f7c5aa8552c7c",
+    "semantic_hash": ""
+  },
+  "par_err.txt": {
+    "mtime": 1783069117.4717007,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "seq_time.txt": {
+    "mtime": 1783069109.3558683,
+    "ast_hash": "ec0c362f55298125f9d785d1178817c7",
+    "semantic_hash": ""
+  },
+  "src/scenarios/benchmark_parallel_par.yaml": {
+    "mtime": 1783069148.3990624,
+    "ast_hash": "6c25f8b1a3082075a6410b0abe9e3da8",
+    "semantic_hash": ""
+  },
+  "src/scenarios/benchmark_parallel_seq.yaml": {
+    "mtime": 1783069148.3990624,
+    "ast_hash": "f494f308b77d12aa80b1fd0f6d4b13ba",
     "semantic_hash": ""
   }
 }

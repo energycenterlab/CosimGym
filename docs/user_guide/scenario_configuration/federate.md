@@ -212,8 +212,8 @@ model_configs:
     model_name: "spring_mass_damper"  # required — key in catalog.yaml
     n_instances: 2                     # optional — number of parallel model instances (default: 1)
     prefix: "spring"                   # optional — instance naming prefix (default: "model")
-    parallel_execution: false          # optional — run instances in parallel (default: false)
-    max_paraller_workers: null         # optional — worker pool size for parallel execution
+    parallel_execution: false          # optional — step instances in parallel worker processes (default: false)
+    max_parallel_workers: null         # optional — cap on worker processes (default: min(n_instances, cpu_count))
 
   parameters:                          # optional — model parameters (overrides catalog defaults)
     mass: [5.0, 5.0]                   # scalar applies to all instances; list assigns per-instance
@@ -235,8 +235,19 @@ model_configs:
 | `model_name` | **yes** | — | Key in `src/models/model_catalog/catalog.yaml`. Must exist. |
 | `n_instances` | no | `1` | Number of model instances. Instances are named `<prefix>.0`, `<prefix>.1`, etc. |
 | `prefix` | no | `"model"` | Prefix for instance names. |
-| `parallel_execution` | no | `false` | If true, instances run concurrently via a thread/process pool. |
-| `max_paraller_workers` | no | `null` | Pool size for parallel execution. |
+| `parallel_execution` | no | `false` | If true, this federate's model instances are stepped concurrently in persistent worker **processes** (see below). |
+| `max_parallel_workers` | no | `null` | Cap on worker processes. `null` → `min(n_instances, cpu_count())`. Must be `>= 1` if set. |
+
+### Parallel model-instance execution (`parallel_execution`)
+
+By default a federate steps its `n_instances` model instances **sequentially** each tick. When a model's `step()` is CPU-heavy, this is a bottleneck. Set `parallel_execution: true` to fan the per-tick `step()` compute out to a pool of **persistent worker processes** (`src/core/parallel_executor.py`), each owning a stateful shard of the instances that lives for the whole run. The main federate process keeps all HELICS I/O, storage and publishing.
+
+- **Processes, not threads** — the target models are pure-Python (GIL-bound), so threads give no speedup. Workers rebuild their model shard from config (live model objects aren't picklable).
+- **When it helps** — only when per-instance `step()` is genuinely CPU-heavy. For cheap steps, inter-process overhead can outweigh the gain (measured: speedup climbs as step cost grows, toward the worker-count ceiling). Light models (e.g. `rc_building`) see little/no benefit.
+- **Cleanup** — workers are `daemon` processes shut down on every exit path (normal end, exception, SIGINT/SIGTERM) via an escalating `close()` (sentinel → join → terminate → kill) plus `atexit`/signal handlers. No orphan processes.
+- **Not supported with** (raises `NotImplementedError`): `override_enabled: true` (digital-twin param/output overrides act on the main process's non-stepping model copies) and `type: rl` federates.
+
+Benchmark scenarios: `src/scenarios/benchmark_parallel_seq.yaml` vs `benchmark_parallel_par.yaml` (identical except `parallel_execution`), using the CPU-heavy `heavy_compute_dummy` model.
 
 ### Per-instance vs scalar values in `parameters` / `init_state`
 

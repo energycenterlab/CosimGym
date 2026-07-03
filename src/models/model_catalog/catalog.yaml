@@ -2819,3 +2819,55 @@ models:
         description: MQTT quality-of-service level (0, 1, or 2)
         unit: "-"
         required: false
+
+  heavy_compute_dummy:
+    class_name: HeavyComputeDummy
+    module_path: models.model_catalog.physical_models.heavy_compute_dummy
+    version: 1.0.0
+    description: Self-contained, deliberately CPU-heavy dummy model (pure-Python
+      float busy loop) used to benchmark parallel worker-process execution vs
+      sequential execution of a federate's model instances. No required
+      external inputs.
+    author: Pietro Rando Mazzarino
+    domain: benchmark
+    category: physical_model
+    tags:
+    - benchmark
+    - dummy
+    - cpu_heavy
+    - parallel_execution
+    dependencies: []
+    time_step: 1
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+    parameters:
+      iterations:
+        type: int
+        default_value: 100000
+        description: Number of busy-loop iterations of float math per step()
+          call. Higher values increase per-step CPU cost linearly.
+        unit: "-"
+        min_value: 1
+        max_value: 100000000
+        required: false
+        tags:
+        - benchmark
+    inputs: {}
+    outputs:
+      result:
+        type: float
+        default_value: 0.0
+        description: Running accumulator value (no physical meaning)
+        unit: "-"
+        required: false
+        tags:
+        - benchmark
+      step_count:
+        type: int
+        default_value: 0
+        description: Number of steps executed so far
+        unit: "-"
+        required: false
+        tags:
+        - benchmark

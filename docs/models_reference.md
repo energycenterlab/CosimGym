@@ -318,6 +318,31 @@ subscribes:
       '0': [other_federate.0/signal_float]   # actual pub topic to subscribe to
 ```
 
+## 4. `heavy_compute_dummy` — CPU-Heavy Benchmark Model
+
+Self-contained dummy model whose `step()` burns CPU in a pure-Python float busy-loop scaled by `iterations`. No external inputs. Purpose: benchmark **parallel vs sequential** model-instance execution (see `parallel_execution` in `docs/user_guide/scenario_configuration/federate.md`). Pure-Python arithmetic is GIL-bound on purpose — demonstrates why persistent worker **processes** (not threads) are needed.
+
+### Parameters
+
+| Parameter | Unit | Default | Required | Description |
+|-----------|------|---------|----------|-------------|
+| `iterations` | – | 100000 | | Busy-loop iterations per step. Higher → heavier CPU step. |
+
+### Inputs
+
+None (self-contained — usable with no weather/grid federates).
+
+### Outputs (declare in `publishes`)
+
+| Key | Unit | Description |
+|-----|------|-------------|
+| `result` | – | Running float accumulator (no physical meaning; deterministic per instance). |
+| `step_count` | – | Number of steps executed. |
+
+Deterministic per instance (seeded by instance index) → sequential and parallel runs produce identical outputs, so the two benchmark scenarios can be compared for correctness as well as speed.
+
+---
+
 ### Only declare what you need
 
 pandapower_grid and pandapipes_grid are **dynamic I/O models** — only keys listed in `subscribes`/`publishes` are active. Undeclared keys are ignored (no overhead, no errors). For exploration, declare a wide set; for production, trim to what's needed.
@@ -336,3 +361,4 @@ python src/models/model_catalog/catalog_loader.py
 | `rc_building` | `src/scenarios/rc_building_test_base.yaml` |
 | `pandapower_grid` | `src/scenarios/pandapower_grid_test_base.yaml` |
 | `pandapipes_grid` | `src/scenarios/pandapipes_grid_test_base.yaml` |
+| `heavy_compute_dummy` | `src/scenarios/benchmark_parallel_seq.yaml` / `benchmark_parallel_par.yaml` |

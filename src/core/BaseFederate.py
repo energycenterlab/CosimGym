@@ -28,6 +28,7 @@ from utils.async_storage import AsyncStorageWriter
 from utils.parquet_storage import ParquetStorageWriter
 from adapters.mqtt_adapter import MqttAdapter
 from core.override_registry import OverrideRegistry
+from core.parallel_executor import ParallelModelExecutor
 pp = pprint.PrettyPrinter(indent=4)
 
 # TODO make an abstract class for base federate and change the name of this one as simplefederate
@@ -85,6 +86,10 @@ class BaseFederate():
         # lazily created on first use only if config.override_enabled is set (M4 digital-twin overrides)
         self._override_registry = None
 
+        # set up (if parallel_execution is enabled in model_configs.instantiation) by
+        # _setup_parallel_executor() during initialize(); stays None otherwise.
+        self.parallel_executor = None
+
 
         # co.simualtion time management
         self.start_time = datetime.fromisoformat(self.config.timing_configs.start_time)
@@ -127,8 +132,50 @@ class BaseFederate():
         self._deferred_inputs = {mod['id']: {} for mod in self.entities}
         self.pubs, self.subs, self.eps = self._register_connections()
         self.initialize_storage()  # Set up storage structure based on entities and config
+        self._setup_parallel_executor()
 
         self.logger.info(f'federate {self.name} initialized')
+
+    def _setup_parallel_executor(self):
+        """Spin up the persistent worker-process pool if the scenario YAML
+        opted into parallel_execution for this federate's model instances.
+        No-op for federates without model_configs (e.g. RL/interface federates
+        that don't declare an instantiation block)."""
+        self.parallel_executor = None
+        model_configs = self.config.model_configs
+        if not model_configs or not model_configs.instantiation.parallel_execution:
+            return
+
+        # Digital-twin PARAMETER/OUTPUT overrides (M4) rely on the model copies
+        # living in *this* process actually stepping each tick (update_storage()
+        # reads model.state.parameters from those copies, and _apply_param_overrides
+        # mutates them directly). In parallel mode the real stepping happens inside
+        # worker processes on separate model copies, so overrides would silently
+        # have no effect. Refuse rather than fail quietly.
+        if self.config.override_enabled:
+            raise NotImplementedError(
+                f"Federate '{self.name}': parallel_execution=True together with "
+                "override_enabled=True is not supported — digital-twin param/output "
+                "overrides act on the main process's model copies, which never step "
+                "when parallel_execution is on."
+            )
+
+        if getattr(self.config, 'type', None) == 'rl':
+            raise NotImplementedError(
+                f"Federate '{self.name}': parallel_execution is not supported for "
+                "type: rl federates (RLFederate drives a single agent/env, not a "
+                "shardable pool of stateless-to-parallelize model instances)."
+            )
+
+        entity_ids = [entity['id'] for entity in self.entities]
+        max_workers = model_configs.instantiation.max_parallel_workers
+        self.parallel_executor = ParallelModelExecutor(
+            build_spec=self._model_build_spec,
+            entity_ids=entity_ids,
+            max_workers=max_workers,
+            logger=self.logger,
+        )
+        self.parallel_executor.start()
 
     def initialize_storage(self):
         '''
@@ -286,7 +333,12 @@ class BaseFederate():
         self.logger.debug(f"Model metadata for '{model_name_catalog}': {pp.pformat(model_metadata)}")
         # inputs, outputs = self.input_output_names()
 
-        
+        # Stash the exact construction recipe (module_path, class_name, metadata,
+        # model_configs) so ParallelModelExecutor can rebuild the same model
+        # instances from scratch inside worker processes (live model objects are
+        # not reliably picklable — they hold a logger).
+        self._model_build_spec = (script, class_name, model_metadata, model_configs)
+
         entities = []
         for i in range(model_configs.instantiation.n_instances):
             # model_name = f"{self.name}.{prefix}-{i}"
@@ -417,61 +469,74 @@ class BaseFederate():
         #  TODO: capire se devo richiedere al primo step 0 o cosa cambia
 
         # while self.time_granted < self.stop_time*self.time_period: TODO
-        while self.ts < self.stop_time:
+        try:
+            while self.ts < self.stop_time:
 
-            # calculate time to request and automatically update ts
-            # new_time = self.time_to_request()
-            # self.logger.info(f'Requesting time {new_time}.')
-            self.logger.info('=======================================================================================================================')
-            # self._reset() # check if reset is needed at the beginning of the step to manage the reset of the federate in case of training, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
-            # request time
-            self.request_time_advance()
-            # self.logger.info(f'Granted time {self.time_granted}, datetime: {self.date_time}')
-
-
-
-            # get inputs
-            self._apply_deferred_inputs()
-            self._receive_inputs()
-
-            self._apply_param_overrides() # opt-in digital-twin PARAMETER override (config.override_enabled)
-
-            # update models & do step & get outputs TODO manage multithreading for severla modle instances and intensive step methods
-            if self.config.model_configs and self.config.model_configs.instantiation.parallel_execution:
-            
-                self._step_models_parallel() #TODO implement parallel execution
-                
-            else:
-                for entity in self.entities:
-                    model = entity['object']
-                    self.outputs[entity['id']] = model._step(self.ts, self.inputs[entity['id']]) 
-                  
-        
-            # publish outputs
-            self._publish_outputs()
-
-            self._reset() # check if reset is needed at the end of the step to manage the reset of the federate in case of training, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
-
-            
-            
-            # upate storage
-            self.update_storage() # TODO i want the flushing to a be a routine that is not coded here but embeded beacuse this is the method that will be overridden by other types of federates
-
-            self._stream_outbound() # opt-in MQTT mirror of this step's inputs/outputs (config.streaming.stream)
+                # calculate time to request and automatically update ts
+                # new_time = self.time_to_request()
+                # self.logger.info(f'Requesting time {new_time}.')
+                self.logger.info('=======================================================================================================================')
+                # self._reset() # check if reset is needed at the beginning of the step to manage the reset of the federate in case of training, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
+                # request time
+                self.request_time_advance()
+                # self.logger.info(f'Granted time {self.time_granted}, datetime: {self.date_time}')
 
 
-            # no longer need of reset here its above
-            # if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
-            #     self.logger.info(f"Resetting federate {self.name} at step {self.ts} for training purposes.")
-            #     self._reset() # TODO manage the reset of the federate in case of training, this should be called at the end of the step after the storage update and before the time request of the next step, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
-            if self.mode == 'train' and self.episode_length is not None and self.ts > 0 and self.ts % self.episode_length == 0:
-                self._track_episodes() #TODO track the episodes and manage the end of episode conditions, this should be called at the end of the step after the reset to update the episode count and manage the end of episode conditions like setting a flag in the outputs or something like that, this is for now a simple episode tracking based on the number of steps but in the future it could be more complex and depend on specific conditions on the outputs or inputs
-            
-        # flush remaining storage at the end of the simulation
-        if self._async_storage_writer is not None:
-            self._async_storage_writer.close()  # drain remaining queued rows first (no data loss)
-            self._parquet_storage_writer.close()  # finalize (close) the per-mode Parquet file(s)
-        self.store_local_file() # TODO store the local file with the storage data, this is for testing purpose and will be substituted by the flushing to the database8
+
+                # get inputs
+                self._apply_deferred_inputs()
+                self._receive_inputs()
+
+                self._apply_param_overrides() # opt-in digital-twin PARAMETER override (config.override_enabled)
+
+                # update models & do step & get outputs
+                if self.parallel_executor is not None:
+                    # Heavy per-instance step() compute is fanned out to persistent
+                    # worker processes; the main process's model copies (self.entities)
+                    # are NOT stepped here. update_storage() below still reads
+                    # model.state.parameters from those copies for the params partition —
+                    # that's fine only because _setup_parallel_executor() refuses
+                    # override_enabled, so parameters stay static (never mutated) while
+                    # parallel_execution is on.
+                    self.outputs = self.parallel_executor.step(self.ts, self.inputs)
+                else:
+                    for entity in self.entities:
+                        model = entity['object']
+                        self.outputs[entity['id']] = model._step(self.ts, self.inputs[entity['id']])
+
+
+                # publish outputs
+                self._publish_outputs()
+
+                self._reset() # check if reset is needed at the end of the step to manage the reset of the federate in case of training, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
+
+
+
+                # upate storage
+                self.update_storage() # TODO i want the flushing to a be a routine that is not coded here but embeded beacuse this is the method that will be overridden by other types of federates
+
+                self._stream_outbound() # opt-in MQTT mirror of this step's inputs/outputs (config.streaming.stream)
+
+
+                # no longer need of reset here its above
+                # if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
+                #     self.logger.info(f"Resetting federate {self.name} at step {self.ts} for training purposes.")
+                #     self._reset() # TODO manage the reset of the federate in case of training, this should be called at the end of the step after the storage update and before the time request of the next step, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
+                if self.mode == 'train' and self.episode_length is not None and self.ts > 0 and self.ts % self.episode_length == 0:
+                    self._track_episodes() #TODO track the episodes and manage the end of episode conditions, this should be called at the end of the step after the reset to update the episode count and manage the end of episode conditions like setting a flag in the outputs or something like that, this is for now a simple episode tracking based on the number of steps but in the future it could be more complex and depend on specific conditions on the outputs or inputs
+
+            # flush remaining storage at the end of the simulation
+            if self._async_storage_writer is not None:
+                self._async_storage_writer.close()  # drain remaining queued rows first (no data loss)
+                self._parquet_storage_writer.close()  # finalize (close) the per-mode Parquet file(s)
+            self.store_local_file() # TODO store the local file with the storage data, this is for testing purpose and will be substituted by the flushing to the database8
+        finally:
+            # Guarantee worker processes are shut down on every exit path: normal
+            # completion, an exception propagating out of the loop above, or a
+            # KeyboardInterrupt/SIGTERM (also caught by the executor's own signal
+            # handlers/atexit — close() is idempotent so calling it again here is safe).
+            if self.parallel_executor is not None:
+                self.parallel_executor.close()
 
     def _results_base_dir(self) -> str:
         scenario_name = self.simulation_id[:-16]
@@ -801,27 +866,6 @@ class BaseFederate():
             
         self._publish_outputs()
 
-    def _step_models_parallel(self):
-        """Execute model steps in parallel using threads."""
-        import concurrent.futures
-
-        
-        max_workers = min(len(self.entities), self.config.model_configs.instantiation.max_paraller_workers or os.cpu_count())
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(entity['object'].step, self.time_granted, self.time_period)
-                for entity in self.entities
-            ]
-            
-            # Wait for all to complete and handle any exceptions
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    future.result()
-                except Exception as e:
-                    self.logger.error(f"Model step failed: {e}")
-                    raise
-    
     def update_storage(self):
         mode = getattr(self, 'mode', 'test') or 'test'  # default to 'test' if mode not set
         partition = self.storage.get(mode, self.storage['test'])
@@ -966,6 +1010,8 @@ class BaseFederate():
         HELICS federate finalization.
         """
         self.logger.info(f'federate {self.name} finalizing')
+        if self.parallel_executor is not None:
+            self.parallel_executor.close()  # idempotent — no-op if run()'s finally already closed it
         status = h.helicsFederateDisconnect(self.federate)
         h.helicsFederateDestroy(self.federate)
         if self._stream_adapter is not None:

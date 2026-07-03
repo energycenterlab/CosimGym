@@ -98,6 +98,7 @@ Scenario YAML top-level keys:
 - `reinforcement_learning_config`: 4-axis RL config (see below)
 - `federations.<name>.broker_config`: `core_type`, `port`, `federates`
 - `federations.<name>.federate_configs.<name>`: `type` (`base`|`rl`), `timing_configs.real_period`, `connections.publishes`, `connections.subscribes`, `model_configs.instantiation.model_name`
+- `model_configs.instantiation.parallel_execution` (default `false`) + `max_parallel_workers` (default `min(n_instances, cpu_count)`): step a federate's model instances in **persistent worker processes** (`src/core/parallel_executor.py`) instead of the default sequential loop. For CPU-heavy model `step()`s only (pure-Python/GIL-bound → processes, not threads; workers rebuild their shard from config). Workers are daemon + escalating `close()` (sentinel→join→terminate→kill) + atexit/SIGINT/SIGTERM → no orphans. Unsupported with `override_enabled` or `type: rl` (raises `NotImplementedError`). Benchmark pair: `src/scenarios/benchmark_parallel_{seq,par}.yaml` using the CPU-heavy `heavy_compute_dummy` model. See `docs/user_guide/scenario_configuration/federate.md`.
 
 Subscription target format: `<federate_name>.<instance_id>/<pub_key>` (same federation) or `<federation_name>.<federate_name>.<instance_id>/<pub_key>` (cross-federation).
 

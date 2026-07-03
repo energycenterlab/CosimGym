@@ -186,7 +186,14 @@ class ModelInstantiationConfig(BaseModel):
     prefix: str = 'model'
     n_instances: int = 1
     parallel_execution: bool = False
-    max_paraller_workers: Optional[int] = None
+    max_parallel_workers: Optional[int] = None
+
+    @field_validator('max_parallel_workers')
+    @classmethod
+    def _validate_max_parallel_workers(cls, v):
+        if v is not None and v < 1:
+            raise ValueError('max_parallel_workers must be >= 1 when set')
+        return v
 
 
 class ModelConfig(BaseModel):
