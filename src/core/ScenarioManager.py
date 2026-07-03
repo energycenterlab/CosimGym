@@ -274,15 +274,18 @@ class ScenarioManager:
             duration = (self.metrics['simulation_end'] - self.metrics['simulation_start']).total_seconds()
             self.metrics['phase_durations']['simulation_duration'] = duration
             self.logger.info(f"Simulation completed in {duration:.3f} seconds")
-            
+            success = True
+
         except KeyboardInterrupt:
             self.logger.warning("\nKeyboard interrupt received. Shutting down...")
+            success = False
         except Exception as e:
             self.logger.error(f"Scenario error: {e}")
+            success = False
         finally:
             # Always cleanup (but only once due to lock mechanism)
             self.logger.info("Scenario execution finished. Performing cleanup...")
-            self._emergency_cleanup(success=True)
+            self._emergency_cleanup(success=success)
 
     def _setup_scenario(self):
         """

@@ -1,4 +1,4 @@
-# CosimGym
+# CosimGym v1.0.0
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Docs](https://img.shields.io/badge/docs-mkdocs-blue)
 ![Status](https://img.shields.io/badge/status-prototype-red)
@@ -20,7 +20,7 @@
 
 
 ## Documentation
-The full CosimGym Documentation is available under [`docs/`](docs/index.md).
+The full CosimGym Documentation is available at [energycenterlab.github.io/CosimGym](https://energycenterlab.github.io/CosimGym/).
 
 ### Overview
 
