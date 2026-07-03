@@ -18,7 +18,6 @@ from pathlib import Path
 import helics as h
 import numpy as np
 from abc import ABC, abstractmethod
-print(os.getcwd())
 sys.path.append('src/')
 from datetime import datetime, timedelta
 from utils.config_dataclasses import FederateConfig, StartupSyncConfig
@@ -230,14 +229,11 @@ class BaseFederate():
         fedInfo = h.helicsCreateFederateInfo()
         setattr(fedInfo, 'name', self.name)
         core_name = self.config.core_name if self.config.core_name else self.name+'_core'
-        # self.core_type = self.config.core_type 
         self.logger.debug(f'CORE NAME: {core_name} - CORE TYPE: {self.config.core_type}')
         setattr(fedInfo, 'core_name', core_name)
         setattr(fedInfo, 'core_type', self.config.core_type)
 
-        # setattr(fedInfo, 'broker_address', self.config.broker_address)
-        
-        # set broker informations  
+        # set broker informations
         if self.config.broker_address:     
             h.helicsFederateInfoSetBroker(fedInfo, self.config.broker_address)
             self.logger.info(f"Using broker address: {self.config.broker_address}")
@@ -262,8 +258,6 @@ class BaseFederate():
             h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_period, period)
             h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_offset, offset)
             h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_delta, delta)
-            # h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_stoptime, timing_configs.time_stop )
-            # h.helics_time_maxtime = timing_configs.time_stop
             if getattr(timing_configs, "rt_lag", None) is not None:
                 h.helicsFederateInfoSetTimeProperty(fedInfo, h.helics_property_time_rt_lag, float(timing_configs.rt_lag))
             if getattr(timing_configs, "rt_lead", None) is not None:
@@ -466,24 +460,14 @@ class BaseFederate():
 
         self._publish_init_state()  # publish initial state before starting the simulation loop, this is useful for the other federates to receive the initial conditions if needed
         self._enforce_startup_input_sync()
-        # self.logger.info(f'📅 Starting simulation at datetime: {self.date_time}')
-        # TODO: manage possible offsets for now no offset is used
-        #  TODO: capire se devo richiedere al primo step 0 o cosa cambia
+        # TODO: unclear whether the first time-advance request should target step 0 or step 1 (self.ts starts at 0)
 
-        # while self.time_granted < self.stop_time*self.time_period: TODO
         try:
             while self.ts < self.stop_time:
 
-                # calculate time to request and automatically update ts
-                # new_time = self.time_to_request()
-                # self.logger.info(f'Requesting time {new_time}.')
                 self.logger.info('=======================================================================================================================')
-                # self._reset() # check if reset is needed at the beginning of the step to manage the reset of the federate in case of training, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
                 # request time
                 self.request_time_advance()
-                # self.logger.info(f'Granted time {self.time_granted}, datetime: {self.date_time}')
-
-
 
                 # get inputs
                 self._apply_deferred_inputs()
@@ -519,11 +503,6 @@ class BaseFederate():
 
                 self._stream_outbound() # opt-in MQTT mirror of this step's inputs/outputs (config.streaming.stream)
 
-
-                # no longer need of reset here its above
-                # if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
-                #     self.logger.info(f"Resetting federate {self.name} at step {self.ts} for training purposes.")
-                #     self._reset() # TODO manage the reset of the federate in case of training, this should be called at the end of the step after the storage update and before the time request of the next step, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
                 if self.mode == 'train' and self.episode_length is not None and self.ts > 0 and self.ts % self.episode_length == 0:
                     self._track_episodes() #TODO track the episodes and manage the end of episode conditions, this should be called at the end of the step after the reset to update the episode count and manage the end of episode conditions like setting a flag in the outputs or something like that, this is for now a simple episode tracking based on the number of steps but in the future it could be more complex and depend on specific conditions on the outputs or inputs
 
@@ -1019,115 +998,3 @@ class BaseFederate():
         if self._stream_adapter is not None:
             self._stream_adapter.close()
         self.logger.info("Federate finalized\n")
-
- # def time_to_request(self):
-    #     '''
-    #     Calculate the next time to request based on the federate's timing configuration.
-    #     Thought to be overridden by special federate classes
-    #     '''
-    #     # TODO manage the offset is possible that there is no need to add it here if it has been inserted as time property
-    #     self.ts += 1
-    #     return self.time_granted + self.time_period
-
-
-if __name__ == "__main__":
-    import logging
-    
-    # Configure logging for testing
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    logger = logging.getLogger('test_federate')
-    
-    # Test configuration structure matching the BaseFederate expectations
-    test_config = {
-        "name": "test_federate",
-        "core_name": "test_core",
-        "core_type": "zmq",
-        
-        "timing_configs": {
-            "time_period": 1.0,          # Time step in seconds
-            "real_period": 1.0,          # Real time step passed to models
-            "offset": 0.0,               # Time offset
-            "time_stop": 10.0            # Simulation stop time
-        },
-        
-        "flags": {
-            "uninterruptible": True,     # HELICS flag example
-            "wait_for_current_time_update": False
-        },
-        
-        "model_configs": {
-            "time_step": 1.0,            # Will be overwritten by real_period
-            "instantiation": {
-                "model_name": "example_model",
-                "n_instances": 1,
-                "prefix": "test_model"
-            },
-            "parameters": {
-                "mass": 2.0,
-                "stiffness": 10.0,
-                "damping": 0.5
-            },
-            "init_state": {
-                "position": 0.0,
-                "velocity": 0.0,
-                "acceleration": 0.0
-            },
-            "user_defined": {
-                "solver": "euler",
-                "integrator": "fixed-step"
-            }
-        },
-        
-        "connections": {
-            "publishes": [
-                {
-                    "key": "position",
-                    "type": "double",
-                    "unit": "m",
-                    "info": "Mass position output"
-                },
-                
-            ],
-            "subscribes": [
-                {
-                    "key": "force",
-                    "type": "double",
-                    "unit": "N",
-                    "info": "External force input",
-                    "targets": ["source_federate.source_model/force"]
-                }
-            ],
-            "endpoints": []  # No endpoints for this simple test
-        }
-    }
-    
-    print("Testing BaseFederate with configuration:")
-    pp.pprint(test_config)
-    print("\n" + "="*50 + "\n")
-    
-    try:
-        # Create and test the federate
-        federate = BaseFederate("test_federate", test_config, logger)
-        print(f"Created federate: {federate.name}")
-        
-        # Test initialization (this will try to register with HELICS)
-        print("Attempting to initialize federate...")
-        print("Note: This will fail without a HELICS broker running")
-        print("To run with HELICS, start a broker first with:")
-        print("  helics_broker --federates=1 --loglevel=warning")
-        
-        # Uncomment the following lines to actually test initialization
-        federate.initialize()
-        federate.run()
-        print("Federate initialized successfully!")
-        print(f"Entities created: {list(federate.entities.keys())}")
-        federate.finalize()
-        
-    except Exception as e:
-        print(f"Error during federate testing: {e}")
-        print("This is expected if no HELICS broker is running")
-    
-    print("\nTest configuration structure is valid!")

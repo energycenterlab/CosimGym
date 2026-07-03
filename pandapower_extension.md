@@ -1,3 +1,6 @@
+# `pandapower_grid` — Proposed Future Enhancements (Roadmap, Not Implemented)
+
+**None of the items below are implemented in `src/models/model_catalog/physical_models/pandapower_grid.py`.** This is a proposal/roadmap document for the `pandapower_grid` model, numbered "7" as a holdover from a larger internal design doc whose earlier sections (1-6, covering the base model) no longer exist in this repository. Treat every item here as a future-work idea, not a description of current behavior.
 
 ## 7. Enhancements & Additional Features
 

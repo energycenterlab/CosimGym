@@ -3,16 +3,6 @@ RedisCatalog.py
 
 Redis-backed model catalog – drop-in replacement for ModelCatalog.
 
-Queries the Redis instance populated by catalog_loader.py instead of reading YAML files from disk.  The public interface mirrors ModelCatalog so switching is a one-line change in BaseFederate._register_entities:
-Organization: EC-Lab Politecnico di Torino
-created: 2026-03-17
-
-"""
-"""
-RedisCatalog.py
-
-Redis-backed model catalog – drop-in replacement for ModelCatalog.
-
 Queries the Redis instance populated by catalog_loader.py instead of
 reading YAML files from disk.  The public interface mirrors ModelCatalog
 so switching is a one-line change in BaseFederate._register_entities:

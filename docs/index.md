@@ -20,7 +20,7 @@
 
 
 ## Documentation
-The full CosimGym Documentation is available at [CosimGym]()
+The full CosimGym Documentation is organized under this `docs/` site — see the navigation for the Overview, User Guide, and Examples sections.
 
 ### Overview
 
@@ -37,22 +37,23 @@ With this framework you can setup co-simulation scenario by plugging your own mo
 - 🧩 **Plug-and-Play Models**: Rely on a standardized `BaseModel` interface and a centralized Model Catalog to easily drop in custom physics models, data readers, FMUs, or arbitrary RL algorithms.
 - 🤖 **Gymnasium Compatibility**: The built-in `HelicsGymEnv` wrapper automatically binds HELICS pub/sub variables to standard Observation and Action spaces, making it out-of-the-box compatible with popular RL libraries (e.g. stablebaseline3, RLlib).
 - 🔄 **Flexible Workflows**: Run standard physics-only co-simulations, conduct live online RL training (with built-in agents like **DQN** or **SAC**), or evaluate pre-trained policies within a single unified framework.
-- 📊 **Built-in Dashboard**: Monitor simulation metrics and analyze RL performance through an interactive, ready-to-use **Streamlit** dashboard.
+- 📊 **Built-in Dashboard**: Monitor simulation metrics and analyze RL performance through an interactive, ready-to-use **Streamlit** dashboard, including a **live view** for data as it streams during a run.
+- 🔌 **Digital-Twin Interfaces**: Mirror any federate's data to MQTT for live observability, or swap a simulated federate for an `interface` federate bridging to real sensors/actuators — a one-line, config-only sim-to-real change (see [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
 
 ---
 
 ## 🚀 Quick Start: Choose Your Way
 
-In order to start using this repository there are different options listed and explained here [Installation]()
+In order to start using this repository there are different options listed and explained here [Installation](Installation_Setup.md)
 
 
 ## Examples
-Simple example of runnable testa cases:
-- Simple spring mass damper system (single & multi-federation) --> [case0]()
-- Building + Heatpump + Weather + PID controller --> [case1]()
-- Building + Heatpump + Weather + RL agent (DQN/SAC) --> [case2]() , [case3]()
-- PV + Battery + Load + Weather + RB controller -->  [case4]()
-- PV + Battery + Load + Weather + RL controller (DQN/SAC)-->  [case5](), [case6]()
+Simple example of runnable test cases (see [full list](examples/examples_list.md) for scenario names and how to run them):
+- Simple spring mass damper system (single & multi-federation) --> `simple_test` (Case 0)
+- Building + Heatpump + Weather + PID controller --> `bui_hp_test_base` (Case 1)
+- Building + Heatpump + Weather + RL agent (DQN/SAC) --> `bui_hp_DQN` / `bui_hp_SAC` (Cases 2 & 3)
+- PV + Battery + Load + Weather + RB controller -->  `pv_batt_test_base` (Case 4)
+- PV + Battery + Load + Weather + RL controller (DQN/SAC)-->  `pv_batt_DQN` / `pv_batt_SAC` (Cases 5 & 6)
 
 
 Published Applications:

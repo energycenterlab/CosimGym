@@ -27,6 +27,8 @@ from adapters.base_adapter import InterfaceAdapter
 
 
 class MqttAdapter(InterfaceAdapter):
+    """MQTT-backed InterfaceAdapter (see module docstring for the non-blocking threading design)."""
+
     def __init__(
         self,
         client_id: str = "cosim_dt",
@@ -36,6 +38,13 @@ class MqttAdapter(InterfaceAdapter):
         outbound_maxsize: int = 1000,
         logger: Optional[logging.Logger] = None,
     ) -> None:
+        """Construct the paho client and internal queues; does not connect yet (see `connect()`).
+
+        Note: `port` defaults to the standard Mosquitto port 1883. The catalog's
+        `mqtt_adapter` entry overrides this to 11883 via `params.port` — that
+        catalog default only applies when instantiated through the model catalog,
+        not when constructing this class directly.
+        """
         self.client_id = client_id
         self.host = host
         self.port = port
@@ -57,6 +66,7 @@ class MqttAdapter(InterfaceAdapter):
         self._inbound_lock = threading.Lock()
 
     def connect(self) -> None:
+        """Connect to the broker and start the paho network thread plus the outbound drain thread."""
         self._client.connect(self.host, self.port)
         self._client.loop_start()
         if not self._connected.wait(timeout=10):
@@ -68,6 +78,7 @@ class MqttAdapter(InterfaceAdapter):
         self._drain_thread.start()
 
     def publish(self, topic: str, payload: Dict[str, Any]) -> None:
+        """Enqueue a payload for the drain thread to publish; never blocks (drop-oldest on a full queue)."""
         if self._outbound.full():
             try:
                 self._outbound.get_nowait()  # drop-oldest: dashboards want the latest value
@@ -79,14 +90,17 @@ class MqttAdapter(InterfaceAdapter):
             pass  # lost the race with another producer thread — fine, next publish will land
 
     def subscribe(self, topics: List[str]) -> None:
+        """Register topics with the broker; incoming messages populate the latest-value dict."""
         for topic in topics:
             self._client.subscribe(topic, qos=self.qos)
 
     def latest(self, topic: str) -> Optional[Dict[str, Any]]:
+        """Return the most recently received payload for `topic`, or None if nothing arrived yet."""
         with self._inbound_lock:
             return self._inbound.get(topic)
 
     def close(self) -> None:
+        """Stop the drain thread and disconnect from the broker."""
         self._stop_drain.set()
         if self._drain_thread is not None:
             self._drain_thread.join(timeout=2)
@@ -94,6 +108,7 @@ class MqttAdapter(InterfaceAdapter):
         self._client.disconnect()
 
     def _drain_loop(self) -> None:
+        """Background-thread loop: pull queued (topic, payload) pairs and publish them via paho."""
         while not self._stop_drain.is_set():
             try:
                 topic, payload = self._outbound.get(timeout=0.5)

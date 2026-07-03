@@ -1,6 +1,6 @@
 # Quick start & Installation
 
-To use this repository there are 4 option you could follows. The first 3 allows to setup locally the repository and are mutually exclusive, while the 4th option allow to use the repo directly without local setup.
+To use this repository there are 3 mutually-exclusive local-setup options below (Manual, Dev Container, Docker), plus automated Makefile/Python-script tooling and additional reference material further down this page.
 
 Before following any of the **local setup** options below, you need to clone the repository and move into the project folder:
 
@@ -97,40 +97,32 @@ docker compose -f docker-compose.setup.yml exec cosim-env \
 
 
 
-<!-- 
+All commands shown in the sections below, such as `make setup`, `python setup.py`, or `docker compose -f docker-compose.setup.yml ...`, assume you are already inside the cloned repository root.
 
-All commands shown in the local setup sections, such as `make setup`, `python setup.py`, or `docker compose -f docker-compose.setup.yml ...`, assume you are already inside the cloned repository root.
+## Automated Setup Tooling
 
-- [Local setup]()
-- [No setup]()
-
-
-
-## 📋 Setup Options Overview
-
-Choose one of the following setup options to get started. Each option is **independent** and allows you to set up the repository with Python environment and dependencies from a single entry point.
+In addition to the 3 manual options above, the repository ships a `Makefile` and a `setup.py` script that wrap the same Conda + Docker steps into single commands. Each is **independent** — pick one entry point per workflow, do not mix with the manual steps above for the same environment.
 
 | Option | Best For | Setup Time | Requirements |
 |--------|----------|-----------|--------------|
-| [**Option 1: Makefile**]() | Teams, CI/CD, multiple runs | ~5-10 min | Conda, Docker, GNU Make |
-| [**Option 2: Python Script**]() | Cross-platform, flexibility | ~5-10 min | Conda, Docker, Python 3.8+ |
-| [**Option 3: Docker-Only**]() | Full isolation, reproducibility | ~10-15 min | Docker only |
+| **Makefile** (below) | Teams, CI/CD, multiple runs | ~5-10 min | Conda, Docker, GNU Make |
+| **Python Script** (below) | Cross-platform, flexibility | ~5-10 min | Conda, Docker, Python 3.8+ |
+| **Docker-Only** (see "Docker" above) | Full isolation, reproducibility | ~10-15 min | Docker only |
 
-> **📌 Note:** These options are **independent and mutually exclusive**. Choose *one* for your workflow.
-> They do not conflict with DevContainer development (see [Dev Container Setup](#dev-container-setup-optional---vs-code) below).
+> They do not conflict with Dev Container development (see "Dev Container + VS Code" above).
 
 ---
 
-## Option 1: Makefile Setup (Recommended for Linux/macOS) 🔨
+### Makefile Setup (Recommended for Linux/macOS) 🔨
 
 The simplest approach using **Makefile** with color-coded commands.
 
-### Prerequisites
+#### Prerequisites
 - Conda (Miniconda/Anaconda): [Install](https://docs.conda.io/projects/miniconda/)
 - Docker Desktop: [Install](https://www.docker.com/products/docker-desktop)
 - GNU Make: Usually pre-installed on macOS/Linux
 
-### Quick Setup
+#### Quick Setup
 
 ```bash
 # Show available commands
@@ -149,7 +141,7 @@ make run-dashboard
 make status
 ```
 
-### Available Commands
+#### Available Commands
 
 ```bash
 make setup              # Complete setup (environment + Docker)
@@ -163,7 +155,7 @@ make teardown          # Full cleanup (remove env + containers)
 make logs              # View Redis logs
 ```
 
-### Example Workflow
+#### Example Workflow
 
 ```bash
 # First time setup
@@ -184,16 +176,16 @@ make clean
 
 ---
 
-## Option 2: Python Setup Script (Best for Cross-Platform) 🐍
+### Python Setup Script (Best for Cross-Platform) 🐍
 
 An interactive Python-based setup tool with detailed status reporting.
 
-### Prerequisites
+#### Prerequisites
 - Conda (Miniconda/Anaconda): [Install](https://docs.conda.io/projects/miniconda/)
 - Docker Desktop: [Install](https://www.docker.com/products/docker-desktop)
 - Python 3.8+
 
-### Quick Setup
+#### Quick Setup
 
 ```bash
 # Interactive mode (guided)
@@ -215,7 +207,7 @@ python setup.py --validate
 python setup.py --cleanup
 ```
 
-### Detailed Options
+#### Detailed Options
 
 ```bash
 python setup.py                    # Interactive mode - choose what to setup
@@ -227,7 +219,7 @@ python setup.py --cleanup         # Remove environment and containers
 python setup.py --root /path/to/repo  # Specify project root (auto-detected by default)
 ```
 
-### Example Workflow
+#### Example Workflow
 
 ```bash
 # First time: interactive setup
@@ -249,9 +241,9 @@ streamlit run src/dashboard/streamlit_dashboard.py
 
 ---
 
-## Option 3: Docker-Only Setup (Most Reproducible) 🐳
+## Docker-Only Setup — Detailed Reference & Troubleshooting 🐳
 
-Everything runs in Docker containers - minimal host dependencies, maximum reproducibility.
+Expanded reference for the "Docker" quick-start option above: everything runs in Docker containers, minimal host dependencies, maximum reproducibility.
 
 ### Prerequisites
 - Docker Engine / Docker Desktop: [Install](https://docs.docker.com/engine/install/)
@@ -484,53 +476,18 @@ For development, testing, and most research workflows, prefer **SSH port forward
 
 ---
 
-## Manual Setup (Original Workflow)
+## Dev Container — Detailed Reference
 
-If you prefer manual setup without automation tools:
+Expanded reference for the "Dev Container + VS Code" quick-start option above.
 
-1.  **Create Conda Environment**:
-    ```bash
-    conda env create -f environment.yml
-    conda activate cosim_gym
-    ```
+Dev Containers are a **separate development workflow** managed by VS Code. They use `.devcontainer/devcontainer.json` and are **independent** of the Manual/Docker setup options above.
 
-2.  **Start Infrastructure**:
-    ```bash
-    docker compose -f src/docker-compose.yaml up -d
-    ```
-    Brings up Redis (config/catalog distribution, port `6379`), MinIO, and Mosquitto
-    (MQTT broker for the opt-in digital-twin/streaming features, host port `11883` —
-    see [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
-
-3.  **Run Simulation**:
-    ```bash
-    python src/test_script.py
-    ```
-
-4.  **Run Dashboard**:
-    ```bash
-    streamlit run src/dashboard/streamlit_dashboard.py
-    ```
-    Access at http://localhost:8501. For a **live** view of a running simulation
-    (rather than post-run results), see [Dashboard & Analytics → Live View](user_guide/dashboard.md#live-view-during-a-run).
-
----
-
-## NO setup - DevContainer approach (Optional - VS Code)
-
-For development inside a containerized VS Code environment:
-### About Dev Containers
-
-Dev Containers are a **separate development workflow** managed by VS Code. They use `.devcontainer/devcontainer.json` and are **independent** of the three setup options above.
-
-**Note:** Dev Containers use different Docker resources than Options 1-3:
+**Note:** Dev Containers use different Docker resources than the Manual/Docker options:
 - Container names: `devcontainer`, `cosim_redis` (no "_setup" suffix)
-- Volume names: `redis_data` (no "_setup" suffix)  
+- Volume names: `redis_data` (no "_setup" suffix)
 - Docker Compose files: `.devcontainer/docker-compose.yml` + `src/docker-compose.yaml`
 
-**These do NOT conflict** with the setup options above. You can use either:
-- **Setup Options 1-3**: For standard local or Docker-based workflows
-- **Dev Containers**: Exclusively for VS Code development workflow
+**These do NOT conflict** with the other setup options — pick whichever matches your workflow (standard local/Docker vs. VS Code Dev Containers).
 
 ### Setup Steps
 1.  **Prerequisites**:
@@ -545,5 +502,3 @@ Dev Containers are a **separate development workflow** managed by VS Code. They 
     - **Redis** is available at `redis:6379`
     - Run: `python src/test_script.py`
     - Dashboard: `streamlit run src/dashboard/streamlit_dashboard.py` → http://localhost:8501
-
- -->

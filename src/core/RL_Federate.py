@@ -174,6 +174,7 @@ class HelicsGymEnv(gym.Env):
         return shaped_obs
 
     def step(self, action):
+        """Gymnasium Env.step: convert the agent's action into the federate's dict format, advance the co-sim one step, and return (obs, reward, terminated, truncated, info)."""
         # Ensure the action is always in the original Dict-space format that RL_Federate.step() expects.
         # gym.spaces.utils.unflatten reconstructs the OrderedDict from a flat array (if the agent
         # flattened the space) and is a no-op when the action is already a dict.
@@ -208,6 +209,7 @@ class HelicsGymEnv(gym.Env):
         seed: Optional[int] = None,
         options: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Any, Dict[str, Any]]:
+        """Gymnasium Env.reset: start a new episode via the wrapped federate and return (obs, info)."""
         super().reset(seed=seed)
         _ = options
         obs , info = self.federate.reset_episode(old_action= self.action)
@@ -367,8 +369,9 @@ class RL_Federate(BaseFederate):
             return
         if sink == 'parquet':
             raise NotImplementedError(
-                "memory_config.sink='parquet' is not implemented yet (nonblocking_storage "
-                "plan, milestone S2) — use 'json' (default) or 'none' for now."
+                "memory_config.sink='parquet' is not supported for type: rl federates — "
+                "RLFederate's storage schema differs from BaseFederate's and isn't wired to "
+                "the async parquet writer. Use 'json' (default) or 'none' instead."
             )
         import json
         base_dir = self._results_base_dir()
@@ -523,8 +526,6 @@ class RL_Federate(BaseFederate):
                 self.action_mapping = {b:round(v, 2) for b,v in zip(range(n), np.linspace(low, high, n))}
 
                 act_dict["spaces"][act]= {"type": "discrete", "n": n}
-                # if low < 0:
-                #     self.action_remapping = (low, high) if low < 0 else (0, high) # if low is negative we need to remap the action space to start from 0 for the agent and then remap back to the original space in the step function
             else:
                 raise ValueError(f"Unsupported type {raw_type} for action {act}")
 
@@ -559,9 +560,9 @@ class RL_Federate(BaseFederate):
 
     
     def run(self):
+        """Enter HELICS executing mode and perform startup input sync; stepping itself is driven externally via `step()` (through HelicsGymEnv), not a loop here."""
         h.helicsFederateEnterExecutingMode(self.federate)
         self.logger.info(f'Federate {self.name} entered executing mode. Start simulation loop.')
-        # self.logger.info(f'Federate will perform a total number of steps: {self.stop_time}, with a realWolrd frequency of: {self.real_period} s and a simulation frequency of {self.time_period}')
         self.time_granted = 0.0
         self.ts = 0
         self.mode = None #TODO should passs the mode from unique point ScenarioManager
@@ -592,19 +593,11 @@ class RL_Federate(BaseFederate):
             # Always persist storage even if an error occurred
             self.store_local_file()
 
-    # def _compute_terminated(self, obs: Dict[str, np.ndarray], action: Any) -> bool:
-    #     if self._terminated_fn is None:
-    #         return False
-    #     return bool(self._terminated_fn(obs=obs, action=action, t=self.granted_time, cfg=self.rl_task))
-
     def _compute_truncated(self, obs: Dict[str, np.ndarray], action: Any) -> bool:
         if self._truncated_fn is not None:
             return bool(self._truncated_fn(obs=obs, action=action, t=self.granted_time, cfg=self.rl_task))
         return self.granted_time >= self.stop_time
-    
-    # def remap(x, old_min, old_max, new_min, new_max):
-    #     return new_min + (x - old_min) * (new_max - new_min) / (old_max - old_min)
-    
+
     def _action_to_publish(self, action):
         self.outputs={}
         self.outputs[self.name] ={} # we need is a dict for multiple model instances in this case is not used but respected
@@ -644,10 +637,9 @@ class RL_Federate(BaseFederate):
         return obs
 
     def step(self, action=None):
+        """Publish `action`, advance HELICS time by one tick, and return (obs, terminated, truncated, info, reward) for the wrapping HelicsGymEnv."""
         self.logger.debug(f"RL_Federate {self.name} stepping in mode {self.mode}.")
         self.logger.debug('=======================================================================================================================')
-        # self.logger.debug(f'-------------------- Step {self.ts} out of {self.stop_time} in current mode: {self.mode} -------------------------')
-        # self.logger.debug(f'Current realworld datetime: {self.date_time} - Current granted time for HELICS: {self.time_granted}')
         try:
         # action to pubs, apply rescale if present in config
             self._action_to_publish(action)
@@ -705,6 +697,7 @@ class RL_Federate(BaseFederate):
             return False
     
     def reset_episode(self, old_action=None):
+        """Start a new episode: clear deferred inputs, re-read all subscriptions, and apply reset observation defaults where configured. Returns (obs, info)."""
         self.logger.info(f"RL_Federate {self.name} resetting episode.")
         # Episode boundary should not carry staged next_step values from the previous episode.
         self._clear_deferred_inputs()
@@ -740,6 +733,7 @@ class RL_Federate(BaseFederate):
         return obs, {}
     
     def finalize(self):
+        """Persist remaining storage, then run BaseFederate's HELICS disconnect/destroy cleanup."""
         self.logger.info(f"RL_Federate {self.name} finalizing.")
         # Persist any remaining storage data
         self.store_local_file()

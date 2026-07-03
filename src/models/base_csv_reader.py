@@ -23,13 +23,11 @@ class BaseCSVReader(BaseModel):
     """
 
     def __init__(self, name, metadata, config, logger):
+        """Delegate to BaseModel.__init__; CSV-specific state is set up in `initialize()`."""
         super().__init__(name, metadata, config, logger)
-        
 
-
-
-    
     def initialize(self):
+        """Load the CSV, resample it (currently a no-op — see `_resample_if_required`), and seed the initial output state."""
         self._data = None
         self.starting_row = 0
         self._data = self._load_csv_data()
@@ -77,11 +75,11 @@ class BaseCSVReader(BaseModel):
         return df[needed]
     
     def _resample_if_required(self, df):
-        # TODO: implement resampling logic
+        # TODO: implement resampling logic — currently always a no-op identity pass-through.
         return df
-    
+
     def _start_point(self):
-        # TODO: implement logic of starting point maybe from datetime
+        # TODO: implement logic of starting point maybe from datetime — currently always returns 0.
         # need to return an index
         return 0
     
@@ -101,7 +99,7 @@ class BaseCSVReader(BaseModel):
         pass
 
     def reset(self, mode='full', ts=None, time=None):
-        
+        """Reset the row cursor. `full` rewinds to `starting_row`; `rolling` jumps to `ts` (or advances by one row if `ts` is None); `soft` is a no-op."""
         if mode == 'full':
             # for now only implement full reset with redundant output setting because the initial condition should be already published from federate
             self._row_idx = self.starting_row

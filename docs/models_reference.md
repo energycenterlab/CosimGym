@@ -120,6 +120,7 @@ publishes:
 | `pf_tolerance_mva` | `1e-8` | Convergence tolerance [MVA] |
 | `enforce_q_lims` | `false` | Enforce generator reactive power limits |
 | `fail_on_divergence` | `true` | Raise exception on non-convergence; set `false` to publish `convergence=0` and continue |
+| `topology_updates_key` | `""` | Declared in the catalog as an input key for runtime JSON topology-change commands, but **not currently consumed** by `pandapower_grid.py` — setting it has no effect yet (see [`pandapower_extension.md`](../pandapower_extension.md#72-runtime-topology-changes-addremove-components) for the proposed feature) |
 
 ### Inputs (settable per component)
 

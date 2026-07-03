@@ -1,5 +1,5 @@
 # CosimGym
-![Python](https://img.shields.io/badge/python-3.11-blue)
+![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Docs](https://img.shields.io/badge/docs-mkdocs-blue)
 ![Status](https://img.shields.io/badge/status-prototype-red)
 <!-- ![License](https://img.shields.io/badge/license-MIT-green) -->
@@ -20,7 +20,7 @@
 
 
 ## Documentation
-The full CosimGym Documentation is available at [CosimGym]()
+The full CosimGym Documentation is available under [`docs/`](docs/index.md).
 
 ### Overview
 
@@ -44,16 +44,16 @@ With this framework you can setup co-simulation scenario by plugging your own mo
 
 ## 🚀 Quick Start: Choose Your Way
 
-In order to start using this repository there are different options listed and explained here [Installation]()
+In order to start using this repository there are different options listed and explained here [Installation](docs/Installation_Setup.md)
 
 
 ## Examples
-Simple example of runnable testa cases:
-- Simple spring mass damper system (single & multi-federation) --> [case0]()
-- Building + Heatpump + Weather + PID controller --> [case1]()
-- Building + Heatpump + Weather + RL agent (DQN/SAC) --> [case2]() , [case3]()
-- PV + Battery + Load + Weather + RB controller -->  [case4]()
-- PV + Battery + Load + Weather + RL controller (DQN/SAC)-->  [case5](), [case6]()
+Simple example of runnable test cases (see [full list](docs/examples/examples_list.md) for scenario names and how to run them):
+- Simple spring mass damper system (single & multi-federation) --> `simple_test` (Case 0)
+- Building + Heatpump + Weather + PID controller --> `bui_hp_test_base` (Case 1)
+- Building + Heatpump + Weather + RL agent (DQN/SAC) --> `bui_hp_DQN` / `bui_hp_SAC` (Cases 2 & 3)
+- PV + Battery + Load + Weather + RB controller -->  `pv_batt_test_base` (Case 4)
+- PV + Battery + Load + Weather + RL controller (DQN/SAC)-->  `pv_batt_DQN` / `pv_batt_SAC` (Cases 5 & 6)
 
 
 Published Applications:

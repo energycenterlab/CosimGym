@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
 """
-reward_functions.py
-
-Library of reusable reward functions for Reinforcement Learning agents.
-
-Author: Pietro Rando Mazzarino
-Email: pietro.randomazzarino@polito.it
-Organization: EC-Lab Politecnico di Torino
-created: 2026-03-17
-
-"""
-
-"""
 catalog_loader.py
 
 Standalone script that reads catalog.yaml and uploads all model metadata

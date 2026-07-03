@@ -77,7 +77,7 @@ class ScenarioManager:
 
 
         # Process management attributes
-        self.broker_processes: List[subprocess.Popen] = []  # Fixed: plural and proper type
+        self.broker_processes: List[subprocess.Popen] = []
         self.federate_processes: List[subprocess.Popen] = []
         
         # Cleanup management
@@ -472,11 +472,6 @@ class ScenarioManager:
             reset_defaults[obs_key] = init_state[var_name]
 
         return reset_defaults
-
-    # def _get_rl_training_total_duration(self, rl_task, rl_period):
-    #     total_number_of_trainig_steps = rl_task.training.n_episodes * rl_task.training.episode_length
-    #     rl_task.training.total_steps = total_number_of_trainig_steps
-    #     return total_number_of_trainig_steps * rl_period
 
     def _offline_learning(self):
         # TODO: to be implemented
@@ -1577,10 +1572,6 @@ class ScenarioManager:
                 self.logger.error(f"✗ {label} failed with code {p.returncode}")
         return still_running
 
-
-        self.logger.info("All processes completed!")
-        self._log_execution_summary()
-
     def stop_federation(self):
         """
         Manually stop the federation.
@@ -1702,6 +1693,7 @@ class ScenarioManager:
 
 
 def main(scenario_name):
+    """Entry point: run the named scenario (from src/scenarios/) end-to-end via ScenarioManager."""
     try:
         print("Scenario Manager - starting SETUP phase")
         with ScenarioManager(scenario_name) as manager:

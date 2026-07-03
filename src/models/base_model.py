@@ -37,6 +37,8 @@ class ModelLoggerAdapter(logging.LoggerAdapter):
 
 @dataclass
 class State:
+    """A model instance's mutable runtime state: parameters, current inputs/outputs, and simulation time."""
+
     parameters: Dict[str, Any] = field(default_factory=dict)
     inputs: Dict[str, Any] = field(default_factory=dict)
     outputs: Dict[str, Any] = field(default_factory=dict)
@@ -74,9 +76,6 @@ class BaseModel(ABC):
     All models must also define the mandatory class variables: state, inputs, outputs, 
     parameters, and init_state.
     """
-    # Model identifier for catalog lookup - to be set by subclasses
-    # MODEL_NAME: Optional[str] = None
-
     def __init__(self, name, catalog_metadata, user_config, logger):
         """
         Initialize the base model with mandatory class variables.

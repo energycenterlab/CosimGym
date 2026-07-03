@@ -50,21 +50,27 @@ def parse_target(target: str, default_federation: str) -> Tuple[str, str, str, s
 
 
 class OverrideRegistry:
+    """Redis-backed store for output/param override values set by interface federates (see module docstring)."""
+
     def __init__(self, logger=None):
+        """Connect to Redis using REDIS_HOST/REDIS_PORT env vars (defaults: localhost:6379)."""
         host = os.getenv('REDIS_HOST', 'localhost')
         port = int(os.getenv('REDIS_PORT', '6379'))
         self._client = RedisClient(host=host, port=port, logger=logger)
 
     def set_override(self, scope: str, sim_id: str, federation: str, federate: str,
                       entity: str, var: str, value: Any) -> None:
+        """Write an override value for one (scope, entity, var), expiring after 1 hour."""
         self._client.set_json(_key(scope, sim_id, federation, federate, entity, var),
                                {'value': value}, expire_seconds=3600)
 
     def clear_override(self, scope: str, sim_id: str, federation: str, federate: str,
                         entity: str, var: str) -> None:
+        """Remove an override, restoring the target federate's computed value next step."""
         self._client.delete(_key(scope, sim_id, federation, federate, entity, var))
 
     def get_override(self, scope: str, sim_id: str, federation: str, federate: str,
                       entity: str, var: str) -> Optional[Any]:
+        """Return the current override value for (scope, entity, var), or None if unset."""
         data = self._client.get_json(_key(scope, sim_id, federation, federate, entity, var))
         return data.get('value') if data else None

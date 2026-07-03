@@ -51,7 +51,7 @@ make run-dashboard      # launch the Streamlit dashboard afterwards
 ## Where output goes
 
 - **Logs:** `logs/`
-- **Results:** `results/<scenario_name>/<sim_id>/<federation_name>/`, format controlled by `memory_config.sink` — JSON by default (`<federate>_<train|test>_storage.json`, read by the dashboard) or Parquet (`<federate>_<train|test>_storage.parquet`, written incrementally by a non-blocking background writer; not yet read by the dashboard). See [`memory_config`](scenario_configuration/general.md#memory_config).
+- **Results:** `results/<scenario_name>/<sim_id>/<federation_name>/`, format controlled by `memory_config.sink` — JSON by default (`<federate>_<train|test>_storage.json`) or Parquet (`<federate>_<train|test>_storage.parquet`, written incrementally by a non-blocking background writer). Both are read by the dashboard. See [`memory_config`](scenario_configuration/general.md#memory_config).
 
 > The `main()` function takes a single argument (`scenario_name`). It does **not** accept an `enable_progress_bar` keyword — that option was removed.
 

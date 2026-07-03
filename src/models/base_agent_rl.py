@@ -60,7 +60,10 @@ class Transition:
    
 
 class RLAgent(ABC):
+    """Abstract base class for RL agents that drive a `HelicsGymEnv`; subclasses implement `act()`."""
+
     def __init__(self, env, logger=None, rl_task=None):
+        """Store the wrapped env, logger, and full RL scenario config; load the configured reward function."""
         self.env = env
         self.logger = logger
         self.mode = None
@@ -81,6 +84,7 @@ class RLAgent(ABC):
 
     @abstractmethod
     def act(self, obs):
+        """Select an action for the given observation. Subclasses must override; the body below is a random-sample fallback illustrating the expected signature, never executed directly."""
         self.logger.debug(f"RLAgent received observation: {obs}")
         action= self.env.action_space.sample()  # Replace with actual action selection logic based on the observation
         self.logger.debug(f"RLAgent selected action: {action}")
@@ -151,6 +155,7 @@ class RLAgent(ABC):
         return obs, reward, terminated, truncated, info
 
     def online_training_loop(self):
+        """Skeleton online-training loop (act, step, reset on episode end). Subclasses are expected to override this with real buffer storage and gradient updates — the loop body below does not perform either."""
         # main loop for online training example to be overridden
         self.logger.debug(f"Starting online training loop for RLAgent: for a number of steps:{self.rl_task.run.train.total_steps}")
         obs = self.env.reset()  # Reset the environment at the start of training
@@ -177,11 +182,13 @@ class RLAgent(ABC):
    
     
     def offline_training_loop(self):
+        """Stub for offline training from a static datasource; not implemented, always returns True."""
         # main loop for offline training
-        
+
         return True
-    
+
     def testing_loop(self):
+        """Run the agent through `run.test.total_steps`, resetting once at the start (no mid-loop episode reset)."""
         # main loop for testing the agent
         self.logger.debug(f"Starting testing loop for RLAgent: for a number of steps:{self.rl_task.run.test.total_steps}")
         obs = self.env.reset()  # Reset the environment at the start of training
@@ -195,6 +202,7 @@ class RLAgent(ABC):
         pass
 
     def save_checkpoint(self, name):
+        """Save `self.model` to `experiment.checkpoint.dir/<name>` via the model's own `.save()`. Currently assumes a Stable Baselines3-style `.save()`/`.load()` API (see inline TODO)."""
         # save model checkpoint
         ckpt_dir = self.rl_task.experiment.checkpoint.dir
         if ckpt_dir:
@@ -207,6 +215,7 @@ class RLAgent(ABC):
             self.logger.warning("Checkpointing directory not specified. Model will not be saved.")
         
     def load_checkpoint(self):
+        """Load `self.model` from `self.best_model_checkpoint` via the model's own `.load()`, if a checkpoint path was set."""
         # load model checkpoint
         if self.best_model_checkpoint:
             self.model = self.model.load(self.best_model_checkpoint, env=self.env) # TODO: credo funzioni solo con sb3 per ora, da capire come gestire i checkpoints in generale
@@ -215,6 +224,7 @@ class RLAgent(ABC):
             self.logger.warning("No checkpoint path specified. Model will not be loaded.")
 
     def reset(self):
+        """Reset agent-internal state between episodes. No-op in the base class; subclasses may override."""
         # reset agent state if needed
         pass
 
@@ -434,6 +444,7 @@ class MinMaxNormalizeObservation(gym.ObservationWrapper):
     """
 
     def __init__(self, env, logger=None):
+        """Compute per-key normalization bounds from the wrapped env's observation space and rescale it to [0, 1] where bounds are finite."""
         super().__init__(env)
         self.logger = logger
         if not isinstance(env.observation_space, DictSpace):
@@ -470,6 +481,7 @@ class MinMaxNormalizeObservation(gym.ObservationWrapper):
                 print(msg)
 
     def observation(self, obs):
+        """Rescale each normalizable key to [0, 1]; keys with non-finite/degenerate bounds pass through unchanged."""
         if not isinstance(obs, dict):
             return obs
         out = {}
@@ -485,22 +497,22 @@ class MinMaxNormalizeObservation(gym.ObservationWrapper):
 
 class DictKeyNameWrapper(gym.ObservationWrapper):
     """
-    Sanitizes Dict observation and action keys by replacing dots with underscores.
-    
+    Sanitizes Dict observation keys by replacing dots with slashes.
+
     Stable Baselines3 does not accept dictionary keys containing dots because they
     cannot be used as valid Python variable names or module paths. This wrapper
-    converts:
-    - Observation keys: 'federation_1.building.0.T_indoor' → 'federation_1_building_0_T_indoor'
-    - Action keys (reverse): 'federation_1_building_0_T_indoor' → 'federation_1.building.0.T_indoor'
-    
+    converts observation keys: 'federation_1.building.0.T_indoor' → 'federation_1/building/0/T_indoor'.
+
+    Action-key sanitization (reverse direction) is not implemented — only the
+    observation-space mapping below is active; action dict keys pass through unchanged.
+
     Example:
         >>> env = gym.make('some-env')
         >>> wrapped_env = DictKeyNameWrapper(env)
-        >>> # Now obs and action keys are sanitized (dots → underscores)
-    
+        >>> # Now obs keys are sanitized (dots -> slashes)
+
     Attributes:
         _obs_key_mapping: Maps sanitized obs keys back to original keys
-        _action_key_mapping: Maps original action keys to sanitized keys
     """
     
     def __init__(self, env):
@@ -525,21 +537,7 @@ class DictKeyNameWrapper(gym.ObservationWrapper):
                 sanitized_key = key.replace('.', '/')
                 new_obs_spaces[sanitized_key] = space
             self.observation_space = DictSpace(new_obs_spaces)
-        
-        # # Create mapping for action space if it's a Dict
-        # self._action_key_mapping = {}
-        # if isinstance(env.action_space, DictSpace):
-        #     for key in env.action_space.spaces.keys():
-        #         sanitized_key = key.replace('.', '/')
-        #         self._action_key_mapping[key] = sanitized_key
-            
-        #     # Update action space with sanitized keys
-        #     new_action_spaces = {}
-        #     for key, space in env.action_space.spaces.items():
-        #         sanitized_key = key.replace('.', '/')
-        #         new_action_spaces[sanitized_key] = space
-        #     self.action_space = DictSpace(new_action_spaces)
-    
+
     def observation(self, obs):
         """
         Convert observation dict keys from original format to sanitized format.
@@ -597,46 +595,3 @@ class DictKeyNameWrapper(gym.ObservationWrapper):
             original_obs[original_key] = value
         
         return original_obs
-    
-    # def action(self, action):
-        """
-        Convert action dict keys from sanitized format back to original format.
-        
-        Example:
-            {'federation_1/building/0/modulation': 0.5}
-            →
-            {'federation_1.building.0.modulation': 0.5}
-        
-        Args:
-            action: Action from the agent (sanitized keys with slashes)
-            
-        Returns:
-            Action with original keys (slashes replaced with dots)
-        """
-        if not isinstance(action, dict):
-            return action
-        
-        original_action = {}
-        for key, value in action.items():
-            # If this is a sanitized key, convert it back to original
-            if key in self._obs_key_mapping.values():
-                # This shouldn't happen, but handle it gracefully
-                original_action[key] = value
-            else:
-                # Replace slashes back with dots using the reverse mapping
-                # We need to find which original key corresponds to this sanitized key
-                original_key = None
-                for orig_key, san_key in self._action_key_mapping.items():
-                    if san_key == key:
-                        original_key = orig_key
-                        break
-                
-                if original_key:
-                    original_action[original_key] = value
-                else:
-                    # Fallback: if not in mapping, just replace slashes with dots
-                    # This handles cases where the action space might differ
-                    restored_key = key.replace('/', '.')
-                    original_action[restored_key] = value
-        
-        return original_action

@@ -2,8 +2,10 @@
 Configuration Models
 
 Pydantic v2 models for COSIM Gym scenario, federation, and federate configuration.
-All models use extra='ignore' so YAML keys without a corresponding field are silently
-dropped, preserving the permissive behaviour of the original dataclass approach.
+Most models use extra='ignore' so YAML keys without a corresponding field are silently
+dropped, preserving the permissive behaviour of the original dataclass approach. The
+reinforcement-learning and interface-federate config models are the exception: they use
+extra='forbid' so typos in YAML raise a validation error instead of being silently ignored.
 """
 
 import logging
@@ -19,6 +21,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # ==============================================================================
 
 class LogLevel(str, Enum):
+    """Scenario/federate log level, convertible to Python logging and HELICS levels."""
+
     CRITICAL = "CRITICAL"
     ERROR    = "ERROR"
     WARNING  = "WARNING"
@@ -52,6 +56,8 @@ class LogLevel(str, Enum):
 # ==============================================================================
 
 class FedTimingConfig(BaseModel):
+    """A federate's timing block: step period, offset, and HELICS iteration/timeout settings."""
+
     model_config = ConfigDict(extra='ignore')
 
     real_period: int
@@ -78,6 +84,8 @@ class FedTimingConfig(BaseModel):
 
 
 class StartupSyncConfig(BaseModel):
+    """Policy for a federate's startup input-synchronization pass (forcing subscriptions to resolve before step 0)."""
+
     model_config = ConfigDict(extra='ignore')
 
     enabled: bool = True
@@ -91,6 +99,8 @@ class StartupSyncConfig(BaseModel):
 
 
 class AutoOffsetConfig(BaseModel):
+    """Policy for automatically computing per-federate time offsets via topological sort."""
+
     model_config = ConfigDict(extra='ignore')
 
     enabled: bool = True
@@ -99,6 +109,8 @@ class AutoOffsetConfig(BaseModel):
 
 
 class SynchronizationConfig(BaseModel):
+    """Scenario-level `synchronization` block: auto-offset policy and default startup-sync/causality settings."""
+
     model_config = ConfigDict(extra='ignore')
 
     auto_offset: AutoOffsetConfig = Field(default_factory=AutoOffsetConfig)
@@ -112,6 +124,8 @@ class SynchronizationConfig(BaseModel):
 # ==============================================================================
 
 class FedFlags(BaseModel):
+    """Boolean HELICS federate-info flags, applied 1:1 to `helicsFederateInfoSetFlagOption`."""
+
     model_config = ConfigDict(extra='ignore')
 
     terminate_on_error: bool = True
@@ -140,6 +154,8 @@ class FedFlags(BaseModel):
 # ==============================================================================
 
 class FedEndpoint(BaseModel):
+    """A HELICS endpoint declaration (message-based, as opposed to pub/sub)."""
+
     model_config = ConfigDict(extra='ignore')
 
     key: str
@@ -147,6 +163,8 @@ class FedEndpoint(BaseModel):
 
 
 class FedPublication(BaseModel):
+    """A single `connections.publishes` entry: one HELICS global publication."""
+
     model_config = ConfigDict(extra='ignore')
 
     key: str
@@ -155,6 +173,8 @@ class FedPublication(BaseModel):
 
 
 class FedSubscription(BaseModel):
+    """A single `connections.subscribes` entry: one HELICS subscription and its source target(s)."""
+
     model_config = ConfigDict(extra='ignore')
 
     key: str
@@ -166,6 +186,8 @@ class FedSubscription(BaseModel):
 
 
 class FedConnections(BaseModel):
+    """A federate's full `connections` block: endpoints, subscriptions, and publications."""
+
     model_config = ConfigDict(extra='ignore')
 
     endpoints: List[FedEndpoint] = Field(default_factory=list)
@@ -180,6 +202,8 @@ class FedConnections(BaseModel):
 # ==============================================================================
 
 class ModelInstantiationConfig(BaseModel):
+    """Which catalog model to instantiate, how many instances, and optional parallel-worker settings."""
+
     model_config = ConfigDict(extra='ignore')
 
     model_name: str
@@ -197,6 +221,8 @@ class ModelInstantiationConfig(BaseModel):
 
 
 class ModelConfig(BaseModel):
+    """A federate's `model_configs` block: instantiation spec plus init state/parameters/user-defined values."""
+
     model_config = ConfigDict(extra='ignore')
 
     instantiation: ModelInstantiationConfig
@@ -223,6 +249,8 @@ class ModelConfig(BaseModel):
 # ==============================================================================
 
 class MemoryConfig(BaseModel):
+    """Result-storage policy: which attrs to record, the sink format, and the parquet batch size."""
+
     model_config = ConfigDict(extra='ignore')
 
     batch_size: int = 100
@@ -236,6 +264,8 @@ class MemoryConfig(BaseModel):
 # ==============================================================================
 
 class StreamingConfig(BaseModel):
+    """Opt-in MQTT mirroring of a federate's inputs/outputs each step, independent of the co-sim itself."""
+
     model_config = ConfigDict(extra='ignore')
 
     stream: bool = False
@@ -260,6 +290,8 @@ class StreamingConfig(BaseModel):
 # ---- (a) ENVIRONMENT — the MDP. Framework-agnostic. ----
 
 class ObservationSpec(BaseModel):
+    """Config for a single observation key: causality, history depth, role, and optional space override."""
+
     model_config = ConfigDict(extra='forbid')
 
     causality: Literal["same_step", "next_step"] = "same_step"
@@ -271,6 +303,8 @@ class ObservationSpec(BaseModel):
 
 
 class ActionSpec(BaseModel):
+    """Config for a single action key: Gym space kind, optional bounds, and discretization bin count."""
+
     model_config = ConfigDict(extra='forbid')
 
     space: Literal["box", "discrete", "multidiscrete", "multibinary"] = "box"
@@ -281,6 +315,8 @@ class ActionSpec(BaseModel):
 
 
 class ResetConfig(BaseModel):
+    """Episode-reset policy: full/rolling/none, with an optional rolling window."""
+
     model_config = ConfigDict(extra='forbid')
 
     mode: Literal["full", "rolling", "none"] = "full"
@@ -296,6 +332,8 @@ class ResetConfig(BaseModel):
 
 
 class EnvironmentConfig(BaseModel):
+    """The MDP definition: observation/action specs, reward/termination function paths, and reset policy."""
+
     model_config = ConfigDict(extra='forbid')
 
     observations: Dict[str, ObservationSpec]
@@ -324,6 +362,8 @@ class EnvironmentConfig(BaseModel):
 # ---- (b) AGENT — the solver. ----
 
 class Hyperparameters(BaseModel):
+    """Backend-agnostic RL hyperparameters; unset fields are omitted so the backend applies its own default."""
+
     # All Optional → unset fields omitted so backend applies its own default.
     model_config = ConfigDict(extra='forbid')
 
@@ -340,6 +380,8 @@ class Hyperparameters(BaseModel):
 
 
 class AgentConfig(BaseModel):
+    """Which RL agent to instantiate (catalog key) plus its algorithm/policy/hyperparameters."""
+
     model_config = ConfigDict(extra='forbid')
 
     model_name: str                                     # catalog key → concrete agent class
@@ -353,6 +395,8 @@ class AgentConfig(BaseModel):
 # ---- (c) RUN — what to execute. Single source of truth for length. ----
 
 class PhaseConfig(BaseModel):
+    """Episode count/length and checkpoint policy for one run phase (train or test)."""
+
     model_config = ConfigDict(extra='forbid')
 
     episodes: int
@@ -373,6 +417,8 @@ class PhaseConfig(BaseModel):
 
 
 class EvalConfig(BaseModel):
+    """Periodic evaluation policy run during training (every N steps, how many episodes)."""
+
     model_config = ConfigDict(extra='forbid')
 
     every_steps: Optional[int] = None
@@ -381,6 +427,8 @@ class EvalConfig(BaseModel):
 
 
 class RunConfig(BaseModel):
+    """The `run` axis: execution mode (online/offline/mixed) plus train/eval/test phase configs."""
+
     model_config = ConfigDict(extra='forbid')
 
     mode: Literal["online", "offline", "mixed"] = "online"
@@ -400,6 +448,8 @@ class RunConfig(BaseModel):
 # ---- (d) EXPERIMENT — orthogonal infrastructure. ----
 
 class CheckpointConfig(BaseModel):
+    """Checkpoint directory and optional "best" checkpoint name/path for an RL experiment."""
+
     model_config = ConfigDict(extra='forbid')
 
     dir: str = "src/models/model_catalog/RL_agents/checkpoints"
@@ -420,6 +470,8 @@ class CheckpointConfig(BaseModel):
 
 
 class ExperimentConfig(BaseModel):
+    """The `experiment` axis: run name, checkpoint policy, and escape-hatch logging/offline dicts."""
+
     model_config = ConfigDict(extra='forbid')
 
     name: Optional[str] = None
@@ -431,6 +483,8 @@ class ExperimentConfig(BaseModel):
 # ---- ROOT ----
 
 class ReinforcementLearningConfig(BaseModel):
+    """Root `reinforcement_learning_config` block: the four axes (environment/agent/run/experiment)."""
+
     model_config = ConfigDict(extra='forbid')
 
     seed: Optional[int] = None
@@ -446,6 +500,8 @@ class ReinforcementLearningConfig(BaseModel):
 # ==============================================================================
 
 class AdapterConfig(BaseModel):
+    """Which catalog-resolved transport adapter an interface federate uses (e.g. mqtt_adapter) and its params."""
+
     model_config = ConfigDict(extra='forbid')
 
     name: str                                   # catalog key, e.g. mqtt_adapter
@@ -493,6 +549,8 @@ class BridgeSpec(BaseModel):
 
 
 class InterfaceConfig(BaseModel):
+    """An interface federate's `interface_config` block: adapter plus outbound streams and inbound bridges."""
+
     model_config = ConfigDict(extra='forbid')
 
     adapter: AdapterConfig
@@ -505,6 +563,8 @@ class InterfaceConfig(BaseModel):
 # ==============================================================================
 
 class _FederateConfigBase(BaseModel):
+    """Fields shared by every federate type (base/rl/interface); concrete subclasses add type-specific fields."""
+
     model_config = ConfigDict(extra='ignore')
 
     name: str
@@ -528,12 +588,16 @@ class _FederateConfigBase(BaseModel):
 
 
 class BaseFederateConfig(_FederateConfigBase):
+    """Config for `type: base` — a physics/math model federate with required model and memory configs."""
+
     type: Literal["base"]
     model_configs: ModelConfig
     memory_config: MemoryConfig
 
 
 class RLFederateConfig(_FederateConfigBase):
+    """Config for `type: rl` — the synthetic RL-agent federate injected by ScenarioManager for online training."""
+
     type: Literal["rl"]
     model_configs: Optional[ModelConfig] = None
     memory_config: Optional[MemoryConfig] = None
@@ -543,6 +607,8 @@ class RLFederateConfig(_FederateConfigBase):
 
 
 class InterfaceFederateConfig(_FederateConfigBase):
+    """Config for `type: interface` — a digital-twin bridge federate with no physics model of its own."""
+
     type: Literal["interface"]
     interface_config: Optional[InterfaceConfig] = None
     # ScenarioManager._enrich_dynamic_catalog_metadata reads .model_configs on every
@@ -564,6 +630,8 @@ FederateConfig = Annotated[
 # ==============================================================================
 
 class BrokerConfig(BaseModel):
+    """A federation's `broker_config` block: HELICS core type, port, expected federate count, and addressing."""
+
     model_config = ConfigDict(extra='ignore')
 
     core_type: Optional[str] = None
@@ -577,6 +645,8 @@ class BrokerConfig(BaseModel):
 
 
 class FederationConfig(BaseModel):
+    """One `federations.<name>` block: its broker config and the dict of federate configs it owns."""
+
     model_config = ConfigDict(extra='ignore')
 
     name: str
@@ -629,6 +699,8 @@ class FederationConfig(BaseModel):
 # ==============================================================================
 
 class MultiComputerConfig(BaseModel):
+    """SSH connection details for the (currently unimplemented) multi-computer scenario mode."""
+
     model_config = ConfigDict(extra='ignore')
 
     ssh_user: str
@@ -637,6 +709,8 @@ class MultiComputerConfig(BaseModel):
 
 
 class ScenarioConfig(BaseModel):
+    """Root scenario config parsed from a YAML file: federations, timing window, and global policy blocks."""
+
     model_config = ConfigDict(extra='ignore')
 
     name: str
