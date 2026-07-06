@@ -839,6 +839,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#parallel-model-instance-execution-parallel_execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel model-instance execution (parallel_execution)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#per-instance-vs-scalar-values-in-parameters-init_state" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1428,6 +1439,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#parallel-model-instance-execution-parallel_execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel model-instance execution (parallel_execution)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#per-instance-vs-scalar-values-in-parameters-init_state" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1834,8 +1856,8 @@
     model_name: &quot;spring_mass_damper&quot;  # required — key in catalog.yaml
     n_instances: 2                     # optional — number of parallel model instances (default: 1)
     prefix: &quot;spring&quot;                   # optional — instance naming prefix (default: &quot;model&quot;)
-    parallel_execution: false          # optional — run instances in parallel (default: false)
-    max_paraller_workers: null         # optional — worker pool size for parallel execution
+    parallel_execution: false          # optional — step instances in parallel worker processes (default: false)
+    max_parallel_workers: null         # optional — cap on worker processes (default: min(n_instances, cpu_count))
 
   parameters:                          # optional — model parameters (overrides catalog defaults)
     mass: [5.0, 5.0]                   # scalar applies to all instances; list assigns per-instance
@@ -1882,16 +1904,25 @@
 <td><code>parallel_execution</code></td>
 <td>no</td>
 <td><code>false</code></td>
-<td>If true, instances run concurrently via a thread/process pool.</td>
+<td>If true, this federate's model instances are stepped concurrently in persistent worker <strong>processes</strong> (see below).</td>
 </tr>
 <tr>
-<td><code>max_paraller_workers</code></td>
+<td><code>max_parallel_workers</code></td>
 <td>no</td>
 <td><code>null</code></td>
-<td>Pool size for parallel execution.</td>
+<td>Cap on worker processes. <code>null</code> → <code>min(n_instances, cpu_count())</code>. Must be <code>&gt;= 1</code> if set.</td>
 </tr>
 </tbody>
 </table>
+<h3 id="parallel-model-instance-execution-parallel_execution">Parallel model-instance execution (<code>parallel_execution</code>)</h3>
+<p>By default a federate steps its <code>n_instances</code> model instances <strong>sequentially</strong> each tick. When a model's <code>step()</code> is CPU-heavy, this is a bottleneck. Set <code>parallel_execution: true</code> to fan the per-tick <code>step()</code> compute out to a pool of <strong>persistent worker processes</strong> (<code>src/core/parallel_executor.py</code>), each owning a stateful shard of the instances that lives for the whole run. The main federate process keeps all HELICS I/O, storage and publishing.</p>
+<ul>
+<li><strong>Processes, not threads</strong> — the target models are pure-Python (GIL-bound), so threads give no speedup. Workers rebuild their model shard from config (live model objects aren't picklable).</li>
+<li><strong>When it helps</strong> — only when per-instance <code>step()</code> is genuinely CPU-heavy. For cheap steps, inter-process overhead can outweigh the gain (measured: speedup climbs as step cost grows, toward the worker-count ceiling). Light models (e.g. <code>rc_building</code>) see little/no benefit.</li>
+<li><strong>Cleanup</strong> — workers are <code>daemon</code> processes shut down on every exit path (normal end, exception, SIGINT/SIGTERM) via an escalating <code>close()</code> (sentinel → join → terminate → kill) plus <code>atexit</code>/signal handlers. No orphan processes.</li>
+<li><strong>Not supported with</strong> (raises <code>NotImplementedError</code>): <code>override_enabled: true</code> (digital-twin param/output overrides act on the main process's non-stepping model copies) and <code>type: rl</code> federates.</li>
+</ul>
+<p>Benchmark scenarios: <code>src/scenarios/benchmark_parallel_seq.yaml</code> vs <code>benchmark_parallel_par.yaml</code> (identical except <code>parallel_execution</code>), using the CPU-heavy <code>heavy_compute_dummy</code> model.</p>
 <h3 id="per-instance-vs-scalar-values-in-parameters-init_state">Per-instance vs scalar values in <code>parameters</code> / <code>init_state</code></h3>
 <p>When <code>n_instances &gt; 1</code>, you can assign different values per instance using lists:</p>
 <pre><code class="language-yaml">parameters:

@@ -1251,6 +1251,56 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-heavy_compute_dummy-cpu-heavy-benchmark-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. heavy_compute_dummy — CPU-Heavy Benchmark Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. heavy_compute_dummy — CPU-Heavy Benchmark Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputs-declare-in-publishes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs (declare in publishes)
+      
+    </span>
+  </a>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#only-declare-what-you-need" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1653,6 +1703,11 @@ publishes:
 <td><code>fail_on_divergence</code></td>
 <td><code>true</code></td>
 <td>Raise exception on non-convergence; set <code>false</code> to publish <code>convergence=0</code> and continue</td>
+</tr>
+<tr>
+<td><code>topology_updates_key</code></td>
+<td><code>""</code></td>
+<td>Declared in the catalog as an input key for runtime JSON topology-change commands, but <strong>not currently consumed</strong> by <code>pandapower_grid.py</code> — setting it has no effect yet (see <a href="../pandapower_extension.md#72-runtime-topology-changes-addremove-components"><code>pandapower_extension.md</code></a> for the proposed feature)</td>
 </tr>
 </tbody>
 </table>
@@ -2333,6 +2388,55 @@ publishes:
     targets:
       '0': [other_federate.0/signal_float]   # actual pub topic to subscribe to
 </code></pre>
+<h2 id="4-heavy_compute_dummy-cpu-heavy-benchmark-model">4. <code>heavy_compute_dummy</code> — CPU-Heavy Benchmark Model</h2>
+<p>Self-contained dummy model whose <code>step()</code> burns CPU in a pure-Python float busy-loop scaled by <code>iterations</code>. No external inputs. Purpose: benchmark <strong>parallel vs sequential</strong> model-instance execution (see <code>parallel_execution</code> in <code>docs/user_guide/scenario_configuration/federate.md</code>). Pure-Python arithmetic is GIL-bound on purpose — demonstrates why persistent worker <strong>processes</strong> (not threads) are needed.</p>
+<h3 id="parameters_3">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Unit</th>
+<th>Default</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>iterations</code></td>
+<td>–</td>
+<td>100000</td>
+<td></td>
+<td>Busy-loop iterations per step. Higher → heavier CPU step.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inputs">Inputs</h3>
+<p>None (self-contained — usable with no weather/grid federates).</p>
+<h3 id="outputs-declare-in-publishes_1">Outputs (declare in <code>publishes</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>result</code></td>
+<td>–</td>
+<td>Running float accumulator (no physical meaning; deterministic per instance).</td>
+</tr>
+<tr>
+<td><code>step_count</code></td>
+<td>–</td>
+<td>Number of steps executed.</td>
+</tr>
+</tbody>
+</table>
+<p>Deterministic per instance (seeded by instance index) → sequential and parallel runs produce identical outputs, so the two benchmark scenarios can be compared for correctness as well as speed.</p>
+<hr />
 <h3 id="only-declare-what-you-need">Only declare what you need</h3>
 <p>pandapower_grid and pandapipes_grid are <strong>dynamic I/O models</strong> — only keys listed in <code>subscribes</code>/<code>publishes</code> are active. Undeclared keys are ignored (no overhead, no errors). For exploration, declare a wide set; for production, trim to what's needed.</p>
 <h3 id="catalog-reload">Catalog reload</h3>
@@ -2359,6 +2463,10 @@ publishes:
 <tr>
 <td><code>pandapipes_grid</code></td>
 <td><code>src/scenarios/pandapipes_grid_test_base.yaml</code></td>
+</tr>
+<tr>
+<td><code>heavy_compute_dummy</code></td>
+<td><code>src/scenarios/benchmark_parallel_seq.yaml</code> / <code>benchmark_parallel_par.yaml</code></td>
 </tr>
 </tbody>
 </table>

@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#digital-twin-interfaces-live-streaming" class="md-skip">
+        <a href="#digital-twin-interfaces-live-streaming-enabled-but-still-under-testing-refactoring" class="md-skip">
           Skip to content
         </a>
       
@@ -1236,7 +1236,7 @@
 
 
 
-<h1 id="digital-twin-interfaces-live-streaming">Digital-Twin Interfaces &amp; Live Streaming</h1>
+<h1 id="digital-twin-interfaces-live-streaming-enabled-but-still-under-testing-refactoring">Digital-Twin Interfaces &amp; Live Streaming  ⚠️ enabled but still under testing &amp; refactoring</h1>
 <p>CosimGym federates normally exchange data only over HELICS and write results once, at the end of
 a run. This page covers two opt-in, MQTT-backed mechanisms that externalize simulation data
 <em>while it runs</em>, and the BK4 "config-only sim-to-real" pattern they enable.</p>
@@ -1319,10 +1319,11 @@ pair except for <code>input_federate</code>:</p>
 <p>Watch both runs live with the live dashboard (below) to see (a)'s internally-generated values vs.
 (b)'s externally-driven ones land on the same HELICS keys.</p>
 <h2 id="live-dashboard">Live dashboard</h2>
-<p><code>src/dashboard/live_dashboard.py</code> is a separate Streamlit page (<code>dashboard_app.py</code> remains the
-post-run historical explorer) that subscribes to <code>cosim/#</code> and shows the latest value per topic
-plus a rolling chart, refreshed on a timer:</p>
-<pre><code class="language-bash">./src/dashboard/run_live_dashboard.sh    # http://localhost:8053
+<p><code>src/dashboard/live_dashboard.py</code> is the "Live" page of the Streamlit dashboard (<code>dashboard_app.py</code>
+is the "Results" page, the post-run historical explorer — both are served by the same app via
+<code>st.navigation</code>). The Live page subscribes to <code>cosim/#</code> and shows the latest value per topic plus a
+rolling chart, refreshed on a timer:</p>
+<pre><code class="language-bash">./src/dashboard/run_dashboard.sh    # http://localhost:8052, then switch to the &quot;Live&quot; page
 </code></pre>
 <p>It works with both mechanisms above — a <code>stream: true</code> federate's telemetry and an interface
 federate's <code>streams</code>/<code>bridges</code> topics all show up as soon as they're published, no run needs to

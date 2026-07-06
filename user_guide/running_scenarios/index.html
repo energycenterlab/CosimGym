@@ -1315,7 +1315,7 @@ make run-dashboard      # launch the Streamlit dashboard afterwards
 <h2 id="where-output-goes">Where output goes</h2>
 <ul>
 <li><strong>Logs:</strong> <code>logs/</code></li>
-<li><strong>Results:</strong> <code>results/&lt;scenario_name&gt;/&lt;sim_id&gt;/&lt;federation_name&gt;/</code>, format controlled by <code>memory_config.sink</code> — JSON by default (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.json</code>, read by the dashboard) or Parquet (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.parquet</code>, written incrementally by a non-blocking background writer; not yet read by the dashboard). See <a href="../scenario_configuration/general/#memory_config"><code>memory_config</code></a>.</li>
+<li><strong>Results:</strong> <code>results/&lt;scenario_name&gt;/&lt;sim_id&gt;/&lt;federation_name&gt;/</code>, format controlled by <code>memory_config.sink</code> — JSON by default (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.json</code>) or Parquet (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.parquet</code>, written incrementally by a non-blocking background writer). Both are read by the dashboard. See <a href="../scenario_configuration/general/#memory_config"><code>memory_config</code></a>.</li>
 </ul>
 <blockquote>
 <p>The <code>main()</code> function takes a single argument (<code>scenario_name</code>). It does <strong>not</strong> accept an <code>enable_progress_bar</code> keyword — that option was removed.</p>

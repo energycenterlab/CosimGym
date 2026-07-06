@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cosimgym-under-developement" class="md-skip">
+        <a href="#cosimgym-v100" class="md-skip">
           Skip to content
         </a>
       
@@ -262,18 +262,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Documentation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -283,8 +271,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#main-features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -292,11 +280,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1239,18 +1222,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Documentation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1260,8 +1231,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#main-features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1269,11 +1240,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1366,7 +1332,7 @@
 
 
 
-<h1 id="cosimgym-under-developement">CosimGym ⚠️ Under Developement</h1>
+<h1 id="cosimgym-v100">CosimGym v1.0.0</h1>
 <p><img alt="Python" src="https://img.shields.io/badge/python-3.12-blue" />
 <img alt="Docs" src="https://img.shields.io/badge/docs-mkdocs-blue" />
 <img alt="Status" src="https://img.shields.io/badge/status-prototype-red" /></p>
@@ -1376,11 +1342,14 @@
 <img src="images/cosimgym_with_text_transparent.svg" alt="Cosim-GYM logo" width="10000">
 </div>
 
-<p><strong>CosimGym</strong> is a powerful orchestration framework that seamlessly bridges the gap between complex co-simulation environments and Reinforcement Learning (RL). </p>
+<p><strong>CosimGym</strong> is a Flexible, Modular and Customizable framework that use a fully declarative approach to easily set-up complex co-simulation scenarios embedding different models. It is meant to be a gym for dimulating real world cyberphisical systems composed by multiple independent simulators enabling the usage of these scenarios in Control and Optimization application such as beign a test-bed for ReinforcementLearning-based applications.  It bridges the following gaps:</p>
+<ul>
+<li>Declarative co-simulation set up and custom model integration via standardized approach</li>
+<li><strong>Bridging complex co-simulation environments and REinforcement Learning applications</strong></li>
+<li>Digital Twin enabler with generalized interfaces for realtime MQTT-based communication (sensor and adapter linking and realtime execution visualization)</li>
+</ul>
 <p><strong>The Challenge:</strong> Modern engineering systems—such as power grids, building energy systems, and robotic swarms—often rely on multiple interacting subsystems that are best modeled with specialized tools. <strong>Co-simulation</strong> (powered by the <a href="https://helics.org/">HELICS</a> middleware) enables these heterogeneous models to run simultaneously and exchange data at every time step, providing a unified system-level perspective. </p>
 <p><strong>The Solution:</strong> By natively integrating <strong>Gymnasium</strong>, CosimGym translates complex publish/subscribe data exchanges into the standard <code>reset()</code> and <code>step()</code> paradigm. This allows RL agents to directly interact with, learn from, and control realistic, physics-based simulations without the heavy burden of networking and synchronization boilerplate.</p>
-<h2 id="documentation">Documentation</h2>
-<p>The full CosimGym Documentation is available at <a href="">CosimGym</a></p>
 <h3 id="overview">Overview</h3>
 <p>With this framework you can setup co-simulation scenario by plugging your own models or reuse the community shared ones. The main orchestration mechanism relies on <a href="https://helics.org/">HELICS</a> middleware and by wrapping those low level functionalities enables a standard and reproducible approach to plug and co-simulate models. In addition this framework is intended to be a Reinforcement Learning gym for training and testing your agents on composable realistic phisical environments.</p>
 <div style="text-align: center;">
@@ -1391,21 +1360,23 @@
 <ul>
 <li>📜 <strong>Declarative YAML Scenarios</strong>: Define complete simulation architectures, timing windows, multi-federation setups, and RL hyperparameters purely through YAML configuration files—<em>no hardcoded orchestration required</em>.</li>
 <li>⚙️ <strong>Automated Orchestration</strong>: The <code>ScenarioManager</code> handles the heavy lifting: starting HELICS brokers, spawning individual federate processes, distributing configurations via <strong>Redis</strong>, managing time synchronization, and ensuring graceful shutdowns.</li>
+<li>🌐 <strong>Distributed Execution</strong>: The framework can execute and distribute simualtors across different machines enabling the horizontal scaling of simulated systems and reduing possible computational bottlenecks</li>
 <li>🧩 <strong>Plug-and-Play Models</strong>: Rely on a standardized <code>BaseModel</code> interface and a centralized Model Catalog to easily drop in custom physics models, data readers, FMUs, or arbitrary RL algorithms.</li>
 <li>🤖 <strong>Gymnasium Compatibility</strong>: The built-in <code>HelicsGymEnv</code> wrapper automatically binds HELICS pub/sub variables to standard Observation and Action spaces, making it out-of-the-box compatible with popular RL libraries (e.g. stablebaseline3, RLlib).</li>
 <li>🔄 <strong>Flexible Workflows</strong>: Run standard physics-only co-simulations, conduct live online RL training (with built-in agents like <strong>DQN</strong> or <strong>SAC</strong>), or evaluate pre-trained policies within a single unified framework.</li>
-<li>📊 <strong>Built-in Dashboard</strong>: Monitor simulation metrics and analyze RL performance through an interactive, ready-to-use <strong>Streamlit</strong> dashboard.</li>
+<li>📊 <strong>Built-in Dashboard</strong>: Monitor simulation metrics and analyze RL performance through an interactive, ready-to-use <strong>Streamlit</strong> dashboard, including a <strong>live view</strong> for data as it streams during a run.</li>
+<li>🔌 <strong>Digital-Twin Interfaces</strong>: Mirror any federate's data to MQTT for live observability, or swap a simulated federate for an <code>interface</code> federate bridging to real sensors/actuators — a one-line, config-only sim-to-real change (see <a href="user_guide/digital_twin_interfaces/">Digital-Twin Interfaces &amp; Live Streaming</a>).</li>
 </ul>
 <hr />
 <h2 id="quick-start-choose-your-way">🚀 Quick Start: Choose Your Way</h2>
-<p>In order to start using this repository there are different options listed and explained here <a href="">Installation</a></p>
+<p>In order to start using this repository there are different options listed and explained here <a href="Installation_Setup/">Installation</a></p>
 <h2 id="examples">Examples</h2>
-<p>Simple example of runnable testa cases:
-- Simple spring mass damper system (single &amp; multi-federation) --&gt; <a href="">case0</a>
-- Building + Heatpump + Weather + PID controller --&gt; <a href="">case1</a>
-- Building + Heatpump + Weather + RL agent (DQN/SAC) --&gt; <a href="">case2</a> , <a href="">case3</a>
-- PV + Battery + Load + Weather + RB controller --&gt;  <a href="">case4</a>
-- PV + Battery + Load + Weather + RL controller (DQN/SAC)--&gt;  <a href="">case5</a>, <a href="">case6</a></p>
+<p>Simple example of runnable test cases (see <a href="examples/examples_list/">full list</a> for scenario names and how to run them):
+- Simple spring mass damper system (single &amp; multi-federation) --&gt; <code>simple_test</code> (Case 0)
+- Building + Heatpump + Weather + PID controller --&gt; <code>bui_hp_test_base</code> (Case 1)
+- Building + Heatpump + Weather + RL agent (DQN/SAC) --&gt; <code>bui_hp_DQN</code> / <code>bui_hp_SAC</code> (Cases 2 &amp; 3)
+- PV + Battery + Load + Weather + RB controller --&gt;  <code>pv_batt_test_base</code> (Case 4)
+- PV + Battery + Load + Weather + RL controller (DQN/SAC)--&gt;  <code>pv_batt_DQN</code> / <code>pv_batt_SAC</code> (Cases 5 &amp; 6)</p>
 <p>Published Applications:
     <strong>Incoming</strong> </p>
 <h2 id="disclaimer">⚠️ Disclaimer:</h2>

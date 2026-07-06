@@ -1,0 +1,1611 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for CosimGym, a co-simulation framework for reinforcement learning">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/cosimgym_icon_transparent.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Distributed SSH Federate Spawning — Implementation Plan - CosimGym Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#distributed-ssh-federate-spawning-implementation-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CosimGym Documentation" class="md-header__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosimGym Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Distributed SSH Federate Spawning — Implementation Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CosimGym Documentation" class="md-nav__button md-logo" aria-label="CosimGym Documentation" data-md-component="logo">
+      
+  <img src="../../images/cosimgym_icon_transparent.svg" alt="logo">
+
+    </a>
+    CosimGym Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Installation_Setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Overview
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/core_concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/terminology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terminology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/running_scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Configuration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scenario Configuration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/general/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    General Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/federate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federate Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/synchronization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronization & Causality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/scenario_configuration/rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/custom_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Models & Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/fmu_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FMU Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/rl_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/digital_twin_interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digital-Twin Interfaces & Live Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard & Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/examples_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples List
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/example_base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 1 (Base Simulation)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/example_rl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example 2 (RL Training)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objective
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-taken-user-approved-do-not-relitigate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions Taken (user-approved, do not relitigate)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-architecture-facts-verified-with-anchors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Architecture Facts (verified, with anchors)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-design-v1-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Design (v1 scope)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Design (v1 scope)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#placement-rule-brokers-stay-on-manager-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Placement rule: brokers stay on manager machine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#declarative-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declarative schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn-mechanics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spawn mechanics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#address-normalization-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Address normalization changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-step-before-spawn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploy step (before spawn)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preflight-verification-fail-fast-clear-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preflight verification (fail fast, clear errors)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results-logs-collection-after-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results + logs collection (after run)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#micro-tasks-implement-in-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Micro Tasks (implement in order)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Micro Tasks (implement in order)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#t1-config-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T1 — Config schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#t2-remoteexecutor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T2 — RemoteExecutor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#t3-scenariomanager-integration-preflight-deploy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T3 — ScenarioManager integration: preflight + deploy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#t4-spawn-dispatch-address-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T4 — Spawn dispatch + address normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#t5-collection-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T5 — Collection + cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#t6-demo-scenario-e2e-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T6 — Demo scenario + E2E test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#t7-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        T7 — Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-rationale-why-this-is-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Rationale (why this is fast)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#constraints-for-implementer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constraints For Implementer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-enhancements-document-do-not-build-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future Enhancements (document, do NOT build now)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="distributed-ssh-federate-spawning-implementation-plan">Distributed SSH Federate Spawning — Implementation Plan</h1>
+<blockquote>
+<p>Handoff doc for implementer agent (Sonnet). Caveman prose, full technical content. Code blocks normal.
+Rationale + alternatives for every choice: see <code>distributed_ssh_spawning_alternatives.md</code> (same folder).
+Status: PLAN ONLY. No code written yet. Work on branch <code>distributed-ssh-spawning-plan</code> (or fresh branch off it). NEVER commit — ask user.</p>
+</blockquote>
+<h2 id="objective">Objective</h2>
+<p>Today <code>ScenarioManager</code> spawn all brokers + federates as local subprocesses on one machine. Goal: allow federates run on remote machines over SSH. Declarative: user adds <code>deployment:</code> block + per-federate <code>host:</code> key in scenario YAML. Everything else unchanged. Priorities: speed, simplicity, no overengineering, no disruption of local path (no <code>host:</code> = behave exactly as today).</p>
+<h2 id="decisions-taken-user-approved-do-not-relitigate">Decisions Taken (user-approved, do not relitigate)</h2>
+<ol>
+<li><strong>SSH mechanism</strong>: plain OpenSSH client via <code>subprocess.Popen</code> + ControlMaster multiplexing. NOT paramiko/fabric/asyncssh. Reason: <code>ssh</code> child process == remote process handle → existing <code>_monitor_processes</code> poll loop and cleanup work almost unchanged; exit code propagates; one TCP+auth handshake per machine (master), each extra spawn ~ms. Zero new pip deps.</li>
+<li><strong>Deploy</strong>: pre-provisioned remote env (conda env <code>cosim_gym</code> exists, one-time manual setup, documented) + automatic <code>rsync</code> of code each run. NOT docker.</li>
+<li><strong>Results/logs</strong>: remote federates write to local disk as today; manager <code>rsync</code>s back after run ends. Document MinIO/S3 live-sink as future enhancement (see bottom), do NOT implement now.</li>
+<li><strong>YAML shape</strong>: scenario-level <code>deployment:</code> block defines machines; each federate optional <code>host: &lt;machine-alias&gt;</code>. Per-federate granularity.</li>
+</ol>
+<h2 id="current-architecture-facts-verified-with-anchors">Current Architecture Facts (verified, with anchors)</h2>
+<ul>
+<li><code>ScenarioManager._setup_local_federation()</code> (<code>src/core/ScenarioManager.py:1124</code>) → starts federation broker (<code>_start_local_federation_broker</code>, <code>:1385</code>) then loops <code>_create_local_federate</code> (<code>:1486</code>).</li>
+<li>Hierarchy broker for multi-federation: <code>_start_local_hierarchy_broker</code> (<code>:1330</code>). All brokers = <code>helics_broker</code> CLI via Popen, <code>preexec_fn=os.setsid</code>.</li>
+<li>Federate spawn cmd (<code>:1486</code>): <code>python src/core/federate_launcher.py --name .. --scenario_name .. --federation_name .. --type .. --simid .. --redis-url .. --redis-key .. --log-file .. --log-level ..</code>. Stdout/stderr → local stdio log file.</li>
+<li><strong>Config distribution ALREADY remote-friendly</strong>: full scenario config serialized to Redis by manager; launcher fetches by <code>--redis-url</code>/<code>--redis-key</code> (<code>src/core/federate_launcher.py:91-134</code>). Remote federate only needs reachable Redis URL.</li>
+<li><code>federate_launcher.py:84</code> reads <code>src/core/mappings.yaml</code> <strong>relative to CWD</strong> → remote invocation MUST <code>cd &lt;workdir&gt;</code> first (workdir = synced repo root).</li>
+<li>Broker/port normalization: <code>_normalize_broker_and_core_configs</code> (<code>:1162</code>). Defaults <code>broker_conf.host = '127.0.0.1'</code>; auto-assign ports 20000-30000 via <strong>local socket bind check</strong> (<code>_get_n_available_tcp_ports</code>, <code>:1143</code>). Local check stays valid because (design decision below) brokers stay on manager machine.</li>
+<li>Monitor: <code>_monitor_processes</code> (<code>:1553</code>) polls <code>Popen.poll()</code> on <code>self.federate_processes</code> + <code>self.broker_processes</code>. Cleanup: <code>_emergency_cleanup</code> (<code>:152</code>) kills process groups.</li>
+<li>Redis in docker-compose binds host <code>0.0.0.0:6379</code> (<code>src/docker-compose.yaml</code>) → already reachable from LAN, only URL needs manager LAN IP instead of localhost.</li>
+<li>HELICS sync/time management lives inside broker protocol over TCP — works cross-machine natively, nothing to change in <code>BaseFederate</code> stepping logic.</li>
+</ul>
+<h2 id="core-design-v1-scope">Core Design (v1 scope)</h2>
+<h3 id="placement-rule-brokers-stay-on-manager-machine">Placement rule: brokers stay on manager machine</h3>
+<p>Only <strong>federates</strong> go remote. Hierarchy broker + all federation brokers spawn locally on manager as today. Consequences:</p>
+<ul>
+<li>Local port bind check stays correct.</li>
+<li>Remote federates connect to broker at <code>manager_address:port</code> (HELICS TCP core, native).</li>
+<li>Data plane has no extra hop: federate cores talk broker directly, same as today just over LAN.</li>
+<li>Massive simplification vs remote brokers (no remote port discovery, no broker log streaming over ssh). Remote broker placement = future work.</li>
+</ul>
+<h3 id="declarative-schema">Declarative schema</h3>
+<pre><code class="language-yaml"># scenario YAML, top level (all optional — absent = fully local, zero behavior change)
+deployment:
+  manager_address: 192.168.1.10        # REQUIRED if any federate has host:. LAN IP that remote machines reach (used for broker addresses + redis url + mqtt)
+  machines:
+    gpu_box:                           # alias referenced by federates
+      host: 192.168.1.42               # ssh target
+      user: rando                      # optional, default current user
+      ssh_port: 22                     # optional, default 22
+      workdir: /home/rando/cosimgym_rt # remote repo root, code synced here
+      conda_env: cosim_gym             # optional, default &quot;cosim_gym&quot;
+      python: null                     # optional explicit interpreter path; overrides conda_env if set
+
+federations:
+  power_grid:
+    federate_configs:
+      building_fed:
+        host: gpu_box                  # NEW optional key on any base/interface federate
+        type: base
+        ...
+</code></pre>
+<p>Rules:
+- <code>host:</code> absent → local spawn, code path identical to today.
+- <code>host:</code> references unknown alias → validation error at parse time.
+- <code>host:</code> on <code>type: rl</code> federate → raise <code>NotImplementedError</code> in v1 (RL agent trains on manager; consistent with existing <code>parallel_execution</code>+rl restriction style). <code>parallel_execution: true</code> + remote host = ALLOWED (workers spawn on remote machine, use its CPUs — that is the whole point).
+- No hardcoded IPs/paths/users anywhere in code. Everything from <code>deployment</code> block.</p>
+<h3 id="spawn-mechanics">Spawn mechanics</h3>
+<p>Per machine, once at scenario setup:</p>
+<pre><code class="language-bash">ssh -o ControlMaster=auto -o ControlPath=&lt;scratch&gt;/cm-%r@%h:%p -o ControlPersist=60 \
+    -o BatchMode=yes -o ConnectTimeout=10 -p &lt;ssh_port&gt; -nNf user@host
+</code></pre>
+<p>Per remote federate:</p>
+<pre><code class="language-bash">ssh -S &lt;controlpath&gt; -tt -p &lt;ssh_port&gt; user@host \
+  'cd &lt;workdir&gt; &amp;&amp; conda run --no-capture-output -n &lt;conda_env&gt; python src/core/federate_launcher.py \
+     --name ... --scenario_name ... --federation_name ... --type ... --simid ... \
+     --redis-url redis://&lt;manager_address&gt;:6379/0 --redis-key ... \
+     --log-file &lt;workdir&gt;/logs/&lt;scenario&gt;/&lt;simid&gt;/federates/federate_&lt;name&gt;.log --log-level ...'
+</code></pre>
+<p>Key points:
+- <code>-tt</code> forces pty → when manager kills ssh child, remote gets SIGHUP → remote federate dies. Cleanup for free, no orphans.
+- <code>BatchMode=yes</code> → fail fast if no key auth, never hang on password prompt.
+- Returned <code>Popen</code> object appended to <code>self.federate_processes</code> → <code>_monitor_processes</code> untouched.
+- If <code>machine.python</code> set, use it directly instead of <code>conda run</code> (escape hatch for venv users).
+- Remote log paths under <code>&lt;workdir&gt;/logs/...</code> mirroring local layout → rsync-back merges cleanly.
+- Quote/escape remote command properly (<code>shlex.quote</code> each arg, join). No string interpolation of unvalidated YAML into shell without quoting.</p>
+<h3 id="address-normalization-changes">Address normalization changes</h3>
+<p>In <code>_normalize_broker_and_core_configs</code>:
+- Detect <code>scenario_has_remote = any(fed.host for ...)</code>.
+- If remote: broker <code>host</code> default becomes <code>deployment.manager_address</code> instead of <code>'127.0.0.1'</code> (user-explicit <code>broker_config.host</code> still wins). Broker must LISTEN on reachable interface — check <code>helics_broker</code> binding: default binds all interfaces for tcp core, but VERIFY during implementation (<code>--local_interface</code> flag exists if needed).
+- Redis URL: manager keeps using localhost for itself; the <code>--redis-url</code> arg passed to REMOTE federates uses <code>manager_address</code>. Local federates keep current URL. Small helper: <code>_redis_url_for(federate_config)</code>.
+- MQTT (streaming/interface federates): audit <code>src/adapters/mqtt_adapter.py</code> + catalog params for hardcoded <code>localhost</code> broker address; remote streaming federate must receive <code>manager_address:11883</code>. If adapter address comes from scenario config already, just document; if hardcoded, thread <code>manager_address</code> through same way as redis. (Audit task T4.)
+- <code>OverrideRegistry</code> (<code>src/core/override_registry.py</code>) is Redis-backed → follows redis url fix automatically IF it builds its client from the same passed url. Audit: if it constructs <code>RedisClient()</code> with defaults (<code>localhost</code>), must receive url. (Task T4.)</p>
+<h3 id="deploy-step-before-spawn">Deploy step (before spawn)</h3>
+<p>For each machine used by ≥1 federate:</p>
+<pre><code class="language-bash">rsync -az --delete \
+  --exclude '__pycache__' --exclude '.git' --exclude 'results' --exclude 'logs' \
+  --exclude 'graphify-out' --exclude '*.pyc' \
+  -e 'ssh -S &lt;controlpath&gt; -p &lt;ssh_port&gt;' \
+  ./src user@host:&lt;workdir&gt;/
+</code></pre>
+<ul>
+<li>Sync <code>src/</code> only (launcher, core, utils, models, adapters, scenarios). Delta transfer → after first run, near-instant.</li>
+<li>Uses master connection → no extra auth.</li>
+<li><code>--delete</code> scoped inside synced <code>src/</code> only, never touches rest of workdir.</li>
+<li>Create remote log dir: <code>ssh ... 'mkdir -p &lt;workdir&gt;/logs &lt;workdir&gt;/results'</code>.</li>
+</ul>
+<h3 id="preflight-verification-fail-fast-clear-errors">Preflight verification (fail fast, clear errors)</h3>
+<p>Before deploy, per machine:
+1. Master connection opens (ssh reachable + key auth).
+2. <code>test -d &lt;workdir&gt; || mkdir -p &lt;workdir&gt;</code> writable.
+3. <code>conda run -n &lt;env&gt; python -c "import helics, redis, pydantic"</code> → env sane.
+4. <code>python -c "import socket; socket.create_connection(('&lt;manager_address&gt;', 6379), 5)"</code> → Redis reachable from remote.</p>
+<p>Any failure → RuntimeError with machine alias + which check + remediation hint. Do NOT silently fall back to local.</p>
+<h3 id="results-logs-collection-after-run">Results + logs collection (after run)</h3>
+<p>After <code>_monitor_processes</code> returns (and before <code>_log_execution_summary</code>), per used machine:</p>
+<pre><code class="language-bash">rsync -az -e 'ssh -S &lt;controlpath&gt;' \
+  user@host:&lt;workdir&gt;/results/&lt;scenario_name&gt;/&lt;sim_id&gt;/ results/&lt;scenario_name&gt;/&lt;sim_id&gt;/
+rsync -az -e 'ssh -S &lt;controlpath&gt;' \
+  user@host:&lt;workdir&gt;/logs/&lt;scenario_log_dir_name&gt;/ &lt;local scenario_log_dir&gt;/
+</code></pre>
+<ul>
+<li>Works for <code>sink: json</code> (written at end) and <code>sink: parquet</code> (finalized before process exit) identically — collection happens after processes exit.</li>
+<li>Merge is safe: each federate writes distinct files (<code>&lt;federate&gt;_&lt;mode&gt;_storage.*</code>), no collisions.</li>
+<li>Collection failure → log ERROR with manual rsync command, do not crash run summary.</li>
+</ul>
+<h3 id="cleanup">Cleanup</h3>
+<ul>
+<li>Normal end: federate exits → remote conda/python exits → ssh child exits → poll() sees it. Then close masters: <code>ssh -S &lt;controlpath&gt; -O exit user@host</code>.</li>
+<li><code>_emergency_cleanup</code>: existing group-kill kills ssh children → <code>-tt</code> pty → SIGHUP kills remotes. Add belt-and-suspenders remote sweep: <code>ssh ... 'pkill -f &lt;sim_id&gt;'</code> per machine (sim_id unique per run → safe pattern), then close masters. ControlPath sockets in session scratch dir → stale sockets no problem.</li>
+</ul>
+<h2 id="micro-tasks-implement-in-order">Micro Tasks (implement in order)</h2>
+<h3 id="t1-config-schema">T1 — Config schema</h3>
+<p>Files: <code>src/utils/config_dataclasses.py</code>, <code>src/utils/config_reader.py</code>, <code>tests/</code>
+- Add <code>MachineConfig</code> (host, user, ssh_port=22, workdir, conda_env='cosim_gym', python=None) + <code>DeploymentConfig</code> (manager_address, machines: Dict[str, MachineConfig]). Follow existing dataclass/pydantic style of file (<code>extra='forbid'</code> where module uses pydantic; match whichever pattern <code>ScenarioConfig</code> uses).
+- Add optional <code>host: Optional[str]</code> to <code>_FederateConfigBase</code>.
+- Validation: every referenced alias exists; <code>deployment.manager_address</code> required when any <code>host:</code> set; <code>host:</code> on rl federate → error.
+- Tests: parse good/bad YAML fixtures. Accept: <code>pytest</code> green, existing scenarios (no deployment block) parse unchanged.</p>
+<h3 id="t2-remoteexecutor">T2 — RemoteExecutor</h3>
+<p>Files: new <code>src/core/remote_executor.py</code>, tests
+- Class <code>RemoteExecutor(machine_alias, machine_conf, manager_address, logger, control_dir)</code>.
+- Methods: <code>open_master()</code>, <code>verify(preflight list above)</code>, <code>deploy(project_root)</code> (rsync), <code>spawn(args_list, remote_log_file) -&gt; Popen</code>, <code>run(cmd, timeout) -&gt; (rc, out, err)</code> (for preflight/mkdir/pkill), <code>collect(remote_path, local_path)</code>, <code>close()</code>.
+- All ssh/rsync invocations via <code>subprocess</code>, args as lists, remote command built with <code>shlex.quote</code>. No shell=True on local side.
+- Module must be importable/testable standalone (no ScenarioManager import).
+- Tests: unit-test command construction (assert argv lists, no live ssh needed) + optional integration test against <code>127.0.0.1</code> guarded by env var / <code>pytest.mark.skipif</code> (ssh-to-localhost pattern, workdir in /tmp). Accept: command strings correct, quoting proven with hostile inputs (space, <code>;</code>, <code>$</code>).</p>
+<h3 id="t3-scenariomanager-integration-preflight-deploy">T3 — ScenarioManager integration: preflight + deploy</h3>
+<p>Files: <code>src/core/ScenarioManager.py</code>
+- In <code>start_scenario</code> setup phase: if config has remote federates → build <code>{alias: RemoteExecutor}</code> map, open masters, run <code>verify()</code> all machines, <code>deploy()</code> all machines. Fail whole scenario on any preflight failure BEFORE any broker starts.
+- Keep fully skipped when no <code>deployment</code> used — zero new work on local path.
+- Accept: local-only scenario runs byte-identical to main branch behavior.</p>
+<h3 id="t4-spawn-dispatch-address-normalization">T4 — Spawn dispatch + address normalization</h3>
+<p>Files: <code>src/core/ScenarioManager.py</code>
+- <code>_create_local_federate</code> → split: <code>_build_federate_args(...)</code> (shared arg list builder, parametrized redis_url + log_file path) + dispatch <code>_create_federate</code>: <code>federate_config.host</code> → <code>executor.spawn(...)</code>, else existing local Popen. Both append to <code>self.federate_processes</code>.
+- <code>_normalize_broker_and_core_configs</code>: broker default host = <code>manager_address</code> when remote federates exist. Verify helics_broker listens non-loopback (test with 2-machine or localhost-alias run).
+- Audit + fix hardcoded <code>localhost</code> for remote consumers: redis url arg, <code>OverrideRegistry</code> client construction, <code>mqtt_adapter</code> broker address. Thread from config, never hardcode.
+- Accept: mixed scenario (1 local + 1 "remote" via 127.0.0.1 machine alias) completes; HELICS time sync converges; results identical to all-local run of same scenario.</p>
+<h3 id="t5-collection-cleanup">T5 — Collection + cleanup</h3>
+<p>Files: <code>src/core/ScenarioManager.py</code>
+- After <code>_monitor_processes</code>: <code>collect()</code> results + logs per machine; then <code>close()</code> masters.
+- <code>_emergency_cleanup</code>: add per-machine <code>pkill -f &lt;sim_id&gt;</code> + master close, wrapped in try/except (cleanup must never raise).
+- Accept: after run, <code>results/&lt;scenario&gt;/&lt;simid&gt;/</code> on manager contains remote federate files; Ctrl+C mid-run leaves no <code>federate_launcher</code> process on remote (check with <code>pgrep -f simid</code>).</p>
+<h3 id="t6-demo-scenario-e2e-test">T6 — Demo scenario + E2E test</h3>
+<p>Files: <code>src/scenarios/distributed_demo.yaml</code>, test script or pytest marker
+- Copy simple existing 2-federate scenario (e.g. derive from <code>pv_batt_test_base.yaml</code>), add <code>deployment</code> block with machine = <code>127.0.0.1</code>, workdir <code>/tmp/cosimgym_remote_test</code>, one federate <code>host:</code>ed.
+- This is the CI-able localhost-as-remote pattern: real ssh, real rsync, one machine.
+- Accept: <code>python src/test_script.py</code>-style run of demo scenario green; output values match all-local twin scenario.</p>
+<h3 id="t7-docs">T7 — Docs</h3>
+<p>Files: <code>docs/user_guide/distributed_deployment.md</code>, update <code>CLAUDE.md</code> Config Reference, update this file status
+- User guide: one-time remote setup (create conda env, install helics deps, ssh keypair, open ports 6379 + broker range 20000-30000 + 11883 on manager firewall), YAML reference, troubleshooting table (BatchMode auth fail, redis unreachable, conda env missing), security note (LAN-trusted assumption: Redis/MQTT unauthenticated — do not expose on untrusted networks).
+- CLAUDE.md: add <code>deployment</code> + <code>host</code> keys to Config Reference section (terse).</p>
+<h2 id="performance-rationale-why-this-is-fast">Performance Rationale (why this is fast)</h2>
+<ul>
+<li>ControlMaster: 1 handshake per machine per run; each spawn/rsync reuses socket (~few ms overhead vs local Popen).</li>
+<li>rsync delta: first deploy copies <code>src/</code> (~small), subsequent runs near-zero.</li>
+<li>Data plane unchanged: HELICS federate↔broker TCP direct, no proxy/tunnel. Per-tick cost = LAN RTT inside broker sync protocol — inherent to distribution, not to this design.</li>
+<li>Spawns are non-blocking Popen exactly like today → all federates across all machines start in parallel.</li>
+<li>No new Python deps, no serialization changes, no async rewrite.</li>
+</ul>
+<h2 id="constraints-for-implementer">Constraints For Implementer</h2>
+<ul>
+<li>Work on fresh branch. NEVER commit — ask user.</li>
+<li>Do not touch local execution path semantics. <code>deployment:</code> absent → identical behavior, provable by running existing scenarios.</li>
+<li>Modular: all ssh/rsync knowledge inside <code>RemoteExecutor</code>. <code>ScenarioManager</code> only knows "spawn here or there".</li>
+<li>No hardcoded hosts/paths/users/ports. All from <code>DeploymentConfig</code>.</li>
+<li>Match existing code style (logging patterns, error messages, docstrings w/ Args/Returns).</li>
+<li>Use graphify to navigate (<code>graphify query "..."</code>) before reading raw files; run <code>graphify update .</code> after code changes.</li>
+<li>Run <code>pytest tests/</code> + demo scenario before declaring any task done.</li>
+<li>genrate or update handoff file after each task so that session ends or compact requires you have the right instructions for next session.</li>
+</ul>
+<h2 id="future-enhancements-document-do-not-build-now">Future Enhancements (document, do NOT build now)</h2>
+<ol>
+<li><strong>MinIO/S3 live results sink</strong>: federates upload parquet batches to MinIO (already in <code>src/docker-compose.yaml</code>, creds there) during run → no rsync-back, dashboard reads central store, survives remote-disk loss. Natural extension of <code>AsyncStorageWriter</code>: add <code>sink: minio</code> writing via <code>pyarrow.fs.S3FileSystem</code> or <code>minio</code> client; schema already long/tidy. Entry point: <code>src/utils/async_storage.py</code> + <code>memory_config.sink</code>.</li>
+<li><strong>Remote brokers</strong>: place federation brokers next to their federates (cuts cross-machine per-tick traffic for co-located federations). Needs remote port allocation (run port-picker via <code>RemoteExecutor.run</code>) + broker log streaming over ssh.</li>
+<li><strong>asyncssh backend</strong>: if machine count grows large (&gt;10), swap RemoteExecutor internals for asyncssh persistent connections; interface stays.</li>
+<li><strong>Docker provisioning</strong>: replace conda-env assumption with image pull for reproducibility.</li>
+<li><strong>RL federate remote</strong>: lift v1 <code>NotImplementedError</code> — needs GPU-aware placement + checkpoint path collection.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

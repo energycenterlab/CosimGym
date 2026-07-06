@@ -1252,9 +1252,9 @@
 <p>Co-simulation outputs high-frequency time-series data across dozens of models. To help rapidly inspect these massive traces and evaluate AI training success, CosimGym features an automated runtime Streamlit Dashboard.</p>
 <h2 id="the-data-pipeline">The Data Pipeline</h2>
 <ol>
-<li><strong>JSON results (default, <code>memory_config.sink: json</code>):</strong> At the end of a run, each federate writes its buffered timeseries to JSON files under <code>results/&lt;scenario_name&gt;/&lt;sim_id&gt;/&lt;federation_name&gt;/</code> (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.json</code>). <strong>This is the only sink the dashboard currently reads.</strong></li>
+<li><strong>JSON results (default, <code>memory_config.sink: json</code>):</strong> At the end of a run, each federate writes its buffered timeseries to JSON files under <code>results/&lt;scenario_name&gt;/&lt;sim_id&gt;/&lt;federation_name&gt;/</code> (<code>&lt;federate&gt;_&lt;train|test&gt;_storage.json</code>).</li>
 <li><strong>Dashboard's own Parquet cache:</strong> The first time the dashboard opens a run, it converts those JSON files into a compressed <code>.parquet</code> cache (<code>~/.cosim_dashboard_cache/</code>, via <code>src/dashboard/dashboard_parquet_cache.py</code>) for fast subsequent re-loading. This is a <strong>read-side acceleration cache built by the dashboard</strong>, unrelated to point 3.</li>
-<li><strong><code>memory_config.sink: parquet</code> (non-blocking federate-level storage):</strong> an alternative to the JSON sink for large/long-running scenarios — federates write their results incrementally, via a background thread, directly to <code>&lt;federate&gt;_&lt;train|test&gt;_storage.parquet</code> files (same <code>results/...</code> layout, same tidy schema the dashboard already uses internally). <strong>The dashboard does not yet read these files</strong> — <code>load_all_records()</code> only globs <code>*.json</code>. Use <code>sink: json</code> if you need to view a run's results in this dashboard. See <a href="../scenario_configuration/general/#memory_config">General Scenario Configuration</a> for the full <code>sink</code> reference.</li>
+<li><strong><code>memory_config.sink: parquet</code> (non-blocking federate-level storage):</strong> an alternative to the JSON sink for large/long-running scenarios — federates write their results incrementally, via a background thread, directly to <code>&lt;federate&gt;_&lt;train|test&gt;_storage.parquet</code> files (same <code>results/...</code> layout, same tidy schema the dashboard already uses internally). <code>load_all_records()</code> reads both <code>*.json</code> and <code>*.parquet</code> result files. Note: <code>RLFederate</code> does not support <code>sink: parquet</code> (raises <code>NotImplementedError</code>) — use <code>sink: json</code> for RL scenarios. See <a href="../scenario_configuration/general/#memory_config">General Scenario Configuration</a> for the full <code>sink</code> reference.</li>
 <li><strong>InfluxDB (optional/legacy):</strong> A real-time metric-push path exists in <code>src/utils/influxdb_client.py</code>, but it is not part of the default Docker stack and is disabled unless explicitly configured.</li>
 </ol>
 <h2 id="how-to-use-the-dashboard">How To Use The Dashboard</h2>
@@ -1275,9 +1275,9 @@
 <code>ssh -L 8501:localhost:8501 target_host</code></p>
 <h2 id="live-view-during-a-run">Live View (during a run)</h2>
 <p>The panels above read <code>results/</code> files written <strong>after</strong> a run finishes. To watch data as it is
-produced, run the separate live dashboard, which subscribes to the Mosquitto broker instead of the
-filesystem:</p>
-<pre><code class="language-bash">./src/dashboard/run_live_dashboard.sh    # http://localhost:8053
+produced, switch to the <strong>Live</strong> page in the same app (sidebar navigation), which subscribes to
+the Mosquitto broker instead of the filesystem:</p>
+<pre><code class="language-bash">./src/dashboard/run_dashboard.sh    # http://localhost:8052 — &quot;Live&quot; page in the sidebar
 </code></pre>
 <p>It shows whatever is being published to <code>cosim/#</code> — any federate's <code>streaming.stream: true</code>
 telemetry, or an interface federate's <code>interface_config</code> bridges. See

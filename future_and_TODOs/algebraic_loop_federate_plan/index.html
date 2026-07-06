@@ -21,7 +21,7 @@
     
     
       
-        <title>Handoff — digitaltwin_interfaces (Plan 1) — COMPLETE - CosimGym Documentation</title>
+        <title>Speculative Plan — Iterative / Algebraic-Loop Federate (Point 5) - CosimGym Documentation</title>
       
     
     
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#handoff-digitaltwin_interfaces-plan-1-complete" class="md-skip">
+        <a href="#speculative-plan-iterative-algebraic-loop-federate-point-5" class="md-skip">
           Skip to content
         </a>
       
@@ -105,7 +105,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Handoff — digitaltwin_interfaces (Plan 1) — COMPLETE
+              Speculative Plan — Iterative / Algebraic-Loop Federate (Point 5)
             
           </span>
         </div>
@@ -1079,10 +1079,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#plan-1-status-all-milestones-committed" class="md-nav__link">
+  <a href="#1-motivation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Plan 1 status: all milestones committed ✅
+        1. Motivation
       
     </span>
   </a>
@@ -1090,10 +1090,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#staged-awaiting-your-commit-post-m5-documentation-pass" class="md-nav__link">
+  <a href="#2-goal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Staged, awaiting your commit: post-M5 documentation pass
+        2. Goal
       
     </span>
   </a>
@@ -1101,10 +1101,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#testing-this-branch-end-to-end-quick-guide" class="md-nav__link">
+  <a href="#3-detection-when-is-iteration-needed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Testing this branch end-to-end (quick guide)
+        3. Detection — when is iteration needed?
       
     </span>
   </a>
@@ -1112,22 +1112,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-plan-2-nonblocking_storage-separate-independent-branch" class="md-nav__link">
+  <a href="#4-mechanism-helics-iterative-requests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next: Plan 2 (nonblocking_storage) — separate, independent branch
+        4. Mechanism — HELICS iterative requests
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Next: Plan 2 (nonblocking_storage) — separate, independent branch">
+    <nav class="md-nav" aria-label="4. Mechanism — HELICS iterative requests">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#one-line-kickoff-prompt-for-plan-2s-first-fresh-session" class="md-nav__link">
+  <a href="#41-new-federate-variant" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One-line kickoff prompt for Plan 2's first fresh session
+        4.1 New federate variant
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-convergence-stop-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Convergence / stop condition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-model-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Model contract
       
     </span>
   </a>
@@ -1140,10 +1162,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#blockers-deviations-from-the-plan-plan-1-for-reference" class="md-nav__link">
+  <a href="#5-seamless-integration-constraints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Blockers / deviations from the plan (Plan 1, for reference)
+        5. Seamless integration constraints
       
     </span>
   </a>
@@ -1151,10 +1173,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-verify-current-state" class="md-nav__link">
+  <a href="#6-risks-open-questions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How to verify current state
+        6. Risks / open questions
       
     </span>
   </a>
@@ -1162,10 +1184,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#one-line-kickoff-prompt-to-resume-this-branch-if-the-docs-pass-isnt-committed-yet" class="md-nav__link">
+  <a href="#7-suggested-phasing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One-line kickoff prompt to resume THIS branch (if the docs pass isn't committed yet)
+        7. Suggested phasing
       
     </span>
   </a>
@@ -1189,179 +1211,173 @@
 
 
 
-<h1 id="handoff-digitaltwin_interfaces-plan-1-complete">Handoff — <code>digitaltwin_interfaces</code> (Plan 1) — COMPLETE</h1>
-<p><strong>Plan file:</strong> <code>/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md</code>
-<strong>Branch:</strong> <code>digitaltwin_interfaces</code> (created off <code>main</code>)</p>
-<blockquote>
-<p><strong>Process (in effect since M1):</strong> the agent never runs <code>git commit</code>.
-It stages (<code>git add</code>) and hands off; <strong>you</strong> run the commit.</p>
-</blockquote>
-<h2 id="plan-1-status-all-milestones-committed">Plan 1 status: all milestones committed ✅</h2>
-<p>M0 <code>3db608d</code>/<code>868fb6c</code> → M1 <code>b56fe1f</code> → M2 <code>d9f0eba</code> (message says "M3",
-content is M2 — see Blockers) → M3 <code>0cd8d15</code> → M4 <code>47648ce</code> → M5 <code>797f618</code>.
-Every box in the Progress Tracker for Plan 1 is ticked.</p>
-<h2 id="staged-awaiting-your-commit-post-m5-documentation-pass">Staged, awaiting your commit: post-M5 documentation pass</h2>
-<p>Not a new milestone — a follow-up pass making sure every Plan-1 feature
-(<code>streaming</code>, <code>type: interface</code>, <code>interface_config</code>, override registry, BK4
-demo pair, live dashboard) is discoverable from the project's existing doc
-set, not just the dedicated design note added in M5. Staged, not committed:</p>
+<h1 id="speculative-plan-iterative-algebraic-loop-federate-point-5">Speculative Plan — Iterative / Algebraic-Loop Federate (Point 5)</h1>
+<p>Status: <strong>speculative design sketch.</strong> This is intentionally separate from the main
+synchronization plan (<code>synchronization_causality_plan.md</code>) because it changes the
+HELICS execution model, not just config wiring. Do not start this before points 1–4
+are stable.</p>
+<hr />
+<h2 id="1-motivation">1. Motivation</h2>
+<p><code>next_step</code> relaxation (main plan §3–4) breaks a same-step cycle by inserting a
+<strong>one-tick delay</strong>. That is correct for MDP "action → next state" coupling, but it is
+<strong>wrong</strong> for a true <em>algebraic loop</em>: two (or more) federates that must converge to a
+mutually-consistent value <strong>within the same instant</strong> (no physical delay). Examples:</p>
 <ul>
-<li><strong><code>README.md</code></strong> — new bullet in Main Features.</li>
-<li><strong><code>docs/Installation_Setup.md</code></strong> — Mosquitto/paho-mqtt noted alongside Redis
-  in both "Start Infrastructure" steps (manual setup appears twice in this
-  file); live-dashboard cross-link in the "Run Dashboard" steps.</li>
-<li><strong><code>docs/overview/architecture.md</code></strong> — step 4 (Federate Launching) and step 5
-  (Execution Loop) now mention <code>InterfaceFederate</code> and <code>streaming.stream</code>.</li>
-<li><strong><code>docs/overview/core_concepts.md</code></strong> — new "Digital-Twin Interfaces &amp; Live
-  Streaming" section.</li>
-<li><strong><code>docs/overview/terminology.md</code></strong> — new <strong>Interface Federate</strong> and
-  <strong>Adapter</strong> terms.</li>
-<li><strong><code>docs/user_guide/scenario_configuration/overview.md</code></strong> — <code>type</code> union and
-  hierarchy diagram now include <code>interface</code>/<code>interface_config</code>; new row in the
-  Sections table.</li>
-<li><strong><code>docs/user_guide/scenario_configuration/federate.md</code></strong> — discriminator
-  updated everywhere; <code>streaming</code>/<code>override_enabled</code> added to the common
-  fields table; <code>rt_lag</code>/<code>rt_lead</code> added to the <code>timing_configs</code> table; two
-  new sections: <code>streaming</code> (all types) and <code>type: "interface"</code> (full
-  <code>interface_config</code> example + field table).</li>
-<li><strong><code>docs/user_guide/custom_models.md</code></strong> — new "§4 Interface Adapters"
-  subsection (the <code>interface_adapter</code> catalog category, same dynamic-import
-  mechanism as physics models).</li>
-<li><strong><code>docs/user_guide/running_scenarios.md</code></strong> — short "Digital-twin / streaming
-  scenarios" note pointing at the design doc + the BK4 demo pair.</li>
-<li><strong><code>docs/user_guide/troubleshooting.md</code></strong> — two new entries: the <code>cd src</code>
-  cwd gotcha found during M5 verification (<code>FileNotFoundError:
-  'src/core/mappings.yaml'</code> + manager hang), and "MQTT/digital-twin features
-  silently produce no data" (Mosquitto not running / wrong port).</li>
+<li>Electrical network ↔ power-electronics controller solving for a consistent
+  voltage/current at one timestamp.</li>
+<li>Two thermo-fluid federates sharing a pressure/flow boundary that must balance now.</li>
+<li>Any co-simulation where a one-step lag introduces non-physical oscillation or
+  instability.</li>
 </ul>
-<p><strong>Verified:</strong> <code>mkdocs build --strict</code> — no broken links/anchors (fixed two
-anchor-slug mismatches: <code>#</code> links must match the auto-generated slug, which
-strips repeated hyphens differently than a naive guess — e.g.
-<code>type-interface-interface-federate-digital-twin-bridge</code>, not
-<code>type-interface--interface-...</code>). <code>pytest tests/test_rl_config.py</code> still 78
-passed / 1 skipped (docs-only change, no config/code touched).</p>
-<p><strong>Your action:</strong> review the staged diff, commit (e.g. <code>docs(digital-twin):
-surface streaming/interface federate features across README, overview,
-scenario-config, custom-models, running-scenarios, troubleshooting docs</code>),
-then say continue — I'll confirm the doc commit landed. This does not need a
-Progress Tracker box (it's not a plan milestone), just confirmation before
-the branch is considered fully wrapped up.</p>
-<h2 id="testing-this-branch-end-to-end-quick-guide">Testing this branch end-to-end (quick guide)</h2>
-<pre><code class="language-bash">cd /media/space/rando/CODE/CosimGym
-conda activate cosim_gym
-docker compose -f src/docker-compose.yaml up -d   # redis, minio, mosquitto (host 11883)
-
-# 1. Regressions — must be unaffected (everything in Plan 1 is opt-in):
-python src/test_script.py
-OMP_NUM_THREADS=1 python src/test_script_rl.py
-
-# 2. Config/parse gate:
-python -m pytest tests/test_rl_config.py -v      # expect 78 passed, 1 skipped
-
-# 3. BK4 demo — the headline feature (config-only sim-to-real swap):
-#    run from the REPO ROOT, never `cd src` first (see Blockers #8 below)
-PYTHONPATH=src python -c &quot;from core.ScenarioManager import main; main('m5_bk4_demo_a_full_sim')&quot;
-#    then, concurrently:
-PYTHONPATH=src python -c &quot;from core.ScenarioManager import main; main('m5_bk4_demo_b_digital_twin')&quot; &amp;
-sleep 3 &amp;&amp; python src/scenarios/bk4_demo_external_sensor.py --duration 18
-#    compare force in results/m5_bk4_demo_b_digital_twin/*/federation_1/spring_federate_test_storage.json
-#    against the sensor script's printed tick values — they should match once messages arrive.
-
-# 4. Live dashboard (open in a browser while step 3's run (b) or any
-#    `streaming.stream: true` scenario is executing):
-./src/dashboard/run_dashboard.sh    # http://localhost:8052 — open the &quot;Live&quot; page
-
-# 5. Docs build check:
-mkdocs build --strict -d /tmp/mkdocs_out
-
-# Clean up scratch results/logs afterwards (gitignored, local hygiene only):
-rm -rf results/m5_bk4_demo_a_full_sim results/m5_bk4_demo_b_digital_twin \
-       logs/m5_bk4_demo_a_full_sim logs/m5_bk4_demo_b_digital_twin
+<p>HELICS supports this natively via <strong>iterative time requests</strong>
+(<code>helicsFederateRequestTimeIterative</code>): federates re-evaluate at the <em>same</em> time and
+exchange values repeatedly until the loop <strong>converges</strong>, then the broker grants the
+time and everyone advances. We currently never use it (<code>BaseFederate.request_time_advance</code>
+calls plain <code>helicsFederateRequestTime</code>, <code>:488</code>).</p>
+<h2 id="2-goal">2. Goal</h2>
+<p>Allow a <strong>strongly-connected component</strong> of federates to run as an <em>iterated
+algebraic loop</em> at each tick, <strong>seamlessly</strong>:</p>
+<ul>
+<li>Detect automatically when iteration is required (SCC that is <em>not</em> relaxed and is
+  marked iterative).</li>
+<li>Run the iterative convergence loop only for that SCC; the rest of the scenario keeps
+  using plain time requests, unchanged.</li>
+<li>Detect convergence and <strong>stop</strong> iterating (max-iters guard + tolerance).</li>
+<li>No disruption to existing scenarios (feature is opt-in, default off).</li>
+</ul>
+<h2 id="3-detection-when-is-iteration-needed">3. Detection — when is iteration needed?</h2>
+<p>Add a declarative marker rather than guessing:</p>
+<pre><code class="language-yaml">synchronization:
+  cycle_policy: iterate            # error | relax | iterate
+  iteration:
+    max_iterations: 20
+    convergence:
+      mode: relative               # absolute | relative
+      tolerance: 1e-4
 </code></pre>
-<h2 id="next-plan-2-nonblocking_storage-separate-independent-branch">Next: Plan 2 (<code>nonblocking_storage</code>) — separate, independent branch</h2>
-<p>Plan 1 is fully done. Plan 2 is unrelated work (non-blocking Parquet storage)
-on its <strong>own branch off <code>main</code></strong>, per the plan file's own instructions —
-<strong>not</strong> built on <code>digitaltwin_interfaces</code>. Kickoff commands for a fresh
-session:</p>
-<pre><code class="language-bash">cd /media/space/rando/CODE/CosimGym
-git checkout main
-git pull                                    # if digitaltwin_interfaces has been merged/reviewed upstream
-git checkout -b nonblocking_storage
-mkdir -p docs/handoffs                      # docs/handoffs/nonblocking_storage.md will live here
-docker compose -f src/docker-compose.yaml up -d
-conda activate cosim_gym
-python src/test_script.py                   # confirm green baseline before any change
-</code></pre>
-<p>Then resume at box <strong>S0</strong> in the plan file's Progress Tracker
-(<code>sink</code> field on <code>MemoryConfig</code> + plumb through, default <code>json</code> = unchanged)
-and follow the same per-milestone loop: implement → check → regression →
-<strong>stage, do not commit</strong> → update <code>docs/handoffs/nonblocking_storage.md</code> →
-wait for the user's commit + "continue" before ticking the box.</p>
-<h3 id="one-line-kickoff-prompt-for-plan-2s-first-fresh-session">One-line kickoff prompt for Plan 2's first fresh session</h3>
-<blockquote>
-<p>"Read <code>/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md</code>
-in full — Plan 1 (<code>digitaltwin_interfaces</code>) is complete, all milestones
-committed. Start Plan 2 (<code>nonblocking_storage</code>): create a new branch off
-<code>main</code> (<code>git checkout main &amp;&amp; git checkout -b nonblocking_storage</code>,
-independent of the Plan-1 branch), confirm a green baseline
-(<code>python src/test_script.py</code>), then implement the lowest unchecked box
-(S0) in the Progress Tracker. Follow the per-milestone loop exactly: run
-the milestone's Check + regression test, then stage the change (<code>git add</code>)
-— do NOT commit, the user commits — write <code>docs/handoffs/nonblocking_storage.md</code>,
-and stop to wait for the user's commit + 'continue' signal before ticking
-the box and starting the next milestone."</p>
-</blockquote>
-<h2 id="blockers-deviations-from-the-plan-plan-1-for-reference">Blockers / deviations from the plan (Plan 1, for reference)</h2>
+<p>Resolution order for a same_step SCC (extends main-plan §4.3):</p>
 <ol>
-<li><strong>Process change (from M1 onward):</strong> agent stages, user commits.</li>
-<li><strong>Commit-message/milestone mismatch:</strong> <code>d9f0eba</code> says "M3", contains M2's
-   diff. Trust the diff / handoff / Progress Tracker, not commit messages.</li>
-<li>Branch-first ordering at M0, mosquitto port remap to 11883,
-   <code>model_configs</code> guard on <code>InterfaceFederateConfig</code>, drop-oldest outbound
-   queue — see <code>git log -p -- docs/handoffs/digitaltwin_interfaces.md</code> for
-   the full prior write-ups.</li>
-<li><strong><code>BridgeSpec.helics_key</code> is overloaded by <code>scope</code></strong>: HELICS pub name for
-   <code>scope: input</code>; an override-registry target string for <code>scope:
-   output</code>/<code>param</code> (parsed by <code>parse_target</code>, no HELICS registration at all).</li>
-<li><strong>Two M4 override-registry bugs</strong>, both fixed and regression-tested:
-   <code>parse_target</code> originally reconstructed entity as the bare instance number
-   instead of <code>"federate.instance"</code>; output override wasn't written back into
-   <code>self.outputs</code>, so storage didn't reflect it even though HELICS delivery
-   was correct.</li>
-<li><strong>Live dashboard uses <code>time.sleep</code> + <code>st.rerun()</code> polling</strong>, not
-   <code>streamlit-autorefresh</code> or websockets — avoids a new dependency at the
-   cost of a full-page redraw each tick.</li>
-<li><strong>BK4 demo's first ~9 ticks show HELICS's <code>-1e+49</code> sentinel</strong> before the
-   external sensor script's first MQTT message arrives (<code>mode: replace</code>
-   publishes nothing until then) — expected, not a bug; start the sensor
-   script first for a live demo/presentation to avoid this stretch.</li>
-<li><strong>Never <code>cd src</code> before running <code>ScenarioManager</code></strong> — federate subprocesses
-   resolve config paths relative to the <strong>repo root</strong>. <code>cd src</code> produces a
-   <code>FileNotFoundError: 'src/core/mappings.yaml'</code> in each federate's
-   <code>.stdio.log</code> while the manager hangs "Monitoring N federates" (federates
-   died, broker didn't). Now documented in <code>docs/user_guide/troubleshooting.md</code>.</li>
-<li><strong>Redis logging noise (from M4, still not fixed):</strong> <code>RedisClient.get_json</code>
-   logs a WARNING on every absent-key lookup — noisy for every
-   <code>override_enabled</code> federate's per-tick checks with no active override.
-   Revisit with a <code>log_missing: bool</code> param if it becomes a problem.</li>
+<li>If any subscription in the SCC is pinned <code>same_step</code> <strong>and</strong> the SCC is marked
+   <code>iterate</code> → treat the SCC as an <strong>iterative group</strong>.</li>
+<li>Else if <code>cycle_policy: relax</code> → relax the back-edge (main plan §4.3).</li>
+<li>Else → <code>error</code> (current behavior).</li>
 </ol>
-<h2 id="how-to-verify-current-state">How to verify current state</h2>
-<pre><code class="language-bash">cd /media/space/rando/CODE/CosimGym
-git status &amp;&amp; git branch --show-current   # digitaltwin_interfaces; docs pass staged, not committed
-git log --oneline -7                       # 797f618, 47648ce, 0cd8d15, d9f0eba, b56fe1f, 868fb6c, 3db608d
-git diff --staged --stat                   # the docs-pass diff
+<p>A per-federate or per-federation flag <code>iterative_group: &lt;id&gt;</code> can scope iteration to
+exactly the SCC the author intends, so the system does not iterate accidentally. The
+automatic part is: <em>given the SCC graph, the set of federates in one un-relaxed,
+iterate-marked SCC forms one convergence group</em>. That mapping is computed from the
+existing SCC machinery (<code>_compute_sccs</code>) — no new graph code.</p>
+<h2 id="4-mechanism-helics-iterative-requests">4. Mechanism — HELICS iterative requests</h2>
+<h3 id="41-new-federate-variant">4.1 New federate variant</h3>
+<p>Introduce <code>IterativeFederate(BaseFederate)</code> selected via federate <code>type: "iterative"</code>
+(parallel to <code>base</code> / <code>rl</code>, dispatched in <code>federate_launcher.py</code>). It overrides the
+time-advance + I/O portion of the loop:</p>
+<pre><code>def request_time_advance_iterative(self):
+    target = self.time_granted + self.time_period
+    it = 0
+    while it &lt; self.max_iterations:
+        granted, iter_result = h.helicsFederateRequestTimeIterative(
+            self.federate, target, h.helics_iteration_request_iterate_if_needed
+        )
+        self._receive_inputs(force_read_all=True)   # read peers' latest guesses
+        self._iterate_models()                       # recompute with new boundary values
+        self._publish_outputs()                      # publish refined guess
+        if iter_result == h.helics_iteration_result_next_step:
+            break                                    # broker says converged → time granted
+        if self._converged():                        # local tolerance check
+            # request a final non-iterative grant to advance
+            ...
+            break
+        it += 1
+    self.time_granted = granted
 </code></pre>
-<h2 id="one-line-kickoff-prompt-to-resume-this-branch-if-the-docs-pass-isnt-committed-yet">One-line kickoff prompt to resume THIS branch (if the docs pass isn't committed yet)</h2>
-<blockquote>
-<p>"Read <code>/media/space/rando/.claude/plans/federate-in-the-co-simualtion-fancy-ladybug.md</code>
-and <code>docs/handoffs/digitaltwin_interfaces.md</code>. We're on branch
-<code>digitaltwin_interfaces</code>. Plan 1 (M0-M5) is fully committed. A follow-up
-documentation pass (README, overview docs, scenario-config reference,
-custom-models, running-scenarios, troubleshooting) is staged but not
-committed — review and commit it, then say continue. After that, Plan 1 on
-this branch is done; Plan 2 (<code>nonblocking_storage</code>) is a separate branch,
-see the 'Next: Plan 2' section above for kickoff commands."</p>
-</blockquote>
+<p>Key points:</p>
+<ul>
+<li>During iteration <strong>time does not advance</strong>; only the iteration index does. All
+  members of the SCC re-exchange boundary values at the same timestamp.</li>
+<li>Members must publish <strong>on every iteration</strong> (so peers see refined guesses) and read
+  with <code>force_read_all=True</code> (values may be "unchanged" by HELICS's update flag yet
+  still part of the fixed-point search).</li>
+<li>Non-iterative federates outside the SCC are untouched: they call plain
+  <code>helicsFederateRequestTime</code> and simply wait for the group to settle before the tick
+  is granted globally.</li>
+</ul>
+<h3 id="42-convergence-stop-condition">4.2 Convergence / stop condition</h3>
+<p>Two independent stop guards (both required):</p>
+<ul>
+<li><strong>Tolerance</strong>: track each boundary (loop) variable's value across iterations; stop
+  when <code>max |x_k - x_{k-1}| &lt; tol</code> (absolute) or normalized by <code>|x_k|</code> (relative).
+  Convergence config from §3.</li>
+<li><strong>Max-iterations</strong>: hard cap. On exceed → policy choice: <code>warn_and_advance</code>
+  (accept last guess, log non-convergence) or <code>error</code>. Default <code>warn_and_advance</code> to
+  avoid hanging a long study; surface a metric/counter.</li>
+</ul>
+<p>Each iterative federate evaluates its own tolerance and signals
+<code>helics_iteration_request_no_iteration</code> once locally satisfied; HELICS grants the step
+only when <strong>all</strong> members signal convergence (<code>helics_iteration_result_next_step</code>).
+This is the standard HELICS fixed-point handshake — convergence is a <strong>group</strong>
+decision, not unilateral.</p>
+<h3 id="43-model-contract">4.3 Model contract</h3>
+<p>Models inside an iterative group must be <strong>re-evaluable at the same timestamp without
+advancing internal state</strong> — i.e. <code>step()</code> for iteration must be a pure boundary
+solve, with state commit deferred to the granted step. Add an optional
+<code>BaseModel.iterate(t, inputs)</code> hook distinct from <code>step(t, inputs)</code>:</p>
+<ul>
+<li><code>iterate()</code> recomputes outputs from inputs <strong>without</strong> committing irreversible state.</li>
+<li><code>step()</code> (called once the tick is granted) commits.</li>
+</ul>
+<p>Models that cannot do this (e.g. the EnergyPlus FMU, which cannot re-enter a timestep)
+<strong>must not</strong> be placed in an iterative group — validation should reject that
+combination with a clear message (catalog flag <code>supports_iteration: false</code>).</p>
+<h2 id="5-seamless-integration-constraints">5. Seamless integration constraints</h2>
+<ul>
+<li><strong>Opt-in only.</strong> <code>cycle_policy</code> default stays <code>error</code>; <code>type: iterative</code> is never
+  injected automatically. Existing scenarios behave identically.</li>
+<li><strong>No change to non-iterative federates.</strong> Plain federates keep
+  <code>helicsFederateRequestTime</code>. HELICS handles mixed iterative/non-iterative cores at
+  the broker level.</li>
+<li><strong>RL interaction.</strong> An RL agent generally should <em>not</em> be inside an algebraic loop
+  (its "action" is not part of a physics fixed point). Keep the agent outside the
+  iterative SCC; the SCC converges within a tick, then the agent observes the
+  converged result via normal same_step/next_step rules. Validation should warn if an
+  <code>rl</code> federate lands in an <code>iterate</code>-marked SCC.</li>
+<li><strong>Catalog/validation gating.</strong> New catalog field <code>supports_iteration</code>. New scenario
+  validation: every member of an iterative group must be <code>type: iterative</code> (or <code>base</code>
+  with an <code>iterate()</code>-capable model) and <code>supports_iteration: true</code>.</li>
+</ul>
+<h2 id="6-risks-open-questions">6. Risks / open questions</h2>
+<ul>
+<li><strong>Convergence not guaranteed.</strong> Fixed-point iteration can diverge or oscillate for
+  stiff couplings; may need relaxation/damping (<code>x_{k+1} = αx̂ + (1-α)x_k</code>). Expose
+  <code>relaxation_factor</code>.</li>
+<li><strong>Performance.</strong> Each tick may cost up to <code>max_iterations</code> model evaluations for the
+  whole group. Document the cost; the group should be as small as possible.</li>
+<li><strong>Determinism / logging.</strong> Iteration must not pollute storage with intermediate
+  guesses — only the <strong>converged</strong> values get recorded. <code>update_storage</code> must be
+  called once, after convergence, not per iteration.</li>
+<li><strong>Reset / episode boundaries</strong> (RL studies): iteration interplay with <code>_reset()</code> and
+  <code>_clear_deferred_inputs()</code> needs care; simplest is to forbid iterative groups in
+  resettable RL federations initially.</li>
+<li><strong>HELICS flags.</strong> <code>uninterruptible</code>, <code>restrictive_time_policy</code>, and granted-time
+  semantics for iterative cores need verification against the installed HELICS version
+  before committing to the API surface above.</li>
+</ul>
+<h2 id="7-suggested-phasing">7. Suggested phasing</h2>
+<ol>
+<li>Spike: a 2-federate toy algebraic loop (e.g. two linear boundary equations) using
+   <code>helicsFederateRequestTimeIterative</code> directly, outside the framework, to validate
+   the HELICS handshake and convergence detection.</li>
+<li><code>IterativeFederate</code> + <code>BaseModel.iterate()</code> hook + <code>federate_launcher</code> dispatch.</li>
+<li><code>cycle_policy: iterate</code> detection wired to the existing SCC machinery; validation
+   gating (<code>supports_iteration</code>, no-RL-in-loop, no-FMU-in-loop).</li>
+<li>Convergence config (tolerance/max-iter/relaxation) + once-only storage.</li>
+<li>Tests: convergence on a well-posed loop, max-iter cutoff on a divergent loop,
+   mixed iterative + plain federates in one scenario, validation rejections.</li>
+</ol>
+<p>This plan deliberately reuses the SCC detection from points 1–4 so the "which
+federates iterate together" question is answered by the <strong>same graph code</strong> that
+answers "which cycles must be relaxed" — the two policies (<code>relax</code>, <code>iterate</code>) are
+just different resolutions of the same detected SCC.</p>
 
 
 
