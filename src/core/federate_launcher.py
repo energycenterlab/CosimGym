@@ -34,6 +34,7 @@ from utils.config_dataclasses import (
 )
 from utils.logging_config import setup_process_logger
 from utils.redis_client import RedisClient
+from utils.ports import redis_port as default_redis_port
 
 
 def main():
@@ -95,7 +96,7 @@ def main():
         redis_url_parts = args.redis_url.replace('redis://', '').split('/')
         host_port = redis_url_parts[0].split(':')
         redis_host = host_port[0]
-        redis_port = int(host_port[1]) if len(host_port) > 1 else 6379
+        redis_port = int(host_port[1]) if len(host_port) > 1 else default_redis_port()
         redis_db = int(redis_url_parts[1]) if len(redis_url_parts) > 1 else 0
 
         # OverrideRegistry (core/override_registry.py) and the opt-in streaming MqttAdapter

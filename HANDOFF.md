@@ -12,6 +12,111 @@ relitigate). Alternatives considered: `distributed_ssh_spawning_alternatives.md`
 
 ## Current Progress
 
+**ALL TASKS DONE — T1–T7 complete, live localhost-as-remote E2E PASSED.**
+
+**T6 live E2E result (2026-07-15):** ran `python src/verify_distributed_demo.py` on this machine
+with passwordless ssh to 127.0.0.1 + the cosim docker stack up. `distributed_demo` (pv_federate
+spawned remotely over ssh) completed: 1 broker, 5 federates. **2304/2304 recorded timeseries
+records matched the all-local twin `pv_batt_test_base` within 1e-9.** Remote federate results were
+rsynced back into the manager's local `results/` tree (T5 collection verified). Mid-simulation
+SIGINT (remote federate confirmed alive first, then interrupted) → remote federate GONE, zero
+orphans local & remote (T5 `_cleanup_remote_execution` pkill + master close verified).
+
+**Two bugs found during E2E and fixed:**
+1. `remote_executor.py` `_master_cmd()`: used `ssh ... -nNf` (background-fork master). With
+   `subprocess.run(capture_output=True)` the backgrounded ssh child inherits the stdout/stderr
+   pipes → `run` blocks on them until the 15s timeout even after the connection succeeds
+   (`open_master` always timed out). **Fix:** run a trivial `true` over the connection instead of
+   `-nNf`; `ControlMaster=auto` + `ControlPersist=60` already keep the master socket alive, and the
+   client exits immediately (still captures stderr on auth failure). Test `test_master_cmd_flags`
+   updated (`-nNf` → asserts `true` last token, `-nNf` absent).
+2. `ScenarioManager.start_scenario()`: on SIGINT during setup the signal handler calls `exit(0)`
+   (`SystemExit`, caught by neither `except KeyboardInterrupt` nor `except Exception`), so the
+   `finally`'s `_emergency_cleanup(success=success)` hit `UnboundLocalError: cannot access local
+   variable 'success'`. **Fix:** initialize `success = False` before the `try`.
+
+**Env note for reproducing the E2E:** scripts must run with the `cosim_gym` env bin on `PATH`
+(i.e. `conda activate cosim_gym`, not just calling the env's python by absolute path) — the manager
+spawns `helics_broker` (a CLI in the env bin) as a subprocess; without it on PATH, setup fails with
+"helics_broker executable not found". Also note the demo's `conda run -n cosim_gym` resolves fine
+over ssh on this machine (no `python:` escape hatch needed).
+
+Full suite: `pytest tests/ -q` → **156 passed, 2 skipped** (includes T5's 5, ports' 10, updated
+remote-executor master test). `graphify update .` run.
+
+---
+
+**T1, T2, T3, T4: DONE. T5 — Collection + cleanup: DONE. T7 — Docs: DONE.**
+
+Full suite after T5: `pytest tests/ -q` → **145 passed, 2 skipped** (140 + 5 new T5 tests).
+
+**T5 details:**
+
+- `src/core/ScenarioManager.py`:
+  - `start_scenario()`: added `self._collect_remote_results()` right after `_monitor_processes()`
+    returns on the success path (before `simulation_end` metrics) — federates have all exited, so
+    `sink: json` is written / `sink: parquet` finalized, safe to pull back.
+  - `_emergency_cleanup()`: added `self._cleanup_remote_execution()` after the broker-kill loop,
+    before `cleanup_end` metric. Runs on every exit path (success, exception, signal, atexit) via
+    the existing once-only `_cleanup_done` guard.
+  - New `_collect_remote_results()`: no-op if `remote_executors` empty. For each remote machine,
+    `executor.collect()` the remote `results/<scenario>/<sim_id[-15:]>/` and
+    `logs/<scenario_log_dir_rel>/` back into the identical local dirs (rsync, no `--delete` →
+    collision-free merge since each federate writes distinct files). Any failure → ERROR log with
+    a ready-to-paste manual `rsync` command (built from `machine_conf.user`/`host`), never raises —
+    valid remote results must not turn a good run into a reported failure.
+  - New `_cleanup_remote_execution()`: no-op if empty. Per machine: `executor.run(['pkill','-f',
+    self.simulation_id])` (full sim id = unique per run → only this run's federates; rc=1/no-match
+    ignored) then `executor.close()`, each wrapped in try/except → teardown never raises nor masks
+    the original error. Clears `self.remote_executors`.
+- `tests/test_scenario_manager_remote.py`: added `TestCollectionAndCleanup` (5 tests): collect
+  no-op when local, collect issues 2 rsyncs (results+logs) with correct paths, collect swallows
+  rsync failure, cleanup pkills `simulation_id` + closes + clears, cleanup never raises on ssh
+  failure. Uses the same `object.__new__` fake-manager pattern; sets `simulation_id`/`scenario_name`.
+- `graphify update .` run.
+
+**T7 details:**
+
+- New `docs/user_guide/distributed_deployment.md`: what-goes-where (brokers local, federates
+  remote), one-time remote setup (ssh keys, conda env / `python:` escape hatch, firewall ports),
+  full YAML reference, run lifecycle (preflight→deploy→spawn→collect→cleanup), localhost-as-remote
+  demo instructions, troubleshooting table, LAN-trust security note, v1 limitations.
+- `CLAUDE.md` Config Reference: added terse `deployment` block entry + `host` federate key.
+- `docs/future_and_TODOs/distributed_ssh_spawning_plan.md`: status header updated to
+  "T1–T5 + T7 implemented; T6 written, live E2E pending".
+
+**T6 details (partial — code written, live run blocked):**
+
+- New `src/scenarios/distributed_demo.yaml`: exact physics copy of `pv_batt_test_base.yaml` with a
+  `deployment:` block (`manager_address: 127.0.0.1`, machine alias `local_box` → `127.0.0.1`,
+  `workdir: /tmp/cosimgym_remote_test`, `conda_env: cosim_gym`, `python:` shown commented as the
+  escape hatch) and `pv_federate` tagged `host: local_box`. Parses + validates cleanly through
+  `read_scenario_config` (deployment present, manager_address set, alias valid).
+- New `src/verify_distributed_demo.py`: runs the remote demo + its all-local twin
+  (`pv_batt_test_base`), then compares every recorded federate timeseries (reuses
+  `dashboard_data.load_all_records`) within `1e-9`. `--no-run` compares latest existing runs only.
+  Import/entry verified (`--no-run` runs, correctly reports the demo hasn't executed yet).
+- **Live E2E NOT executed — two environment blockers on this machine:**
+  1. **Passwordless key-based ssh to 127.0.0.1 is not set up.** Both `id_ed25519` and `id_rsa`
+     exist but neither pubkey is in `~/.ssh/authorized_keys`. Enabling it (append own pubkey) was
+     **denied by the Claude Code auto-mode classifier as unauthorized persistence** — the USER must
+     do this manually: `ssh-copy-id -i ~/.ssh/id_ed25519 127.0.0.1` (or append the pubkey), then
+     `ssh 127.0.0.1 true` once to accept the host key.
+  2. **cosim Redis+Mosquitto stack is not up** — only an unrelated `project1-boptest_redis_1`
+     occupies host port 6379, which will **conflict** with `src/docker-compose.yaml`'s Redis
+     (also binds 6379). That container must be stopped (or the compose port remapped) before
+     `docker compose -f src/docker-compose.yaml up -d`.
+  - Note: `conda run -n cosim_gym python -c "import helics,redis"` DOES work in a non-interactive
+    bash on this machine, so the demo's `conda_env: cosim_gym` default should resolve over ssh; if
+    not, uncomment the `python:` line in the demo YAML.
+- Once both blockers cleared: `python src/verify_distributed_demo.py` is the one-command E2E +
+  acceptance check. Also do the Ctrl+C-mid-run orphan check: start the demo, Ctrl+C, then
+  `pgrep -f <sim_id>` on the remote must be empty (validates `_cleanup_remote_execution`'s pkill).
+
+---
+
+### Original T1–T4 progress (retained for reference)
+
 **T1, T2, T3: DONE. T4 — Spawn dispatch + address normalization: DONE.**
 
 **T4 details:**
@@ -229,7 +334,22 @@ message scenario-aware ("required when any federate sets host:") rather than a g
 missing-field error, and allows a `deployment:` block to exist with only `machines:` defined and
 no host-using federates yet (edge case, but no reason to forbid it).
 
-## Next Steps (in order — see plan doc for full detail on each)
+## Next Steps
+
+**Only the live T6 E2E run remains.** All code (T1–T5, T7) is implemented and unit-tested (145
+passed, 2 skipped). To finish:
+
+1. USER: enable passwordless ssh to 127.0.0.1 (`ssh-copy-id -i ~/.ssh/id_ed25519 127.0.0.1`;
+   `ssh 127.0.0.1 true` once). Agent cannot — classifier blocks self-authorizing ssh keys.
+2. Stop `project1-boptest_redis_1` (frees port 6379), then
+   `docker compose -f src/docker-compose.yaml up -d` (cosim Redis + Mosquitto).
+3. `conda activate cosim_gym && python src/verify_distributed_demo.py` → expect `PASS`.
+4. Orphan check: run demo, Ctrl+C mid-run, confirm `pgrep -f <sim_id>` empty afterward.
+5. If green: update this file's status to T6 DONE, then ask user before committing.
+
+---
+
+### Original T4–T7 next-steps (retained for reference)
 
 - **T4 — Spawn dispatch + address normalization.** Split `_create_local_federate`
   (`src/core/ScenarioManager.py:1486`) into `_build_federate_args(...)` (shared, parametrized by

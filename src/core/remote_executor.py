@@ -18,6 +18,7 @@ import subprocess
 from typing import List, Optional, Tuple
 
 from utils.config_dataclasses import MachineConfig
+from utils.ports import redis_port
 
 # rsync excludes for the code sync step: build artifacts and run-generated
 # directories never need to travel to the remote machine.
@@ -69,6 +70,12 @@ class RemoteExecutor:
     # ------------------------------------------------------------------
 
     def _master_cmd(self) -> List[str]:
+        # Establish the ControlMaster by running a trivial `true` over it. NOT `-nNf`:
+        # a backgrounded (`-f`) master keeps the inherited stdout/stderr pipes open, so
+        # subprocess.run(capture_output=True) would block on those pipes until timeout
+        # even after the connection succeeds. Running `true` instead lets the client exit
+        # immediately (returns rc + captured stderr on auth failure) while
+        # ControlPersist=60 keeps the master socket alive for the reused connections.
         return [
             'ssh',
             '-o', 'ControlMaster=auto',
@@ -77,8 +84,8 @@ class RemoteExecutor:
             '-o', 'BatchMode=yes',
             '-o', 'ConnectTimeout=10',
             '-p', str(self.machine_conf.ssh_port),
-            '-nNf',
             self._target,
+            'true',
         ]
 
     def _build_remote_command(self, args_list: List[str], remote_log_file: Optional[str] = None) -> str:
@@ -170,13 +177,14 @@ class RemoteExecutor:
                 "Verify the conda env exists on the remote machine and has cosim_gym deps installed."
             )
 
-        redis_check_code = f"import socket; socket.create_connection(('{self.manager_address}', 6379), 5)"
+        rport = redis_port()
+        redis_check_code = f"import socket; socket.create_connection(('{self.manager_address}', {rport}), 5)"
         redis_check = self._python_cmd() + ['-c', redis_check_code]
         rc, _, err = self.run(redis_check, timeout=15)
         if rc != 0:
             raise RuntimeError(
-                f"[{self.alias}] cannot reach Redis at {self.manager_address}:6379 from remote machine: "
-                f"{err.strip()}. Check deployment.manager_address and firewall rules (port 6379)."
+                f"[{self.alias}] cannot reach Redis at {self.manager_address}:{rport} from remote machine: "
+                f"{err.strip()}. Check deployment.manager_address and firewall rules (port {rport})."
             )
 
     def deploy(self, project_root: str) -> None:

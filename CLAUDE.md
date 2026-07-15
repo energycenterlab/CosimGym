@@ -25,6 +25,10 @@ docker compose -f src/docker-compose.yaml logs -f redis
 
 All sim scripts: run from project root, `cosim_gym` conda env active. Redis must run before any simulation.
 
+### Ports (shared-machine port conflicts)
+
+All infra default ports live in **one file**: `src/.env` (copy from `src/.env.example`, gitignored). Read by **both** docker-compose (native `${VAR:-default}` substitution) and the Python code (via `src/utils/ports.py` — `redis_port()`, `mqtt_port()`, `minio_endpoint()`, `helics_port_range()`). Change a port once → containers + sim processes follow. Keys: `COSIM_REDIS_PORT` (6379), `COSIM_MQTT_PORT` (11883), `COSIM_MINIO_PORT` (9000), `COSIM_MINIO_CONSOLE_PORT` (9101), `COSIM_HELICS_PORT_MIN`/`MAX` (20000/30000). Legacy `REDIS_PORT`/`MQTT_PORT` env exports still honored; absent `.env` → historical defaults. `ports.py` resolution: explicit env export > `src/.env` > built-in default. Per-scenario `broker_config.port` stays in scenario YAML (co-sim config, not a global default). Tests: `pytest tests/test_ports.py`. **Note:** container-internal ports (catalog-loader's `REDIS_PORT=6379`, service-to-service refs) are NOT `.env`-driven — only *host* port mappings are.
+
 ## Architecture
 
 ### Execution Flow
@@ -96,8 +100,9 @@ Scenario YAML top-level keys:
 - `memory_config.batch_size`: rows per batch for `parquet` sink's background writer (default `100`)
 - `synchronization`: auto-offset + startup-sync policies
 - `reinforcement_learning_config`: 4-axis RL config (below)
+- `deployment` (optional; absent → fully local, identical behavior): distributed SSH federate spawning. `manager_address` (LAN IP remotes use to reach this manager — REQUIRED when any federate sets `host:`) + `machines.<alias>`: `host`, `user` (default current), `ssh_port` (default 22), `workdir` (remote repo root, `src/` rsync'd here), `conda_env` (default `cosim_gym`), `python` (optional explicit interpreter, overrides `conda_env`). Only **federates** go remote; brokers/Redis/MQTT stay on manager. See `docs/user_guide/distributed_deployment.md`.
 - `federations.<name>.broker_config`: `core_type`, `port`, `federates`
-- `federations.<name>.federate_configs.<name>`: `type` (`base`|`rl`), `timing_configs.real_period`, `connections.publishes`, `connections.subscribes`, `model_configs.instantiation.model_name`
+- `federations.<name>.federate_configs.<name>`: `type` (`base`|`rl`), `timing_configs.real_period`, `connections.publishes`, `connections.subscribes`, `model_configs.instantiation.model_name`, `host` (optional, base/interface only — alias from `deployment.machines`; spawns this federate on that remote machine over SSH. Rejected on `type: rl`.)
 - `model_configs.instantiation.parallel_execution` (default `false`) + `max_parallel_workers` (default `min(n_instances, cpu_count)`): step federate's model instances in **persistent worker processes** (`src/core/parallel_executor.py`) instead of default sequential loop. CPU-heavy model `step()`s only (pure-Python/GIL-bound → processes, not threads; workers rebuild shard from config). Workers daemon + escalating `close()` (sentinel→join→terminate→kill) + atexit/SIGINT/SIGTERM → no orphans. Unsupported with `override_enabled` or `type: rl` (raises `NotImplementedError`). Benchmark pair: `src/scenarios/benchmark_parallel_{seq,par}.yaml` with CPU-heavy `heavy_compute_dummy` model. See `docs/user_guide/scenario_configuration/federate.md`.
 
 Subscription target format: `<federate_name>.<instance_id>/<pub_key>` (same federation) or `<federation_name>.<federate_name>.<instance_id>/<pub_key>` (cross-federation).

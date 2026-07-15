@@ -30,6 +30,7 @@ from utils.config_dataclasses import BrokerConfig, FederationConfig, FederateCon
 from utils.config_reader import read_scenario_config
 from utils.logging_config import FederationLogger
 from utils.redis_client import RedisClient
+from utils.ports import redis_port as default_redis_port, helics_port_range
 from core.remote_executor import RemoteExecutor
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -203,7 +204,11 @@ class ScenarioManager:
                         os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                 except (ProcessLookupError, OSError):
                     pass
-        
+
+        # Distributed SSH: sweep any lingering remote federates and close ssh
+        # control masters. Wrapped internally so teardown never raises.
+        self._cleanup_remote_execution()
+
         self.metrics['cleanup_end'] = datetime.now()
         
         # Calculate cleanup phase duration
@@ -243,9 +248,9 @@ class ScenarioManager:
         """Initialize Redis client for configuration distribution."""
         try:
             redis_host = os.getenv('REDIS_HOST', 'localhost')
-            redis_port = int(os.getenv('REDIS_PORT', '6379'))
+            redis_port = default_redis_port()
             redis_db = int(os.getenv('REDIS_DB', '0'))
-            
+
             self.redis_client = RedisClient(
                 host=redis_host,
                 port=redis_port,
@@ -268,14 +273,24 @@ class ScenarioManager:
         """
         self.metrics['simulation_start'] = datetime.now()
         self._simulation_start_real_time = time.time()
-        
+
+        # Assigned before the try so the finally's _emergency_cleanup(success=...) is
+        # always bound — e.g. a SIGINT during setup triggers the signal handler's
+        # exit(0) (SystemExit, caught by neither except below), which still unwinds
+        # through finally.
+        success = False
+
         try:
             # setting up scenario (scenario config, federations, brokers federates)
             self._setup_scenario()
 
             # Monitor federation
             self._monitor_processes() # TODO: better understand the monitoring part
-            
+
+            # Distributed SSH: pull each remote federate's results + logs back to the
+            # manager before the run is declared complete. No-op for local scenarios.
+            self._collect_remote_results()
+
             self.metrics['simulation_end'] = datetime.now()
             duration = (self.metrics['simulation_end'] - self.metrics['simulation_start']).total_seconds()
             self.metrics['phase_durations']['simulation_duration'] = duration
@@ -707,7 +722,7 @@ class ScenarioManager:
          # Push full scenario configuration:
         self.redis_key = f"cosim:config:{self.simulation_id}"
         redis_host = os.getenv('REDIS_HOST', 'localhost')
-        redis_port = int(os.getenv('REDIS_PORT', '6379'))
+        redis_port = default_redis_port()
         redis_db = int(os.getenv('REDIS_DB', '0'))
         self.redis_url = os.getenv('REDIS_URL', f'redis://{redis_host}:{redis_port}/{redis_db}')
         # Kept for _redis_url_for: remote federates reach Redis at manager_address on the
@@ -1226,7 +1241,8 @@ class ScenarioManager:
         exclude_ports = set(exclude_ports or [])
         available_ports = []
 
-        for port in range(20000, 30000 ):
+        _helics_lo, _helics_hi = helics_port_range()
+        for port in range(_helics_lo, _helics_hi):
             if len(available_ports) >= n:
                 break
             if port in exclude_ports:
@@ -1754,6 +1770,75 @@ class ScenarioManager:
             else:
                 self.logger.error(f"✗ {label} failed with code {p.returncode}")
         return still_running
+
+    def _collect_remote_results(self):
+        """rsync results + logs back from every remote machine after the run.
+
+        Called on the success path once `_monitor_processes` returns (all federate
+        ssh children — hence the remote federates — have exited, so `sink: json` is
+        fully written and `sink: parquet` is finalized). Every remote federate wrote
+        distinct files under the *same* relative `results/<scenario>/<sim_id>/` and
+        `logs/<scenario>/<run_timestamp>/` layout the manager uses, so merging each
+        machine's tree into the manager's local dirs is collision-free (no `--delete`
+        on collect — `RemoteExecutor.collect`).
+
+        A collection failure is logged (ERROR + manual-rsync hint) but never raised:
+        a run whose results are sitting valid on a remote disk must not be reported
+        as failed just because the copy-back hiccuped.
+        """
+        if not self.remote_executors:
+            return
+
+        sim_id = self.simulation_id[-15:]
+        repo_root = Path(__file__).resolve().parents[2]
+        scenario_log_dir_rel = str(self.logger_system.scenario_log_dir)
+
+        local_results = str(repo_root / "results" / self.scenario_name / sim_id)
+        local_logs = str(repo_root / scenario_log_dir_rel)
+
+        for alias, executor in self.remote_executors.items():
+            machine_conf = self.config.deployment.machines[alias]
+            remote_results = os.path.join(machine_conf.workdir, "results", self.scenario_name, sim_id)
+            remote_logs = os.path.join(machine_conf.workdir, scenario_log_dir_rel)
+            try:
+                self.logger.info(f"Collecting results + logs back from remote machine '{alias}'...")
+                executor.collect(remote_results, local_results)
+                executor.collect(remote_logs, local_logs)
+            except Exception as e:
+                target = f"{machine_conf.user}@{machine_conf.host}" if machine_conf.user else machine_conf.host
+                self.logger.error(
+                    f"[{alias}] failed to collect remote results/logs: {e}. "
+                    f"Manually retrieve with: "
+                    f"rsync -az {target}:{remote_results}/ {local_results}/  and  "
+                    f"rsync -az {target}:{remote_logs}/ {local_logs}/"
+                )
+
+    def _cleanup_remote_execution(self):
+        """Remote-machine teardown for `_emergency_cleanup`. Never raises.
+
+        Belt-and-suspenders: the `-tt` pty in `RemoteExecutor.spawn` already
+        propagates SIGHUP to the remote federate when the local ssh child is killed,
+        but a `pkill -f <simulation_id>` guarantees no orphaned `federate_launcher`
+        survives on a remote box (`simulation_id` is unique per run → the pattern
+        only ever matches this run's federates). Then every ssh ControlMaster socket
+        is closed. Each step is wrapped so an ssh failure during teardown can never
+        turn a clean run into a crash, nor mask the original error on a failing one.
+        """
+        if not self.remote_executors:
+            return
+
+        for alias, executor in self.remote_executors.items():
+            try:
+                # rc=1 (no match) is fine — we ignore the return code.
+                executor.run(['pkill', '-f', self.simulation_id], timeout=10)
+            except Exception as e:
+                self.logger.warning(f"[{alias}] remote federate sweep failed during cleanup: {e}")
+            try:
+                executor.close()
+            except Exception as e:
+                self.logger.warning(f"[{alias}] closing ssh control master failed during cleanup: {e}")
+
+        self.remote_executors = {}
 
     def stop_federation(self):
         """

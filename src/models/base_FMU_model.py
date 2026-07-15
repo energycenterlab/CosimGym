@@ -246,7 +246,8 @@ class BaseFMUModel(BaseModel):
                 "minio package not installed. Run: pip install minio>=7.0.0"
             )
 
-        raw_endpoint = fmu_source.get('endpoint', 'http://localhost:9000')
+        from utils.ports import minio_endpoint  # lazy: this module can load before src is on path
+        raw_endpoint = fmu_source.get('endpoint', minio_endpoint())
         secure = raw_endpoint.startswith('https://')
         endpoint = raw_endpoint.replace('https://', '').replace('http://', '')
         bucket = fmu_source.get('bucket', 'fmus')

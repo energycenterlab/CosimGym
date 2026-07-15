@@ -20,6 +20,7 @@ import os
 from typing import Any, Optional, Tuple
 
 from utils.redis_client import RedisClient
+from utils.ports import redis_port
 
 _REGISTRY_PREFIX = "cosim:override"
 
@@ -53,10 +54,9 @@ class OverrideRegistry:
     """Redis-backed store for output/param override values set by interface federates (see module docstring)."""
 
     def __init__(self, logger=None):
-        """Connect to Redis using REDIS_HOST/REDIS_PORT env vars (defaults: localhost:6379)."""
+        """Connect to Redis using REDIS_HOST env var + centralized port (utils.ports)."""
         host = os.getenv('REDIS_HOST', 'localhost')
-        port = int(os.getenv('REDIS_PORT', '6379'))
-        self._client = RedisClient(host=host, port=port, logger=logger)
+        self._client = RedisClient(host=host, port=redis_port(), logger=logger)
 
     def set_override(self, scope: str, sim_id: str, federation: str, federate: str,
                       entity: str, var: str, value: Any) -> None:

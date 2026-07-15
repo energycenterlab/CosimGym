@@ -118,3 +118,65 @@ class TestRemoteFederates:
 
         fake_executor.close.assert_called_once()
         assert mgr.remote_executors == {}
+
+
+class TestCollectionAndCleanup:
+
+    def _remote_manager(self, tmp_path):
+        cfg = _scenario_config(deployment=_deployment(), host="gpu_box")
+        mgr = _fake_manager(cfg, tmp_path)
+        mgr.simulation_id = "scenario_20240101_120000_abcd"
+        mgr.scenario_name = "t"
+        return mgr
+
+    def test_collect_noop_when_local(self, tmp_path):
+        mgr = _fake_manager(_scenario_config(), tmp_path)
+        mgr.simulation_id = "x"
+        mgr.scenario_name = "t"
+        mgr._collect_remote_results()  # remote_executors empty → nothing happens
+
+    def test_collect_rsyncs_results_and_logs(self, tmp_path):
+        mgr = self._remote_manager(tmp_path)
+        fake_executor = MagicMock()
+        mgr.remote_executors = {"gpu_box": fake_executor}
+
+        mgr._collect_remote_results()
+
+        # Two collect calls per machine: results dir + logs dir.
+        assert fake_executor.collect.call_count == 2
+        remote_args = [c.args[0] for c in fake_executor.collect.call_args_list]
+        sim_id = mgr.simulation_id[-15:]
+        assert any(f"/home/rando/rt/results/t/{sim_id}" == p for p in remote_args)
+        assert any(str(tmp_path) == p for p in remote_args)  # logs = scenario_log_dir_rel
+
+    def test_collect_failure_does_not_raise(self, tmp_path):
+        mgr = self._remote_manager(tmp_path)
+        fake_executor = MagicMock()
+        fake_executor.collect.side_effect = RuntimeError("rsync boom")
+        mgr.remote_executors = {"gpu_box": fake_executor}
+
+        mgr._collect_remote_results()  # must swallow the error
+
+    def test_cleanup_sweeps_and_closes(self, tmp_path):
+        mgr = self._remote_manager(tmp_path)
+        fake_executor = MagicMock()
+        fake_executor.run.return_value = (0, '', '')
+        mgr.remote_executors = {"gpu_box": fake_executor}
+
+        mgr._cleanup_remote_execution()
+
+        # pkill pattern is the full unique simulation_id.
+        pkill_call = fake_executor.run.call_args
+        assert pkill_call.args[0] == ['pkill', '-f', mgr.simulation_id]
+        fake_executor.close.assert_called_once()
+        assert mgr.remote_executors == {}
+
+    def test_cleanup_never_raises_on_ssh_failure(self, tmp_path):
+        mgr = self._remote_manager(tmp_path)
+        fake_executor = MagicMock()
+        fake_executor.run.side_effect = RuntimeError("ssh dead")
+        fake_executor.close.side_effect = RuntimeError("close dead")
+        mgr.remote_executors = {"gpu_box": fake_executor}
+
+        mgr._cleanup_remote_execution()  # both wrapped → no raise
+        assert mgr.remote_executors == {}

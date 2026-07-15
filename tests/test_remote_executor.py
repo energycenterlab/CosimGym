@@ -77,8 +77,11 @@ class TestMasterCmd:
         assert 'BatchMode=yes' in cmd
         assert 'ConnectTimeout=10' in cmd
         assert cmd[cmd.index('-p') + 1] == '2222'
-        assert cmd[-1] == 'rando@10.0.0.5'
-        assert '-nNf' in cmd
+        # Master runs a trivial `true` over the target (NOT `-nNf` background fork,
+        # which deadlocks subprocess.run(capture_output=True) on the inherited pipes).
+        assert cmd[-2] == 'rando@10.0.0.5'
+        assert cmd[-1] == 'true'
+        assert '-nNf' not in cmd
 
 
 class TestBuildRemoteCommand:

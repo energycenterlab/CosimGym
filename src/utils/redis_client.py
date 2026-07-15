@@ -15,14 +15,17 @@ import json
 import logging
 from typing import Any, Dict, Optional
 
+from utils.ports import redis_port
+
 class RedisClient:
     """
-    A simple wrapper around redis-py to handle connecting, setting, 
+    A simple wrapper around redis-py to handle connecting, setting,
     and getting JSON configurations for the Cosim_gym framework.
     """
-    def __init__(self, host: str = 'localhost', port: int = 6379, db: int = 0, logger: Optional[logging.Logger] = None):
+    def __init__(self, host: str = 'localhost', port: Optional[int] = None, db: int = 0, logger: Optional[logging.Logger] = None):
         self.host = host
-        self.port = port
+        # None → centralized default (src/.env COSIM_REDIS_PORT / legacy REDIS_PORT / 6379).
+        self.port = port if port is not None else redis_port()
         self.db = db
         self.logger = logger or logging.getLogger(__name__)
         self.client = None

@@ -2,7 +2,12 @@
 
 > Handoff doc for implementer agent (Sonnet). Caveman prose, full technical content. Code blocks normal.
 > Rationale + alternatives for every choice: see `distributed_ssh_spawning_alternatives.md` (same folder).
-> Status: PLAN ONLY. No code written yet. Work on branch `distributed-ssh-spawning-plan` (or fresh branch off it). NEVER commit — ask user.
+> Status: **COMPLETE — T1–T7 implemented, live localhost-as-remote E2E PASSED (2026-07-15).**
+> `distributed_demo` (pv_federate spawned remotely over ssh) reproduced the all-local twin exactly
+> (2304/2304 records within 1e-9); results collected back; mid-run SIGINT left zero orphans. Two bugs
+> found+fixed during E2E (ssh master `-nNf` pipe-deadlock in `remote_executor`; unbound `success` on
+> SIGINT-during-setup in `ScenarioManager`) — see HANDOFF.md. Full pytest suite green (156 passed, 2
+> skipped). NEVER commit — ask user.
 
 ## Objective
 

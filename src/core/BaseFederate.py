@@ -25,6 +25,7 @@ from models.model_catalog.ModelCatalog import ModelCatalog, ModelMetadata, Inter
 from models.model_catalog.RedisCatalog import RedisCatalog
 from utils.async_storage import AsyncStorageWriter
 from utils.parquet_storage import ParquetStorageWriter
+from utils.ports import mqtt_port
 from adapters.mqtt_adapter import MqttAdapter
 from core.override_registry import OverrideRegistry
 from core.parallel_executor import ParallelModelExecutor
@@ -928,7 +929,7 @@ class BaseFederate():
             self._stream_adapter = MqttAdapter(
                 client_id=f"stream_{self.simulation_id}_{self.name}",
                 host=os.getenv('MQTT_HOST', 'localhost'),
-                port=int(os.getenv('MQTT_PORT', '11883')),
+                port=mqtt_port(),
                 logger=self.logger,
             )
             self._stream_adapter.connect()
