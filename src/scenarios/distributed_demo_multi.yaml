@@ -1,0 +1,331 @@
+# Distributed SSH Spawning — REAL MULTI-MACHINE Demo
+#
+# Same physics as pv_batt_test_base.yaml, but federates are spread across THREE
+# hosts to exercise genuine cross-machine co-simulation over the LAN:
+#
+#   manager (this machine) : rb_controller, battery_federate, load_federate  + ALL brokers + Redis
+#   machine_a (remote)     : weather_federate   (publishes DryBulb/GHI/DHI)
+#   machine_b (remote)     : pv_federate        (subscribes weather → publishes PV_power)
+#
+# Cross-machine data paths this stresses (all over HELICS/LAN, not loopback):
+#   weather (A) --DryBulb/GHI/DHI--> pv (B)          [remote → remote]
+#   pv (B)      --PV_power--> controller/battery (mgr) [remote → manager]
+#   load (mgr)  --P_load--> pv?/battery (mgr/B)        [manager → remote]
+#
+# ============================ BEFORE YOU RUN ============================
+# EDIT the `deployment:` block below — replace every  <<...>>  placeholder:
+#   - manager_address : the LAN IP of THIS machine that the remotes can reach.
+#                       (This machine's detected LAN IP is 130.192.177.14 — verify
+#                        with `hostname -I` and that the remotes can ping it.)
+#   - machine_a / machine_b host/user/workdir : your two remote machines.
+# See docs/user_guide/distributed_deployment.md for the one-time remote setup.
+# =======================================================================
+
+version: "1.0.0"
+name: "distributed_demo_multi"
+scenario_description: "Real multi-machine distributed demo: weather on A, pv on B, rest on manager"
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-03T00:00:00"
+log_level: INFO          # INFO so you can watch remote spawn/connect in the manager log
+
+memory_config:
+  batch_size: 1000
+  attrs: "all"
+
+# ---------------------------------------------------------------------------
+# Distributed deployment — EDIT the placeholders below.
+# ---------------------------------------------------------------------------
+deployment:
+  manager_address: "130.192.177.14"     # <<EDIT>> LAN IP of THIS machine (remotes must reach it)
+  machines:
+    machine_a:
+      host: "<<MACHINE_A_IP>>"          # <<EDIT>> e.g. 130.192.177.20
+      user: "<<MACHINE_A_USER>>"        # <<EDIT>> ssh user on machine A
+      ssh_port: 22
+      workdir: "<<MACHINE_A_WORKDIR>>"  # <<EDIT>> e.g. /home/<user>/cosimgym_rt   (must be writable)
+      conda_env: "cosim_gym"            # env must exist on A with helics/redis/pydantic + model deps
+      # python: "/home/<user>/miniconda3/envs/cosim_gym/bin/python"   # use if `conda run` not on ssh PATH
+    machine_b:
+      host: "<<MACHINE_B_IP>>"          # <<EDIT>>
+      user: "<<MACHINE_B_USER>>"        # <<EDIT>>
+      ssh_port: 22
+      workdir: "<<MACHINE_B_WORKDIR>>"  # <<EDIT>>
+      conda_env: "cosim_gym"
+      # python: "/home/<user>/miniconda3/envs/cosim_gym/bin/python"
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      port: 23404
+      # host omitted → normalized to deployment.manager_address (130.192.177.14) so the
+      # remote federate cores on A and B can dial in over the LAN.
+      federates: 5
+
+    federate_configs:
+
+      # ---------------- weather_federate — REMOTE on machine_a ----------------
+      weather_federate:
+        name: "weather_federate"
+        log_level: INFO
+        type: "base"
+        host: "machine_a"              # <-- spawned on machine_a over ssh
+        core_name: "fed1"
+        core_type: "zmq"
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "DryBulb"
+              type: "double"
+              units: "°C"
+            - key: "GloHorzRad"
+              type: "double"
+              units: "W/m²"
+            - key: "DifHorzRad"
+              type: "double"
+              units: "W/m²"
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_data_bj.csv"
+            skip_rows: 0
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+          user_defined: {}
+
+      # ---------------- rb_controller — LOCAL on manager ----------------
+      rb_controller:
+        name: "rb_controller"
+        type: "base"
+        core_name: "fed2"
+        core_type: "zmq"
+        log_level: INFO
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.3
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "P_gen"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [pv_federate.0/PV_power]
+            - key: "P_load"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [load_federate.0/P_load]
+            - key: "SOC"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [battery_federate.0/SOC]
+              causality: "next_step"
+          publishes:
+            - key: "Battery_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "rb_bems"
+            n_instances: 1
+            parallel_execution: false
+          parameters:
+            SOC_min: 0.40
+            SOC_max: 0.65
+          init_state:
+            Battery_power: 0.0
+          user_defined: {}
+
+      # ---------------- pv_federate — REMOTE on machine_b ----------------
+      pv_federate:
+        name: "pv_federate"
+        type: "base"
+        host: "machine_b"              # <-- spawned on machine_b over ssh
+        core_name: "fed3"
+        core_type: "zmq"
+        log_level: INFO
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.2
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/DryBulb]      # cross-machine: A -> B
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_federate.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_federate.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+          user_defined:
+            integrator: "fixed-step"
+
+      # ---------------- battery_federate — LOCAL on manager ----------------
+      battery_federate:
+        name: "battery_federate"
+        type: "base"
+        core_name: "fed4"
+        core_type: "zmq"
+        log_level: INFO
+        startup_sync:
+          required_inputs: ["Battery_power", "P_load", "PV_power"]
+          missing_inputs_policy: "warn"
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.4
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "Battery_power"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [rb_controller.0/Battery_power]
+            - key: "P_load"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [load_federate.0/P_load]
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [pv_federate.0/PV_power]          # cross-machine: B -> manager
+          publishes:
+            - key: "SOC"
+              type: "double"
+              units: "-"
+            - key: "P_net"
+              type: "double"
+              units: "W"
+            - key: "P_clipped"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "battery_dest"
+            n_instances: 1
+            parallel_execution: false
+          parameters:
+            rated_capacity: 40000
+            maximum_charge_power: 8000
+            maximum_discharge_power: 8000
+            SOC_upper_limit: 0.95
+            SOC_lower_limit: 0.25
+            charge_efficiency: 1
+            discharge_efficiency: 1
+            self_discharge_rate: 0
+            SOC: 0.75
+          init_state:
+            SOC: 0.75
+          user_defined:
+            integrator: "euler"
+
+      # ---------------- load_federate — LOCAL on manager ----------------
+      load_federate:
+        name: "load_federate"
+        type: "base"
+        log_level: INFO
+        core_name: "fed5"
+        core_type: "zmq"
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "P_load"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "load"
+            parallel_execution: false
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/electric_load_profile_hour.csv"
+            skip_rows: 0
+          init_state:
+            P_load: 0.0
+          user_defined:
+            integrator: "fixed-step"
