@@ -203,25 +203,37 @@ class RemoteExecutor:
         if rc != 0:
             raise RuntimeError(f"[{self.alias}] failed to create remote logs/results dirs: {err.strip()}")
 
-    def spawn(self, args_list: List[str], remote_log_file: str) -> subprocess.Popen:
-        """Launch a federate on the remote machine, returning the local ssh child as its process handle.
+    def spawn_many(self, spawn_key: str, redis_url: str, remote_log_file: str) -> subprocess.Popen:
+        """Start this machine's federate supervisor, returning the local ssh child as its handle.
+
+        ONE ssh session per machine, not per federate. `remote_spawner.py` reads the machine's
+        federate list from Redis (`spawn_key`) and supervises them, so this command line is a
+        fixed size no matter how many federates the machine hosts, and the manager holds one
+        ssh client per *machine*. Opening a session per federate instead made large runs fail
+        nondeterministically once federates-per-machine passed sshd's `MaxSessions` — see
+        `remote_spawner`'s module docstring for the full mechanism.
 
         `-tt` allocates a pty so a SIGHUP (manager kills this Popen / process group) propagates
-        to the remote python process — same cleanup-for-free property as local process groups.
-        Remote stdout/stderr are appended into `remote_log_file` (mirrors the local stdio-capture
-        file used to catch exceptions that bypass the federate's own logger).
+        to the remote supervisor — same cleanup-for-free property as local process groups. The
+        supervisor's children share its process group, so the hangup reaches the federates too.
+        Supervisor stdout/stderr are appended into `remote_log_file`.
 
         stdin MUST NOT be inherited. `-tt` forces pty allocation, and when ssh's stdin is the
         manager's terminal that also drags the *local* terminal into raw mode — where the tty
         driver stops turning Ctrl+C into SIGINT and forwards a raw 0x03 to the remote instead.
-        The manager then never sees the interrupt and the run cannot be stopped by hand (with
-        several remote federates, each ssh child fights over the same terminal). Pointing stdin
-        at /dev/null makes ssh's tcgetattr fail, so it leaves the terminal alone while `-tt`
-        still forces the remote pty. Federates never read stdin anyway.
+        The manager then never sees the interrupt and the run cannot be stopped by hand.
+        Pointing stdin at /dev/null makes ssh's tcgetattr fail, so it leaves the terminal alone
+        while `-tt` still forces the remote pty. Federates never read stdin anyway.
         """
+        args_list = [
+            'src/core/remote_spawner.py',
+            '--redis-url', redis_url,
+            '--spawn-key', spawn_key,
+            '--machine', self.alias,
+        ]
         remote_cmd = self._build_remote_command(args_list, remote_log_file)
         ssh_cmd = self._run_cmd(remote_cmd, tty=True)
-        self.logger.info(f"[{self.alias}] spawn: {remote_cmd}")
+        self.logger.info(f"[{self.alias}] spawn_many: {remote_cmd}")
         process = subprocess.Popen(
             ssh_cmd,
             preexec_fn=os.setsid,

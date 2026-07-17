@@ -99,7 +99,14 @@ class ScenarioManager:
         # only when the scenario has ≥1 federate with a `host:` key. Empty dict = fully
         # local scenario, everything remote-related is a no-op.
         self.remote_executors: Dict[str, RemoteExecutor] = {}
-        
+
+        # alias -> [federate spec, ...] collected by _create_remote_federate and started in
+        # one batch per machine by _spawn_remote_batches. Federates on a machine can span
+        # federations, so the batch can only be built once every federation is set up.
+        self._pending_remote_federates: Dict[str, List[dict]] = {}
+        # Redis keys holding those per-machine lists, deleted on cleanup.
+        self._spawn_keys: List[str] = []
+
         # Cleanup management
         self._cleanup_done = False
         self._cleanup_lock = threading.Lock()
@@ -167,7 +174,15 @@ class ScenarioManager:
             signum (int): Signal number received
             frame: Current stack frame (unused)
         """
-        print(f"\nReceived signal {signum}. Shutting down scenario...")
+        # Ignore any further interrupt for the rest of the process's life. A second Ctrl+C
+        # used to re-enter this handler mid-cleanup: _emergency_cleanup saw _cleanup_done
+        # and returned at once, then exit(0) raised SystemExit *inside the first cleanup's
+        # kill loop*, abandoning every process it had not reached yet (measured: 83-124
+        # orphaned federates out of 201). Cleanup is the last thing this process does, so
+        # there is nothing left worth interrupting.
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        print(f"\nReceived signal {signum}. Shutting down scenario (further interrupts ignored)...")
         self._emergency_cleanup()
         exit(0)
 
@@ -239,6 +254,14 @@ class ScenarioManager:
         # Delete redis key for this simulation
         if self.redis_client and self.redis_key:
             self.redis_client.delete(self.redis_key)
+        # ... and the per-machine federate lists published by _spawn_remote_batches.
+        for spawn_key in getattr(self, '_spawn_keys', []):
+            try:
+                self.redis_client.delete(spawn_key)
+            except Exception:
+                pass
+
+        self._prune_empty_results_folder()
 
         if success:
             self.logger.info("Scenario execution completed successfully.")
@@ -401,12 +424,39 @@ class ScenarioManager:
         self.metrics['phase_durations']['setup_duration'] = setup_duration
         self.logger.info(f"Scenario setup completed in {setup_duration:.3f} seconds")
     
+    def _prune_empty_results_folder(self):
+        """Drop this run's results dir if nothing but the metadata stub ever landed in it.
+
+        `_setup_results_folder` creates the directory and writes `metadata.json` during
+        setup, before a single federate runs — so every failed run used to leave behind a
+        results directory containing only that stub, and a scenario debugged over N attempts
+        accumulated N of them. Only ever removes a directory holding nothing but
+        `metadata.json`: any real result file makes this a no-op. Never raises — cleanup
+        must not fail over housekeeping.
+        """
+        results_dir = getattr(self, '_results_dir', None)
+        if not results_dir or not os.path.isdir(results_dir):
+            return
+        try:
+            leftovers = [
+                os.path.join(root, f)
+                for root, _dirs, files in os.walk(results_dir) for f in files
+            ]
+            if all(os.path.basename(f) == 'metadata.json' for f in leftovers):
+                shutil.rmtree(results_dir, ignore_errors=True)
+                self.logger.info(f"Removed empty results folder (run produced no results): {results_dir}")
+        except Exception as e:
+            self.logger.debug(f"Could not prune results folder {results_dir}: {e}")
+
     def _setup_results_folder(self):
         repo_root = Path(__file__).resolve().parents[2]
         results_dir = str(repo_root / "results")
         sim_id = self.simulation_id[-15:]
         scenario_results_dir = os.path.join(results_dir, self.scenario_name, sim_id)
         os.makedirs(scenario_results_dir, exist_ok=True)
+        # Remembered so cleanup can drop this directory again if the run never wrote any
+        # results into it (see _prune_empty_results_folder).
+        self._results_dir = scenario_results_dir
         # scenario_metadata = {} to be filled
         # TODO enrich medatada
         scenario_metadata = {
@@ -744,7 +794,11 @@ class ScenarioManager:
             self._assert_catalog_ready()
             for federation_name, federation in self.config.federations.items():
                 self._setup_local_federation(federation_name, federation)
-          
+            # Remote federates were only queued above: start them now, one ssh supervisor
+            # per machine, since a machine's federates can span federations. No-op when the
+            # scenario is fully local.
+            self._spawn_remote_batches()
+
     def _upload_config_on_redis(self):
         
         self._setup_redis_client()
@@ -1816,20 +1870,20 @@ class ScenarioManager:
             raise
 
     def _create_remote_federate(self, federate_name, federate_config, federation_name, host_alias):
-        """Create and start a federate on a remote machine via its RemoteExecutor.
+        """Queue a federate to be started on a remote machine; does NOT spawn it yet.
+
+        Remote federates are started per machine, in one batch, by `_spawn_remote_batches`
+        once every federation has been set up — so this only records the spec. Federates on
+        a machine can come from different federations, and one ssh session must cover all of
+        them, which is why the spawn cannot happen here.
 
         Mirrors `_create_local_federate`'s log layout on the remote filesystem: since
         `logger_system.scenario_log_dir` is already relative to the project root
         (e.g. `logs/<scenario>/<run_timestamp>`), the identical relative path resolved
         against the machine's `workdir` gives the remote log location — `T5`'s rsync-back
         then merges it into the same local directory tree with no path translation needed.
-
-        Returns:
-            subprocess.Popen: the local ssh child that is this federate's process handle
-            (see `RemoteExecutor.spawn`).
         """
         try:
-            executor = self.remote_executors[host_alias]
             machine_conf = self.config.deployment.machines[host_alias]
             scenario_log_dir_rel = str(self.logger_system.scenario_log_dir)
 
@@ -1845,23 +1899,62 @@ class ScenarioManager:
                 redis_url=self._redis_url_for(federate_config),
                 log_file=remote_log_file,
             )
-            launcher_args = ['src/core/federate_launcher.py'] + args
 
             self.logger.info(
-                f"Creating remote federate: {federate_name} (type: {federate_config.type}) on '{host_alias}'"
+                f"Queuing remote federate: {federate_name} (type: {federate_config.type}) on '{host_alias}'"
             )
-            process = executor.spawn(launcher_args, remote_stdio_file)
-            success_msg = f"Remote federate process started (ssh child PID: {process.pid}) on '{host_alias}'"
-            self.logger.info(success_msg)
-
-            self.federate_processes.append(process)
-            self.metrics['process_counts']['federates_started'] += 1
-            return process
+            self._pending_remote_federates.setdefault(host_alias, []).append({
+                'name': federate_name,
+                'args': ['src/core/federate_launcher.py'] + args,
+                'stdio': remote_stdio_file,
+            })
 
         except Exception as e:
             error_msg = f"Exception during Remote Federate Creation ('{host_alias}'): {str(e)}"
             self.logger.error(error_msg)
             raise
+
+    def _spawn_remote_batches(self):
+        """Start one supervisor per remote machine, each covering all that machine's federates.
+
+        Publishes every machine's federate list to Redis and opens a single ssh session per
+        machine running `remote_spawner.py`, which reads that list and supervises the
+        federates locally. One session per machine (rather than per federate) is what keeps
+        the manager's cost O(machines) and stays clear of sshd's per-connection session cap —
+        see `remote_spawner`'s module docstring.
+
+        The returned ssh child is the handle for the *whole machine*: it exits non-zero as
+        soon as any federate on that machine fails, so `_monitor_processes` still fails the
+        run fast. `_cosim_weight`/`_cosim_label` carry how many federates the handle stands
+        for, so the counters stay in federates rather than in ssh children.
+        """
+        for alias, specs in self._pending_remote_federates.items():
+            executor = self.remote_executors[alias]
+            machine_conf = self.config.deployment.machines[alias]
+
+            spawn_key = f"cosim:spawn:{self.simulation_id}:{alias}"
+            if not self.redis_client.set_json(spawn_key, {'federates': specs}, expire_seconds=3600):
+                raise RuntimeError(f"[{alias}] failed to publish federate list to Redis at {spawn_key}")
+            self._spawn_keys.append(spawn_key)
+
+            supervisor_log = os.path.join(
+                machine_conf.workdir, str(self.logger_system.scenario_log_dir),
+                'federates', f'_spawner_{alias}.log'
+            )
+            process = executor.spawn_many(
+                spawn_key,
+                redis_url=f'redis://{self.config.deployment.manager_address}:{self._redis_port}/{self._redis_db}',
+                remote_log_file=supervisor_log,
+            )
+            process._cosim_weight = len(specs)
+            process._cosim_label = f"Remote machine '{alias}' ({len(specs)} federates)"
+
+            self.logger.info(
+                f"Remote supervisor started on '{alias}' for {len(specs)} federate(s) "
+                f"(ssh child PID: {process.pid})"
+            )
+            self.federate_processes.append(process)
+            self.metrics['process_counts']['federates_started'] += len(specs)
 
 
 
@@ -1922,17 +2015,25 @@ class ScenarioManager:
         self._log_execution_summary()
 
     def _collect_completed(self, processes, label, count_key, fail_key):
-        """Remove finished processes, log result, update counters. Returns still-running list."""
+        """Remove finished processes, log result, update counters. Returns still-running list.
+
+        A remote machine's handle is one ssh child standing for all that machine's federates,
+        so counters advance by `_cosim_weight` (set in `_spawn_remote_batches`) rather than by
+        one per process — keeping the totals in federates. `_cosim_label` names what actually
+        finished; without it a batch would report as a single anonymous "Federate".
+        """
         still_running = []
         for p in processes:
+            weight = getattr(p, '_cosim_weight', 1)
+            name = getattr(p, '_cosim_label', label)
             if p.poll() is None:
                 still_running.append(p)
             elif p.returncode == 0:
-                self.logger.info(f"✓ {label} completed")
-                self.metrics['process_counts'][count_key] += 1
+                self.logger.info(f"✓ {name} completed")
+                self.metrics['process_counts'][count_key] += weight
             else:
-                self.logger.error(f"✗ {label} failed with code {p.returncode}")
-                self.metrics['process_counts'][fail_key] += 1
+                self.logger.error(f"✗ {name} failed with code {p.returncode}")
+                self.metrics['process_counts'][fail_key] += weight
         return still_running
 
     def _collect_remote_results(self):

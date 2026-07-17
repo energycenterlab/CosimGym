@@ -1,6 +1,218 @@
-# HANDOFF: Distributed SSH Federate Spawning
+# HANDOFF: Distributed SSH Federate Spawning — Scaling Fix
 
 Branch: `distributed-ssh-spawning-plan`. **NEVER commit — ask user first.**
+
+**This supersedes the old T1–T7 handoff below the `---`.** That work (base distributed
+spawning: `deployment:` YAML, `RemoteExecutor`, verified via `distributed_demo.yaml`) is
+DONE and merged into this branch's history. This session is a follow-on: distributed runs
+worked for small federate counts but broke at scale. That's what's being fixed now.
+
+## Goal
+
+Make distributed runs (federates spread across manager + remote machines via SSH) scale
+to hundreds of federates per machine, not just a handful. Also fix three related
+operational bugs the user hit while stress-testing: Ctrl+C not killing everything, and
+result folders piling up empty on failed runs.
+
+## Current Progress (IN PROGRESS — one test run currently hanging, not yet root-caused)
+
+### Root cause found and fixed: ssh session/connection limits, not a HELICS limit
+
+`benchmark_scale_distributed.yaml` (201 federates, 36 remote per machine on 2 remote
+machines) failed with `✗ Federate failed with code 255`, logs empty. 255 = ssh's own
+error code. Reproduced standalone (no CosimGym) against `eclab-cloud1`
+(130.192.238.9): 36 concurrent `-tt` ssh sessions over one ControlMaster socket → 7/36
+fail with `mux_client_request_session: session request failed: Session open refused by
+peer` then `kex_exchange_identification: read: Connection reset by peer`. Cause:
+`RemoteExecutor.spawn()` (old code) opened **one ssh session per federate**. sshd's
+`MaxSessions` (default 10, unset on both remotes) refuses sessions past 10 on one
+connection; ssh then silently opens a **new TCP connection** per refusal, and sshd's
+`MaxStartups` (default `10:30:100`) **probabilistically drops** those past 10 concurrent
+unauthenticated connections — hence the nondeterministic failure count run to run.
+
+**I had earlier (wrongly) attributed this to a "zmq_ss federate ceiling" (~33 federates)
+and told the user to avoid scaling past it. That diagnosis is RETRACTED.** Proof: ran
+201 federates fully local (same `zmq_ss` core, `benchmark_scale_local.yaml`) → 0
+failures, 15s total. The ceiling was ssh sessions per machine, not HELICS/zmq_ss at all.
+
+### Fix implemented: one ssh session per machine, not per federate
+
+- **New `src/core/remote_spawner.py`**: runs ON the remote machine. Reads its machine's
+  federate list from Redis (key `cosim:spawn:<sim_id>:<alias>`, NOT passed as argv — so
+  the ssh command line is fixed-size regardless of federate count), spawns each as a
+  local child (not `setsid`'d — stays in this process's group so a SIGHUP reaches all of
+  them), supervises them, tears all down together (SIGTERM to all, then one bounded
+  wait, then SIGKILL stragglers) on first failure or on receiving
+  SIGTERM/SIGINT/SIGHUP itself.
+- **`RemoteExecutor.spawn()` → `RemoteExecutor.spawn_many(spawn_key, redis_url,
+  remote_log_file)`** (`src/core/remote_executor.py`): opens ONE `-tt` ssh session
+  running `remote_spawner.py`. Old `spawn()` deleted, not deprecated — nothing else
+  called it.
+- **`ScenarioManager` (`src/core/ScenarioManager.py`)**:
+  - `_create_remote_federate` now only QUEUES a federate spec into
+    `self._pending_remote_federates[host_alias]` — does not spawn. (A machine's
+    federates can span multiple federations, so nothing can spawn until every
+    federation's setup loop has run.)
+  - New `_spawn_remote_batches()`: called once after ALL federations are set up
+    (`_setup_classic_scenario`, right after the federation loop). For each machine
+    alias with pending federates: publishes the list to Redis, calls
+    `executor.spawn_many(...)`. The returned `Popen` (the ssh child) gets two synthetic
+    attrs, `_cosim_weight` (= federate count on that machine) and `_cosim_label`
+    (e.g. `"Remote machine 'machine_a' (36 federates)"`), so downstream counting/logging
+    treats one ssh child as N federates instead of 1.
+  - `_collect_completed` (used by `_monitor_processes`) reads `_cosim_weight`/
+    `_cosim_label` (defaulting to 1/`label` for local federates, which have neither
+    attr) so `federates_started`/`_completed`/`_failed` counters stay in units of
+    federates, and the log line names the batch, not an anonymous "Federate".
+  - `_spawn_keys` list + cleanup in `_emergency_cleanup`: deletes the per-machine Redis
+    spawn-list keys on teardown (mirrors the existing `self.redis_key` deletion).
+
+Both this design's safety properties were verified BEFORE writing code (not assumed):
+- one ssh session CAN spawn 100+ remote children — tested standalone, confirmed.
+- killing the local ssh client (SIGHUP via `-tt` pty) DOES kill all of that machine's
+  children — tested standalone, confirmed (0 leftover after kill).
+- ONE failing child DOES abort that machine's batch fast (~3s), not after the slowest
+  child's timeout — tested standalone, confirmed (`wait -n` loop pattern).
+
+### Fix implemented: double-Ctrl+C orphan bug
+
+`_signal_handler` (`ScenarioManager.py`) used to call `_emergency_cleanup()` then
+`exit(0)` with no re-entrancy guard. A second SIGINT while cleanup was still running
+(killing federates one by one) re-entered the handler, `_emergency_cleanup` early-
+returned on its `_cleanup_done` flag, and `exit(0)`'s `SystemExit` unwound through the
+**first** cleanup's kill loop, abandoning everything not yet reached. Measured before
+the fix: 83–124 orphaned local federates out of 201 on a double Ctrl+C ~0.3–1s apart;
+0 orphans on a single, patient Ctrl+C. **Fix**: `_signal_handler` now does
+`signal.signal(SIGINT, SIG_IGN)` and same for `SIGTERM` as its first action, before
+anything else — further interrupts during this process's remaining lifetime (which is
+just cleanup) are ignored outright, so there is no re-entrant window.
+
+### Fix implemented: empty result-folder pileup
+
+`_setup_results_folder()` creates `results/<scenario>/<sim_id>/` and writes
+`metadata.json` during SETUP, before any federate runs. Every failed run (very common
+while stress-testing sshd's limits) left one of these behind containing only that stub
+— 19 accumulated during this debugging session. **Fix**: new
+`_prune_empty_results_folder()`, called from `_emergency_cleanup` (all exit paths). If
+the run's results dir contains nothing but `metadata.json` anywhere under it, delete
+the whole dir. Any real result file present anywhere → no-op. Never raises.
+
+### Tests
+
+`tests/test_remote_executor.py`'s `TestSpawnUsesPtyAndDetachedGroup` rewritten for
+`spawn_many` (asserts remote command runs `remote_spawner.py` with the Redis spawn key,
+and explicitly asserts `federate_launcher.py` does NOT appear in the ssh argv — proving
+the command line no longer grows with federate count).
+
+`pytest tests/test_remote_executor.py tests/test_scenario_manager_remote.py
+tests/test_deployment_config.py -q` → **38 passed, 1 skipped** (the 1 skip is the
+pre-existing gated live-loopback test, `COSIMGYM_TEST_SSH_LOCALHOST=1` not set).
+
+Full suite NOT yet re-run after these changes — do that before considering this task
+done (`pytest tests/ -q`).
+
+### Live 201-federate test: PROGRESS BUT NOT YET GREEN
+
+Ran `benchmark_scale_distributed` (201 federates: ~129 local on manager, 36 each on
+`eclab-cloud1`/`eclab-cloud5`) end to end:
+
+- **The ssh-255 failure is GONE.** 0 occurrences of `failed with code` in this run's
+  log — the batching fix works as far as spawn reliability goes.
+- **But the run then hung** and was still running at the 500s timeout I set, so I sent
+  it SIGTERM from outside. Cleanup (both new fixes) DID work correctly on that SIGTERM:
+  clean shutdown logged, 0 local orphans, 0 orphans on either remote afterward.
+- **Not yet root-caused why it hung.** What I'd found right before being interrupted:
+  - Manager's own `federation_manager.log` for that run was completely empty — odd,
+    worth checking log level / whether the manager log handler is even attached at that
+    point, or whether output is buffered and lost on SIGTERM.
+  - Exactly one stdio log had content:
+    `federates/federate_weather_federate.stdio.log` contained only:
+    `[console] [warning] weather_federate (...)[t=24]:: disconnect Timer expired forcing disconnect`
+    — this is a LOCAL federate (weather_federate isn't `host:`-tagged in this scenario,
+    confirm by grepping the YAML), and "Timer expired forcing disconnect" is a HELICS
+    message meaning that federate's *own* disconnect timer fired because it never
+    finished — i.e. it was one of the ones still stuck when I killed the run, not
+    necessarily the federate that caused the stall.
+  - Broker log showed normal startup: broker up, listening, `--federates=201` from
+    `federation_1.broker`, and at least one federate (`root`) connected successfully
+    (log cuts off there in what I'd read so far).
+  - I had NOT yet checked: whether all 201 federates actually connected to the broker
+    (partial join = classic HELICS hang, federation waits forever for the missing
+    ones), whether `remote_spawner.py` itself started correctly on both remotes and
+    actually launched 36 children each (its own stdout goes to
+    `federates/_spawner_<alias>.log` on the remote, collected back by rsync — I hadn't
+    checked whether that file even made it back, since the run was killed rather than
+    finishing cleanly, and `_collect_remote_results` may not have had a chance to run
+    on a SIGTERM-based abort — worth checking whether cleanup collects remote logs on
+    the interrupt path or only on the success path).
+
+## What Worked
+
+- **Test infrastructure hypotheses standalone, outside CosimGym, before touching code.**
+  Every claim in the "Fix implemented" sections above (sshd limits, batching viability,
+  SIGHUP propagation, fast-fail propagation) was proven with bare `ssh`/`bash` loops
+  against the real remote machines FIRST. This is what caught that my first-instinct fix
+  ("just throttle spawns" or "raise MaxSessions on the remotes") would have been wrong —
+  measured that ssh clients cost ~41MB RSS each and live for the whole run, so 1000
+  target federates = O(federates) manager processes forever, not just a startup hiccup.
+  User explicitly asked to think about scaling before implementing; this line of
+  investigation is why the recommendation changed from "throttle" to "batch per
+  machine."
+- Reading `remote_executor.py` and `ScenarioManager.py`'s existing `_create_local_federate`/
+  `_create_remote_federate`/`_monitor_processes`/`_collect_completed` fully before writing
+  new code — the batching design (queue-then-flush, `_cosim_weight`/`_cosim_label` on the
+  Popen handle) was shaped to slot into the existing counter/monitor code with minimal
+  disruption rather than a parallel bookkeeping path.
+- Redis as the spawn-list channel: remotes already reach the manager's Redis (verified
+  reachable on both `eclab-cloud1`/`eclab-cloud5` before deciding on this), and every
+  federate already fetches its config from Redis, so this reuses an existing channel
+  instead of inventing a new one.
+
+## What Didn't Work / Retracted
+
+- **"zmq_ss has a ~33-federate ceiling" — WRONG, retracted this session.** Was actually
+  the ssh session limit. Don't reintroduce core-type warnings or federate-count caps
+  based on that old (bad) data.
+- Raising `MaxSessions`/`MaxStartups` on the remote sshd — considered, rejected. Needs
+  sudo on shared machines the user doesn't own outright, and doesn't fix the underlying
+  O(federates) manager-side ssh-client cost; just moves the wall further out.
+- Two of my early process-count measurements during earlier Ctrl+C debugging (see old
+  section below) were wrong before being corrected — worth remembering the counting
+  pitfalls if writing more diagnostic scripts: `pgrep -c -f federate_launcher.py`
+  matches the ssh CLIENT process too (its argv contains the remote command string), and
+  `pgrep -c ... || echo 0` double-counts on a match. The correct pattern used throughout
+  this session:
+  `ps -eo args= | grep -F federate_launcher.py | grep -vE "^(ssh|bash|sh) " | grep -cE "^(/[^ ]*)?python[0-9.]* "`.
+
+## Next Steps
+
+1. **Root-cause the 201-federate hang** (the actual current blocker). Suggested angle:
+   rerun with a SHORTER timeout and, before killing it, check
+   `ss -tn state established '( dport = :23404 or sport = :23404 )'` on the manager to
+   count actual broker connections against the expected 201, and check both remotes for
+   `ps -eo args= | grep remote_spawner.py` / count of federate children each spawned —
+   this tells you whether it's a partial-join hang (some federates never got spawned or
+   never reached the broker) vs. something else (e.g. sync/offset stall once all 201
+   *did* join). Also check why `federation_manager.log` was empty for that run — may be
+   a log level or buffering issue unrelated to the hang itself but worth fixing
+   regardless.
+2. Once the hang is understood and fixed (or confirmed to be a pre-existing scenario
+   config issue unrelated to this session's spawn-batching change — test against the
+   OLD per-federate-spawn code on a small scenario to isolate whether the hang is new),
+   re-run the 201-federate distributed scenario to a clean completion and confirm result
+   files land (not just metadata.json).
+3. Run the full test suite: `pytest tests/ -q` (only the 3 targeted files were run this
+   session).
+4. `graphify update .` (per CLAUDE.md rule — not yet run this session for the new
+   `remote_spawner.py` file or the `ScenarioManager.py`/`remote_executor.py` edits).
+5. Re-verify the ORIGINAL small-scale distributed demo still passes after the spawn
+   dispatch change (`python src/verify_distributed_demo.py` — see old section below) —
+   the queue-then-batch refactor touches the same code path that demo exercises.
+6. Ask user before committing. Do not commit mid-debug.
+
+---
+
+# ORIGINAL HANDOFF (T1–T7, base distributed-spawning feature — DONE, retained for reference)
 
 ## Goal
 
@@ -96,279 +308,16 @@ Full suite after T5: `pytest tests/ -q` → **145 passed, 2 skipped** (140 + 5 n
   (`pv_batt_test_base`), then compares every recorded federate timeseries (reuses
   `dashboard_data.load_all_records`) within `1e-9`. `--no-run` compares latest existing runs only.
   Import/entry verified (`--no-run` runs, correctly reports the demo hasn't executed yet).
-- **Live E2E NOT executed — two environment blockers on this machine:**
-  1. **Passwordless key-based ssh to 127.0.0.1 is not set up.** Both `id_ed25519` and `id_rsa`
-     exist but neither pubkey is in `~/.ssh/authorized_keys`. Enabling it (append own pubkey) was
-     **denied by the Claude Code auto-mode classifier as unauthorized persistence** — the USER must
-     do this manually: `ssh-copy-id -i ~/.ssh/id_ed25519 127.0.0.1` (or append the pubkey), then
-     `ssh 127.0.0.1 true` once to accept the host key.
-  2. **cosim Redis+Mosquitto stack is not up** — only an unrelated `project1-boptest_redis_1`
-     occupies host port 6379, which will **conflict** with `src/docker-compose.yaml`'s Redis
-     (also binds 6379). That container must be stopped (or the compose port remapped) before
-     `docker compose -f src/docker-compose.yaml up -d`.
-  - Note: `conda run -n cosim_gym python -c "import helics,redis"` DOES work in a non-interactive
-    bash on this machine, so the demo's `conda_env: cosim_gym` default should resolve over ssh; if
-    not, uncomment the `python:` line in the demo YAML.
-- Once both blockers cleared: `python src/verify_distributed_demo.py` is the one-command E2E +
-  acceptance check. Also do the Ctrl+C-mid-run orphan check: start the demo, Ctrl+C, then
-  `pgrep -f <sim_id>` on the remote must be empty (validates `_cleanup_remote_execution`'s pkill).
 
----
-
-### Original T1–T4 progress (retained for reference)
+## Original T1–T4 progress (retained for reference)
 
 **T1, T2, T3: DONE. T4 — Spawn dispatch + address normalization: DONE.**
 
-**T4 details:**
-
-- `src/core/ScenarioManager.py`:
-  - `_setup_local_federation`'s federate loop now calls new `_create_federate(...)` instead of
-    `_create_local_federate(...)` directly. `_create_federate` dispatches on
-    `getattr(federate_config, 'host', None)`: set → `_create_remote_federate`, else →
-    `_create_local_federate` (unchanged local behavior). Both append to
-    `self.federate_processes`, so `_monitor_processes`/cleanup need zero branching.
-  - New `_build_federate_args(federate_name, federate_config, federation_name, redis_url,
-    log_file)`: the CLI arg list (minus interpreter/script tokens) shared by both spawn paths —
-    extracted verbatim from the old `_create_local_federate` body.
-  - New `_redis_url_for(federate_config)`: returns `redis://<manager_address>:<port>/<db>` for a
-    remote federate, else `self.redis_url` unchanged. Uses `self._redis_port`/`self._redis_db`,
-    two new attrs stashed in `_upload_config_on_redis` (alongside the existing `self.redis_url`)
-    specifically so this method never has to re-parse a URL string.
-  - `_create_local_federate`: same behavior as before, just now calls `_build_federate_args` +
-    prepends `['python', federate_launcher]` — no functional change, verified via a real
-    end-to-end run (see below).
-  - New `_create_remote_federate(federate_name, federate_config, federation_name, host_alias)`:
-    looks up `self.remote_executors[host_alias]` (populated by T3's `_setup_remote_execution`),
-    builds a remote log path by joining `machine_conf.workdir` + the *relative*
-    `str(self.logger_system.scenario_log_dir)` (this Path is already relative to the project
-    root — `FederationLogger.__init__` does `Path("logs") / scenario_name / run_timestamp` — so
-    joining it onto a remote `workdir` reproduces the exact same relative layout there; T5's
-    rsync-back needs no path translation). Calls `executor.spawn(launcher_args, remote_stdio_file)`
-    where `launcher_args = ['src/core/federate_launcher.py'] + _build_federate_args(...)`.
-  - `_setup_remote_execution` (T3 method, extended here): after `executor.deploy(project_root)`,
-    also `mkdir -p <workdir>/<scenario_log_dir_rel>/federates` via `executor.run(...)` — needed
-    because `setup_process_logger`'s `logging.FileHandler` does NOT create parent directories
-    (confirmed by reading `utils/logging_config.py`); locally this dir is pre-created by
-    `FederationLogger.__init__`, so the remote path needs the equivalent explicit mkdir before
-    any federate on that machine spawns.
-  - `_normalize_broker_and_core_configs`: added `default_broker_host` (computed once, near the
-    top of step 3) = `deployment.manager_address` when `self._has_remote_federates()` and a
-    `deployment` block exists, else `'127.0.0.1'` (unchanged default). Used in place of the two
-    previously-hardcoded `'127.0.0.1'` spots: (1) each federation broker's `broker_conf.host`
-    default, (2) the hierarchy/main broker's `host`/`address` and the
-    `main_broker_address` string built for multi-federation scenarios. An explicit YAML
-    `broker_config.host` still overrides in both cases. Added a docstring note that HELICS' tcp
-    core binds all interfaces by default, so advertising the LAN address needs no
-    `--local_interface` flag change — flagged in the plan as something to verify, not proven
-    with a real 2-machine run yet (that's T6's job).
-  - **Note**: `self.config.multi_computer`/`multi_computer_config` (a pre-existing, separate,
-    unimplemented stub predating this feature) was left completely untouched — its `if` branch
-    still just logs an error and does nothing; only the `else` branch (the real path, used by
-    both local scenarios and the new `deployment:` mechanism) was touched.
-- `src/core/federate_launcher.py`: right after parsing `redis_host`/`redis_port` out of
-  `--redis-url` (existing code), added
-  `os.environ.setdefault('REDIS_HOST', redis_host)` / `.setdefault('REDIS_PORT', ...)` /
-  `.setdefault('MQTT_HOST', redis_host)`. **Why this was needed** (audit findings, per plan's T4
-  checklist):
-  - `core/override_registry.py`'s `OverrideRegistry.__init__` builds its own `RedisClient` from
-    `os.getenv('REDIS_HOST', 'localhost')`/`REDIS_PORT` — NOT from any URL passed in. Without
-    this fix, a remote federate with `override_enabled: true` would silently try to reach Redis
-    on ITS OWN localhost instead of the manager, and fail (or worse, silently connect to an
-    unrelated local Redis if one happened to be running there).
-  - `BaseFederate._stream_outbound` (the opt-in `streaming: stream: true` MQTT mirror) builds its
-    `MqttAdapter` from `os.getenv('MQTT_HOST', 'localhost')` — same problem, same fix.
-  - Used `setdefault` (not unconditional set) so an operator's own `REDIS_HOST`/`MQTT_HOST`
-    env var override, if they ever set one, still wins.
-  - Since Redis and Mosquitto always run together on the manager machine (docker-compose), and
-    `--redis-url` was already being correctly resolved per-federate by `_redis_url_for`
-    (localhost locally, `manager_address` remotely), this fix needed zero new CLI args — just
-    reuse the value already being parsed.
-  - **NOT changed**: the `InterfaceFederate`'s adapter-based MQTT path (`interface_config.adapter.params.host`,
-    catalog default `localhost`, catalog entry at `src/models/model_catalog/catalog.yaml:2801`).
-    That path is already fully YAML-configurable per scenario (unlike the streaming path above,
-    which had no such escape hatch) — per the plan's own conditional ("if adapter address comes
-    from scenario config already, just document"), this needs a T7 docs note telling users to set
-    `adapter.params.host: <manager_address>` for a remote interface federate, not a code change.
-- **Real end-to-end verification** (not just pytest): ran two existing local scenarios through
-  `ScenarioManager.start_scenario()` against the live `cosim_redis`/`cosim_mosquitto` docker
-  containers: `pv_batt_test_base` (plain local dispatch path) and
-  `m4_interface_override_smoke_test` (exercises `OverrideRegistry`, proving the
-  `REDIS_HOST`/`MQTT_HOST` env-var `setdefault` doesn't break the local case). Both completed
-  successfully.
-- Test-suite adjustment: `tests/test_scenario_manager_remote.py`'s
-  `test_verify_and_deploy_called_for_each_machine` now sets
-  `fake_executor.run.return_value = (0, '', '')` and asserts `fake_executor.run.assert_called_once()`,
-  since `_setup_remote_execution` now calls `executor.run(...)` once (the federates-dir mkdir)
-  after `deploy()`.
-- Full suite after T4: `pytest tests/ -q` → **140 passed, 2 skipped** (same 2 pre-existing skips —
-  test count unchanged from T3 since T4 added no new test file, only extended existing ones).
-- `graphify update .` run after the change.
-
-**T3 details:**
-
-- `src/core/ScenarioManager.py`:
-  - New import: `from core.remote_executor import RemoteExecutor`.
-  - `__init__`: added `self.remote_executors: Dict[str, RemoteExecutor] = {}` next to the
-    existing `broker_processes`/`federate_processes` lists — empty dict is the "fully local"
-    state, checked by later remote-dispatch code (T4) with a plain truthiness/`in` check.
-  - New `_has_remote_federates()`: walks all federations' federate_configs, `True` if any has
-    `host` set.
-  - New `_setup_remote_execution()`: no-ops immediately if `_has_remote_federates()` is False
-    (zero `RemoteExecutor` construction, zero ssh — verified by a test that makes
-    `RemoteExecutor(...)` raise if called on a local-only scenario). Otherwise: for each unique
-    `host` alias in use, builds a `RemoteExecutor` (control_dir =
-    `<scenario_log_dir>/ssh_control`, project_root = repo root via
-    `Path(__file__).resolve().parents[2]`, same pattern `_setup_results_folder` already uses),
-    calls `open_master()`, stores in `self.remote_executors`. Then calls `verify()` + `deploy()`
-    on every executor. On ANY exception in that second loop: closes every already-opened
-    executor, resets `self.remote_executors = {}`, re-raises — so a mid-way preflight failure on
-    machine 2 doesn't leak machine 1's control socket, and the scenario aborts before any broker
-    starts.
-  - Wired into `_setup_classic_scenario()`: `self._setup_remote_execution()` called right after
-    `_setup_results_folder()`, before `_normalize_broker_and_core_configs()` — i.e. before any
-    broker or federate process is spawned, satisfying the plan's "fail whole scenario on any
-    preflight failure BEFORE any broker starts" requirement.
-- New `tests/test_scenario_manager_remote.py` — 5 tests. Technique: builds a `ScenarioManager`
-  via `object.__new__(ScenarioManager)` + hand-set attrs (`config`, `logger`, `logger_system`,
-  `remote_executors`) instead of the real `__init__` (which needs a live Redis connection and
-  full logging setup) — isolates `_has_remote_federates`/`_setup_remote_execution` logic cleanly.
-  Monkeypatches `RemoteExecutor` via `sys.modules['core.ScenarioManager']` (NOT via the dotted
-  string `'core.ScenarioManager.RemoteExecutor'` — `core/__init__.py` does
-  `from .ScenarioManager import ScenarioManager`, which rebinds the `core.ScenarioManager`
-  *package attribute* to the class, shadowing the submodule; `monkeypatch.setattr` with a string
-  path resolves through that attribute chain and hits the class instead of the module. Getting
-  the module out of `sys.modules` directly sidesteps it. Worth remembering for any future test
-  that needs to monkeypatch something inside `ScenarioManager.py`).
-  Covers: no-op for local-only scenario, executor built+verified+deployed for a remote-federate
-  scenario, and preflight failure aborts + closes already-opened masters.
-- **Real end-to-end verification, not just tests**: ran `pv_batt_test_base` (existing local
-  scenario, no `deployment:` block) through `ScenarioManager.start_scenario()` directly against
-  the running `cosim_redis` docker container — completed successfully, confirming the new
-  no-op call in `_setup_classic_scenario` doesn't disrupt the real local path (not just under
-  pytest mocks).
-- Full suite after T3: `pytest tests/ -q` → **140 passed, 2 skipped** (same 2 pre-existing skips).
-- `graphify update .` run after the change.
-
-**T2 details:**
-
-**T2 details:**
-
-- New `src/core/remote_executor.py`, class `RemoteExecutor(machine_alias, machine_conf,
-  manager_address, logger, control_dir)`. No `ScenarioManager` import (standalone/testable).
-- Design choice: split every ssh/rsync invocation into a pure `_*_cmd(...)`/`_build_remote_command(...)`
-  builder (returns argv list or command string, no subprocess call) and a thin execution method
-  that calls `subprocess.run`/`Popen` with that builder's output. This is what let T2's tests
-  assert on exact argv/quoting without ever touching a real ssh connection.
-- Methods implemented: `open_master()`, `run(cmd, timeout)`, `verify()` (4 preflight checks:
-  control-conn alive, workdir writable, `import helics, redis, pydantic` in the target env,
-  Redis reachable at `manager_address:6379`), `deploy(project_root)` (rsync `src/` → `<workdir>/src`,
-  then `mkdir -p <workdir>/{logs,results}`), `spawn(args_list, remote_log_file)` (returns the ssh
-  child `Popen`; `-tt` pty so SIGHUP on kill propagates to the remote process; remote stdout/stderr
-  appended into `remote_log_file`), `collect(remote_path, local_path)` (rsync back), `close()`
-  (never raises — closes ControlMaster via `ssh -O exit`).
-- Control socket path: `<control_dir>/cm-<alias>` — literal per-alias path, not ssh's `%r@%h:%p`
-  token syntax (plan shows the token form but since one `RemoteExecutor` = one alias and the
-  caller already scopes `control_dir` per run, the alias alone is sufficient to guarantee
-  uniqueness — simpler, no behavior difference).
-- Quoting: every remote command token goes through `shlex.quote` individually before joining;
-  never `shell=True` on the local side. Verified with hostile inputs (`;`, `$(...)`, `$VAR`,
-  embedded spaces) in tests.
-- `tests/test_remote_executor.py` — 20 tests (19 run, 1 skipped by default): target/control-path
-  construction, python-cmd resolution (conda vs explicit `python:`), master/run/rsync/spawn/close
-  argv shape, quoting-hostile-input cases, and a `spawn()` test that monkeypatches
-  `core.remote_executor.subprocess.Popen` to assert the built argv without launching real ssh.
-  One `TestLiveLoopback` class gated behind `COSIMGYM_TEST_SSH_LOCALHOST=1` env var (not run by
-  default) for a real ssh-to-127.0.0.1 round trip.
-- **Live ssh not verified in this sandbox** — tried `ssh -o BatchMode=yes 127.0.0.1 true`,
-  got `Host key verification failed` (no passwordless/known-hosts ssh set up in this dev
-  environment). This is an environment limitation, not a code issue. Whoever picks up T6 (the
-  real localhost-as-remote E2E test) needs an environment with working key-based ssh to
-  127.0.0.1 first — `ssh-keygen`, `ssh-copy-id`/append to `authorized_keys`, accept host key once
-  interactively, THEN run the gated live test / T6 demo scenario.
-- Full suite after T2: `pytest tests/ -q` → **135 passed, 2 skipped** (both skips expected/pre-existing).
-- `graphify update .` run after the change.
-
-**T1 details:**
-
-- `src/utils/config_dataclasses.py`:
-  - Added `MachineConfig` (host, user, ssh_port=22, workdir, conda_env='cosim_gym', python=None)
-    and `DeploymentConfig` (manager_address: Optional[str], machines: Dict[str, MachineConfig]),
-    placed in new section before `TOP-LEVEL SCENARIO CONFIG`.
-  - Added `host: Optional[str] = None` to `_FederateConfigBase` (inherited by base/rl/interface).
-  - Added `deployment: Optional[DeploymentConfig] = None` to `ScenarioConfig`.
-  - Added `ScenarioConfig._validate_deployment` (`model_validator(mode='after')`): walks all
-    federates across all federations, no-ops if none set `host:`. If any do: requires
-    `deployment` block present, requires `deployment.manager_address` set, requires each
-    `host:` alias exist in `deployment.machines`, rejects `host:` on `RLFederateConfig` (v1
-    restriction per plan — RL agent must run on manager).
-  - Left `MultiComputerConfig`/`multi_computer` field alone — it's a pre-existing unused stub,
-    unrelated to this feature, not worth touching.
-- New `tests/test_deployment_config.py` — 9 tests: no-deployment-unchanged, MachineConfig
-  defaults, full valid deployment scenario, host-without-deployment rejected, unknown-alias
-  rejected, host-without-manager_address rejected, host-on-rl rejected, deployment-with-no-host
-  is fine.
-- Ran `pytest tests/test_deployment_config.py tests/test_rl_config.py -q` (conda env
-  `cosim_gym`): **96 passed, 1 skipped** (pre-existing unrelated skip, `Adelaide_test.yaml`
-  known-broken YAML). Zero regression on existing scenario parsing.
-- Ran `graphify update .` after the change (per CLAUDE.md rule) — graph current.
-
-## What Worked
-
-- Used `graphify query`/full-file `Read` on `config_dataclasses.py` + `config_reader.py` to
-  orient before editing (project's graphify hook mandates this before raw file reads).
-- Matched existing pydantic v2 style exactly: `model_config = ConfigDict(extra='ignore')` for
-  non-RL blocks (this is a non-RL block, so `ignore` not `forbid` — matches `BrokerConfig`/
-  `FederationConfig` sibling style, not the RL axis's `forbid` style).
-  Cross-field validation lives in a `model_validator(mode='after')` on `ScenarioConfig` (same
-  pattern as `FederationConfig._validate`), because alias-existence check needs the full
-  federations dict.
-- Test fixtures built as plain dicts through `ScenarioConfig.model_validate(...)`, following
-  the existing `test_rl_config.py` convention — no new fixture infra needed.
-
-## What Didn't Work
-
-Nothing hit a dead end in T1. One judgment call worth flagging: `DeploymentConfig.manager_address`
-is `Optional[str]` at the field level (not required), with the "required if any host: set" rule
-enforced in `ScenarioConfig._validate_deployment` instead. This was deliberate — makes the error
-message scenario-aware ("required when any federate sets host:") rather than a generic pydantic
-missing-field error, and allows a `deployment:` block to exist with only `machines:` defined and
-no host-using federates yet (edge case, but no reason to forbid it).
-
-## Next Steps
-
-**Only the live T6 E2E run remains.** All code (T1–T5, T7) is implemented and unit-tested (145
-passed, 2 skipped). To finish:
-
-1. USER: enable passwordless ssh to 127.0.0.1 (`ssh-copy-id -i ~/.ssh/id_ed25519 127.0.0.1`;
-   `ssh 127.0.0.1 true` once). Agent cannot — classifier blocks self-authorizing ssh keys.
-2. Stop `project1-boptest_redis_1` (frees port 6379), then
-   `docker compose -f src/docker-compose.yaml up -d` (cosim Redis + Mosquitto).
-3. `conda activate cosim_gym && python src/verify_distributed_demo.py` → expect `PASS`.
-4. Orphan check: run demo, Ctrl+C mid-run, confirm `pgrep -f <sim_id>` empty afterward.
-5. If green: update this file's status to T6 DONE, then ask user before committing.
-
----
-
-### Original T4–T7 next-steps (retained for reference)
-
-- **T4 — Spawn dispatch + address normalization.** Split `_create_local_federate`
-  (`src/core/ScenarioManager.py:1486`) into `_build_federate_args(...)` (shared, parametrized by
-  redis_url + log_file) and dispatch on `federate_config.host` (executor.spawn vs local Popen),
-  both append to `self.federate_processes`. Fix `_normalize_broker_and_core_configs` (`:1162`) to
-  default broker host to `manager_address` when remote federates exist. Audit + thread
-  `manager_address` through hardcoded-`localhost` spots: redis url arg builder, `OverrideRegistry`
-  (`src/core/override_registry.py`) client construction, `src/adapters/mqtt_adapter.py` broker
-  address.
-- **T5 — Collection + cleanup.** rsync results/logs back after `_monitor_processes` returns,
-  before `_log_execution_summary`; close ControlMaster sockets. `_emergency_cleanup` (`:152`): add
-  per-machine `pkill -f <sim_id>` + master close, wrapped in try/except (cleanup must never raise).
-- **T6 — Demo scenario + E2E test.** `src/scenarios/distributed_demo.yaml` derived from a simple
-  existing 2-federate scenario (e.g. `pv_batt_test_base.yaml`), `deployment` block pointing at
-  `127.0.0.1` (real ssh, real rsync, localhost-as-remote = CI-able pattern), one federate `host:`ed.
-  Verify output matches an all-local twin run.
-- **T7 — Docs.** `docs/user_guide/distributed_deployment.md` (one-time remote setup, YAML
-  reference, troubleshooting table, LAN-trust security note), add `deployment`/`host` to
-  `CLAUDE.md` Config Reference (terse), update plan doc status header.
+See git history / prior conversation for exhaustive T1–T4 file-by-file detail (config
+dataclasses for `deployment:`/`host:`, `RemoteExecutor` class, spawn dispatch, address
+normalization). Not reproduced here to keep this handoff focused on the CURRENT
+(scaling-fix) work — the code is stable and unit-tested; re-read it directly if needed
+rather than trusting a summary of a summary. `graphify query` first per the repo hook.
 
 Constraints that apply to every remaining task (from plan doc, do not drop):
 - Never commit without asking.

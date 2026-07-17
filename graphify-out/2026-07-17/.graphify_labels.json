@@ -153,6 +153,5 @@
   "151": "test_rl_config.py",
   "152": "verify_distributed_demo.py",
   "153": "catalog-loader service",
-  "154": "Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring",
-  "155": "Simple Spring RLlib PPO Test"
+  "154": "Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring"
 }

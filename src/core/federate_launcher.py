@@ -11,10 +11,17 @@ created: 2026-03-17
 """
 
 import argparse
+import faulthandler
+import signal
 import sys
 import os
 from pathlib import Path
 import pprint
+
+# `kill -USR1 <pid>` dumps every thread's Python stack to stderr (the federate's
+# stdio log) — the only stack-inspection channel on hosts where yama ptrace_scope
+# blocks py-spy attachment.
+faulthandler.register(signal.SIGUSR1, all_threads=True)
 
 pp =  pprint.PrettyPrinter(indent=4)
 # Fix imports to work from both project root and when called as subprocess

@@ -35,8 +35,8 @@ from core.ScenarioManager import main, ScenarioManager
 #main('dh_district_jan_base')
 #main('fmu_feedthrough_test')
 #main ('multi_building_grid_test')
-main ('benchmark_parallel_par')
-
+#main ('benchmark_parallel_par')
+main ('benchmark_scale_distributed')
 #main('fmu_feedthrough_test')
 #main('bui0_fmu_test')
 #main ('m5_bk4_demo_a_full_sim')

@@ -25,9 +25,11 @@ HELICS is lockstep, so the slowest machine gates every timestep. An even 1/3
 split would hand a 32-core box the work a 112-core box does ~3.5x faster and the
 distributed run would LOSE. Weather stays on the manager (every site reads it).
 
-MEASURED (8 sites / 33 federates, 720 steps, 3 repeats each):
+MEASURED (8 sites / 33 federates, 720 steps, 3 repeats each, --sink none):
     local        setup ~0.58s   sim ~5.25s
     distributed  setup ~2.44s   sim ~7.72s      => distribution ~1.47x SLOWER
+  (--sink json adds the same result-writing cost to BOTH scenarios, so the
+   comparison stays fair; it just shifts both numbers up.)
 
 That is the expected, honest result and NOT a bug. Two reasons, both structural:
   1. SYNC-BOUND: these models are analytic (~µs/step) while HELICS sync costs
@@ -88,7 +90,7 @@ log_level: ERROR          # quiet: {nfeds} federates would otherwise flood the l
 memory_config:
   batch_size: 1000
   attrs: ["PV_power", "T_indoor", "Q_heat", "P_elec"]
-  sink: none              # timing benchmark: don't measure disk I/O
+  sink: {sink}
 """
 
 DEPLOYMENT = """
@@ -375,7 +377,7 @@ def placement(n_sites, distributed):
     return out
 
 
-def build(n_sites, distributed, start, end, port):
+def build(n_sites, distributed, start, end, port, sink):
     place = placement(n_sites, distributed)
     n_feds = 4 * n_sites + 1
     name = "benchmark_scale_distributed" if distributed else "benchmark_scale_local"
@@ -397,7 +399,7 @@ def build(n_sites, distributed, start, end, port):
         title = f"SCALING BENCHMARK — ALL LOCAL ({n_feds} federates, single machine)"
 
     out = HEADER.format(title=title, placement=pl, twin=twin, name=name,
-                        desc=desc, start=start, end=end, nfeds=n_feds)
+                        desc=desc, start=start, end=end, nfeds=n_feds, sink=sink)
     if distributed:
         out += DEPLOYMENT
     out += SYNC
@@ -424,7 +426,12 @@ def main():
                     help="building+PV sites; 4 federates each (default 8 -> 33 federates, "
                          "the largest size zmq_ss runs reliably here — see module docstring)")
     ap.add_argument("--start", default="2024-01-01")
-    ap.add_argument("--end", default="2024-01-31", help="default 2024-01-31 => 720 hourly steps")
+    ap.add_argument("--end", default="2024-01-02", help="default 2024-01-31 => 720 hourly steps")
+    ap.add_argument("--sink", default="json", choices=("json", "parquet", "none"),
+                    help="memory_config.sink. Default 'json' => results land in "
+                         "results/<scenario>/<sim_id>/ (and are rsynced back from the remotes). "
+                         "Use 'none' for a pure timing run with no disk I/O in the measurement — "
+                         "both scenarios do the same I/O either way, so the comparison stays fair.")
     args = ap.parse_args()
 
     if 4 * args.sites + 1 > 40:
@@ -434,7 +441,7 @@ def main():
 
     here = Path(__file__).parent
     for dist, port in ((False, 23404), (True, 23404)):
-        text = build(args.sites, dist, args.start, args.end, port)
+        text = build(args.sites, dist, args.start, args.end, port, args.sink)
         fn = here / (f"benchmark_scale_{'distributed' if dist else 'local'}.yaml")
         fn.write_text(text)
         print(f"wrote {fn}  ({4*args.sites+1} federates)")

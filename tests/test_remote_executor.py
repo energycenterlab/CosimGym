@@ -164,9 +164,9 @@ class TestRsyncCmds:
 
 
 class TestSpawnUsesPtyAndDetachedGroup:
-    """spawn() itself calls subprocess.Popen — verify the argv it builds without launching ssh."""
+    """spawn_many() itself calls subprocess.Popen — verify the argv it builds without launching ssh."""
 
-    def test_spawn_builds_tty_command(self, monkeypatch):
+    def _spawn_many(self, monkeypatch):
         captured = {}
 
         class _FakeProcess:
@@ -179,15 +179,31 @@ class TestSpawnUsesPtyAndDetachedGroup:
 
         monkeypatch.setattr('core.remote_executor.subprocess.Popen', _fake_popen)
         ex = _executor()
-        proc = ex.spawn(['src/core/federate_launcher.py', '--name', 'fed1'], '/remote/logs/fed1.log')
+        proc = ex.spawn_many(
+            'cosim:spawn:sim1:m1',
+            redis_url='redis://10.0.0.1:6379/0',
+            remote_log_file='/remote/logs/_spawner_m1.log',
+        )
+        return ex, proc, captured
+
+    def test_spawn_many_builds_tty_command(self, monkeypatch):
+        ex, proc, captured = self._spawn_many(monkeypatch)
         assert proc is not None
         cmd = captured['cmd']
         assert '-tt' in cmd
         assert cmd[-2] == ex._target
         remote_cmd = cmd[-1]
         assert remote_cmd.startswith('cd /home/rando/cosimgym_rt &&')
-        assert remote_cmd.endswith('>> /remote/logs/fed1.log 2>&1')
+        assert remote_cmd.endswith('>> /remote/logs/_spawner_m1.log 2>&1')
         assert captured['kwargs']['preexec_fn'] is os.setsid
+
+    def test_spawn_many_runs_spawner_with_redis_key_not_federate_argv(self, monkeypatch):
+        """The command must stay a fixed size: the federate list travels via Redis, not argv."""
+        _ex, _proc, captured = self._spawn_many(monkeypatch)
+        remote_cmd = captured['cmd'][-1]
+        assert 'src/core/remote_spawner.py' in remote_cmd
+        assert 'cosim:spawn:sim1:m1' in remote_cmd
+        assert 'federate_launcher.py' not in remote_cmd
 
 
 @pytest.mark.skipif(

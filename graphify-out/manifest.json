@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "src/core/ScenarioManager.py": {
-    "mtime": 1784282736.366047,
-    "ast_hash": "47dd2ffc170d61213fe335012c1594ef",
+    "mtime": 1784296832.070307,
+    "ast_hash": "0dbbf3b82b7e4ea957f2f7c60b94c261",
     "semantic_hash": ""
   },
   "src/core/__init__.py": {
@@ -60,8 +60,8 @@
     "semantic_hash": "580f450e6edbf6b6c5bb946a73d6fad1"
   },
   "src/core/federate_launcher.py": {
-    "mtime": 1784122385.1615787,
-    "ast_hash": "8fa7d030d7509caef0de7327e06c16d7",
+    "mtime": 1784299313.0318203,
+    "ast_hash": "c83d503e5782bef3c969b7a8736f7f28",
     "semantic_hash": ""
   },
   "src/core/override_registry.py": {
@@ -920,18 +920,18 @@
     "semantic_hash": ""
   },
   "src/core/remote_executor.py": {
-    "mtime": 1784279731.787913,
-    "ast_hash": "df9ea286aed41367f46645d526e6bf5c",
+    "mtime": 1784296225.78487,
+    "ast_hash": "06ac2d679e3c0253a0de52da89a8371d",
     "semantic_hash": ""
   },
   "tests/test_remote_executor.py": {
-    "mtime": 1784127192.8891866,
-    "ast_hash": "d549b16bca65016a59255ca6beaf3c2f",
+    "mtime": 1784296911.268891,
+    "ast_hash": "0c65a147b02e6a7f23476742cdd27780",
     "semantic_hash": ""
   },
   "HANDOFF.md": {
-    "mtime": 1784127893.5333424,
-    "ast_hash": "a8c9b68862b21bdefe2abddd0d4b150b",
+    "mtime": 1784298756.8702838,
+    "ast_hash": "3881dffea66dfb6a10e12fc72860fec6",
     "semantic_hash": ""
   },
   "tests/test_scenario_manager_remote.py": {
@@ -980,18 +980,28 @@
     "semantic_hash": ""
   },
   "src/scenarios/generate_scale_benchmark.py": {
-    "mtime": 1784285522.028058,
-    "ast_hash": "24a330bf22d12fdbf8a114f419167715",
+    "mtime": 1784291249.1099436,
+    "ast_hash": "b4647d1e0dbdf5498991e91e40cc282c",
     "semantic_hash": ""
   },
   "src/scenarios/benchmark_scale_distributed.yaml": {
-    "mtime": 1784285533.3878453,
-    "ast_hash": "b4b199be7babfb00d3756e3c0688b7af",
+    "mtime": 1784294241.44084,
+    "ast_hash": "4c678322557328e25b0d4dc71d6fc753",
     "semantic_hash": ""
   },
   "src/scenarios/benchmark_scale_local.yaml": {
-    "mtime": 1784285533.3878453,
-    "ast_hash": "4454a935da37260a6f47c8e1e87a49e8",
+    "mtime": 1784294241.44084,
+    "ast_hash": "e6e9eb5a771cd4933511fb7d3b0eb981",
+    "semantic_hash": ""
+  },
+  "src/core/remote_spawner.py": {
+    "mtime": 1784296196.9333534,
+    "ast_hash": "70eacec2eae4d40e94b30dff85697706",
+    "semantic_hash": ""
+  },
+  "src/scenarios/benchmark_scale_distributed_debug.yaml": {
+    "mtime": 1784299361.9869053,
+    "ast_hash": "44e11064db090441cd7ec4ab0edb6b2f",
     "semantic_hash": ""
   }
 }
