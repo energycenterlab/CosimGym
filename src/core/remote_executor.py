@@ -210,6 +210,14 @@ class RemoteExecutor:
         to the remote python process — same cleanup-for-free property as local process groups.
         Remote stdout/stderr are appended into `remote_log_file` (mirrors the local stdio-capture
         file used to catch exceptions that bypass the federate's own logger).
+
+        stdin MUST NOT be inherited. `-tt` forces pty allocation, and when ssh's stdin is the
+        manager's terminal that also drags the *local* terminal into raw mode — where the tty
+        driver stops turning Ctrl+C into SIGINT and forwards a raw 0x03 to the remote instead.
+        The manager then never sees the interrupt and the run cannot be stopped by hand (with
+        several remote federates, each ssh child fights over the same terminal). Pointing stdin
+        at /dev/null makes ssh's tcgetattr fail, so it leaves the terminal alone while `-tt`
+        still forces the remote pty. Federates never read stdin anyway.
         """
         remote_cmd = self._build_remote_command(args_list, remote_log_file)
         ssh_cmd = self._run_cmd(remote_cmd, tty=True)
@@ -217,6 +225,7 @@ class RemoteExecutor:
         process = subprocess.Popen(
             ssh_cmd,
             preexec_fn=os.setsid,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )

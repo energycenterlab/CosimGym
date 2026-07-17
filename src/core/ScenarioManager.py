@@ -51,6 +51,19 @@ class ScenarioManager:
     - Graceful shutdown and emergency cleanup
     - Process monitoring and error handling
     """
+
+    # How long to let brokers exit on their own after the last federate is gone,
+    # before cleanup terminates them (see _monitor_processes).
+    BROKER_SHUTDOWN_GRACE_S = 30
+
+    # How long a freshly spawned broker gets to start accepting connections
+    # before startup is declared failed (see _wait_for_broker_listening).
+    BROKER_STARTUP_TIMEOUT_S = 15
+
+    # Broker hosts that mean "this machine only". A broker advertised on any other
+    # address must bind all interfaces to be reachable (see _broker_binds_externally).
+    LOOPBACK_HOSTS = frozenset({'localhost', '127.0.0.1', '::1'})
+
     def __init__(self, config_path):
         """
         Initialize the ScenarioManager with configuration.
@@ -140,7 +153,9 @@ class ScenarioManager:
                 'brokers_started': 0,
                 'federates_started': 0,
                 'brokers_completed': 0,
-                'federates_completed': 0
+                'federates_completed': 0,
+                'brokers_failed': 0,
+                'federates_failed': 0
             }
         }
 
@@ -289,11 +304,25 @@ class ScenarioManager:
 
             # Distributed SSH: pull each remote federate's results + logs back to the
             # manager before the run is declared complete. No-op for local scenarios.
+            # Runs before the exit-code verdict below on purpose: a failed run is
+            # exactly when the remote logs are needed to diagnose it.
             self._collect_remote_results()
 
             self.metrics['simulation_end'] = datetime.now()
             duration = (self.metrics['simulation_end'] - self.metrics['simulation_start']).total_seconds()
             self.metrics['phase_durations']['simulation_duration'] = duration
+
+            # _monitor_processes returning means every federate exited — not that any
+            # of them succeeded. Without this check a run where all federates died on
+            # startup still reported "completed successfully".
+            failed = self.metrics['process_counts']['federates_failed']
+            if failed:
+                started = self.metrics['process_counts']['federates_started']
+                raise RuntimeError(
+                    f"{failed}/{started} federate(s) exited with a non-zero code — see the per-federate "
+                    f"logs under {self.logger_system.scenario_log_dir}/federates/"
+                )
+
             self.logger.info(f"Simulation completed in {duration:.3f} seconds")
             success = True
 
@@ -1256,6 +1285,86 @@ class ScenarioManager:
 
         return available_ports
     
+    def _broker_binds_externally(self, broker_conf):
+        """True if this broker must accept connections from other machines.
+
+        Keyed on the advertised host rather than on `_has_remote_federates()` so an
+        explicit LAN `broker_config.host` in the YAML is honored too. Loopback-advertised
+        brokers keep binding loopback only — an all-local scenario must not start
+        listening on every interface just because this code path grew a remote mode.
+        """
+        return bool(broker_conf.host) and broker_conf.host not in self.LOOPBACK_HOSTS
+
+    def _port_is_free(self, port):
+        """True if a broker could bind `port` on this machine right now.
+
+        Probing by bind rather than by connecting keeps the check passive: it never
+        opens a TCP connection to a broker's zmq socket, so it cannot be mistaken for
+        a malformed peer.
+
+        SO_REUSEADDR matters — it makes this probe agree with what the broker itself
+        can do. A broker that just exited leaves its federate connections in TIME_WAIT
+        for up to a minute; a plain bind() reports those ports as taken even though no
+        process is listening, so back-to-back runs of the same scenario would fail on a
+        port the broker would have bound fine. With SO_REUSEADDR, TIME_WAIT is ignored
+        (as the broker ignores it) while a live listener still fails the bind — which is
+        the only case worth reporting.
+        """
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind(('', port))
+                return True
+            except OSError:
+                return False
+
+    def _broker_ports(self, broker_conf):
+        """Every port a broker occupies: the advertised one, plus zmq's paired reply socket."""
+        ports = [broker_conf.port]
+        if broker_conf.core_type == 'zmq':
+            ports.append(broker_conf.port + 1)
+        return ports
+
+    def _assert_broker_ports_free(self, broker_conf, label):
+        """Fail before spawning a broker whose ports are already taken.
+
+        Most often an orphaned broker from an earlier run: it keeps holding the port,
+        the new broker dies on bind, and every federate then times out against nothing.
+        Naming the real problem here beats debugging it from five federate timeouts.
+        """
+        taken = [str(p) for p in self._broker_ports(broker_conf) if not self._port_is_free(p)]
+        if taken:
+            raise RuntimeError(
+                f"{label}: port(s) {', '.join(taken)} already in use — most likely an orphaned broker "
+                f"from an earlier run. Find it with:  ps -eo pid,args | grep -F helics_broker"
+            )
+
+    def _wait_for_broker_listening(self, broker_process, broker_conf, label):
+        """Block until the broker is really accepting connections, or raise.
+
+        A brief sleep is not enough: a broker that cannot bind stays alive for several
+        seconds before giving up, so a short check sees a live process and reports
+        success — then every federate burns its full connection timeout against a broker
+        that was already dead, and the only real error sits in the broker log. Waiting
+        for the ports to actually be occupied surfaces the failure here instead.
+        """
+        ports = self._broker_ports(broker_conf)
+        deadline = time.time() + self.BROKER_STARTUP_TIMEOUT_S
+        while time.time() < deadline:
+            if broker_process.poll() is not None:
+                _, stderr = broker_process.communicate()
+                raise RuntimeError(
+                    f"{label} exited during startup with code {broker_process.returncode}: "
+                    f"{stderr.decode(errors='replace').strip() or '(no stderr output)'}"
+                )
+            if all(not self._port_is_free(p) for p in ports):
+                return
+            time.sleep(0.1)
+        raise RuntimeError(
+            f"{label} did not start listening on port(s) {', '.join(str(p) for p in ports)} "
+            f"within {self.BROKER_STARTUP_TIMEOUT_S}s"
+        )
+
     def _normalize_broker_and_core_configs(self):
         """
         Resolve a fully-specified, internally-consistent broker/core/protocol
@@ -1302,6 +1411,25 @@ class ScenarioManager:
         core_type = next(iter(explicit_core_types), 'tcp')
         self.logger.info(f"Resolved scenario-wide HELICS protocol (core_type): '{core_type}'")
 
+        # Distributed scenarios on a non-single-socket protocol are a footgun worth naming
+        # up front: with `zmq`/`tcp` every federate core binds its OWN inbound listener
+        # (broker_port + 10 + n) and the broker dials back into it, so each remote must be
+        # directly reachable from the manager on those ports. That fails outright when the
+        # remotes sit behind NAT — the core advertises the private address it bound, the
+        # broker's reply is unroutable, and the only symptom is every remote federate dying
+        # with "core is unable to register and has timed out" long after a *successful* TCP
+        # connect. The `_ss` (single-socket) variants carry all traffic over the core's own
+        # outbound connection, need no inbound listener, and are NAT-proof.
+        if self._has_remote_federates() and not core_type.endswith('_ss'):
+            self.logger.warning(
+                f"Scenario has remote federates but core_type is '{core_type}'. Each remote "
+                f"federate core will bind its own port and the broker must reach it directly — "
+                f"this cannot work if the remotes are behind NAT, and needs the core port range "
+                f"open inbound on every remote otherwise. Prefer core_type: '{core_type}_ss' "
+                f"(single socket, outbound-only) for distributed runs. "
+                f"See docs/user_guide/distributed_deployment.md."
+            )
+
         # ------------------------------------------------------------------
         # 2. Reserve user-specified ports and pre-allocate enough free ones for
         #    every broker that needs one (including the hierarchy broker).
@@ -1335,9 +1463,12 @@ class ScenarioManager:
         #    default listen address becomes `deployment.manager_address`
         #    (a LAN-reachable IP) instead of loopback, so remote federate
         #    cores can dial in; an explicit YAML `broker_config.host` still
-        #    wins either way. HELICS' tcp core binds all interfaces by
-        #    default, so advertising the LAN address here is sufficient —
-        #    no `--local_interface` change needed.
+        #    wins either way. Advertising the LAN address alone is NOT
+        #    enough to make the broker reachable: the zmq core still binds
+        #    its receive sockets to 127.0.0.1 by default regardless of the
+        #    advertised address, so `--local_interface=0.0.0.0` must be
+        #    passed explicitly whenever the broker's host isn't loopback
+        #    (see _broker_binds_externally).
         # ------------------------------------------------------------------
         default_broker_host = (
             self.config.deployment.manager_address
@@ -1443,7 +1574,7 @@ class ScenarioManager:
         try:
 
 
-            broker_logger = self._broker_cmd_logger_set('main') 
+            broker_logger = self._broker_cmd_logger_set('main')
             broker_cmd = [
                 'helics_broker',
                 f'--sub_brokers={broker_conf.sub_brokers}',
@@ -1452,9 +1583,15 @@ class ScenarioManager:
                 f'--coreType={broker_conf.core_type}',
                 '--name=main.broker'
             ]
+            if self._broker_binds_externally(broker_conf):
+                # The zmq core binds its receive sockets to 127.0.0.1 by default no
+                # matter what host is advertised, so remote federates time out against
+                # a socket that never accepted them. Bind all interfaces explicitly.
+                broker_cmd.append('--local_interface=0.0.0.0')
             
             broker_logger.info(f"Broker command: {' '.join(broker_cmd)}")
             self.logger.info(f"Starting hierarchy broker cmd: {' '.join(broker_cmd)}")
+            self._assert_broker_ports_free(broker_conf, 'Hierarchy broker')
             broker_log_file = self.logger_system.scenario_log_dir / "brokers" / "main_broker_process.log"
             
             # Create environment with log file path TODO: for multiple brokers we need to create multiple env vars
@@ -1470,20 +1607,21 @@ class ScenarioManager:
                 env=env
             )
 
-            time.sleep(0.5)  # increased from 0.5 – give main broker time to fully init before sub-brokers register
-            if broker_process.poll() is not None:
-                stdout, stderr = broker_process.communicate()
-                error_msg = f"Broker failed to start: {stderr.decode()}"
-                self.logger.error(error_msg)
-                broker_logger.error(error_msg)
-                raise RuntimeError(error_msg)
-            else:
-                success_msg = f"Broker started successfully with PID: {broker_process.pid}"
-                self.logger.info(success_msg)
-                broker_logger.info(success_msg)
-                self.broker_processes.append(broker_process)
-                self.metrics['process_counts']['brokers_started'] += 1
-                self._start_broker_log_reader(broker_process, broker_logger)
+            # Registered before the readiness wait can raise, so a broker that spawned
+            # but failed to bind is still tracked for cleanup rather than orphaned.
+            self.broker_processes.append(broker_process)
+            try:
+                self._wait_for_broker_listening(broker_process, broker_conf, 'Hierarchy broker')
+            except RuntimeError as e:
+                self.logger.error(str(e))
+                broker_logger.error(str(e))
+                raise
+
+            success_msg = f"Broker started and listening with PID: {broker_process.pid}"
+            self.logger.info(success_msg)
+            broker_logger.info(success_msg)
+            self.metrics['process_counts']['brokers_started'] += 1
+            self._start_broker_log_reader(broker_process, broker_logger)
                 
             
         
@@ -1507,9 +1645,15 @@ class ScenarioManager:
                 f'--name={federation_name}.broker',
                 f'--broker_address={broker_conf.broker_address}' if broker_conf.broker_address else ''
             ]
+            if self._broker_binds_externally(broker_conf):
+                # The zmq core binds its receive sockets to 127.0.0.1 by default no
+                # matter what host is advertised, so remote federates time out against
+                # a socket that never accepted them. Bind all interfaces explicitly.
+                broker_cmd.append('--local_interface=0.0.0.0')
             
             broker_logger.info(f"Broker command: {' '.join(broker_cmd)}")
             self.logger.info(f"Starting broker for federation {federation_name} cmd: {' '.join(broker_cmd)}")
+            self._assert_broker_ports_free(broker_conf, f"Broker for federation '{federation_name}'")
 
             # Create log file path for broker process
             broker_log_file = self.logger_system.scenario_log_dir / "brokers" / f"broker_{federation_name}_process.log"
@@ -1526,43 +1670,23 @@ class ScenarioManager:
                 stderr=subprocess.PIPE,
                 env=env
             )
-            time.sleep(0.5)
+            # Registered before the readiness wait can raise, so a broker that spawned
+            # but failed to bind is still tracked for cleanup rather than orphaned.
+            self.broker_processes.append(broker_process)
+            try:
+                self._wait_for_broker_listening(
+                    broker_process, broker_conf, f"Broker for federation '{federation_name}'")
+            except RuntimeError as e:
+                self.logger.error(str(e))
+                broker_logger.error(str(e))
+                raise
 
-            # waiting depending on the reachability of the broker
-            # deadline = time.time() + 10  # 10s timeout
-            # while time.time() < deadline:
-            #     try:
-            #         if broker_conf.host:
-            #             with socket.create_connection((broker_conf.host, broker_conf.port), timeout=1):
-            #                 break  # port is open, broker is ready
-            #         else:
-            #             with socket.create_connection(('127.0.0.1', broker_conf.port), timeout=1):
-            #                 break  # port is open, broker is ready
-            #     except OSError:
-            #         time.sleep(0.1)
-            # else:
-                # raise RuntimeError(f"Broker on port {broker_conf.port} never became ready")
+            success_msg = f"Broker started and listening with PID: {broker_process.pid}"
+            self.logger.info(success_msg)
+            broker_logger.info(success_msg)
+            self.metrics['process_counts']['brokers_started'] += 1
+            self._start_broker_log_reader(broker_process, broker_logger)
 
-            if broker_process.poll() is not None:
-                stdout, stderr = broker_process.communicate()
-                error_msg = f"Broker failed to start: {stderr.decode()}"
-                self.logger.error(error_msg)
-                broker_logger.error(error_msg)
-                raise RuntimeError(error_msg)
-            else:
-                if broker_process.pid:
-                    success_msg = f"Broker started successfully with PID: {broker_process.pid}"
-                    self.logger.info(success_msg)
-                    broker_logger.info(success_msg)
-                    self.broker_processes.append(broker_process)
-                    self.metrics['process_counts']['brokers_started'] += 1
-                    self._start_broker_log_reader(broker_process, broker_logger)
-                else:
-                    error_msg = "Failed to start broker process"
-                    self.logger.error(error_msg)
-                    broker_logger.error(error_msg)
-                    raise RuntimeError(error_msg)
-                    
         except Exception as e:
             self.logger.error(f"Exception during broker startup: {str(e)}")
             broker_logger.error(f"Exception during broker startup: {str(e)}")
@@ -1747,19 +1871,58 @@ class ScenarioManager:
 
 
     def _monitor_processes(self):
-        """Poll until all federate and broker processes complete."""
+        """Poll until every federate exits, then wait briefly for the brokers to follow.
+
+        Only the federates are waited on unconditionally: they are the simulation, and a
+        broker exits on its own once every federate has disconnected. Waiting on brokers
+        with the same `while` hangs forever in the failure case — if the federates all die
+        before registering (unreachable broker, bad config), the broker goes on waiting for
+        federates that will never arrive and nothing ever exits. So once no federate is
+        left, give the brokers a grace period to shut down cleanly and let
+        `_emergency_cleanup` terminate whatever is still standing.
+        """
         active_federates = list(self.federate_processes)
         active_brokers = list(self.broker_processes)
         self.logger.info(f"Monitoring {len(active_federates)} federates, {len(active_brokers)} brokers")
-        while active_federates or active_brokers:
+
+        while active_federates:
             time.sleep(1)
-            active_federates = self._collect_completed(active_federates, 'Federate', 'federates_completed')
-            active_brokers = self._collect_completed(active_brokers, 'Broker', 'brokers_completed')
-        self.logger.info("All processes completed")
+            active_federates = self._collect_completed(
+                active_federates, 'Federate', 'federates_completed', 'federates_failed')
+            active_brokers = self._collect_completed(
+                active_brokers, 'Broker', 'brokers_completed', 'brokers_failed')
+
+            # A HELICS federation is all-or-nothing: every declared federate must join for
+            # it to form. Once one has died the survivors can never proceed — they block
+            # inside HELICS waiting for a peer that will never arrive, exit on their own
+            # never, and waiting on them hangs the run forever (which is how brokers and
+            # federates got orphaned by hand-killed managers). Stop waiting and let cleanup
+            # terminate them, so the run fails fast with its logs collected.
+            failed = self.metrics['process_counts']['federates_failed']
+            if failed and active_federates:
+                self.logger.error(
+                    f"{failed} federate(s) failed — the federation can no longer form. "
+                    f"Abandoning {len(active_federates)} federate(s) still blocked in HELICS; "
+                    "cleanup will terminate them."
+                )
+                break
+
+        deadline = time.time() + self.BROKER_SHUTDOWN_GRACE_S
+        while active_brokers and time.time() < deadline:
+            time.sleep(1)
+            active_brokers = self._collect_completed(
+                active_brokers, 'Broker', 'brokers_completed', 'brokers_failed')
+
+        if active_brokers:
+            self.logger.warning(
+                f"{len(active_brokers)} broker(s) still alive {self.BROKER_SHUTDOWN_GRACE_S}s after the last "
+                "federate exited; cleanup will terminate them."
+            )
+        self.logger.info("Monitoring finished: no federates left running")
         self._log_execution_summary()
 
-    def _collect_completed(self, processes, label, count_key):
-        """Remove finished processes, log result, update counter. Returns still-running list."""
+    def _collect_completed(self, processes, label, count_key, fail_key):
+        """Remove finished processes, log result, update counters. Returns still-running list."""
         still_running = []
         for p in processes:
             if p.poll() is None:
@@ -1769,6 +1932,7 @@ class ScenarioManager:
                 self.metrics['process_counts'][count_key] += 1
             else:
                 self.logger.error(f"✗ {label} failed with code {p.returncode}")
+                self.metrics['process_counts'][fail_key] += 1
         return still_running
 
     def _collect_remote_results(self):
@@ -1785,6 +1949,11 @@ class ScenarioManager:
         A collection failure is logged (ERROR + manual-rsync hint) but never raised:
         a run whose results are sitting valid on a remote disk must not be reported
         as failed just because the copy-back hiccuped.
+
+        Results and logs are collected independently. A run whose federates died early
+        never created a remote results dir, and sharing one try/except let that expected
+        rsync failure skip the log collection that follows — stranding the remote logs on
+        the remote box in exactly the case they are needed to explain the failure.
         """
         if not self.remote_executors:
             return
@@ -1800,18 +1969,19 @@ class ScenarioManager:
             machine_conf = self.config.deployment.machines[alias]
             remote_results = os.path.join(machine_conf.workdir, "results", self.scenario_name, sim_id)
             remote_logs = os.path.join(machine_conf.workdir, scenario_log_dir_rel)
-            try:
-                self.logger.info(f"Collecting results + logs back from remote machine '{alias}'...")
-                executor.collect(remote_results, local_results)
-                executor.collect(remote_logs, local_logs)
-            except Exception as e:
-                target = f"{machine_conf.user}@{machine_conf.host}" if machine_conf.user else machine_conf.host
-                self.logger.error(
-                    f"[{alias}] failed to collect remote results/logs: {e}. "
-                    f"Manually retrieve with: "
-                    f"rsync -az {target}:{remote_results}/ {local_results}/  and  "
-                    f"rsync -az {target}:{remote_logs}/ {local_logs}/"
-                )
+            self.logger.info(f"Collecting results + logs back from remote machine '{alias}'...")
+            for what, remote_dir, local_dir in (
+                ('results', remote_results, local_results),
+                ('logs', remote_logs, local_logs),
+            ):
+                try:
+                    executor.collect(remote_dir, local_dir)
+                except Exception as e:
+                    target = f"{machine_conf.user}@{machine_conf.host}" if machine_conf.user else machine_conf.host
+                    self.logger.error(
+                        f"[{alias}] failed to collect remote {what}: {e}. "
+                        f"Manually retrieve with: rsync -az {target}:{remote_dir}/ {local_dir}/"
+                    )
 
     def _cleanup_remote_execution(self):
         """Remote-machine teardown for `_emergency_cleanup`. Never raises.
@@ -1930,6 +2100,10 @@ class ScenarioManager:
             f"  brokers {counts['brokers_completed']}/{counts['brokers_started']}, "
             f"federates {counts['federates_completed']}/{counts['federates_started']}"
         )
+        if counts['federates_failed'] or counts['brokers_failed']:
+            self.logger.error(
+                f"  FAILED: {counts['federates_failed']} federate(s), {counts['brokers_failed']} broker(s)"
+            )
         self.logger.info("=" * 60)
         try:
             metrics_file = self.logger_system.scenario_log_dir / "execution_metrics.json"

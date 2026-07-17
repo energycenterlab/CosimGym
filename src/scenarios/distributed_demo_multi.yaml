@@ -26,7 +26,7 @@ name: "distributed_demo_multi"
 scenario_description: "Real multi-machine distributed demo: weather on A, pv on B, rest on manager"
 
 start_time: "2024-01-01T00:00:00"
-end_time: "2024-01-03T00:00:00"
+end_time: "2024-06-03T00:00:00"
 log_level: INFO          # INFO so you can watch remote spawn/connect in the manager log
 
 memory_config:
@@ -40,19 +40,19 @@ deployment:
   manager_address: "130.192.177.14"     # <<EDIT>> LAN IP of THIS machine (remotes must reach it)
   machines:
     machine_a:
-      host: "<<MACHINE_A_IP>>"          # <<EDIT>> e.g. 130.192.177.20
-      user: "<<MACHINE_A_USER>>"        # <<EDIT>> ssh user on machine A
+      host: "130.192.238.9"          # <<EDIT>> e.g. 130.192.177.20
+      user: "eclabuser"        # <<EDIT>> ssh user on machine A
       ssh_port: 22
-      workdir: "<<MACHINE_A_WORKDIR>>"  # <<EDIT>> e.g. /home/<user>/cosimgym_rt   (must be writable)
+      workdir: "/home/eclabuser/CosimGym"  # <<EDIT>> e.g. /home/<user>/cosimgym_rt   (must be writable)
       conda_env: "cosim_gym"            # env must exist on A with helics/redis/pydantic + model deps
-      # python: "/home/<user>/miniconda3/envs/cosim_gym/bin/python"   # use if `conda run` not on ssh PATH
+      python: "/home/eclabuser/miniconda3/envs/cosim_gym/bin/python"   # use if `conda run` not on ssh PATH
     machine_b:
-      host: "<<MACHINE_B_IP>>"          # <<EDIT>>
-      user: "<<MACHINE_B_USER>>"        # <<EDIT>>
+      host: "130.192.238.13"          # <<EDIT>>
+      user: "eclabuser"        # <<EDIT>>
       ssh_port: 22
-      workdir: "<<MACHINE_B_WORKDIR>>"  # <<EDIT>>
+      workdir: "/home/eclabuser/CosimGym"  # <<EDIT>>
       conda_env: "cosim_gym"
-      # python: "/home/<user>/miniconda3/envs/cosim_gym/bin/python"
+      python: "/home/eclabuser/miniconda3/envs/cosim_gym/bin/python"
 
 synchronization:
   auto_offset:
@@ -74,7 +74,16 @@ synchronization:
 federations:
   federation_1:
     broker_config:
-      core_type: "zmq"
+      # zmq_ss (single socket), NOT plain zmq — required for distributed runs whenever the
+      # remotes can't be dialled INTO from the manager (NAT, locked-down host firewall).
+      # With plain zmq/tcp each federate core binds its own inbound listener at
+      # broker_port+10+n and the broker connects back to it; a NAT'd core advertises its
+      # private address, the broker's reply is unroutable, and every remote federate dies
+      # with "core is unable to register and has timed out" AFTER a successful TCP connect.
+      # zmq_ss carries all traffic over the core's own outbound connection: no inbound
+      # listener, no per-core firewall rules on the remotes, NAT-proof.
+      # Verified: this run reproduces pv_batt_test_base's physics exactly (max|diff| = 0).
+      core_type: "zmq_ss"
       port: 23404
       # host omitted → normalized to deployment.manager_address (130.192.177.14) so the
       # remote federate cores on A and B can dial in over the LAN.
@@ -89,7 +98,7 @@ federations:
         type: "base"
         host: "machine_a"              # <-- spawned on machine_a over ssh
         core_name: "fed1"
-        core_type: "zmq"
+        core_type: "zmq_ss"
         timing_configs:
           real_period: 3600
         flags:
@@ -128,7 +137,7 @@ federations:
         name: "rb_controller"
         type: "base"
         core_name: "fed2"
-        core_type: "zmq"
+        core_type: "zmq_ss"
         log_level: INFO
         timing_configs:
           real_period: 3600
@@ -177,7 +186,7 @@ federations:
         type: "base"
         host: "machine_b"              # <-- spawned on machine_b over ssh
         core_name: "fed3"
-        core_type: "zmq"
+        core_type: "zmq_ss"
         log_level: INFO
         timing_configs:
           real_period: 3600
@@ -237,7 +246,7 @@ federations:
         name: "battery_federate"
         type: "base"
         core_name: "fed4"
-        core_type: "zmq"
+        core_type: "zmq_ss"
         log_level: INFO
         startup_sync:
           required_inputs: ["Battery_power", "P_load", "PV_power"]
@@ -302,7 +311,7 @@ federations:
         type: "base"
         log_level: INFO
         core_name: "fed5"
-        core_type: "zmq"
+        core_type: "zmq_ss"
         timing_configs:
           real_period: 3600
           time_offset: 0.1
