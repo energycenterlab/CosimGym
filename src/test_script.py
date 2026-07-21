@@ -37,7 +37,13 @@ from core.ScenarioManager import main, ScenarioManager
 #main ('multi_building_grid_test')
 #main ('benchmark_parallel_par')
 #main ('benchmark_scale_distributed')
-main('benchmark_scale_distributed_debug')
+#main('benchmark_scale_distributed_debug')
+
+# DISTRIBUTED MULTI-FEDERATION demo: two federations exchanging data across the
+# broker hierarchy, with one federation's federate spawned on a remote machine
+# over SSH (localhost-as-remote by default; edit the deployment block for real
+# machines). Proves multi-fed + distributed compose. Uses zmq_ss (NAT-safe).
+main('distributed_multifederation_test')
 #main('fmu_feedthrough_test')
 #main('bui0_fmu_test')
 #main ('m5_bk4_demo_a_full_sim')
@@ -82,6 +88,7 @@ if __name__ == "__main__":
     
     # main('simple_test')
     # main('simple_test_multifederations')
+    # main('distributed_multifederation_test')   # multi-fed + remote SSH federate (zmq_ss)
     main('bui_hp_test_base')
     
     

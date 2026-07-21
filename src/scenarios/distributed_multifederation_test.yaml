@@ -1,0 +1,156 @@
+# Distributed MULTI-FEDERATION test scenario.
+#
+# Two federations that exchange data across the broker hierarchy, with one
+# federation's federate spawned on a REMOTE machine over SSH:
+#   - federation_1 / spring_federate  -> host: remote_box   (remote, over ssh)
+#   - federation_2 / input_federate   -> local (on manager)
+# spring_federate subscribes to input_federate ACROSS federations, so the value
+# must route: input_federate -> federation_2 broker -> MAIN (hierarchy) broker
+# -> federation_1 broker -> spring_federate (running remotely).
+#
+# All brokers (main + both federation brokers) stay on the manager. Only the
+# federate tagged `host:` goes remote. Uses `zmq_ss` single-socket cores so it
+# works across NAT (mandatory for real distributed; harmless for localhost).
+#
+# Localhost-as-remote demo: remote_box -> 127.0.0.1, manager_address 127.0.0.1.
+# For REAL machines: change manager_address to this host's LAN IP and
+# remote_box.host to the remote's IP (see docs/user_guide/distributed_deployment.md).
+
+version: "1.0.0"
+name: "distributed_multifederation_test"
+scenario_description: Cross-federation pub/sub with a remote federate over SSH (multi-fed + distributed).
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T00:10:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: ["position", "velocity", "acceleration", "force", "disturbance"]
+
+deployment:
+  manager_address: "127.0.0.1"        # LAN IP the remote reaches; loopback for this demo
+  machines:
+    remote_box:                       # alias referenced by federates' `host:`
+      host: "127.0.0.1"               # ssh target (remote IP for real machines)
+      ssh_port: 22
+      workdir: "/tmp/cosimgym_remote_test"   # remote repo root; code rsync'd here each run
+      conda_env: "cosim_gym"
+      python: "/media/space/rando/Environments/cosim_gym/bin/python"
+      #   ^ explicit interpreter: bypasses conda entirely, reliable on the
+      #     non-interactive ssh PATH. Drop / edit for real machines.
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq_ss"
+      federates: 1
+      log_level: DEBUG
+
+    federate_configs:
+      spring_federate:
+          name: "spring_federate"
+          type: "base"
+          host: "remote_box"          # <-- spawned on remote_box over ssh
+          log_level: DEBUG
+          core_type: "zmq_ss"
+
+          timing_configs:
+            real_period: 1
+
+          flags:
+            terminate_on_error: true
+            wait_for_current_time_update: true
+
+          connections:
+            endpoints: []
+            subscribes:
+              - key: "force"
+                type: "double"
+                units: "N"
+                targets:
+                  '0': [input_federate.0/force]
+                  '1': [input_federate.1/force]
+              - key: "disturbance"
+                type: "double"
+                units: "N"
+                targets:
+                  '0': [input_federate.0/disturbance]
+                  '1': [input_federate.1/disturbance]
+
+            publishes:
+              - key: "position"
+                type: "double"
+                units: "N"
+              - key: "velocity"
+                type: "double"
+                units: "N"
+              - key: "acceleration"
+                type: "double"
+                units: "N"
+
+          model_configs:
+            instantiation:
+              model_name: "spring_mass_damper"
+              n_instances: 2
+              prefix: "spring"
+              parallel_execution: false
+
+            parameters:
+              mass: [5, 5]
+              damping: [2.0, 3.0]
+              stiffness: [10.0, 20]
+
+            init_state:
+              force: [10.0, 5.0]
+              disturbance: 0.0
+              position: [0.0, 100.0]
+              velocity: 0.0
+              acceleration: 0.0
+
+            user_defined:
+              solver: "euler"
+              integrator: "fixed-step"
+
+  federation_2:
+    broker_config:
+      core_type: "zmq_ss"
+      federates: 1
+      log_level: DEBUG
+
+    federate_configs:
+      input_federate:
+        name: "input_federate"
+        type: "base"
+        log_level: DEBUG
+        core_type: "zmq_ss"
+
+        timing_configs:
+          real_period: 1
+
+        flags:
+          terminate_on_error: true
+
+        connections:
+          endpoints: []
+          subscribes: []
+
+          publishes:
+            - key: "force"
+              type: "double"
+              units: "N"
+            - key: "disturbance"
+              type: "double"
+              units: "N"
+
+        model_configs:
+          instantiation:
+            model_name: "inputs4spring"
+            n_instances: 2
+            prefix: "input"
+            parallel_execution: false
+
+          init_state:
+            disturbance: [2.3, 1.0]
+
+          params: {}

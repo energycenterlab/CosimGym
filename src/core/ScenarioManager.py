@@ -1614,7 +1614,13 @@ class ScenarioManager:
                     address=f'{default_broker_host}:{main_port}',
                     sub_brokers=n_federations,
                 )
-                main_broker_address = f'{core_type}://{default_broker_host}:{main_port}'
+                # Bare host:port, NO '{core_type}://' scheme: the single-socket cores
+                # (zmq_ss/tcp_ss) are HELICS coreTypes, not URI schemes, so a
+                # 'zmq_ss://host:port' broker_address is malformed — the sub_broker never
+                # connects to the main broker and never binds its own port, hanging the
+                # whole run. helics_broker accepts a bare 'host:port' for every core_type
+                # (same form the federates already use for their broker_address).
+                main_broker_address = f'{default_broker_host}:{main_port}'
                 for federation_conf in federations.values():
                     federation_conf.broker_config.broker_address = main_broker_address
 
