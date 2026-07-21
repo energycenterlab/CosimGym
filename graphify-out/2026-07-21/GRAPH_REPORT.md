@@ -1,7 +1,7 @@
-# Graph Report - CosimGym  (2026-07-17)
+# Graph Report - CosimGym  (2026-07-21)
 
 ## Corpus Check
-- 136 files · ~283,995 words
+- 136 files · ~284,535 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1e920f50`
+- Built from commit: `58bab3d4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -120,6 +120,7 @@
 - [[_COMMUNITY_7. Enhancements & Additional Features|7. Enhancements & Additional Features]]
 - [[_COMMUNITY_render_sidebar|render_sidebar]]
 - [[_COMMUNITY_build_dataframe|build_dataframe]]
+- [[_COMMUNITY_SpringMassDamper|SpringMassDamper]]
 - [[_COMMUNITY_Handoff — `nonblocking_storage` (Plan 2)|Handoff — `nonblocking_storage` (Plan 2)]]
 - [[_COMMUNITY_CosimGym ⚠️ Under Developement|CosimGym ⚠️ Under Developement]]
 - [[_COMMUNITY_CosimGym|CosimGym]]
@@ -375,8 +376,8 @@ Cohesion: 0.07
 Nodes (30): Accessing the Dashboard on a Remote Ubuntu Server, Advanced: Interactive Development, Alternative: Expose the Dashboard on the Server Network, Automated Setup Tooling, Available Commands, Detailed Options, Dev Container — Detailed Reference, Dev Container + VS Code (+22 more)
 
 ### Community 43 - "Broker/Federate Process Spawning"
-Cohesion: 0.13
-Nodes (11): Logger, Popen, True if this broker must accept connections from other machines.          Keyed, True if a broker could bind `port` on this machine right now.          Probing b, Every port a broker occupies: the advertised one, plus zmq's paired reply socket, Fail before spawning a broker whose ports are already taken.          Most often, Block until the broker is really accepting connections, or raise.          A bri, Start a hierarchy broker for multi-federation coordination. (+3 more)
+Cohesion: 0.15
+Nodes (10): Logger, Popen, True if this broker must accept connections from other machines.          Keyed, True if a broker could bind `port` on this machine right now.          Probing b, Every port a broker occupies: the advertised one, plus zmq's paired reply socket, Fail before spawning a broker whose ports are already taken.          Most often, Block until the broker is really accepting connections, or raise.          A bri, Start a hierarchy broker for multi-federation coordination. (+2 more)
 
 ### Community 44 - "Dashboard Episode Fingerprint Cache"
 Cohesion: 0.29
@@ -459,8 +460,8 @@ Cohesion: 0.22
 Nodes (4): Reset integrator and previous-error memory., Compute one PID step and update the modulation output., Discrete-time PID controller for building temperature regulation.      Computes, SimplePIDController
 
 ### Community 64 - "Weather CSV Reader"
-Cohesion: 0.11
-Nodes (8): CheckpointConfig, PhaseConfig, Episode-reset policy: full/rolling/none, with an optional rolling window., Episode count/length and checkpoint policy for one run phase (train or test)., Checkpoint directory and optional "best" checkpoint name/path for an RL experime, Resolve `best` against `dir` unless already absolute or already under `dir`., ResetConfig, TestValidators
+Cohesion: 0.12
+Nodes (8): CheckpointConfig, Hyperparameters, Episode-reset policy: full/rolling/none, with an optional rolling window., Backend-agnostic RL hyperparameters; unset fields are omitted so the backend app, Checkpoint directory and optional "best" checkpoint name/path for an RL experime, Resolve `best` against `dir` unless already absolute or already under `dir`., ResetConfig, TestValidators
 
 ### Community 65 - "Reward Functions Library"
 Cohesion: 0.20
@@ -475,8 +476,8 @@ Cohesion: 0.22
 Nodes (5): _base_scenario(), test_deployment_config.py — validate deployment/host schema for distributed SSH, TestDeploymentSchema, TestDeploymentValidation, TestNoDeploymentUnchanged
 
 ### Community 68 - "Checkpoint Manager"
-Cohesion: 0.09
-Nodes (13): Resolve a fully-specified, internally-consistent broker/core/protocol         wi, Start one supervisor per remote machine, each covering all that machine's federa, Context manager entry., Stop all broker processes specifically.         Useful for debugging or partial, Initialize Redis client for configuration distribution., Manages HELICS federation lifecycle including broker and federate processes., Initialize the ScenarioManager with configuration.                  Args:, True if any federate in the scenario sets `host:` (distributed SSH spawning). (+5 more)
+Cohesion: 0.12
+Nodes (7): Context manager entry., Stop all broker processes specifically.         Useful for debugging or partial, Manages HELICS federation lifecycle including broker and federate processes., Initialize the ScenarioManager with configuration.                  Args:, Populate scenario-scoped Redis overrides for models with dynamic IO metadata., Fail fast if required IO specs for RL spaces are missing before federate startup, ScenarioManager
 
 ### Community 69 - "Federate Module Docstrings"
 Cohesion: 0.12
@@ -574,6 +575,10 @@ Nodes (6): ModelLoggerAdapter, Logger adapter that adds model prefix to logs., I
 Cohesion: 0.21
 Nodes (11): get_scenarios(), get_simulation_ids(), Get scenarios using metadata index cache for faster lookups., Get simulation IDs using metadata index cache., render_sidebar(), _reset_plot_state_if_selection_changed(), get_global_metadata_index(), Advanced caching layer for dashboard performance optimization. Handles persisten (+3 more)
 
+### Community 110 - "SpringMassDamper"
+Cohesion: 0.13
+Nodes (6): Resolve a fully-specified, internally-consistent broker/core/protocol         wi, Start one supervisor per remote machine, each covering all that machine's federa, Initialize Redis client for configuration distribution., True if any federate in the scenario sets `host:` (distributed SSH spawning)., Preflight-verify and deploy code to every remote machine used by ≥1 federate., Set up scenario for multi-computer execution.         TODO: this is a placeholde
+
 ### Community 111 - "Handoff — `nonblocking_storage` (Plan 2)"
 Cohesion: 0.18
 Nodes (10): Benchmark: json vs parquet sink (stress test, pre-merge), Blockers / deviations from the plan (kept for reference), Deliberately deferred (not part of Plan 2 — need your go-ahead before anyone touches them), Files touched so far, Handoff — `nonblocking_storage` (Plan 2), How to verify current state, One-line kickoff prompt for a fresh session, Plan 2 status: COMPLETE (+2 more)
@@ -663,8 +668,8 @@ Cohesion: 0.33
 Nodes (3): Initialize the wrapper.                  Args:             env: A gymnasium envi, Compute per-key normalization bounds from the wrapped env's observation space an, Initialize the wrapper.                  Args:             env: A gymnasium envi
 
 ### Community 135 - "Provided Examples List"
-Cohesion: 0.14
-Nodes (7): EnvironmentConfig, Hyperparameters, Any, The MDP definition: observation/action specs, reward/termination function paths,, Backend-agnostic RL hyperparameters; unset fields are omitted so the backend app, Only explicitly-set fields, for forwarding to a backend constructor., Inject federation name into each federation dict and propagate         scenario-
+Cohesion: 0.13
+Nodes (7): EnvironmentConfig, PhaseConfig, Any, The MDP definition: observation/action specs, reward/termination function paths,, Only explicitly-set fields, for forwarding to a backend constructor., Episode count/length and checkpoint policy for one run phase (train or test)., Inject federation name into each federation dict and propagate         scenario-
 
 ### Community 136 - "Architecture"
 Cohesion: 0.20
@@ -679,8 +684,8 @@ Cohesion: 0.24
 Nodes (12): catalog entry: base_csv_reader, catalog entry: battery_dest, catalog entry: pv_dest, heatpump_comfort_efficiency_reward(), Reward Functions Library  Centralised collection of reward functions for use acr, Simple, well-scaled reward for battery case studies:       1) keep SOC inside [0, Balances thermal comfort and energy efficiency for the building/heat-pump scenar, soc_band_clip_simple() (+4 more)
 
 ### Community 139 - "._create_federate"
-Cohesion: 0.20
-Nodes (5): Set up the federation by starting broker and all federates.                  Thi, Build the federate_launcher.py CLI arg list, shared by the local and remote spaw, Redis URL a federate should use: manager_address for a remote federate (Redis al, Create and start one federate, dispatching to local Popen or remote ssh spawn., Queue a federate to be started on a remote machine; does NOT spawn it yet.
+Cohesion: 0.18
+Nodes (6): Set up the federation by starting broker and all federates.                  Thi, Build the federate_launcher.py CLI arg list, shared by the local and remote spaw, Redis URL a federate should use: manager_address for a remote federate (Redis al, Create and start one federate, dispatching to local Popen or remote ssh spawn., Create and start a federate subprocess with logging support.         Uses Redis, Queue a federate to be started on a remote machine; does NOT spawn it yet.
 
 ### Community 140 - ".__enter__"
 Cohesion: 0.18
@@ -766,7 +771,7 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **Why does `BaseModel` connect `Base Model Abstraction` to `FMU Loading & MinIO`, `Inputs4Spring`, `Digital-Twin Interface Patterns`, `PV Model`, `RL Config Dataclasses`, `Provided Examples List`, `5R1C Building Physics`, `Model Parameter Resolution`, `M5 BK4 Demo (b) Digital Twin`, `WeatherCSVReader`, `Battery Model`, `rb_bems`, `ScenarioManager Lifecycle`, `ScenarioManager Module`, `Process Cleanup & Shutdown`, `FedPublication`, `Pandapipes Grid Model`, `Pandapower Grid Model`, `RL Environment Config`, `Test Input Model & Catalog Entries`, `District Heating Scenario Catalog`, `Heat Pump Model`, `PID Controller Model`, `Weather CSV Reader`, `Reward Functions Library`, `Federate Module Docstrings`, `BaseCSVReader`, `BUI0 Input Feeder`, `7. Enhancements & Additional Features`?**
   _High betweenness centrality (0.207) - this node is a cross-community bridge._
-- **Why does `ScenarioManager` connect `Checkpoint Manager` to `Base CSV Reader Model`, `Override Registry (Redis)`, `RL Config Dataclasses`, `Base Model Abstraction`, `Broker/Federate Process Spawning`, `main`, `CosimGym Paper Contributions`, `SpringMassDamper`, `._create_federate`, `catalog entry: rl_simple_SACsb3`, `FederateConfig Init`, `CheckpointManager`, `Federate Launcher & Config Reader`, `Architecture Overview Diagram`, `Simple 1R1C Building Model`, `Redis Client Wrapper`, `Process Cleanup & Shutdown`, `FedPublication`?**
+- **Why does `ScenarioManager` connect `Checkpoint Manager` to `Base CSV Reader Model`, `Override Registry (Redis)`, `RL Config Dataclasses`, `Base Model Abstraction`, `Broker/Federate Process Spawning`, `main`, `CosimGym Paper Contributions`, `._create_federate`, `SpringMassDamper`, `catalog entry: rl_simple_SACsb3`, `FederateConfig Init`, `CheckpointManager`, `Federate Launcher & Config Reader`, `Architecture Overview Diagram`, `Simple 1R1C Building Model`, `Redis Client Wrapper`, `Process Cleanup & Shutdown`, `FedPublication`?**
   _High betweenness centrality (0.117) - this node is a cross-community bridge._
 - **Why does `BaseFederate` connect `BaseFederate Core` to `RL Gym Space Building`, `Interface Adapter Base`, `Base Model Abstraction`, `CosimGym Paper Contributions`, `BaseFederate.py`, `Async Storage Writer`, `Model Catalog Metadata`, `Architecture Overview Diagram`, `catalog-loader service`, `Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring`, `main`, `._enqueue_async_storage_row`, `Federate Step Loop`, `ModelCatalog Class`, `Building/Heat-Pump Scenario Catalog`, `Base Model & Catalog Types`, `Dynamic Catalog IO Enrichment`, `District Heating Scenario Catalog`, `Storage Partition Init`, `.__init__`?**
   _High betweenness centrality (0.113) - this node is a cross-community bridge._
