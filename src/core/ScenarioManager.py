@@ -695,7 +695,9 @@ class ScenarioManager:
         self.logger.debug(f"Modified scenario configuration for online training\n new start_time:{self.start_time} \n new end_time: {self.end_time}")
 
     def _has_remote_federates(self) -> bool:
-        """True if any federate in the scenario sets `host:` (distributed SSH spawning)."""
+        """True if any federate in the scenario sets `host:` (distributed SSH spawning).
+        TODO : what if a user set host but put the local one as host? should we check if the host is not localhost or just give a rule to be respected?
+        """
         return any(
             getattr(fed, 'host', None)
             for federation in self.config.federations.values()
@@ -2245,7 +2247,7 @@ def main(scenario_name):
 
             # Debug: Check what's running
             status = manager.get_running_processes()
-            print(f"\nCompleted! Final status: {len(status['brokers'])} brokers, {len(status['federates'])} federates")
+            print(f"\nCompleted! Final status: {len(status['brokers'])} brokers, {len(status['federates'])} processes") #this is the count of processes not federates it coincide only on local machine
 
             # Show final metrics
             metrics = manager.get_execution_metrics()

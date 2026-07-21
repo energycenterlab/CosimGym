@@ -23,7 +23,7 @@ name: "benchmark_scale_distributed_debug"
 scenario_description: "Scaling benchmark: 50 building+PV sites, 201 federates, distributed over 3 hosts"
 
 start_time: "2024-01-01T00:00:00"
-end_time: "2024-01-02T00:00:00"
+end_time: "2024-01-01T00:03:00"
 log_level: INFO          # quiet: 201 federates would otherwise flood the log
 
 memory_config:
