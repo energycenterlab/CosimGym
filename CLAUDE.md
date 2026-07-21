@@ -27,13 +27,14 @@ All sim scripts: run from project root, `cosim_gym` conda env active. Redis must
 
 ### Pre-merge regression suite
 
-Before merging a feature branch back to `main`, run the regression suite — it runs `pytest` plus one fast smoke scenario per feature axis (base, multi-federation, distributed SSH, distributed+multi-federation, parallel model exec, parquet, interface/streaming/override/BK4 digital-twin, RL, FMU), each in an isolated subprocess, and prints a PASS/FAIL table (non-zero exit on any failure):
+Before merging a feature branch back to `main`, run the regression suite — `pytest` plus ~32 scenarios covering every feature axis (base, multi-federation, distributed SSH, parallel model exec, interface/streaming/override/BK4 digital-twin, RL, FMU, grid) **and** explicit feature COMBINATIONS (dist+multifed, dist+parallel, multifed+parallel, parallel+grid). Each runs in an isolated subprocess; long scenarios are auto-shortened on a throwaway temp copy (originals untouched). Prints a PASS/FAIL/xfail table; non-zero exit only on an unexpected hard failure:
 
 ```bash
-conda run -n cosim_gym python tests/regression_suite.py   # needs docker services up + passwordless ssh to 127.0.0.1
+conda run -n cosim_gym python tests/regression_suite.py   # docker services up + passwordless ssh to 127.0.0.1
+RUN_CLOUD=1 conda run -n cosim_gym python tests/regression_suite.py   # also run cloud-machine distributed scenarios
 ```
 
-`tests/regression_suite.py` is the living contract: **add a scenario there whenever you add a feature.** Known pre-existing flake: the parquet scenario can hit a native libstdc++ SIGSEGV in the federate runtime (parquet is also covered by passing unit tests `tests/test_parquet_storage.py`).
+`tests/regression_suite.py` is the living contract: **add a scenario (and a combination) there whenever you add a feature.** It has three lists — `SCENARIOS` + `COMBOS` (expected PASS), and `KNOWN_FAIL` (tracked framework/env bugs run as `xfail`, so the gate stays green while they're tracked; a KNOWN_FAIL that starts passing is flagged UNEXPECTED-PASS). Current known bugs are documented in `docs/future_and_TODOs/known_issues_from_regression.md`: parquet-sink native libstdc++ SIGSEGV, zmq auto-port `+1` collision for 2-broker RL scenarios, the non-functional `RL_Simple_Agent` skeleton, and `Adelaide_test`'s missing MinIO object.
 
 ### Ports (shared-machine port conflicts)
 

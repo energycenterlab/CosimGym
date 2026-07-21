@@ -20,12 +20,16 @@ memory_config:
 reinforcement_learning_config:
   environment:
     observations:
-      federation_1.spring_federate.0.position: null
-      federation_1.spring_federate.0.velocity: null
-      federation_1.spring_federate.0.acceleration: null
+      federation_1.spring_federate.0.position:
+        causality: next_step
+      federation_1.spring_federate.0.velocity:
+        causality: next_step
+      federation_1.spring_federate.0.acceleration:
+        causality: next_step
     actions:
       federation_1.spring_federate.0.force:
         space: discrete
+        bins: 5
   agent:
     model_name: rl_simple_agent
   run:

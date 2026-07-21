@@ -1,0 +1,157 @@
+# COMBO scenario: MULTIFED + PARALLEL. federation_1 holds the spring federate
+# (subscribes cross-federation to input_federate in federation_2) PLUS a
+# heavy_compute_dummy federate running with parallel_execution (persistent
+# worker processes). Exercises cross-federation routing and parallel model
+# execution in one run. Broker ports auto-assigned.
+version: 1.0.0
+name: combo_multifed_parallel
+scenario_description: 'COMBO: 2 federations (cross-fed pub/sub) + a parallel-execution
+  federate.'
+start_time: '2024-01-01T00:00:00'
+end_time: '2024-01-01T01:00:00'
+log_level: DEBUG
+memory_config:
+  batch_size: 1000
+  attrs:
+  - position
+  - velocity
+  - acceleration
+  - force
+  - disturbance
+federations:
+  federation_1:
+    broker_config:
+      core_type: tcp
+      federates: 2
+      log_level: DEBUG
+    federate_configs:
+      spring_federate:
+        name: spring_federate
+        type: base
+        log_level: DEBUG
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: true
+        connections:
+          endpoints: []
+          subscribes:
+          - key: force
+            type: double
+            units: N
+            targets:
+              '0':
+              - input_federate.0/force
+              '1':
+              - input_federate.1/force
+          - key: disturbance
+            type: double
+            units: N
+            targets:
+              '0':
+              - input_federate.0/disturbance
+              '1':
+              - input_federate.1/disturbance
+          publishes:
+          - key: position
+            type: double
+            units: N
+          - key: velocity
+            type: double
+            units: N
+          - key: acceleration
+            type: double
+            units: N
+        model_configs:
+          instantiation:
+            model_name: spring_mass_damper
+            n_instances: 2
+            prefix: spring
+            parallel_execution: false
+          parameters:
+            mass:
+            - 5
+            - 5
+            damping:
+            - 2.0
+            - 3.0
+            stiffness:
+            - 10.0
+            - 20
+          init_state:
+            force:
+            - 10.0
+            - 5.0
+            disturbance: 0.0
+            position:
+            - 0.0
+            - 100.0
+            velocity: 0.0
+            acceleration: 0.0
+          user_defined:
+            solver: euler
+            integrator: fixed-step
+      heavy_federate:
+        name: heavy_federate
+        type: base
+        log_level: WARNING
+        core_type: tcp
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+          - key: result
+            type: double
+            units: '-'
+        model_configs:
+          instantiation:
+            model_name: heavy_compute_dummy
+            n_instances: 4
+            prefix: hc
+            parallel_execution: true
+            max_parallel_workers: 4
+          parameters:
+            iterations: 10000
+          init_state: {}
+          user_defined: {}
+  federation_2:
+    broker_config:
+      core_type: tcp
+      federates: 1
+      log_level: DEBUG
+    federate_configs:
+      input_federate:
+        name: input_federate
+        type: base
+        log_level: DEBUG
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+          - key: force
+            type: double
+            units: N
+          - key: disturbance
+            type: double
+            units: N
+        model_configs:
+          instantiation:
+            model_name: inputs4spring
+            n_instances: 2
+            prefix: input
+            parallel_execution: false
+          init_state:
+            disturbance:
+            - 2.3
+            - 1.0
+          params: {}
