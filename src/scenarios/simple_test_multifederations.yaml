@@ -21,7 +21,8 @@ federations:
   federation_1:
     broker_config:
       core_type: "tcp"
-      port: 23404
+      # no explicit port: auto-assigned to a free one. Hardcoded ports collide
+      # when scenarios run back-to-back (broker TIME_WAIT), e.g. in the regression suite.
       federates: 1
       log_level: DEBUG
 
@@ -92,7 +93,7 @@ federations:
   federation_2:
     broker_config:
       core_type: "tcp"
-      port: 23405
+      # no explicit port: auto-assigned (see federation_1 note).
       federates: 1
       log_level: DEBUG
 

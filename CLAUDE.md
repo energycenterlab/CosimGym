@@ -25,6 +25,16 @@ docker compose -f src/docker-compose.yaml logs -f redis
 
 All sim scripts: run from project root, `cosim_gym` conda env active. Redis must run before any simulation.
 
+### Pre-merge regression suite
+
+Before merging a feature branch back to `main`, run the regression suite — it runs `pytest` plus one fast smoke scenario per feature axis (base, multi-federation, distributed SSH, distributed+multi-federation, parallel model exec, parquet, interface/streaming/override/BK4 digital-twin, RL, FMU), each in an isolated subprocess, and prints a PASS/FAIL table (non-zero exit on any failure):
+
+```bash
+conda run -n cosim_gym python tests/regression_suite.py   # needs docker services up + passwordless ssh to 127.0.0.1
+```
+
+`tests/regression_suite.py` is the living contract: **add a scenario there whenever you add a feature.** Known pre-existing flake: the parquet scenario can hit a native libstdc++ SIGSEGV in the federate runtime (parquet is also covered by passing unit tests `tests/test_parquet_storage.py`).
+
 ### Ports (shared-machine port conflicts)
 
 All infra default ports live in **one file**: `src/.env` (copy from `src/.env.example`, gitignored). Read by **both** docker-compose (native `${VAR:-default}` substitution) and the Python code (via `src/utils/ports.py` — `redis_port()`, `mqtt_port()`, `minio_endpoint()`, `helics_port_range()`). Change a port once → containers + sim processes follow. Keys: `COSIM_REDIS_PORT` (6379), `COSIM_MQTT_PORT` (11883), `COSIM_MINIO_PORT` (9000), `COSIM_MINIO_CONSOLE_PORT` (9101), `COSIM_HELICS_PORT_MIN`/`MAX` (20000/30000). Legacy `REDIS_PORT`/`MQTT_PORT` env exports still honored; absent `.env` → historical defaults. `ports.py` resolution: explicit env export > `src/.env` > built-in default. Per-scenario `broker_config.port` stays in scenario YAML (co-sim config, not a global default). Tests: `pytest tests/test_ports.py`. **Note:** container-internal ports (catalog-loader's `REDIS_PORT=6379`, service-to-service refs) are NOT `.env`-driven — only *host* port mappings are.
@@ -76,7 +86,7 @@ Streamlit dashboard `load_all_records()` (`src/dashboard/dashboard_data.py`) rea
 
 ### Multi-Federation Scenarios
 
-Scenario with >1 federation: `ScenarioManager` auto-inserts hierarchy broker (`helics_broker --sub_brokers=N`) above per-federation brokers, assigns TCP ports dynamically.
+Scenario with >1 federation: `ScenarioManager` auto-inserts hierarchy broker (`helics_broker --sub_brokers=N`) above per-federation brokers, assigns TCP ports dynamically. Cross-federation pub/sub uses a flat **global** HELICS key namespace (`register_global_publication`/`register_global_input`) routed through the hierarchy broker, so a federate's targets need no federation prefix. The federation brokers dial the hierarchy broker with a bare `host:port` uplink (no `core_type://` scheme — `_ss` is a coreType, not a URI scheme; a `zmq_ss://…` uplink is malformed and hangs the sub-broker). **Composes with distributed deployment**: multi-federation + remote-SSH federates is validated (demo `src/scenarios/distributed_multifederation_test.yaml`); use `zmq_ss`/`tcp_ss` cores for distributed. See `docs/user_guide/distributed_deployment.md`.
 
 ### Digital-Twin Interfaces & Live Streaming (opt-in, off by default)
 

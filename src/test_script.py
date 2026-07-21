@@ -43,7 +43,11 @@ from core.ScenarioManager import main, ScenarioManager
 # broker hierarchy, with one federation's federate spawned on a remote machine
 # over SSH (localhost-as-remote by default; edit the deployment block for real
 # machines). Proves multi-fed + distributed compose. Uses zmq_ss (NAT-safe).
-main('distributed_multifederation_test')
+#main('distributed_multifederation_test')
+
+
+#parquet results
+main('rc_building_parquet_test')
 #main('fmu_feedthrough_test')
 #main('bui0_fmu_test')
 #main ('m5_bk4_demo_a_full_sim')

@@ -3,6 +3,12 @@
 > Handoff doc for implementer agent (Sonnet). Caveman prose, full technical content. Code blocks normal.
 > Rationale + alternatives for every choice: see `distributed_ssh_spawning_alternatives.md` (same folder).
 > Status: **COMPLETE — T1–T7 implemented, live localhost-as-remote E2E PASSED (2026-07-15).**
+> **Update 2026-07-21:** multi-federation + distributed now validated too. Fixed a hierarchy-broker
+> uplink bug (sub-broker `--broker_address` was built as `{core_type}://host:port` → `zmq_ss://…`,
+> a malformed URI that hung the sub-broker; now bare `host:port`, `ScenarioManager._normalize_broker_and_core_configs`).
+> Cross-federation data flow with one federate remote confirmed on both localhost-as-remote and a
+> real remote machine (cloud1). Demo: `src/scenarios/distributed_multifederation_test.yaml`;
+> regression suite: `tests/regression_suite.py`.
 > `distributed_demo` (pv_federate spawned remotely over ssh) reproduced the all-local twin exactly
 > (2304/2304 records within 1e-9); results collected back; mid-run SIGINT left zero orphans. Two bugs
 > found+fixed during E2E (ssh master `-nNf` pipe-deadlock in `remote_executor`; unbound `success` on

@@ -22,6 +22,21 @@ Keeping brokers local means local TCP port allocation stays valid and there is n
 discovery or broker-log streaming to manage. Remote broker placement is future work — see the
 plan doc `docs/future_and_TODOs/distributed_ssh_spawning_plan.md`.
 
+### Multiple federations + distributed (supported)
+
+Distributed spawning composes with multi-federation scenarios. When a scenario has more than one
+federation, `ScenarioManager` starts a **hierarchy (main) broker** above the per-federation brokers
+— all of them on the manager — and cross-federation pub/sub routes through it
+(`federate → its federation broker → main broker → the other federation broker → federate`). A
+remote federate only ever dials its own federation broker at `manager_address:<port>`, exactly as
+in the single-federation case, so nothing about remote placement changes. Use the single-socket
+cores (`zmq_ss` / `tcp_ss`) for any distributed run — see the protocol note below.
+
+Validated end-to-end (2 federations, one federate remote, cross-federation data flow) on both
+localhost-as-remote and a real remote machine. Runnable demo:
+`src/scenarios/distributed_multifederation_test.yaml`. The pre-merge regression suite
+(`tests/regression_suite.py`) exercises this path on every run.
+
 ## One-time setup on each remote machine
 
 Do this once per remote host (and once for `127.0.0.1` if you want to try the localhost-as-remote
