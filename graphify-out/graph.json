@@ -449,7 +449,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_base_adapter",
-      "community": 61,
+      "community": 69,
       "norm_label": "base_adapter.py"
     },
     {
@@ -539,7 +539,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_1",
-      "community": 61,
+      "community": 69,
       "norm_label": "base_adapter.py  abstract transport adapter used by the `stream` outbound mirror"
     },
     {
@@ -609,7 +609,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_mqtt_adapter",
-      "community": 61,
+      "community": 69,
       "norm_label": "mqtt_adapter.py"
     },
     {
@@ -739,7 +739,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_mqtt_adapter_rationale_1",
-      "community": 61,
+      "community": 69,
       "norm_label": "mqtt_adapter.py  mqtt implementation of interfaceadapter, backed by mosquitto. `"
     },
     {
@@ -829,7 +829,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_basefederate",
-      "community": 142,
+      "community": 69,
       "norm_label": "basefederate.py"
     },
     {
@@ -1039,7 +1039,7 @@
       "source_location": "L597",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_required_input_names",
-      "community": 25,
+      "community": 154,
       "norm_label": "._required_input_names()"
     },
     {
@@ -1049,7 +1049,7 @@
       "source_location": "L605",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_get_missing_required_inputs",
-      "community": 25,
+      "community": 154,
       "norm_label": "._get_missing_required_inputs()"
     },
     {
@@ -1119,7 +1119,7 @@
       "source_location": "L701",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_apply_startup_sync_policy",
-      "community": 25,
+      "community": 154,
       "norm_label": "._apply_startup_sync_policy()"
     },
     {
@@ -1129,7 +1129,7 @@
       "source_location": "L710",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_enforce_startup_input_sync",
-      "community": 25,
+      "community": 154,
       "norm_label": "._enforce_startup_input_sync()"
     },
     {
@@ -1179,7 +1179,7 @@
       "source_location": "L813",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_get_output_override",
-      "community": 118,
+      "community": 30,
       "norm_label": "._get_output_override()"
     },
     {
@@ -1189,7 +1189,7 @@
       "source_location": "L822",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_apply_param_overrides",
-      "community": 118,
+      "community": 30,
       "norm_label": "._apply_param_overrides()"
     },
     {
@@ -1269,7 +1269,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_1",
-      "community": 142,
+      "community": 69,
       "norm_label": "basefederate.py  base class for helics federates in the cosim_gym framework, man"
     },
     {
@@ -1399,7 +1399,7 @@
       "source_location": "L711",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_711",
-      "community": 25,
+      "community": 154,
       "norm_label": "ensure required inputs are available before entering the first model step."
     },
     {
@@ -1449,7 +1449,7 @@
       "source_location": "L814",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_814",
-      "community": 118,
+      "community": 30,
       "norm_label": "opt-in digital-twin output override (m4) \u2014 none unless a bridge is         activ"
     },
     {
@@ -1459,7 +1459,7 @@
       "source_location": "L823",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_823",
-      "community": 118,
+      "community": 30,
       "norm_label": "opt-in digital-twin parameter override (m4) \u2014 applied before this         tick's"
     },
     {
@@ -1499,7 +1499,7 @@
       "source_location": "L464",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_464",
-      "community": 142,
+      "community": 69,
       "norm_label": "# todo: unclear whether the first time-advance request should target step 0 or s"
     },
     {
@@ -1509,7 +1509,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_interfacefederate",
-      "community": 142,
+      "community": 69,
       "norm_label": "interfacefederate.py"
     },
     {
@@ -1639,7 +1639,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_interfacefederate_rationale_1",
-      "community": 142,
+      "community": 69,
       "norm_label": "interfacefederate.py  model-less helics federate whose \"model\" is a network brid"
     },
     {
@@ -3569,7 +3569,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_override_registry",
-      "community": 142,
+      "community": 118,
       "norm_label": "override_registry.py"
     },
     {
@@ -3609,7 +3609,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "src_core_override_registry_overrideregistry_init",
-      "community": 70,
+      "community": 66,
       "norm_label": ".__init__()"
     },
     {
@@ -3659,7 +3659,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_override_registry_rationale_1",
-      "community": 142,
+      "community": 118,
       "norm_label": "override_registry.py  shared redis-backed channel for the digital-twin interface"
     },
     {
@@ -3689,7 +3689,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "src_core_override_registry_rationale_57",
-      "community": 70,
+      "community": 66,
       "norm_label": "connect to redis using redis_host env var + centralized port (utils.ports)."
     },
     {
@@ -3889,7 +3889,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_remote_executor",
-      "community": 137,
+      "community": 159,
       "norm_label": "remote_executor.py"
     },
     {
@@ -4099,7 +4099,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_remote_executor_rationale_1",
-      "community": 137,
+      "community": 159,
       "norm_label": "remote_executor.py  wraps plain openssh client (subprocess.popen, controlmaster"
     },
     {
@@ -4439,7 +4439,7 @@
       "source_location": "L135",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_get_all_records",
-      "community": 4,
+      "community": 36,
       "norm_label": "get_all_records()"
     },
     {
@@ -4469,7 +4469,7 @@
       "source_location": "L221",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_build_dataframe",
-      "community": 4,
+      "community": 36,
       "norm_label": "build_dataframe()"
     },
     {
@@ -4749,7 +4749,7 @@
       "source_location": "L230",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_rationale_230",
-      "community": 4,
+      "community": 36,
       "norm_label": "build filtered dataframe with session-local memoization."
     },
     {
@@ -5259,7 +5259,7 @@
       "source_location": "L276",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_build_dataframe",
-      "community": 109,
+      "community": 14,
       "norm_label": "build_dataframe()"
     },
     {
@@ -5269,7 +5269,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_py_dataframe",
-      "community": 109,
+      "community": 14,
       "norm_label": "dataframe"
     },
     {
@@ -5279,7 +5279,7 @@
       "source_location": "L307",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_build_episode_dataframe",
-      "community": 109,
+      "community": 14,
       "norm_label": "build_episode_dataframe()"
     },
     {
@@ -5449,7 +5449,7 @@
       "source_location": "L285",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_rationale_285",
-      "community": 109,
+      "community": 14,
       "norm_label": "build a filtered time-series dataframe from flat storage records."
     },
     {
@@ -5459,7 +5459,7 @@
       "source_location": "L308",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_rationale_308",
-      "community": 109,
+      "community": 14,
       "norm_label": "build an rl episode-level dataframe from flat records."
     },
     {
@@ -5877,7 +5877,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dashboard_streamlit_dashboard",
-      "community": 19,
+      "community": 4,
       "norm_label": "streamlit_dashboard.py"
     },
     {
@@ -5887,7 +5887,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dashboard_streamlit_dashboard_rationale_1",
-      "community": 19,
+      "community": 4,
       "norm_label": "streamlit application entrypoint. combines the post-run results explorer (`dashb"
     },
     {
@@ -6387,7 +6387,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rlagent_init",
-      "community": 31,
+      "community": 49,
       "norm_label": ".__init__()"
     },
     {
@@ -6407,7 +6407,7 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rlagent_compute_reward",
-      "community": 158,
+      "community": 49,
       "norm_label": ".compute_reward()"
     },
     {
@@ -6417,7 +6417,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rlagent_desanitize_obs_if_needed",
-      "community": 158,
+      "community": 49,
       "norm_label": "._desanitize_obs_if_needed()"
     },
     {
@@ -6587,7 +6587,7 @@
       "source_location": "L566",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_dictkeynamewrapper_desanitize_observation",
-      "community": 158,
+      "community": 49,
       "norm_label": ".desanitize_observation()"
     },
     {
@@ -6637,7 +6637,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rationale_66",
-      "community": 31,
+      "community": 49,
       "norm_label": "store the wrapped env, logger, and full rl scenario config; load the configured"
     },
     {
@@ -6657,7 +6657,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rationale_94",
-      "community": 158,
+      "community": 49,
       "norm_label": "compute reward for the current transition.          if a reward function was spe"
     },
     {
@@ -6667,7 +6667,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rationale_113",
-      "community": 158,
+      "community": 49,
       "norm_label": "desanitize observation if dictkeynamewrapper is in the env wrapper chain."
     },
     {
@@ -6827,7 +6827,7 @@
       "source_location": "L567",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rationale_567",
-      "community": 158,
+      "community": 49,
       "norm_label": "convert observation dict keys from sanitized format back to original format with"
     },
     {
@@ -7057,7 +7057,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_base_model",
-      "community": 69,
+      "community": 130,
       "norm_label": "base_model.py"
     },
     {
@@ -7257,7 +7257,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_base_model_rationale_1",
-      "community": 69,
+      "community": 130,
       "norm_label": "base_model.py  primary base class and logging adapters for all physical and beha"
     },
     {
@@ -7817,7 +7817,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager",
-      "community": 31,
+      "community": 28,
       "norm_label": "checkpoint_manager.py"
     },
     {
@@ -7827,7 +7827,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_checkpointmanager",
-      "community": 16,
+      "community": 28,
       "norm_label": "checkpointmanager"
     },
     {
@@ -7837,7 +7837,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_checkpointmanager_init",
-      "community": 16,
+      "community": 28,
       "norm_label": ".__init__()"
     },
     {
@@ -7847,7 +7847,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_checkpointmanager_best_path",
-      "community": 16,
+      "community": 28,
       "norm_label": ".best_path()"
     },
     {
@@ -7857,7 +7857,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_checkpointmanager_ensure_dir",
-      "community": 16,
+      "community": 28,
       "norm_label": ".ensure_dir()"
     },
     {
@@ -7867,7 +7867,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_checkpointmanager_test_checkpoint",
-      "community": 16,
+      "community": 28,
       "norm_label": ".test_checkpoint()"
     },
     {
@@ -7877,7 +7877,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_rationale_1",
-      "community": 31,
+      "community": 28,
       "norm_label": "checkpoint_manager.py \u2014 resolve checkpoint paths from experiment.checkpoint conf"
     },
     {
@@ -7887,7 +7887,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_rationale_20",
-      "community": 16,
+      "community": 28,
       "norm_label": "path of the single best checkpoint produced by training (dir-resolved)."
     },
     {
@@ -7897,7 +7897,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_rationale_25",
-      "community": 16,
+      "community": 28,
       "norm_label": "create the parent directory of `path` (default: best_path). returns the path."
     },
     {
@@ -7907,7 +7907,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_components_checkpoint_manager_rationale_34",
-      "community": 16,
+      "community": 28,
       "norm_label": "checkpoint to load for testing: explicit run.test.checkpoint if set, else best_p"
     },
     {
@@ -8097,7 +8097,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions",
-      "community": 138,
+      "community": 72,
       "norm_label": "reward_functions.py"
     },
     {
@@ -8107,7 +8107,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_spring_oscillation_reward",
-      "community": 138,
+      "community": 72,
       "norm_label": "spring_oscillation_reward()"
     },
     {
@@ -8117,7 +8117,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_heatpump_comfort_efficiency_reward",
-      "community": 138,
+      "community": 72,
       "norm_label": "heatpump_comfort_efficiency_reward()"
     },
     {
@@ -8137,7 +8137,7 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_soc_reward",
-      "community": 138,
+      "community": 82,
       "norm_label": "soc_reward()"
     },
     {
@@ -8147,7 +8147,7 @@
       "source_location": "L190",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_soc_band_clip_simple",
-      "community": 138,
+      "community": 72,
       "norm_label": "soc_band_clip_simple()"
     },
     {
@@ -8157,7 +8157,7 @@
       "source_location": "L251",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_bui0_setpoint_comfort",
-      "community": 138,
+      "community": 41,
       "norm_label": "bui0_setpoint_comfort()"
     },
     {
@@ -8167,7 +8167,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_1",
-      "community": 138,
+      "community": 72,
       "norm_label": "reward functions library  centralised collection of reward functions for use acr"
     },
     {
@@ -8177,7 +8177,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_27",
-      "community": 138,
+      "community": 72,
       "norm_label": "encourages the spring-mass-damper to oscillate between +1 m and -1 m.      terms"
     },
     {
@@ -8187,7 +8187,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_53",
-      "community": 138,
+      "community": 72,
       "norm_label": "balances thermal comfort and energy efficiency for the building/heat-pump scenar"
     },
     {
@@ -8207,7 +8207,7 @@
       "source_location": "L191",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_191",
-      "community": 138,
+      "community": 72,
       "norm_label": "simple, well-scaled reward for battery case studies:       1) keep soc inside [0"
     },
     {
@@ -8217,7 +8217,7 @@
       "source_location": "L252",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_252",
-      "community": 138,
+      "community": 41,
       "norm_label": "comfort(+optional energy) reward for the bui0 energyplus fmu setpoint-control ex"
     },
     {
@@ -8567,7 +8567,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent",
-      "community": 49,
+      "community": 74,
       "norm_label": "rl_simple_agent.py"
     },
     {
@@ -8577,7 +8577,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent",
-      "community": 49,
+      "community": 74,
       "norm_label": "rl_simple_agent"
     },
     {
@@ -8587,7 +8587,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_init",
-      "community": 49,
+      "community": 74,
       "norm_label": ".__init__()"
     },
     {
@@ -8597,7 +8597,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_act",
-      "community": 49,
+      "community": 74,
       "norm_label": ".act()"
     },
     {
@@ -8607,7 +8607,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_compute_reward",
-      "community": 49,
+      "community": 74,
       "norm_label": ".compute_reward()"
     },
     {
@@ -8617,7 +8617,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_online_training_loop",
-      "community": 49,
+      "community": 74,
       "norm_label": ".online_training_loop()"
     },
     {
@@ -8627,7 +8627,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_testing_loop",
-      "community": 49,
+      "community": 74,
       "norm_label": ".testing_loop()"
     },
     {
@@ -8637,7 +8637,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rationale_1",
-      "community": 49,
+      "community": 74,
       "norm_label": "rl_simple_agent.py  skeleton implementation for a simple rl agent providing a te"
     },
     {
@@ -9327,7 +9327,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_bui0_input_feeder",
-      "community": 72,
+      "community": 149,
       "norm_label": "bui0_input_feeder.py"
     },
     {
@@ -9337,7 +9337,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_bui0_input_feeder_bui0inputfeeder",
-      "community": 72,
+      "community": 149,
       "norm_label": "bui0inputfeeder"
     },
     {
@@ -9347,7 +9347,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_bui0_input_feeder_bui0inputfeeder_init",
-      "community": 72,
+      "community": 149,
       "norm_label": ".__init__()"
     },
     {
@@ -9357,7 +9357,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_bui0_input_feeder_bui0inputfeeder_initialize",
-      "community": 72,
+      "community": 149,
       "norm_label": ".initialize()"
     },
     {
@@ -9367,7 +9367,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_bui0_input_feeder_bui0inputfeeder_step",
-      "community": 72,
+      "community": 149,
       "norm_label": ".step()"
     },
     {
@@ -9377,7 +9377,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_bui0_input_feeder_bui0inputfeeder_finalize",
-      "community": 72,
+      "community": 149,
       "norm_label": ".finalize()"
     },
     {
@@ -9387,7 +9387,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_bui0_input_feeder_rationale_5",
-      "community": 72,
+      "community": 149,
       "norm_label": "time-varying input feeder for the bui0 energyplus fmu.      drives the six fmu i"
     },
     {
@@ -9557,7 +9557,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pandapipes_grid",
-      "community": 69,
+      "community": 130,
       "norm_label": "pandapipes_grid.py"
     },
     {
@@ -9717,7 +9717,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pandapipes_grid_rationale_1",
-      "community": 69,
+      "community": 130,
       "norm_label": "pandapipes_grid.py  stepped pandapipes fluid/gas network model for cosimgym co-s"
     },
     {
@@ -9747,7 +9747,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pandapower_grid",
-      "community": 69,
+      "community": 130,
       "norm_label": "pandapower_grid.py"
     },
     {
@@ -9897,7 +9897,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pandapower_grid_rationale_1",
-      "community": 69,
+      "community": 130,
       "norm_label": "pandapower_grid.py  stepped pandapower power grid model for cosimgym co-simulati"
     },
     {
@@ -9917,7 +9917,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pv_dest",
-      "community": 82,
+      "community": 130,
       "norm_label": "pv_dest.py"
     },
     {
@@ -9927,7 +9927,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pv_dest_pv_dest",
-      "community": 82,
+      "community": 5,
       "norm_label": "pv_dest"
     },
     {
@@ -9937,7 +9937,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pv_dest_pv_dest_init",
-      "community": 82,
+      "community": 5,
       "norm_label": ".__init__()"
     },
     {
@@ -9957,7 +9957,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pv_dest_pv_dest_step",
-      "community": 82,
+      "community": 5,
       "norm_label": ".step()"
     },
     {
@@ -9967,7 +9967,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pv_dest_pv_dest_finalize",
-      "community": 82,
+      "community": 5,
       "norm_label": ".finalize()"
     },
     {
@@ -9977,7 +9977,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_pv_dest_rationale_1",
-      "community": 82,
+      "community": 130,
       "norm_label": "pv_dest.py  photovoltaic (pv) system model for generating solar power outputs ba"
     },
     {
@@ -9987,7 +9987,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rb_bems",
-      "community": 149,
+      "community": 110,
       "norm_label": "rb_bems.py"
     },
     {
@@ -9997,7 +9997,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rb_bems_rb_bems",
-      "community": 149,
+      "community": 110,
       "norm_label": "rb_bems"
     },
     {
@@ -10007,7 +10007,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rb_bems_rb_bems_init",
-      "community": 149,
+      "community": 110,
       "norm_label": ".__init__()"
     },
     {
@@ -10017,7 +10017,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rb_bems_rb_bems_initialize",
-      "community": 149,
+      "community": 110,
       "norm_label": ".initialize()"
     },
     {
@@ -10027,7 +10027,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rb_bems_rb_bems_step",
-      "community": 149,
+      "community": 110,
       "norm_label": ".step()"
     },
     {
@@ -10037,7 +10037,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rb_bems_rb_bems_finalize",
-      "community": 149,
+      "community": 110,
       "norm_label": ".finalize()"
     },
     {
@@ -10047,7 +10047,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rc_building",
-      "community": 69,
+      "community": 130,
       "norm_label": "rc_building.py"
     },
     {
@@ -10297,7 +10297,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_rc_building_rationale_1",
-      "community": 69,
+      "community": 130,
       "norm_label": "rc_building.py  parametrizable 5r1c (iso 13790 / en 13790) single-zone building"
     },
     {
@@ -11137,7 +11137,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper",
-      "community": 41,
+      "community": 130,
       "norm_label": "spring_mass_damper.py"
     },
     {
@@ -11147,7 +11147,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_springmassdamper",
-      "community": 41,
+      "community": 3,
       "norm_label": "springmassdamper"
     },
     {
@@ -11157,7 +11157,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_springmassdamper_init",
-      "community": 41,
+      "community": 3,
       "norm_label": ".__init__()"
     },
     {
@@ -11167,7 +11167,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_springmassdamper_initialize",
-      "community": 41,
+      "community": 3,
       "norm_label": ".initialize()"
     },
     {
@@ -11177,7 +11177,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_springmassdamper_step",
-      "community": 41,
+      "community": 3,
       "norm_label": ".step()"
     },
     {
@@ -11187,7 +11187,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_springmassdamper_rk4_step",
-      "community": 41,
+      "community": 3,
       "norm_label": "._rk4_step()"
     },
     {
@@ -11197,7 +11197,7 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_springmassdamper_finalize",
-      "community": 41,
+      "community": 3,
       "norm_label": ".finalize()"
     },
     {
@@ -11207,7 +11207,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_rationale_6",
-      "community": 41,
+      "community": 3,
       "norm_label": "spring-mass-damper system model implementation.          this model simulates a"
     },
     {
@@ -11217,7 +11217,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_rationale_35",
-      "community": 41,
+      "community": 3,
       "norm_label": "initialize the spring-mass-damper model.                  sets up initial condit"
     },
     {
@@ -11227,7 +11227,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_rationale_58",
-      "community": 41,
+      "community": 3,
       "norm_label": "execute one simulation step of the spring-mass-damper system.                  i"
     },
     {
@@ -11237,7 +11237,7 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_rationale_114",
-      "community": 41,
+      "community": 3,
       "norm_label": "runge-kutta 4th order integration step for the spring-mass-damper system."
     },
     {
@@ -11247,7 +11247,7 @@
       "source_location": "L147",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_spring_mass_damper_rationale_147",
-      "community": 41,
+      "community": 3,
       "norm_label": "finalize the spring-mass-damper model simulation.                  logs final st"
     },
     {
@@ -11427,7 +11427,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_scenarios_bk4_demo_external_sensor",
-      "community": 74,
+      "community": 3,
       "norm_label": "bk4_demo_external_sensor.py"
     },
     {
@@ -11437,7 +11437,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_scenarios_bk4_demo_external_sensor_main",
-      "community": 74,
+      "community": 3,
       "norm_label": "main()"
     },
     {
@@ -11447,7 +11447,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_scenarios_bk4_demo_external_sensor_rationale_1",
-      "community": 74,
+      "community": 3,
       "norm_label": "bk4_demo_external_sensor.py \u2014 stand-in \"real hardware\" for the bk4 digital-twin"
     },
     {
@@ -13377,7 +13377,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "src_utils_ports_redis_port",
-      "community": 70,
+      "community": 137,
       "norm_label": "redis_port()"
     },
     {
@@ -13467,7 +13467,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_utils_ports_rationale_69",
-      "community": 70,
+      "community": 137,
       "norm_label": "manager redis port. env: cosim_redis_port (or legacy redis_port). default 6379."
     },
     {
@@ -13527,7 +13527,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_redis_client",
-      "community": 66,
+      "community": 45,
       "norm_label": "redis_client.py"
     },
     {
@@ -13547,7 +13547,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_utils_redis_client_redisclient_init",
-      "community": 70,
+      "community": 66,
       "norm_label": ".__init__()"
     },
     {
@@ -13557,7 +13557,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_utils_redis_client_py_logger",
-      "community": 70,
+      "community": 66,
       "norm_label": "logger"
     },
     {
@@ -13567,7 +13567,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_utils_redis_client_redisclient_connect",
-      "community": 70,
+      "community": 66,
       "norm_label": ".connect()"
     },
     {
@@ -13627,7 +13627,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_redis_client_rationale_1",
-      "community": 66,
+      "community": 45,
       "norm_label": "redis_client.py  client wrapper for redis interactions, managing connection and"
     },
     {
@@ -13647,7 +13647,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_utils_redis_client_rationale_35",
-      "community": 70,
+      "community": 66,
       "norm_label": "establish connection to the redis server."
     },
     {
@@ -13791,20 +13791,30 @@
       "norm_label": "regression_suite.py"
     },
     {
-      "label": "_run_once()",
+      "label": "_shorten()",
       "file_type": "code",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L55",
+      "source_location": "L111",
       "_origin": "ast",
-      "id": "tests_regression_suite_run_once",
+      "id": "tests_regression_suite_shorten",
       "community": 152,
-      "norm_label": "_run_once()"
+      "norm_label": "_shorten()"
+    },
+    {
+      "label": "_classify()",
+      "file_type": "code",
+      "source_file": "tests/regression_suite.py",
+      "source_location": "L148",
+      "_origin": "ast",
+      "id": "tests_regression_suite_classify",
+      "community": 152,
+      "norm_label": "_classify()"
     },
     {
       "label": "run_scenario()",
       "file_type": "code",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L73",
+      "source_location": "L162",
       "_origin": "ast",
       "id": "tests_regression_suite_run_scenario",
       "community": 152,
@@ -13814,7 +13824,7 @@
       "label": "run_pytest()",
       "file_type": "code",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L89",
+      "source_location": "L213",
       "_origin": "ast",
       "id": "tests_regression_suite_run_pytest",
       "community": 152,
@@ -13824,21 +13834,31 @@
       "label": "main()",
       "file_type": "code",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L102",
+      "source_location": "L222",
       "_origin": "ast",
       "id": "tests_regression_suite_main",
       "community": 152,
       "norm_label": "main()"
     },
     {
-      "label": "Run one scenario in a fresh interpreter. PASS iff it prints the success line",
+      "label": "Trim a scenario for a fast functional check, on a copy. Returns the dict.",
       "file_type": "rationale",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L74",
+      "source_location": "L112",
       "_origin": "ast",
-      "id": "tests_regression_suite_rationale_74",
+      "id": "tests_regression_suite_rationale_112",
       "community": 152,
-      "norm_label": "run one scenario in a fresh interpreter. pass iff it prints the success line"
+      "norm_label": "trim a scenario for a fast functional check, on a copy. returns the dict."
+    },
+    {
+      "label": "Shorten on a temp copy, run in an isolated process group, classify. Retries",
+      "file_type": "rationale",
+      "source_file": "tests/regression_suite.py",
+      "source_location": "L163",
+      "_origin": "ast",
+      "id": "tests_regression_suite_rationale_163",
+      "community": 152,
+      "norm_label": "shorten on a temp copy, run in an isolated process group, classify. retries"
     },
     {
       "label": "test_async_storage.py",
@@ -14497,7 +14517,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_remote_executor",
-      "community": 35,
+      "community": 159,
       "norm_label": "test_remote_executor.py"
     },
     {
@@ -14597,7 +14617,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_test_remote_executor_testmastercmd",
-      "community": 39,
+      "community": 159,
       "norm_label": "testmastercmd"
     },
     {
@@ -14607,7 +14627,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "tests_test_remote_executor_testmastercmd_test_master_cmd_flags",
-      "community": 39,
+      "community": 159,
       "norm_label": ".test_master_cmd_flags()"
     },
     {
@@ -14687,7 +14707,7 @@
       "source_location": "L125",
       "_origin": "ast",
       "id": "tests_test_remote_executor_testruncmd",
-      "community": 35,
+      "community": 39,
       "norm_label": "testruncmd"
     },
     {
@@ -14697,7 +14717,7 @@
       "source_location": "L127",
       "_origin": "ast",
       "id": "tests_test_remote_executor_testruncmd_test_run_cmd_no_tty_by_default",
-      "community": 35,
+      "community": 39,
       "norm_label": ".test_run_cmd_no_tty_by_default()"
     },
     {
@@ -14707,7 +14727,7 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "tests_test_remote_executor_testruncmd_test_run_cmd_with_tty",
-      "community": 35,
+      "community": 39,
       "norm_label": ".test_run_cmd_with_tty()"
     },
     {
@@ -14797,7 +14817,7 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "tests_test_remote_executor_testliveloopback",
-      "community": 39,
+      "community": 27,
       "norm_label": "testliveloopback"
     },
     {
@@ -14807,7 +14827,7 @@
       "source_location": "L215",
       "_origin": "ast",
       "id": "tests_test_remote_executor_testliveloopback_test_open_master_verify_close_against_localhost",
-      "community": 39,
+      "community": 27,
       "norm_label": ".test_open_master_verify_close_against_localhost()"
     },
     {
@@ -14817,7 +14837,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_remote_executor_rationale_1",
-      "community": 35,
+      "community": 159,
       "norm_label": "test_remote_executor.py \u2014 command construction + quoting for remoteexecutor.  no"
     },
     {
@@ -15624,7 +15644,7 @@
       "label": "Ports (shared-machine port conflicts)",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L38",
+      "source_location": "L39",
       "_origin": "ast",
       "id": "claude_ports_shared_machine_port_conflicts",
       "community": 99,
@@ -15634,7 +15654,7 @@
       "label": "Architecture",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L42",
+      "source_location": "L43",
       "_origin": "ast",
       "id": "claude_architecture",
       "community": 99,
@@ -15644,7 +15664,7 @@
       "label": "Execution Flow",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L44",
+      "source_location": "L45",
       "_origin": "ast",
       "id": "claude_execution_flow",
       "community": 99,
@@ -15654,7 +15674,7 @@
       "label": "YAML Scenario Config \u2192 Dataclasses \u2192 Runtime",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L54",
+      "source_location": "L55",
       "_origin": "ast",
       "id": "claude_yaml_scenario_config_dataclasses_runtime",
       "community": 99,
@@ -15664,7 +15684,7 @@
       "label": "Model Catalog",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L60",
+      "source_location": "L61",
       "_origin": "ast",
       "id": "claude_model_catalog",
       "community": 99,
@@ -15674,7 +15694,7 @@
       "label": "Key Timing Concepts",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L68",
+      "source_location": "L69",
       "_origin": "ast",
       "id": "claude_key_timing_concepts",
       "community": 99,
@@ -15684,7 +15704,7 @@
       "label": "Storage & Results",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L75",
+      "source_location": "L76",
       "_origin": "ast",
       "id": "claude_storage_results",
       "community": 99,
@@ -15694,7 +15714,7 @@
       "label": "Multi-Federation Scenarios",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L87",
+      "source_location": "L88",
       "_origin": "ast",
       "id": "claude_multi_federation_scenarios",
       "community": 99,
@@ -15704,7 +15724,7 @@
       "label": "Digital-Twin Interfaces & Live Streaming (opt-in, off by default)",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L91",
+      "source_location": "L92",
       "_origin": "ast",
       "id": "claude_digital_twin_interfaces_live_streaming_opt_in_off_by_default",
       "community": 99,
@@ -15714,7 +15734,7 @@
       "label": "Config Reference",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L103",
+      "source_location": "L104",
       "_origin": "ast",
       "id": "claude_config_reference",
       "community": 99,
@@ -15724,7 +15744,7 @@
       "label": "RL Config Schema (`reinforcement_learning_config`)",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L122",
+      "source_location": "L123",
       "_origin": "ast",
       "id": "claude_rl_config_schema_reinforcement_learning_config",
       "community": 99,
@@ -15734,7 +15754,7 @@
       "label": "graphify",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L137",
+      "source_location": "L138",
       "_origin": "ast",
       "id": "claude_graphify",
       "community": 99,
@@ -17481,6 +17501,66 @@
       "norm_label": "future enhancements (document, do not build now)"
     },
     {
+      "label": "known_issues_from_regression.md",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_known_issues_from_regression",
+      "community": 142,
+      "norm_label": "known_issues_from_regression.md"
+    },
+    {
+      "label": "Known Issues Surfaced by the Regression Suite (2026-07-21)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_known_issues_from_regression_known_issues_surfaced_by_the_regression_suite_2026_07_21",
+      "community": 142,
+      "norm_label": "known issues surfaced by the regression suite (2026-07-21)"
+    },
+    {
+      "label": "1. Parquet sink \u2192 native SIGSEGV in a federate process  (HIGH)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_known_issues_from_regression_1_parquet_sink_native_sigsegv_in_a_federate_process_high",
+      "community": 142,
+      "norm_label": "1. parquet sink \u2192 native sigsegv in a federate process  (high)"
+    },
+    {
+      "label": "2. zmq auto-port allocation ignores the paired `port+1`  (MEDIUM)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_known_issues_from_regression_2_zmq_auto_port_allocation_ignores_the_paired_port_1_medium",
+      "community": 142,
+      "norm_label": "2. zmq auto-port allocation ignores the paired `port+1`  (medium)"
+    },
+    {
+      "label": "3. `RL_Simple_Agent` catalog model is a non-functional skeleton  (LOW)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_known_issues_from_regression_3_rl_simple_agent_catalog_model_is_a_non_functional_skeleton_low",
+      "community": 142,
+      "norm_label": "3. `rl_simple_agent` catalog model is a non-functional skeleton  (low)"
+    },
+    {
+      "label": "4. `Adelaide_test` \u2014 missing MinIO object (DATA, not code)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_known_issues_from_regression_4_adelaide_test_missing_minio_object_data_not_code",
+      "community": 142,
+      "norm_label": "4. `adelaide_test` \u2014 missing minio object (data, not code)"
+    },
+    {
       "label": "pandapower_extension.md",
       "file_type": "document",
       "source_file": "docs/future_and_TODOs/pandapower_extension.md",
@@ -18747,7 +18827,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations",
-      "community": 28,
+      "community": 3,
       "norm_label": "breakthrough_innovations.md"
     },
     {
@@ -18757,7 +18837,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_cosimgym_breakthrough_innovations_from_the_architecture_s_potential",
-      "community": 28,
+      "community": 3,
       "norm_label": "cosimgym \u2014 breakthrough innovations from the architecture's potential"
     },
     {
@@ -18767,7 +18847,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_north_star",
-      "community": 28,
+      "community": 3,
       "norm_label": "north star"
     },
     {
@@ -18777,7 +18857,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_tier_1_championable_defensible_architecture_native_paper_ready_with_effort",
-      "community": 110,
+      "community": 3,
       "norm_label": "tier 1 \u2014 championable (defensible, architecture-native, paper-ready with effort)"
     },
     {
@@ -18787,7 +18867,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk1_multi_timescale_hierarchical_rl_on_natively_multi_rate_physics",
-      "community": 110,
+      "community": 3,
       "norm_label": "bk1. multi-timescale / hierarchical rl on natively multi-rate physics"
     },
     {
@@ -18797,7 +18877,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk2_generalist_energy_control_agents_via_domain_randomization_over_the_catalog",
-      "community": 110,
+      "community": 3,
       "norm_label": "bk2. generalist energy-control agents via domain randomization over the catalog"
     },
     {
@@ -18807,7 +18887,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk3_multi_agent_rl_with_realistic_communication_not_abstracted_away",
-      "community": 110,
+      "community": 3,
       "norm_label": "bk3. multi-agent rl with *realistic* communication, not abstracted away"
     },
     {
@@ -18817,7 +18897,7 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk4_config_only_sim_to_real_digital_twin_in_the_loop",
-      "community": 110,
+      "community": 3,
       "norm_label": "bk4. config-only sim-to-real / digital-twin-in-the-loop"
     },
     {
@@ -18827,7 +18907,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_tier_2_high_upside_lower_effort_credibility_multipliers",
-      "community": 28,
+      "community": 3,
       "norm_label": "tier 2 \u2014 high-upside, lower-effort credibility multipliers"
     },
     {
@@ -18837,7 +18917,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk5_automatic_physics_grounded_safety_shields_from_catalog_metadata",
-      "community": 28,
+      "community": 3,
       "norm_label": "bk5. automatic physics-grounded safety shields from catalog metadata"
     },
     {
@@ -18847,7 +18927,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk6_an_offline_rl_dataset_factory_benchmark_for_energy_cps_d4rl_for_energy",
-      "community": 28,
+      "community": 3,
       "norm_label": "bk6. an offline-rl dataset factory + benchmark for energy cps (\"d4rl for energy\")"
     },
     {
@@ -18857,7 +18937,7 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk7_reset_semantics_for_non_resettable_simulators_as_a_recognized_rl_sub_problem",
-      "community": 28,
+      "community": 3,
       "norm_label": "bk7. reset semantics for non-resettable simulators as a recognized rl sub-problem"
     },
     {
@@ -18867,7 +18947,7 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_tier_3_speculative_high_ceiling_flag_as_vision_do_not_over_claim",
-      "community": 28,
+      "community": 3,
       "norm_label": "tier 3 \u2014 speculative, high-ceiling (flag as vision, do not over-claim)"
     },
     {
@@ -18877,7 +18957,7 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk8_llm_driven_declarative_experimentation_self_driving_co_simulation_research",
-      "community": 28,
+      "community": 3,
       "norm_label": "bk8. llm-driven declarative experimentation (self-driving co-simulation research)"
     },
     {
@@ -18887,7 +18967,7 @@
       "source_location": "L152",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_bk9_control_and_design_co_optimization",
-      "community": 28,
+      "community": 3,
       "norm_label": "bk9. control-and-design co-optimization"
     },
     {
@@ -18897,7 +18977,7 @@
       "source_location": "L164",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_recommended_sequencing_impact_vs_effort",
-      "community": 28,
+      "community": 3,
       "norm_label": "recommended sequencing (impact vs. effort)"
     },
     {
@@ -18907,7 +18987,7 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "docs_paper_breakthrough_innovations_single_sentence_to_pitch_the_vision",
-      "community": 28,
+      "community": 3,
       "norm_label": "single sentence to pitch the vision"
     },
     {
@@ -21150,7 +21230,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 143,
       "norm_label": "catalog entry: test_input_model",
       "id": "src_models_model_catalog_catalog_test_input_model"
     },
@@ -21215,7 +21295,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 82,
       "norm_label": "catalog entry: pv_dest",
       "id": "src_models_model_catalog_catalog_pv_dest"
     },
@@ -21228,7 +21308,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 82,
       "norm_label": "catalog entry: battery_dest",
       "id": "src_models_model_catalog_catalog_battery_dest"
     },
@@ -21241,7 +21321,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 110,
       "norm_label": "catalog entry: rb_bems (rule-based bems controller)",
       "id": "src_models_model_catalog_catalog_rb_bems"
     },
@@ -21267,7 +21347,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 82,
       "norm_label": "catalog entry: base_csv_reader",
       "id": "src_models_model_catalog_catalog_base_csv_reader"
     },
@@ -21280,7 +21360,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "catalog entry: weather_csv_reader",
       "id": "src_models_model_catalog_catalog_weather_csv_reader"
     },
@@ -21306,7 +21386,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 49,
+      "community": 3,
       "norm_label": "catalog entry: rl_simple_agent",
       "id": "src_models_model_catalog_catalog_rl_simple_agent"
     },
@@ -21319,7 +21399,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 41,
       "norm_label": "catalog entry: rl_simple_dqn",
       "id": "src_models_model_catalog_catalog_rl_simple_dqn"
     },
@@ -21371,7 +21451,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 143,
       "norm_label": "catalog entry: test_feedthrough_fmi3",
       "id": "src_models_model_catalog_catalog_test_feedthrough_fmi3"
     },
@@ -21384,7 +21464,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 41,
       "norm_label": "catalog entry: bui0_input_feeder",
       "id": "src_models_model_catalog_catalog_bui0_input_feeder"
     },
@@ -21397,7 +21477,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 41,
       "norm_label": "catalog entry: bui0_building_fmu (bui0 energyplus fmu, fmi 2.0)",
       "id": "src_models_model_catalog_catalog_bui0_building_fmu"
     },
@@ -21410,7 +21490,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "catalog entry: rc_building (5r1c iso 13790 model)",
       "id": "src_models_model_catalog_catalog_rc_building"
     },
@@ -21423,7 +21503,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "catalog entry: pandapower_grid",
       "id": "src_models_model_catalog_catalog_pandapower_grid"
     },
@@ -21436,7 +21516,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 143,
       "norm_label": "catalog entry: pandapipes_grid",
       "id": "src_models_model_catalog_catalog_pandapipes_grid"
     },
@@ -21553,7 +21633,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 41,
       "norm_label": "scenario: bui0_fmu_test (feeder + bui0 energyplus fmu smoke test)",
       "id": "src_scenarios_bui0_fmu_test"
     },
@@ -21566,7 +21646,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 41,
       "norm_label": "scenario: bui0_heatingpower_dqn (rl dqn control of bui0 heating radiative power)",
       "id": "src_scenarios_bui0_heatingpower_dqn"
     },
@@ -21579,7 +21659,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 41,
       "norm_label": "scenario: bui0_setpoint_dqn (rl dqn control of bui0 zone set-point, discrete)",
       "id": "src_scenarios_bui0_setpoint_dqn"
     },
@@ -21592,7 +21672,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 41,
       "norm_label": "scenario: bui0_setpoint_sac (rl sac control of bui0 zone set-point, continuous)",
       "id": "src_scenarios_bui0_setpoint_sac"
     },
@@ -21670,7 +21750,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "scenario: dh_district_jan_base (10-building district heating network, parquet sink)",
       "id": "src_scenarios_dh_district_jan_base"
     },
@@ -21683,7 +21763,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 143,
       "norm_label": "scenario: fmu_feedthrough_test (fmi 3.0 feedthrough fmu smoke test)",
       "id": "src_scenarios_fmu_feedthrough_test"
     },
@@ -21774,7 +21854,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 74,
+      "community": 3,
       "norm_label": "m5 bk4 demo (a) full sim",
       "id": "src_scenarios_m5_bk4_demo_a_full_sim"
     },
@@ -21787,7 +21867,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 74,
+      "community": 3,
       "norm_label": "m5 bk4 demo (b) digital twin",
       "id": "src_scenarios_m5_bk4_demo_b_digital_twin"
     },
@@ -21800,7 +21880,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "multi-building grid test scenario",
       "id": "src_scenarios_multi_building_grid_test"
     },
@@ -21813,7 +21893,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 143,
       "norm_label": "pandapipes grid test base scenario",
       "id": "src_scenarios_pandapipes_grid_test_base"
     },
@@ -21826,7 +21906,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 143,
       "norm_label": "pandapower grid test base scenario",
       "id": "src_scenarios_pandapower_grid_test_base"
     },
@@ -21839,7 +21919,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 82,
       "norm_label": "pv+battery dqn scenario",
       "id": "src_scenarios_pv_batt_dqn"
     },
@@ -21852,7 +21932,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 82,
       "norm_label": "pv+battery sac scenario",
       "id": "src_scenarios_pv_batt_sac"
     },
@@ -21865,7 +21945,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 82,
       "norm_label": "pv+battery test base scenario",
       "id": "src_scenarios_pv_batt_test_base"
     },
@@ -21878,7 +21958,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "rc building parquet sink test",
       "id": "src_scenarios_rc_building_parquet_test"
     },
@@ -21891,7 +21971,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "rc building test base scenario",
       "id": "src_scenarios_rc_building_test_base"
     },
@@ -21904,7 +21984,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 72,
       "norm_label": "simple spring dqn test",
       "id": "src_scenarios_simple_dqn_test"
     },
@@ -21969,7 +22049,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 49,
+      "community": 3,
       "norm_label": "simple test rl agent scenario",
       "id": "src_scenarios_simple_test_rlagent"
     },
@@ -21982,7 +22062,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "stress multi-building test (json sink)",
       "id": "src_scenarios_stress_multi_building_json"
     },
@@ -21995,7 +22075,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 70,
       "norm_label": "stress multi-building test (parquet sink)",
       "id": "src_scenarios_stress_multi_building_parquet"
     },
@@ -22060,7 +22140,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 74,
+      "community": 3,
       "norm_label": "bk4 config-only sim-to-real pattern",
       "id": "concept_bk4_config_only_sim_to_real"
     },
@@ -48252,6 +48332,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/regression_suite.py",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "tests_regression_suite",
+      "target": "datetime",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/utils/logging_config.py",
@@ -49061,7 +49152,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L102",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "tests_regression_suite",
+      "target": "tests_regression_suite_classify",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/regression_suite.py",
+      "source_location": "L222",
       "weight": 1.0,
       "source": "tests_regression_suite",
       "target": "tests_regression_suite_main",
@@ -49071,17 +49172,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L55",
-      "weight": 1.0,
-      "source": "tests_regression_suite",
-      "target": "tests_regression_suite_run_once",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/regression_suite.py",
-      "source_location": "L89",
+      "source_location": "L213",
       "weight": 1.0,
       "source": "tests_regression_suite",
       "target": "tests_regression_suite_run_pytest",
@@ -49091,21 +49182,30 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L73",
+      "source_location": "L162",
       "weight": 1.0,
       "source": "tests_regression_suite",
       "target": "tests_regression_suite_run_scenario",
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
-      "context": "call",
+      "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L81",
+      "source_location": "L111",
       "weight": 1.0,
-      "source": "tests_regression_suite_run_scenario",
-      "target": "tests_regression_suite_run_once",
+      "source": "tests_regression_suite",
+      "target": "tests_regression_suite_shorten",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/regression_suite.py",
+      "source_location": "L112",
+      "weight": 1.0,
+      "source": "tests_regression_suite_rationale_112",
+      "target": "tests_regression_suite_shorten",
       "confidence_score": 1.0
     },
     {
@@ -49113,7 +49213,18 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L115",
+      "source_location": "L174",
+      "weight": 1.0,
+      "source": "tests_regression_suite_run_scenario",
+      "target": "tests_regression_suite_shorten",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/regression_suite.py",
+      "source_location": "L242",
       "weight": 1.0,
       "source": "tests_regression_suite_main",
       "target": "tests_regression_suite_run_scenario",
@@ -49123,9 +49234,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L74",
+      "source_location": "L163",
       "weight": 1.0,
-      "source": "tests_regression_suite_rationale_74",
+      "source": "tests_regression_suite_rationale_163",
       "target": "tests_regression_suite_run_scenario",
       "confidence_score": 1.0
     },
@@ -49134,7 +49245,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/regression_suite.py",
-      "source_location": "L109",
+      "source_location": "L229",
       "weight": 1.0,
       "source": "tests_regression_suite_main",
       "target": "tests_regression_suite_run_pytest",
@@ -51651,7 +51762,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L42",
+      "source_location": "L43",
       "weight": 1.0,
       "source": "claude_claude_md",
       "target": "claude_architecture",
@@ -51661,7 +51772,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L103",
+      "source_location": "L104",
       "weight": 1.0,
       "source": "claude_claude_md",
       "target": "claude_config_reference",
@@ -51671,7 +51782,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L137",
+      "source_location": "L138",
       "weight": 1.0,
       "source": "claude_claude_md",
       "target": "claude_graphify",
@@ -51701,7 +51812,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L38",
+      "source_location": "L39",
       "weight": 1.0,
       "source": "claude_setup_common_commands",
       "target": "claude_ports_shared_machine_port_conflicts",
@@ -51721,7 +51832,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L91",
+      "source_location": "L92",
       "weight": 1.0,
       "source": "claude_architecture",
       "target": "claude_digital_twin_interfaces_live_streaming_opt_in_off_by_default",
@@ -51731,7 +51842,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L44",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "claude_architecture",
       "target": "claude_execution_flow",
@@ -51741,7 +51852,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L68",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "claude_architecture",
       "target": "claude_key_timing_concepts",
@@ -51751,7 +51862,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L60",
+      "source_location": "L61",
       "weight": 1.0,
       "source": "claude_architecture",
       "target": "claude_model_catalog",
@@ -51761,7 +51872,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L87",
+      "source_location": "L88",
       "weight": 1.0,
       "source": "claude_architecture",
       "target": "claude_multi_federation_scenarios",
@@ -51771,7 +51882,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L75",
+      "source_location": "L76",
       "weight": 1.0,
       "source": "claude_architecture",
       "target": "claude_storage_results",
@@ -51781,7 +51892,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L54",
+      "source_location": "L55",
       "weight": 1.0,
       "source": "claude_architecture",
       "target": "claude_yaml_scenario_config_dataclasses_runtime",
@@ -51791,7 +51902,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L122",
+      "source_location": "L123",
       "weight": 1.0,
       "source": "claude_config_reference",
       "target": "claude_rl_config_schema_reinforcement_learning_config",
@@ -53515,6 +53626,56 @@
       "weight": 1.0,
       "source": "docs_future_and_todos_distributed_ssh_spawning_plan_micro_tasks_implement_in_order",
       "target": "docs_future_and_todos_distributed_ssh_spawning_plan_t7_docs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_known_issues_from_regression",
+      "target": "docs_future_and_todos_known_issues_from_regression_known_issues_surfaced_by_the_regression_suite_2026_07_21",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_known_issues_from_regression_known_issues_surfaced_by_the_regression_suite_2026_07_21",
+      "target": "docs_future_and_todos_known_issues_from_regression_1_parquet_sink_native_sigsegv_in_a_federate_process_high",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_known_issues_from_regression_known_issues_surfaced_by_the_regression_suite_2026_07_21",
+      "target": "docs_future_and_todos_known_issues_from_regression_2_zmq_auto_port_allocation_ignores_the_paired_port_1_medium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_known_issues_from_regression_known_issues_surfaced_by_the_regression_suite_2026_07_21",
+      "target": "docs_future_and_todos_known_issues_from_regression_3_rl_simple_agent_catalog_model_is_a_non_functional_skeleton_low",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/known_issues_from_regression.md",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_known_issues_from_regression_known_issues_surfaced_by_the_regression_suite_2026_07_21",
+      "target": "docs_future_and_todos_known_issues_from_regression_4_adelaide_test_missing_minio_object_data_not_code",
       "confidence_score": 1.0
     },
     {
@@ -59986,5 +60147,5 @@
       "source_file": "docs/paper/PAPER_PLAN.md"
     }
   ],
-  "built_at_commit": "adc20e4bef5dd9b4290ea7c91e62a107e446601c"
+  "built_at_commit": "eb20b9a8c3618498ae19ff11b14344656bd417be"
 }

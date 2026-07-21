@@ -142,6 +142,7 @@
   "140": ".__enter__",
   "141": "README.md",
   "142": "BaseFederate.py",
+  "143": "catalog entry: test_input_model",
   "144": "catalog entry: rl_simple_SACsb3",
   "147": "WeatherCSVReader",
   "148": "Distributed Deployment — Spawning Federates on Remote Machines over SSH",
@@ -152,6 +153,5 @@
   "153": "catalog-loader service",
   "154": "Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring",
   "156": "._enqueue_async_storage_row",
-  "158": "._desanitize_obs_if_needed",
   "159": "TestSpawnUsesPtyAndDetachedGroup"
 }

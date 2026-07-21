@@ -410,8 +410,8 @@
     "semantic_hash": "545f0d8a80fd3618404a85697bbbdb89"
   },
   "CLAUDE.md": {
-    "mtime": 1784646907.1738052,
-    "ast_hash": "53e1f06d73fdac4c7215a7947f009b8a",
+    "mtime": 1784650377.2345047,
+    "ast_hash": "ed4f3ae3a60ce778d8249dde8b4f0e45",
     "semantic_hash": ""
   },
   "README.md": {
@@ -610,9 +610,9 @@
     "semantic_hash": "52020e54d61b7fd092b2e44f840aca36"
   },
   "src/scenarios/Adelaide_test.yaml": {
-    "mtime": 1781008088.9659007,
-    "ast_hash": "3b3c9108c98c5f35ee5ad22b946dd14d",
-    "semantic_hash": "3b3c9108c98c5f35ee5ad22b946dd14d"
+    "mtime": 1784649230.572402,
+    "ast_hash": "ae7557564690eff28310538b3316860a",
+    "semantic_hash": ""
   },
   "src/scenarios/bui0_fmu_test.yaml": {
     "mtime": 1783000838.7716026,
@@ -775,9 +775,9 @@
     "semantic_hash": ""
   },
   "src/scenarios/simple_test_rlagent.yaml": {
-    "mtime": 1782994425.5999308,
-    "ast_hash": "2150f9036d2246539263f21762e22b4c",
-    "semantic_hash": "2150f9036d2246539263f21762e22b4c"
+    "mtime": 1784649371.6576812,
+    "ast_hash": "8c8443254e2f1d62c2db48081665b8bb",
+    "semantic_hash": ""
   },
   "src/scenarios/stress_multi_building_json.yaml": {
     "mtime": 1782983833.8996367,
@@ -1010,13 +1010,28 @@
     "semantic_hash": ""
   },
   "tests/regression_suite.py": {
-    "mtime": 1784646907.2218041,
-    "ast_hash": "e3378049f6e0e21edf56076b9633738f",
+    "mtime": 1784650361.0907688,
+    "ast_hash": "b75e1ca7e6eb4e87624d2cc1b06182cb",
     "semantic_hash": ""
   },
   "src/scenarios/smoke_rl_dqn.yaml": {
     "mtime": 1784646907.2218041,
     "ast_hash": "0e3a34f593df97952317e3816aa40b87",
+    "semantic_hash": ""
+  },
+  "docs/future_and_TODOs/known_issues_from_regression.md": {
+    "mtime": 1784649801.325348,
+    "ast_hash": "0c1f52dabaa45897ead7836017076e79",
+    "semantic_hash": ""
+  },
+  "src/scenarios/combo_dist_parallel.yaml": {
+    "mtime": 1784649113.7866454,
+    "ast_hash": "880b60a4601989b2366efab6882122a7",
+    "semantic_hash": ""
+  },
+  "src/scenarios/combo_multifed_parallel.yaml": {
+    "mtime": 1784649327.7265294,
+    "ast_hash": "c81b5a5c5f583bdc180dd2df4e8e92ca",
     "semantic_hash": ""
   }
 }
