@@ -1,0 +1,573 @@
+# cs_s4_topo — S4b horizontal-topology (multi-federation) case study.
+#
+# Two federations, energy-meaningful, joined by the auto-inserted hierarchy
+# broker (ScenarioManager inserts `helics_broker --sub_brokers=2` above the
+# two federation brokers when >1 federation is declared):
+#
+# core_type: "tcp" (not "zmq") — DELIBERATE. Empirically hit a framework port-
+# allocation bug with zmq: ScenarioManager._broker_ports() adds `port + 1` for
+# zmq (its paired reply socket), but the sequential auto-port-assignment for
+# federation brokers + the hierarchy broker doesn't reserve for that offset,
+# so with 3 brokers assigned consecutive ports N/N+1/N+2, the 2nd federation
+# broker's own port collides with the 1st's paired socket, and its paired
+# socket collides with the hierarchy broker's port
+# (`Broker for federation 'generation': port(s) 20001, 20002 already in use`).
+# `tcp` skips the +1 pairing entirely and matches the repo's only other
+# proven-working multi-federation example, simple_test_multifederations.yaml.
+# Worth filing in docs/future_and_TODOs/known_issues_from_regression.md.
+#
+# Federate NAME uniqueness — DELIBERATE. HELICS requires federate `name:`
+# values to be unique across the WHOLE broker hierarchy in a multi-federation
+# scenario, not just within one federation (empirically confirmed: reusing
+# "weather_federate" in both federations here failed with
+# "duplicate federate name detected" at the generation-federation broker,
+# even though core_name was already distinct per federate). The two
+# shipped multi-federation examples (simple_test_multifederations.yaml,
+# distributed_multifederation_test.yaml) never exercise this because their
+# two federations happen to use disjoint federate names already. Fixed here
+# by naming generation's weather federate `weather_federate_gen` (buildings'
+# stays `weather_federate`).
+#
+#   federation "buildings": 2 building+heat-pump pairs (PID-controlled),
+#     shared weather_csv_reader on resources/weather_TO.csv (Turin, cold
+#     winter -> real heating load). Wiring copied from bui_hp_test_base.yaml,
+#     extended to n_instances: 2 per federate (per-instance target dicts, same
+#     pattern as simple_test_multifederations.yaml's spring_mass_damper).
+#
+#   federation "generation": PV + battery + rule-based BEMS, wiring copied
+#     from pv_batt_test_base.yaml (weather on weather_data_bj.csv, irradiance
+#     cols GloHorzRad/DifHorzRad). The synthetic CSV `load_federate` from that
+#     template is DROPPED: the BEMS's "P_load" input is instead the actual
+#     electrical demand of the two building/heat-pump pairs in the OTHER
+#     federation — a real cross-federation subscription with physical meaning
+#     (the generation side sees real building demand, not a canned profile).
+#
+# Cross-federation subscription (>=1 required by S4b):
+#   generation/rb_controller.P_load  <- buildings/heatpump_federate.0/P_elec
+#                                     + buildings/heatpump_federate.1/P_elec
+#   generation/battery_federate.P_load <- same two targets
+#   (multi_input_handling: sum -> total electrical demand of both HP pairs)
+#
+# NOTE on target string format: verified by reading BaseFederate._register_pubs
+# / _register_subs directly. Publications are registered as a FLAT GLOBAL
+# HELICS key via `register_global_publication(entity_id + "/" + key)`, and
+# `entity_id = f'{federate_name}.{instance}'` carries NO federation-name
+# prefix (BaseFederate._register_entities). The literal string in a
+# subscription's `targets:` list is passed unchanged to
+# `helicsInputAddTarget(subid, target)`, so it must match that bare global key
+# exactly: `<federate_name>.<instance>/<pub_key>` — WITHOUT the federation
+# name. This matches CLAUDE.md ("a federate's targets need no federation
+# prefix") and every working example in the repo (simple_test_multifederations
+# .yaml, distributed_multifederation_test.yaml); it does NOT match the
+# `<federationName>.<federate>.<instance>/<pubkey>` format quoted in
+# EXPERIMENTS_INSTRUCTIONS.md Appendix A.3, which describes the (different,
+# dot-separated) RL observation/action key convention, not HELICS sub targets.
+# A federation-qualified form (`federation.federate.instance`) IS accepted by
+# ScenarioManager._resolve_target_federate_node, but only for the auto_offset
+# dependency-graph computation — not for the literal HELICS bind, so using it
+# in `targets:` would silently fail to receive any data. Kept bare here.
+
+version: "1.0.0"
+name: "cs_s4_topo"
+scenario_description: "S4b case study: two federations (buildings, generation) joined by the auto-inserted hierarchy broker; generation's BEMS load input is a real cross-federation subscription to the buildings' heat-pump electrical demand."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-02T00:00:00"
+log_level: DEBUG
+
+memory_config:
+  batch_size: 1000
+  attrs: "all"
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+federations:
+
+  # ===========================================================================
+  # Federation "buildings" — 2x (weather-shared) building + heat pump + PID
+  # ===========================================================================
+  buildings:
+    broker_config:
+      core_type: "tcp"
+      # no explicit port: auto-assigned. Hierarchy broker sits above this one.
+      federates: 4
+      log_level: DEBUG
+
+    federate_configs:
+
+      weather_federate:
+        name: "weather_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "bldgs_fed1"
+        core_type: "tcp"
+
+        timing_configs:
+          real_period: 3600   # one CSV row per simulated hour
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "weather_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "resources/weather_TO.csv"
+            column: "T_ext"
+            skip_rows: 0
+
+          init_state:
+            T_ext: 3.0
+
+          user_defined: {}
+
+      pid_federate:
+        name: "pid_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "bldgs_fed2"
+        core_type: "tcp"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [building_federate.0/T_indoor]
+                '1': [building_federate.1/T_indoor]
+              causality: "next_step"
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 2
+            prefix: "pid"
+            parallel_execution: false
+
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+          user_defined: {}
+
+      heatpump_federate:
+        name: "heatpump_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "bldgs_fed3"
+        core_type: "tcp"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.2
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/T_ext]
+                '1': [weather_federate.0/T_ext]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_federate.0/modulation]
+                '1': [pid_federate.1/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 2
+            prefix: "hp"
+            parallel_execution: false
+
+          parameters:
+            P_rated: [5000.0, 3500.0]   # two differently-sized units -> energy-meaningful diversity
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+            Q_heat: 0.0
+            P_elec: 0.0
+            COP: 0.0
+
+          user_defined:
+            integrator: "fixed-step"
+
+      building_federate:
+        name: "building_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "bldgs_fed4"
+        core_type: "tcp"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.3
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/T_ext]
+                '1': [weather_federate.0/T_ext]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump_federate.0/Q_heat]
+                '1': [heatpump_federate.1/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 2
+            prefix: "bldg"
+            parallel_execution: false
+
+          parameters:
+            thermal_capacitance: [1000000.0, 1500000.0]
+            thermal_resistance: [0.005, 0.004]
+            T_initial: 18.0
+
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+          user_defined:
+            integrator: "euler"
+
+  # ===========================================================================
+  # Federation "generation" — PV + battery + rule-based BEMS
+  # BEMS/battery "P_load" is a CROSS-FEDERATION subscription to the two
+  # buildings' heat-pump electrical demand (see header note).
+  # ===========================================================================
+  generation:
+    broker_config:
+      core_type: "tcp"
+      federates: 4
+      log_level: DEBUG
+
+    federate_configs:
+
+      weather_federate_gen:
+        name: "weather_federate_gen"
+        type: "base"
+        log_level: DEBUG
+        core_name: "gen_fed1"
+        core_type: "tcp"
+
+        timing_configs:
+          real_period: 3600
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "DryBulb"
+              type: "double"
+              units: "°C"
+            - key: "GloHorzRad"
+              type: "double"
+              units: "W/m²"
+            - key: "DifHorzRad"
+              type: "double"
+              units: "W/m²"
+
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_data_bj.csv"
+            skip_rows: 0
+
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+
+          user_defined: {}
+
+      pv_federate:
+        name: "pv_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "gen_fed2"
+        core_type: "tcp"
+
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.2
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate_gen.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_federate_gen.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_federate_gen.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv"
+            parallel_execution: false
+
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+
+          init_state: {}
+
+          user_defined:
+            integrator: "fixed-step"
+
+      rb_controller:
+        name: "rb_controller"
+        type: "base"
+        log_level: DEBUG
+        core_name: "gen_fed3"
+        core_type: "tcp"
+
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.3
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "P_gen"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [pv_federate.0/PV_power]
+            # CROSS-FEDERATION: real electrical demand of the two building/HP
+            # pairs in the "buildings" federation, summed.
+            - key: "P_load"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump_federate.0/P_elec, heatpump_federate.1/P_elec]
+              multi_input_handling: "sum"
+            - key: "SOC"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [battery_federate.0/SOC]
+              causality: "next_step"
+          publishes:
+            - key: "Battery_power"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "rb_bems"
+            n_instances: 1
+            parallel_execution: false
+
+          parameters:
+            SOC_min: 0.40
+            SOC_max: 0.65
+
+          init_state:
+            Battery_power: 0.0
+
+          user_defined: {}
+
+      battery_federate:
+        name: "battery_federate"
+        type: "base"
+        log_level: DEBUG
+        core_name: "gen_fed4"
+        core_type: "tcp"
+
+        startup_sync:
+          required_inputs: ["Battery_power", "P_load", "PV_power"]
+          missing_inputs_policy: "warn"
+
+        timing_configs:
+          real_period: 3600
+          time_offset: 0.4
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "Battery_power"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [rb_controller.0/Battery_power]
+            # CROSS-FEDERATION: same as rb_controller's P_load (see above).
+            - key: "P_load"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump_federate.0/P_elec, heatpump_federate.1/P_elec]
+              multi_input_handling: "sum"
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [pv_federate.0/PV_power]
+          publishes:
+            - key: "SOC"
+              type: "double"
+              units: "-"
+            - key: "P_net"
+              type: "double"
+              units: "W"
+            - key: "P_clipped"
+              type: "double"
+              units: "W"
+
+        model_configs:
+          instantiation:
+            model_name: "battery_dest"
+            n_instances: 1
+            parallel_execution: false
+
+          parameters:
+            rated_capacity: 40000
+            maximum_charge_power: 8000
+            maximum_discharge_power: 8000
+            SOC_upper_limit: 0.95
+            SOC_lower_limit: 0.25
+            charge_efficiency: 1
+            discharge_efficiency: 1
+            self_discharge_rate: 0
+            SOC: 0.75
+
+          init_state:
+            SOC: 0.75
+
+          user_defined:
+            integrator: "euler"

@@ -1,0 +1,278 @@
+# cs_s5_dt — S5 digital-twin swap case study.
+#
+# Copy of the S1 baseline topology (weather -> PID -> heat pump -> building,
+# see bui_hp_test_base.yaml / cs_s1_baseline.yaml) with ONLY building_federate's
+# block changed: `type: base` (simple_building physics) -> `type: interface`
+# (BK4 pattern, exact template: m5_bk4_demo_a_full_sim.yaml vs
+# m5_bk4_demo_b_digital_twin.yaml). Nothing else in the topology changes —
+# pid_federate still subscribes to the literal key `building_federate.0/T_indoor`,
+# unaware that the producer is now an external MQTT feed instead of physics
+# ("config-only sim-to-real", BK4). heatpump_federate additionally gets
+# `streaming: {stream: true}` so its own I/O mirrors to MQTT for the live
+# dashboard, alongside the interface federate's sensor bridge topic.
+#
+# interface_config.bridges registers ONE `scope: input`, `mode: replace` bridge
+# on the same global HELICS key `building_federate.0/T_indoor` that the real
+# building model used to publish (BaseFederate registers global pubs as
+# `<federate_name>.<instance>/<key>`, see cs_s4_topo.yaml header note) — so the
+# heat pump's downstream consumer, the PID controller, now regulates against an
+# externally-fed zone temperature instead of a simulated one.
+#
+# realtime pacing note (verified against BaseFederate.py): `time_request =
+# time_granted + time_period`, where `time_period = real_period / min_real_period`
+# is the NORMALIZED tick ratio, not the raw real_period seconds. Realtime mode's
+# rt_lag/rt_lead operate on that normalized tick, so keeping real_period: 60
+# here (same as the S1 building_federate it replaces, for physical/energy
+# consistency) paces identically, tick-for-tick, to the BK4 demo's real_period: 1
+# — both request +1 HELICS time unit per step, ~1 real second apart at
+# rt_lag=rt_lead=1.0.
+#
+# Feeder (not written by this task — pattern only): mirror
+# src/scenarios/bk4_demo_external_sensor.py, publishing plausible zone
+# temperatures to MQTT topic "cosim/cs_s5_dt/sensor/T_indoor" on
+# localhost:11883. Without a feeder running, the interface federate will WAIT
+# for the first external value (mode: replace has no HELICS passthrough
+# fallback) — this is expected, per EXPERIMENTS_INSTRUCTIONS.md S5.
+
+version: "1.0.0"
+name: "cs_s5_dt"
+scenario_description: "S5 case study: S1 baseline with building_federate swapped for a type:interface MQTT digital-twin bridge (BK4 config-only sim-to-real); heat pump/PID regulate against an externally-fed zone temperature."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T02:00:00"
+log_level: INFO
+
+memory_config:
+  batch_size: 1000
+  attrs: ["T_indoor", "T_ext", "Q_heat", "P_elec", "COP", "modulation"]
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "zmq"
+      # no explicit port: auto-assigned.
+      federates: 4
+      log_level: INFO
+
+    federate_configs:
+
+      # -----------------------------------------------------------------------
+      # Weather federate – streams T_ext from CSV (unchanged from S1)
+      # -----------------------------------------------------------------------
+      weather_federate:
+        name: "weather_federate"
+        type: "base"
+        log_level: INFO
+        core_name: "fed1"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 3600
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+
+        model_configs:
+          instantiation:
+            model_name: "weather_csv_reader"
+            n_instances: 1
+            prefix: "weather"
+            parallel_execution: false
+
+          parameters:
+            csv_path: "resources/weather_TO.csv"
+            column: "T_ext"
+            skip_rows: 0
+
+          init_state:
+            T_ext: 3.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # PID federate – regulates T_indoor by adjusting heat-pump modulation.
+      # Unchanged from S1: still subscribes to `building_federate.0/T_indoor`
+      # literally, unaware the producer is now the interface federate below.
+      # -----------------------------------------------------------------------
+      pid_federate:
+        name: "pid_federate"
+        type: "base"
+        log_level: INFO
+        core_name: "fed2"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.1
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [building_federate.0/T_indoor]
+              causality: "next_step"
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid"
+            parallel_execution: false
+
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+          user_defined: {}
+
+      # -----------------------------------------------------------------------
+      # Heat-pump federate – unchanged from S1 except `streaming: stream: true`
+      # (mirrors its I/O to MQTT for the live dashboard, per task instructions).
+      # -----------------------------------------------------------------------
+      heatpump_federate:
+        name: "heatpump_federate"
+        type: "base"
+        log_level: INFO
+        core_name: "fed3"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.2
+
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+
+        streaming:
+          stream: true
+          stream_topic_prefix: "cosim/cs_s5_dt/heatpump"
+
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_federate.0/T_ext]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_federate.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp"
+            parallel_execution: false
+
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+            Q_heat: 0.0
+            P_elec: 0.0
+            COP: 0.0
+
+          user_defined:
+            integrator: "fixed-step"
+
+      # -----------------------------------------------------------------------
+      # DIGITAL-TWIN SWAP: building_federate replaced with an interface
+      # federate (BK4 pattern). Registers the SAME global HELICS pub key the
+      # real simple_building model used (`building_federate.0/T_indoor`) via a
+      # `scope: input`, `mode: replace` bridge fed from external MQTT. No
+      # `connections:` / `model_configs:` — interface federates bypass the
+      # normal model-instantiation path entirely (see InterfaceFederate.py).
+      # -----------------------------------------------------------------------
+      building_federate:
+        name: "building_federate"
+        type: "interface"
+        log_level: INFO
+        core_name: "fed4"
+        core_type: "zmq"
+
+        timing_configs:
+          real_period: 60
+          time_offset: 0.3
+          rt_lag: 1.0
+          rt_lead: 1.0
+
+        flags:
+          terminate_on_error: true
+          realtime: true
+
+        interface_config:
+          adapter:
+            name: mqtt_adapter
+            params:
+              client_id: cs_s5_dt_building_twin
+              host: localhost
+              port: 11883
+          bridges:
+            - helics_key: "building_federate.0/T_indoor"
+              topic: "cosim/cs_s5_dt/sensor/T_indoor"
+              bounds: [0, 40]   # physically plausible zone-temperature range (S1 acceptance criterion)
+              scope: input
+              mode: replace

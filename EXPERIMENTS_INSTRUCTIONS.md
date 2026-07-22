@@ -14,6 +14,7 @@ itself a paper claim, so keep changes minimal and diffable.
    exists (`graphify-out/`), use `graphify query "<question>"` first. The RL and
    interface config schemas use Pydantic `extra='forbid'` — a single misspelled
    key aborts the run, so exact names matter.
+1.1 **creation of scnearios.** the approach is that a scenario needs a declarative file the .yaml scenario and the models to be declared inside this file, check if you can use existing ones, do not modify existing ones, if no existing model is what it is needed create and register a new one.track tha creation of everything you did from scratch.
 2. **Environment.** All runs: from repo root, conda env `cosim_gym` active,
    Docker services up first:
    ```bash
@@ -39,14 +40,13 @@ itself a paper claim, so keep changes minimal and diffable.
      scenario file, git commit hash of the repo at run time, seed(s), run
      command, raw-results path, and generating script. Also record installed
      versions: `python -c "import helics, gymnasium, stable_baselines3; ..."`.
-6. **Seeds.** Fixed seeds everywhere. Find where the framework accepts a seed
-   (check RL config schema and agent hyperparameters; verify — do not guess).
-   If no seed field exists, set library-level seeds inside the run script and
-   document it in the manifest. RL comparisons: ≥3 seeds per configuration,
-   report mean ± std.
+6. **Seeds.** Fixed seeds everywhere. The seed lives at
+   `reinforcement_learning_config.seed` (top-level of that block — VERIFIED in
+   `bui_hp_SAC.yaml`, `seed: 42`). RL comparisons: ≥3 seeds per configuration
+   (e.g. 42, 43, 44), report mean ± std. For non-RL runs there is no seed field;
+   the framework is deterministic given fixed inputs — note this in the manifest.
 7. **Known hard constraints (source-verified — respect them, do not "fix" them):**
-   - RL federates support only `memory_config.sink: json` or `none`;
-     `parquet` raises `NotImplementedError`.
+   - RL federates support only `memory_config.sink: json` use json;
    - `parallel_execution` is rejected on RL federates and on federates with
      `override_enabled` — vertical-scaling runs (S4a) must use plain `base`
      federates.
@@ -57,12 +57,18 @@ itself a paper claim, so keep changes minimal and diffable.
    - RL observation/action keys use dot notation
      `<federation>.<federate>.<instance>.<variable>`.
 8. **Comfort/energy metrics definition (used in S1–S3):**
-   - Comfort violation: degree-hours outside the comfort deadband, computed as
+   - The shipped reward `building_heatpump_comfort` is **comfort-only**
+     (setpoint 20 °C, σ=0.5 °C, quadratic penalty — NO hard deadband; energy is
+     not in the reward). VERIFIED at
+     `src/models/model_catalog/RL_agents/reward_functions.py:93`.
+   - Comfort violation: degree-hours outside an explicit comfort deadband
+     `[19.5, 20.5] °C` (= setpoint 20 ± σ 0.5), computed as
      `sum(max(0, T_lower - T_zone) + max(0, T_zone - T_upper)) * dt_hours` over
-     the evaluation horizon. Use the same deadband the reward function uses
-     (read it from the reward implementation; document the bounds used).
+     the evaluation horizon. Document these bounds in the metric output.
    - Energy: integral of heat-pump electrical power over the horizon (kWh).
    - Implement once in `scripts/paper_case_study/metrics.py`, reuse everywhere.
+9. **execution metrics.** profile every run, keep track of timings and if possible memory usage, for each scenario (make more runs to add statistical validity) keep trakc of these metrics in a unique comparative table that i can use late inside the paper.
+10. **energy scenarios** even if we are just designings cenarios for demonstration purposes i would like them to have a sort of energy meaningfulness, so most probably scenarios from S1-S4 will be focused on single building high granular control while all the scalability scenarios will focus on distrcit and multi building scenarios, make them energetically representative as much as possible. 
 
 ---
 
@@ -154,7 +160,7 @@ itself a paper claim, so keep changes minimal and diffable.
 
 ## S4 — Scalability (three sub-experiments)
 
-**S4a — vertical (parallel model execution).**
+**S4a — vertical (parallel model execution within federate).**
 1. Base on the shipped pair `benchmark_parallel_seq.yaml` /
    `benchmark_parallel_par.yaml` (CPU-heavy `heavy_compute_dummy` model).
    **Known bug to fix in your copies:** the shipped pair has mismatched
@@ -191,6 +197,7 @@ itself a paper claim, so keep changes minimal and diffable.
    present. Follow `docs/user_guide/multi_machine_test_walkthrough.md`.
 8. **Deliverable:** `fig_s4_machines`: wall-clock vs number of machines (1/2/3),
    3 repetitions per point, median; annotate what was placed where.
+9. **design** the distributed approach does not always brings benefits so we need to understand the kind of scenario that could benefit from this and the one that couldn't using dummy CPU-bounded models could be the way to make this an enhancer. also the machines specs make the difference, when you are at this point iterate with me on the best way to design this scenario
 
 ## S5 — Digital-twin swap (BRIEF)
 
@@ -238,3 +245,114 @@ itself a paper claim, so keep changes minimal and diffable.
   `tab_s2_sample_eff`, `tab_s3_metrics`, `fig_s4_throughput` (+S4b log evidence),
   `fig_s4_machines`, `fig_s5_dashboard` (human screenshot), `tab_s6_loc`
 - [ ] Nothing invented; failed/skipped items documented in MANIFEST with reason
+
+---
+
+## APPENDIX A — VERIFIED IMPLEMENTATION REFERENCE (source-checked 2026-07-22)
+
+Everything below was read directly from this repo. Trust it over guessing.
+Do NOT re-verify these unless an error suggests they changed.
+
+### A.1 How to launch / smoke-test ONE scenario
+
+A scenario file `src/scenarios/<name>.yaml` is run by its `name` (filename stem).
+From the **repo root**, conda env `cosim_gym`:
+
+```bash
+conda run -n cosim_gym python -c "import sys; sys.path.insert(0,'src'); from core.ScenarioManager import main; main('<name>')"
+```
+
+- **SUCCESS marker:** the string `completed successfully` appears in stdout.
+  Anything else (traceback, `Error`, `address already in use`, timeout) = FAIL.
+- Results land in `results/<name>/<sim_id>/...`; logs in `logs/<name>/`.
+- **Smoke first, always.** Copy the full scenario, cut horizon to ~1–2 sim-hours
+  (RL: `episodes: 2`, `episode_length: 20`), run it, confirm the marker, THEN
+  keep the full-horizon file. Delete the throwaway `results/logs` of smoke runs.
+- **Concurrency safety:** OMIT `broker_config.port` (or give each scenario a
+  UNIQUE port) so the framework auto-assigns — lets scenarios run back-to-back
+  without `address already in use`. Redis is shared but keyed per scenario name.
+- Docker services must be up first:
+  `docker compose -f src/docker-compose.yaml up -d` (redis, mosquitto, minio).
+
+### A.2 Exact model catalog keys (VERIFIED in catalog.yaml)
+
+| role | catalog key | key I/O (name : dir) |
+| --- | --- | --- |
+| building 1R1C | `simple_building` | in `T_ext`,`Q_heat` · out `T_indoor` · param `thermal_capacitance`,`thermal_resistance`,`T_initial` |
+| building 5R1C (richer) | `rc_building` | in `T_ext`,`solar_gains`,`internal_gains`,`t_set_heating`,`t_set_cooling` · out `T_indoor`,`Q_heating`,`P_elec`,`P_elec_mw`,… |
+| heat pump | `simple_heatpump` | in `T_ext`,`modulation` · out `Q_heat`,`P_elec`,`COP` · param `P_rated`,`eta_carnot`,`T_supply`,`COP_min`,`COP_max` |
+| PID controller | `simple_pid_controller` | in `T_indoor` · out `modulation` · param `T_setpoint`,`Kp`,`Ki`,`Kd` |
+| weather (temp only) | `weather_csv_reader` | out `T_ext` · param `csv_path` (rel to model dir),`column`,`skip_rows` |
+| generic CSV feeder | `base_csv_reader` | out = whatever the federate `publishes` (col names must match CSV headers) · param `csv_path`,`skip_rows` |
+| PV | `pv_dest` | in `GHI`,`DHI`,`T_ext` · out `PV_power` · params are LISTS (e.g. `lat: [39.8]`) |
+| battery | `battery_dest` | in `Battery_power` · out `SOC`,`energy`,`P_net`,`P_clipped` |
+| rule-based BEMS | `rb_bems` | in `SOC`,`P_gen`,`P_load` · out `Battery_power`,`Grid_power` · param `SOC_min`,`SOC_max` |
+| pandapower grid | `pandapower_grid` | dot-notation I/O `{comp}.{idx}.{col}` / `res.{comp}.{idx}.{col}` |
+| CPU-heavy dummy | `heavy_compute_dummy` | out `result` · param `iterations` · no inputs (for S4a) |
+| EnergyPlus FMU (local) | `bui0_building_fmu` | in 6 schedules (`PeopleNumber`,`LightsWatt`,`EEquipWatt`,`OthEquRadWatt`,`OthEquFCWatt`,`ZoneSetPoint`) · out `TBuilding`,`HeatingLoadTarget` · **local FMU, no MinIO** |
+| EnergyPlus FMU (MinIO) | `adelaide_test` | in `SAT_SP` · out `Indoor Temp.`,`HVAC Power`,… · **needs MinIO object — currently MISSING (KNOWN_FAIL)** |
+| FMU schedule feeder | `bui0_input_feeder` | out the 6 schedules above (pairs with `bui0_building_fmu`) |
+
+RL agents: `rl_simple_SACsb3` (backend `stable_baselines3`, algo `SAC`, continuous),
+`rl_simple_DQN` (backend `custom_torch`, algo `DQN`, discrete — needs `bins`),
+`rl_simple_rllib` (RLlib PPO). Reward:
+`models.model_catalog.RL_agents.reward_functions.building_heatpump_comfort`.
+
+Weather CSVs shipped: `resources/weather_TO.csv` (**Turin — cold winter, use for
+heating scenarios**), `resources/weather_data_bj.csv` (Beijing, has irradiance
+`GloHorzRad`/`DifHorzRad` cols for PV).
+
+### A.3 Canonical templates (copy these, do not reinvent)
+
+- **S1 PID base** → copy `src/scenarios/bui_hp_test_base.yaml`. It IS the target
+  topology (weather+PID+HP+building, wiring in its header comment). For the paper
+  claim set weather `real_period: 3600`, the other three `real_period: 60`
+  (multi-rate). Horizon ≥48 h → `start 2024-01-01T00:00:00`, `end 2024-01-03`.
+- **S2 SAC** → copy `bui_hp_SAC.yaml` (PID federate REMOVED, RL block added). Obs
+  keys `federation_1.weather.0.T_ext`, `federation_1.building.0.T_indoor`
+  (dot-notation `<federation>.<federateName>.<instanceIdx>.<var>`); action
+  `federation_1.heatpump.0.modulation: null`.
+- **S2 DQN** → copy `bui_hp_DQN.yaml`. Action gains `space: discrete`, `bins: 10`;
+  agent `rl_simple_DQN`, backend `custom_torch`.
+- **S2 reset variants** → copy `bui_hp_SAC.yaml`, add
+  `environment.reset: {mode: full|rolling|none}` (rolling also takes
+  `rolling_window: 10`, see `bui_hp_SAC_rollingreset.yaml`). Nothing else differs.
+- **S4a parallel** → copy `benchmark_parallel_par.yaml` / `_seq.yaml`. **Fix the
+  shipped mismatch**: seq has `n_instances: 8`, par has `20`. Your copies for a
+  given N must be BYTE-IDENTICAL except `parallel_execution: true/false`.
+- **S4b multifed** → PV/battery wiring from `pv_batt_test_base.yaml`; district
+  energy realism from `dh_district_jan_base.yaml` (10 `rc_building` + weather).
+  Cross-federation subscribe target = **BARE, no federation prefix**:
+  `<federate>.<instance>/<pubkey>` (flat GLOBAL namespace; EMPIRICALLY VERIFIED —
+  the fed-prefixed form silently fails to bind. CLAUDE.md's config-reference line
+  claiming a `<federation_name>.` prefix is WRONG; its architecture section is right).
+  Multi-fed gotchas (both hit & fixed while building `cs_s4_topo.yaml`):
+  (a) use `core_type: tcp` NOT `zmq` — zmq's `port+1` reply socket collides with
+  sequential broker port auto-assignment; (b) federate `name:` must be unique across
+  the WHOLE broker hierarchy, not just per-federation (else `duplicate federate name`).
+- **S5 DT interface** → copy the BK4 pair `m5_bk4_demo_a_full_sim.yaml` (all-sim)
+  / `m5_bk4_demo_b_digital_twin.yaml` (interface federate + MQTT bridges,
+  `scope: input`, `mode: replace`). External feeder pattern:
+  `src/scenarios/bk4_demo_external_sensor.py`.
+
+### A.4 Hard gotchas (will silently break a run)
+
+- RL config is Pydantic `extra='forbid'` — one misspelled key aborts. Copy a
+  working block; change only values/keys you understand.
+- RL federate: only `sink: json`; `parallel_execution` and `host:` rejected on RL.
+- Cross-federation keys use GLOBAL flat namespace; federation broker uplink is a
+  bare `host:port` (no `zmq_ss://` scheme — that hangs the sub-broker).
+- FMU horizons must be whole-day multiples; do NOT auto-shorten FMU scenarios to 1 h.
+- `pv_dest` parameters are single-element LISTS in YAML, not scalars.
+
+### A.5 S3 (FMU) design note — READ BEFORE STARTING S3
+
+The "agent untouched" claim wants the FMU building to expose the SAME dot-keys as
+`simple_building` (`T_indoor` out, driven by `Q_heat`). Neither shipped FMU does:
+`adelaide_test` needs a MISSING MinIO object (blocked), and `bui0_building_fmu` is
+schedule-driven (`ZoneSetPoint` in, `TBuilding` out — no `Q_heat`/`T_indoor`).
+Therefore S3 as literally specified is NOT drop-in. **Do not fake it.** The S3
+agent must STOP after S1/S2/S4/S5 are done and report options to the human:
+(a) restore the MinIO FMU object then use `adelaide_test`; (b) accept a
+variable-names-only diff against `bui0_building_fmu` and report that diff honestly;
+(c) defer S3. This is a genuine decision for the author — surface it, don't guess.
