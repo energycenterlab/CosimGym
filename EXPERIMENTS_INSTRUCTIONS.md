@@ -345,7 +345,26 @@ heating scenarios**), `resources/weather_data_bj.csv` (Beijing, has irradiance
 - FMU horizons must be whole-day multiples; do NOT auto-shorten FMU scenarios to 1 h.
 - `pv_dest` parameters are single-element LISTS in YAML, not scalars.
 
-### A.5 S3 (FMU) design note — READ BEFORE STARTING S3
+### A.5b S3 — RESOLVED (supersedes A.5 below)
+
+Investigated and settled 2026-07-22:
+- The MinIO object WAS genuinely missing (bucket `fmus` is created empty by
+  `minio-init`; nothing ever uploaded it). It has now been **restored** by
+  uploading the local `resources/PCMA_1_0_control_2022.fmu` to
+  `fmus/adelaide_test/1.0.0/PCMA_1_0_control_2022.fmu`. The download path works.
+- **But `adelaide_test` still cannot run on this machine**: its native binary needs
+  `GLIBC_2.33`, the host has **glibc 2.31** →
+  `Failed to load shared library …PCMA_1_0_new_control.so … version 'GLIBC_2.33' not found`.
+  This is a hard binary-compatibility wall, not a config problem. Do not retry it
+  here (it would need a newer-glibc container or a recompiled FMU).
+- **S3 therefore uses the local BUI0 EnergyPlus FMU** (`bui0_building_fmu`), which
+  runs fine. `cs_s3_fmu.yaml` is derived from the working `bui0_setpoint_SAC.yaml`.
+- The swap is **NOT variable-names-only** — be honest in the paper. It also drops the
+  weather + heat-pump federates, moves the action to a zone set-point, changes the
+  reward, and forces `real_period` 600 s + `reset.mode: none`. The exact diff table is
+  emitted by `scripts/paper_case_study/tab_s3_metrics.py`.
+
+### A.5 S3 (FMU) design note — SUPERSEDED by A.5b, kept for history
 
 The "agent untouched" claim wants the FMU building to expose the SAME dot-keys as
 `simple_building` (`T_indoor` out, driven by `Q_heat`). Neither shipped FMU does:

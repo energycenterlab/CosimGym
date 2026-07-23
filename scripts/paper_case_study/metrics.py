@@ -63,6 +63,71 @@ def energy_kwh(times, P_elec_watt) -> float:
     return sum(P_elec_watt) * dt_h / 1000.0
 
 
+# --- generic, naming-agnostic scenario metrics --------------------------------
+# Federate/variable names differ per stage:
+#   S1  building_federate/T_indoor   + heatpump_federate/P_elec
+#   S2  building/T_indoor            + heatpump/P_elec
+#   S3  building_federate/TBuilding  + HeatingLoadTarget (THERMAL W, no P_elec)
+# so we search candidates instead of hardcoding.
+TEMP_VARS = ("T_indoor", "TBuilding", "T_operative")
+POWER_VARS = ("P_elec", "HeatingLoadTarget", "Q_heating")
+
+
+def _scan(sim_dir: Path, mode: str):
+    """Yield (federation, federate, storage_dict) for every *_<mode>_storage.json."""
+    for fed_dir in sorted(Path(sim_dir).iterdir()):
+        if not fed_dir.is_dir():
+            continue
+        for f in sorted(fed_dir.glob(f"*_{mode}_storage.json")):
+            if f.name.endswith("_rl_storage.json"):
+                continue  # RL agent storage has a different schema
+            try:
+                yield fed_dir.name, f.name, json.loads(f.read_text())
+            except Exception:
+                continue
+
+
+def _find_var(sim_dir: Path, mode: str, candidates):
+    """Return (times, values, label) for the first candidate variable found in any
+    federate's OUTPUTS. label = '<federate>.<entity>/<var>'."""
+    for _fedn, fname, st in _scan(sim_dir, mode):
+        for ent, vars_ in (st.get("outputs") or {}).items():
+            for cand in candidates:
+                if cand in vars_:
+                    t, v = series(st, "outputs", ent, cand)
+                    return t, v, f"{ent}/{cand}"
+    return None, None, None
+
+
+def scenario_metrics(scenario: str, mode: str = "test", results_root="results") -> dict:
+    """Comfort degree-hours + energy for any stage, regardless of federate naming.
+
+    Returns dict with the values AND the variable labels actually used, so callers
+    can report honestly which signal fed each number (S3's energy is THERMAL).
+    """
+    d = latest_sim_dir(scenario, results_root)
+    tT, T, tlabel = _find_var(d, mode, TEMP_VARS)
+    tP, P, plabel = _find_var(d, mode, POWER_VARS)
+    out = {"scenario": scenario, "sim_id": d.name, "mode": mode,
+           "temp_var": tlabel, "power_var": plabel,
+           "comfort_degree_hours": None, "energy_kwh": None}
+    if T:
+        out["comfort_degree_hours"] = comfort_degree_hours(tT, T)
+    if P:
+        out["energy_kwh"] = energy_kwh(tP, P)
+    return out
+
+
+def rl_episode_rewards(scenario: str, mode: str = "train", results_root="results"):
+    """Return (episode_rewards, episode_lengths) from the RL agent storage."""
+    d = latest_sim_dir(scenario, results_root)
+    hits = list(Path(d).glob(f"*/*_{mode}_rl_storage.json"))
+    if not hits:
+        return [], []
+    st = json.loads(hits[0].read_text())
+    return st.get("episode_rewards", []), st.get("episode_lengths", [])
+
+
 if __name__ == "__main__":
     # self-test on cs_s1_baseline
     import sys

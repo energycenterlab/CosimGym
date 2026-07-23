@@ -21,7 +21,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 STAGES = [
     ("S1", "PID baseline co-sim",        "cs_s1_baseline.yaml", None, []),
     ("S2", "RL control (SAC) swap",      "cs_s2_sac.yaml",      "cs_s1_baseline.yaml", []),
-    ("S3", "FMU formalism swap",         None,                  "cs_s2_sac.yaml", []),  # deferred
+    ("S3", "FMU formalism swap",         "cs_s3_fmu.yaml",      "cs_s2_sac.yaml", []),
     ("S4", "parallel scaling",           "cs_s4_vert_par_N20.yaml", "cs_s1_baseline.yaml", []),
     ("S5", "digital-twin interface",     "cs_s5_dt.yaml",       "cs_s1_baseline.yaml",
      ["scripts/paper_case_study/s5_external_feeder.py"]),

@@ -1,0 +1,269 @@
+# =============================================================================
+# LOOPBACK SMOKE CONFIG — this file targets 127.0.0.1 for EVERY machine alias
+# so the distributed-deployment MECHANISM (SSH spawn + rsync + result
+# collection) can be exercised without real remote hardware. It proves the
+# plumbing works; it does NOT demonstrate speedup (1 machine has nothing to
+# distribute across).
+#
+# TO RUN THE REAL S4c EXPERIMENT ON ACTUAL REMOTE MACHINES:
+#   1. Replace every `deployment.machines.<alias>.host: "127.0.0.1"` below
+#      with that machine's real LAN IP.
+#   2. Replace `deployment.manager_address: "127.0.0.1"` with THIS machine's
+#      LAN IP (the address the remotes use to reach the manager's broker +
+#      Redis + MQTT).
+#   3. Ensure passwordless key-based SSH from the manager to each remote
+#      (`ssh-copy-id`, then `ssh user@host true` once to accept host keys).
+#   4. Ensure the `cosim_gym` conda env (helics/redis/pydantic + deps) exists
+#      on each remote, or set an explicit `python:` interpreter path in the
+#      machine block instead of `conda_env:`.
+#   5. Ensure Redis (6379) and the HELICS broker port range (20000-30000) on
+#      the manager are reachable from each remote over the LAN.
+# See docs/user_guide/distributed_deployment.md for full setup instructions.
+# =============================================================================
+#
+# S4c — horizontal scaling, 2 MACHINES.
+# Companion files cs_s4_dist_1m.yaml / cs_s4_dist_3m.yaml carry the IDENTICAL
+# total workload (6 heavy_compute_dummy federates x 4 instances x 1,000,000
+# iterations, 20s horizon) split across 1 / 2 / 3 machine aliases respectively
+# — only the federate->machine placement differs. Compare wall-clock across
+# the three to produce fig_s4_machines.
+#
+# Placement in this file: heavy_federate_{1,2,3} -> m1, heavy_federate_{4,5,6} -> m2.
+#
+# core_type: "tcp" everywhere (not zmq) — zmq's port+1 paired-socket
+# allocation collides with this framework's sequential broker port
+# auto-assignment in distributed runs; tcp does not have this issue.
+
+version: "1.0.0"
+name: "cs_s4_dist_2m"
+scenario_description: >
+  Paper case study S4c — horizontal distributed scaling, 2-machine point.
+  6 CPU-bound heavy_compute_dummy federates (4 instances each, 1,000,000
+  busy-loop iterations/step) split 3/3 across machine aliases m1/m2 via
+  deployment.host. Identical total workload to cs_s4_dist_1m.yaml /
+  cs_s4_dist_3m.yaml; only the placement across machines differs. LOOPBACK
+  SMOKE CONFIG (see header) — m1/m2 -> 127.0.0.1 until real remote machines
+  are supplied.
+
+start_time: "2024-01-01T00:00:00"
+end_time:   "2024-01-01T00:00:20"
+log_level: ERROR
+
+memory_config:
+  sink: none
+  attrs: "all"
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+
+# ---------------------------------------------------------------------------
+# Distributed deployment block — LOOPBACK SMOKE (see header for real-machine
+# instructions). heavy_federate_{1,2,3} -> m1, heavy_federate_{4,5,6} -> m2.
+# ---------------------------------------------------------------------------
+deployment:
+  manager_address: "127.0.0.1"        # LOOPBACK — replace with manager's LAN IP for real run
+  machines:
+    m1:                                # alias referenced by federates' `host:`
+      host: "127.0.0.1"                # LOOPBACK — replace with real remote IP
+      ssh_port: 22
+      workdir: "/tmp/cosimgym_s4c_m1"  # remote repo root; src/ rsync'd here each run
+      conda_env: "cosim_gym"
+    m2:
+      host: "127.0.0.1"                # LOOPBACK — replace with real remote IP
+      ssh_port: 22
+      workdir: "/tmp/cosimgym_s4c_m2"  # distinct workdir per alias so rsync targets don't collide
+      conda_env: "cosim_gym"
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "tcp"
+      # port omitted -> auto-assigned
+      federates: 6
+
+    federate_configs:
+
+      heavy_federate_1:
+        name: "heavy_federate_1"
+        type: "base"
+        host: "m1"
+        log_level: ERROR
+        core_name: "fed_heavy1"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 4
+            prefix: "hc1"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_2:
+        name: "heavy_federate_2"
+        type: "base"
+        host: "m1"
+        log_level: ERROR
+        core_name: "fed_heavy2"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 4
+            prefix: "hc2"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_3:
+        name: "heavy_federate_3"
+        type: "base"
+        host: "m1"
+        log_level: ERROR
+        core_name: "fed_heavy3"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 4
+            prefix: "hc3"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_4:
+        name: "heavy_federate_4"
+        type: "base"
+        host: "m2"
+        log_level: ERROR
+        core_name: "fed_heavy4"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 4
+            prefix: "hc4"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_5:
+        name: "heavy_federate_5"
+        type: "base"
+        host: "m2"
+        log_level: ERROR
+        core_name: "fed_heavy5"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 4
+            prefix: "hc5"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_6:
+        name: "heavy_federate_6"
+        type: "base"
+        host: "m2"
+        log_level: ERROR
+        core_name: "fed_heavy6"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 4
+            prefix: "hc6"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}

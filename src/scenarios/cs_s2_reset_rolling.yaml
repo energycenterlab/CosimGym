@@ -82,7 +82,7 @@ federations:
         core_type: "tcp"
 
         timing_configs:
-          real_period: 60   # one CSV row per 60 s sim-step
+          real_period: 900   # 15-min weather_TO.csv cadence (1 CSV row per step)
         flags:
           terminate_on_error: true
           wait_for_current_time_update: false
