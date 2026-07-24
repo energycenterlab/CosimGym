@@ -87,3 +87,53 @@ Every table prints `MISSING` for absent runs — numbers are never fabricated.
 - **S4c loopback ≠ scaling evidence.** All three configs run on one physical host, so they
   prove the SSH/rsync/collection mechanism only. Do not plot them as a speedup curve.
 - `fig_s5_dashboard.png` is a human screenshot (dashboard Live page during a `cs_s5_dt` run).
+
+## ADDENDUM (2026-07-23) — S4c real-machine run now done
+
+The "left for the author" S4c real-machine item above is superseded: the author
+approved and this was run for real on cloud1/cloud5. See
+`results/paper_case_study/s4c_real_analysis.md` for the full write-up (capacity-
+scaling result, ceiling-characterization sweep reproducing the historical
+`[-101] lost comms` failure fresh, honest pros/cons) and the new MANIFEST.md
+section "S4c-real — REAL multi-machine deployment". New assets: generator
+`src/scenarios/generate_scale_sharded.py`, scenarios `cs_s4c_shard_{1,2,3}m.yaml`,
+figures `fig_s4c_capacity`/`fig_s4c_ceiling`. The original `cs_s4_dist_{1,2,3}m.yaml`
+loopback trio and `fig_s4_machines.py` are untouched and still valid as the
+mechanism-only demo.
+
+## ADDENDUM (2026-07-23, later) — mass-scale (K-per-shard) study, CHECKPOINT only
+
+A different, follow-on scaling axis: instead of adding one federate per
+building (S4c-real above), hold federate count fixed at 4/machine and push
+K = n_instances inside `building`/`heatpump`/`pid`. A background agent session
+ran this for real (`src/scenarios/generate_mass_instances.py`, new,
+`cs_mass_k*` / `cs_mass_shard_{1,2,3}m_k*.yaml`) but was **interrupted before
+writing up the analysis**. A follow-on checkpoint pass consolidated the real
+data already on disk (`logs/cs_mass_*/*/execution_metrics.json`) — it did
+**NOT** launch any new real-machine run, per the explicit author instruction
+"before running massive simulations ask me." See
+`results/paper_case_study/mass_scale_bottleneck_analysis.md` for the full
+write-up and the new MANIFEST.md section "Mass-scale (K-per-shard) bottleneck
+study — CHECKPOINT".
+
+Headline (all real, measured): single-machine `tcp` core reaches **K=100,000
+buildings with zero failures** (~19.7 min wall-clock) — the biggest number in
+this whole study. But the NAT-mandated `zmq_ss` core (needed for any real
+multi-machine run) fails between K=7,000 (PASS) and K=10,000 (FAIL) even
+**fully locally, no network involved** — a broadcast-fan-out timeout in the
+weather→buildings publication, not the federate-count ceiling already
+documented in S4c-real. Over real SSH, that per-shard ceiling drops further as
+machines are added (2 machines: safe at 500/machine, fails at 700; 3 machines:
+safe at 200/machine, fails at 500) — i.e. **mass-scale (K) sharding and
+federate-count sharding do not compose the same way**: the latter scales
+capacity ~linearly with machines (S4c-real), the former shrinks it. A labeled
+"PROPOSED NEXT RUN — awaiting author go-ahead" section in the analysis doc
+recommends the specific next real-hardware experiments (not executed).
+
+One dead scenario file was deleted (`cs_mass_shard_3m_k5000.yaml` — generated,
+never run, no log/result/csv evidence); the other 16 generated `cs_mass_*.yaml`
+files all back a real reported number (PASS, FAIL, or explicitly-marked
+INTERRUPTED/inconclusive) and were kept. Orphan-process check (read-only `ps`,
+locally and via SSH on `machine_a`/`machine_b`, nothing started): clean, no
+leftover `federate_launcher.py`/`helics_broker` processes from the interrupted
+session.

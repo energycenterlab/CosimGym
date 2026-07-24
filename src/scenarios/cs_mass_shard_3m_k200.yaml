@@ -1,0 +1,2355 @@
+# ============================================================================
+# GENERATED FILE — DO NOT EDIT BY HAND.
+# Source: src/scenarios/generate_mass_instances.py   (re-run it to regenerate)
+#
+# MASS-SCALE REAL SHARDED RUN — 3 machine(s), K=200/machine, 600 total buildings
+#
+# PLACEMENT (3 machine(s), K=200 buildings/machine, 600 total):
+#   shard_1 -> manager (local): weather + building/heatpump/pid @ K=200 = 4 federates
+#   shard_2 -> machine_a (remote, SSH): weather + building/heatpump/pid @ K=200 = 4 federates
+#   shard_3 -> machine_b (remote, SSH): weather + building/heatpump/pid @ K=200 = 4 federates
+#
+# SCALING AXIS: this scenario keeps federate COUNT fixed at 4/federation
+# (weather, building, heatpump, pid) and scales via n_instances=K inside
+# building/heatpump/pid instead of adding one federate per site. This avoids
+# the ~73-81-federate-per-broker zmq_ss ceiling (see generate_scale_sharded.py)
+# entirely — the bottleneck on THIS axis is HELICS interface-registration count
+# and BaseFederate's serial per-tick Python loops, not broker federate count.
+# See results/paper_case_study/mass_scale_bottleneck_analysis.md.
+# ============================================================================
+
+version: "1.0.0"
+name: "cs_mass_shard_3m_k200"
+scenario_description: "Mass-instance-scaling REAL multi-machine run (parts B/C) — 3 machine(s), K=200 buildings/machine, 600 total buildings, 4 federates/machine (fixed), zmq_ss."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-01T06:00:00"
+log_level: ERROR          # quiet: 200 instances/federate would otherwise flood the log
+
+memory_config:
+  batch_size: 1000
+  attrs: ["T_indoor", "Q_heat"]
+  sink: none
+
+deployment:
+  manager_address: "130.192.177.14"
+  machines:
+    machine_a:
+      host: "130.192.238.9"
+      user: "eclabuser"
+      ssh_port: 22
+      workdir: "/home/eclabuser/CosimGym"
+      conda_env: "cosim_gym"
+      python: "/home/eclabuser/miniconda3/envs/cosim_gym/bin/python"
+    machine_b:
+      host: "130.192.238.13"
+      user: "eclabuser"
+      ssh_port: 22
+      workdir: "/home/eclabuser/CosimGym"
+      conda_env: "cosim_gym"
+      python: "/home/eclabuser/miniconda3/envs/cosim_gym/bin/python"
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: false
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+federations:
+  shard_1:
+    broker_config:
+      core_type: "zmq_ss"
+      federates: 4
+
+    federate_configs:
+
+      weather_shard_1:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "DryBulb"
+              type: "double"
+              units: "°C"
+            - key: "GloHorzRad"
+              type: "double"
+              units: "W/m²"
+            - key: "DifHorzRad"
+              type: "double"
+              units: "W/m²"
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather_shard_1"
+            parallel_execution: false
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_data_bj.csv"
+            skip_rows: 0
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+
+      building_shard_1:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets: [weather_shard_1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump_shard_1.0/Q_heat]
+                '1': [heatpump_shard_1.1/Q_heat]
+                '2': [heatpump_shard_1.2/Q_heat]
+                '3': [heatpump_shard_1.3/Q_heat]
+                '4': [heatpump_shard_1.4/Q_heat]
+                '5': [heatpump_shard_1.5/Q_heat]
+                '6': [heatpump_shard_1.6/Q_heat]
+                '7': [heatpump_shard_1.7/Q_heat]
+                '8': [heatpump_shard_1.8/Q_heat]
+                '9': [heatpump_shard_1.9/Q_heat]
+                '10': [heatpump_shard_1.10/Q_heat]
+                '11': [heatpump_shard_1.11/Q_heat]
+                '12': [heatpump_shard_1.12/Q_heat]
+                '13': [heatpump_shard_1.13/Q_heat]
+                '14': [heatpump_shard_1.14/Q_heat]
+                '15': [heatpump_shard_1.15/Q_heat]
+                '16': [heatpump_shard_1.16/Q_heat]
+                '17': [heatpump_shard_1.17/Q_heat]
+                '18': [heatpump_shard_1.18/Q_heat]
+                '19': [heatpump_shard_1.19/Q_heat]
+                '20': [heatpump_shard_1.20/Q_heat]
+                '21': [heatpump_shard_1.21/Q_heat]
+                '22': [heatpump_shard_1.22/Q_heat]
+                '23': [heatpump_shard_1.23/Q_heat]
+                '24': [heatpump_shard_1.24/Q_heat]
+                '25': [heatpump_shard_1.25/Q_heat]
+                '26': [heatpump_shard_1.26/Q_heat]
+                '27': [heatpump_shard_1.27/Q_heat]
+                '28': [heatpump_shard_1.28/Q_heat]
+                '29': [heatpump_shard_1.29/Q_heat]
+                '30': [heatpump_shard_1.30/Q_heat]
+                '31': [heatpump_shard_1.31/Q_heat]
+                '32': [heatpump_shard_1.32/Q_heat]
+                '33': [heatpump_shard_1.33/Q_heat]
+                '34': [heatpump_shard_1.34/Q_heat]
+                '35': [heatpump_shard_1.35/Q_heat]
+                '36': [heatpump_shard_1.36/Q_heat]
+                '37': [heatpump_shard_1.37/Q_heat]
+                '38': [heatpump_shard_1.38/Q_heat]
+                '39': [heatpump_shard_1.39/Q_heat]
+                '40': [heatpump_shard_1.40/Q_heat]
+                '41': [heatpump_shard_1.41/Q_heat]
+                '42': [heatpump_shard_1.42/Q_heat]
+                '43': [heatpump_shard_1.43/Q_heat]
+                '44': [heatpump_shard_1.44/Q_heat]
+                '45': [heatpump_shard_1.45/Q_heat]
+                '46': [heatpump_shard_1.46/Q_heat]
+                '47': [heatpump_shard_1.47/Q_heat]
+                '48': [heatpump_shard_1.48/Q_heat]
+                '49': [heatpump_shard_1.49/Q_heat]
+                '50': [heatpump_shard_1.50/Q_heat]
+                '51': [heatpump_shard_1.51/Q_heat]
+                '52': [heatpump_shard_1.52/Q_heat]
+                '53': [heatpump_shard_1.53/Q_heat]
+                '54': [heatpump_shard_1.54/Q_heat]
+                '55': [heatpump_shard_1.55/Q_heat]
+                '56': [heatpump_shard_1.56/Q_heat]
+                '57': [heatpump_shard_1.57/Q_heat]
+                '58': [heatpump_shard_1.58/Q_heat]
+                '59': [heatpump_shard_1.59/Q_heat]
+                '60': [heatpump_shard_1.60/Q_heat]
+                '61': [heatpump_shard_1.61/Q_heat]
+                '62': [heatpump_shard_1.62/Q_heat]
+                '63': [heatpump_shard_1.63/Q_heat]
+                '64': [heatpump_shard_1.64/Q_heat]
+                '65': [heatpump_shard_1.65/Q_heat]
+                '66': [heatpump_shard_1.66/Q_heat]
+                '67': [heatpump_shard_1.67/Q_heat]
+                '68': [heatpump_shard_1.68/Q_heat]
+                '69': [heatpump_shard_1.69/Q_heat]
+                '70': [heatpump_shard_1.70/Q_heat]
+                '71': [heatpump_shard_1.71/Q_heat]
+                '72': [heatpump_shard_1.72/Q_heat]
+                '73': [heatpump_shard_1.73/Q_heat]
+                '74': [heatpump_shard_1.74/Q_heat]
+                '75': [heatpump_shard_1.75/Q_heat]
+                '76': [heatpump_shard_1.76/Q_heat]
+                '77': [heatpump_shard_1.77/Q_heat]
+                '78': [heatpump_shard_1.78/Q_heat]
+                '79': [heatpump_shard_1.79/Q_heat]
+                '80': [heatpump_shard_1.80/Q_heat]
+                '81': [heatpump_shard_1.81/Q_heat]
+                '82': [heatpump_shard_1.82/Q_heat]
+                '83': [heatpump_shard_1.83/Q_heat]
+                '84': [heatpump_shard_1.84/Q_heat]
+                '85': [heatpump_shard_1.85/Q_heat]
+                '86': [heatpump_shard_1.86/Q_heat]
+                '87': [heatpump_shard_1.87/Q_heat]
+                '88': [heatpump_shard_1.88/Q_heat]
+                '89': [heatpump_shard_1.89/Q_heat]
+                '90': [heatpump_shard_1.90/Q_heat]
+                '91': [heatpump_shard_1.91/Q_heat]
+                '92': [heatpump_shard_1.92/Q_heat]
+                '93': [heatpump_shard_1.93/Q_heat]
+                '94': [heatpump_shard_1.94/Q_heat]
+                '95': [heatpump_shard_1.95/Q_heat]
+                '96': [heatpump_shard_1.96/Q_heat]
+                '97': [heatpump_shard_1.97/Q_heat]
+                '98': [heatpump_shard_1.98/Q_heat]
+                '99': [heatpump_shard_1.99/Q_heat]
+                '100': [heatpump_shard_1.100/Q_heat]
+                '101': [heatpump_shard_1.101/Q_heat]
+                '102': [heatpump_shard_1.102/Q_heat]
+                '103': [heatpump_shard_1.103/Q_heat]
+                '104': [heatpump_shard_1.104/Q_heat]
+                '105': [heatpump_shard_1.105/Q_heat]
+                '106': [heatpump_shard_1.106/Q_heat]
+                '107': [heatpump_shard_1.107/Q_heat]
+                '108': [heatpump_shard_1.108/Q_heat]
+                '109': [heatpump_shard_1.109/Q_heat]
+                '110': [heatpump_shard_1.110/Q_heat]
+                '111': [heatpump_shard_1.111/Q_heat]
+                '112': [heatpump_shard_1.112/Q_heat]
+                '113': [heatpump_shard_1.113/Q_heat]
+                '114': [heatpump_shard_1.114/Q_heat]
+                '115': [heatpump_shard_1.115/Q_heat]
+                '116': [heatpump_shard_1.116/Q_heat]
+                '117': [heatpump_shard_1.117/Q_heat]
+                '118': [heatpump_shard_1.118/Q_heat]
+                '119': [heatpump_shard_1.119/Q_heat]
+                '120': [heatpump_shard_1.120/Q_heat]
+                '121': [heatpump_shard_1.121/Q_heat]
+                '122': [heatpump_shard_1.122/Q_heat]
+                '123': [heatpump_shard_1.123/Q_heat]
+                '124': [heatpump_shard_1.124/Q_heat]
+                '125': [heatpump_shard_1.125/Q_heat]
+                '126': [heatpump_shard_1.126/Q_heat]
+                '127': [heatpump_shard_1.127/Q_heat]
+                '128': [heatpump_shard_1.128/Q_heat]
+                '129': [heatpump_shard_1.129/Q_heat]
+                '130': [heatpump_shard_1.130/Q_heat]
+                '131': [heatpump_shard_1.131/Q_heat]
+                '132': [heatpump_shard_1.132/Q_heat]
+                '133': [heatpump_shard_1.133/Q_heat]
+                '134': [heatpump_shard_1.134/Q_heat]
+                '135': [heatpump_shard_1.135/Q_heat]
+                '136': [heatpump_shard_1.136/Q_heat]
+                '137': [heatpump_shard_1.137/Q_heat]
+                '138': [heatpump_shard_1.138/Q_heat]
+                '139': [heatpump_shard_1.139/Q_heat]
+                '140': [heatpump_shard_1.140/Q_heat]
+                '141': [heatpump_shard_1.141/Q_heat]
+                '142': [heatpump_shard_1.142/Q_heat]
+                '143': [heatpump_shard_1.143/Q_heat]
+                '144': [heatpump_shard_1.144/Q_heat]
+                '145': [heatpump_shard_1.145/Q_heat]
+                '146': [heatpump_shard_1.146/Q_heat]
+                '147': [heatpump_shard_1.147/Q_heat]
+                '148': [heatpump_shard_1.148/Q_heat]
+                '149': [heatpump_shard_1.149/Q_heat]
+                '150': [heatpump_shard_1.150/Q_heat]
+                '151': [heatpump_shard_1.151/Q_heat]
+                '152': [heatpump_shard_1.152/Q_heat]
+                '153': [heatpump_shard_1.153/Q_heat]
+                '154': [heatpump_shard_1.154/Q_heat]
+                '155': [heatpump_shard_1.155/Q_heat]
+                '156': [heatpump_shard_1.156/Q_heat]
+                '157': [heatpump_shard_1.157/Q_heat]
+                '158': [heatpump_shard_1.158/Q_heat]
+                '159': [heatpump_shard_1.159/Q_heat]
+                '160': [heatpump_shard_1.160/Q_heat]
+                '161': [heatpump_shard_1.161/Q_heat]
+                '162': [heatpump_shard_1.162/Q_heat]
+                '163': [heatpump_shard_1.163/Q_heat]
+                '164': [heatpump_shard_1.164/Q_heat]
+                '165': [heatpump_shard_1.165/Q_heat]
+                '166': [heatpump_shard_1.166/Q_heat]
+                '167': [heatpump_shard_1.167/Q_heat]
+                '168': [heatpump_shard_1.168/Q_heat]
+                '169': [heatpump_shard_1.169/Q_heat]
+                '170': [heatpump_shard_1.170/Q_heat]
+                '171': [heatpump_shard_1.171/Q_heat]
+                '172': [heatpump_shard_1.172/Q_heat]
+                '173': [heatpump_shard_1.173/Q_heat]
+                '174': [heatpump_shard_1.174/Q_heat]
+                '175': [heatpump_shard_1.175/Q_heat]
+                '176': [heatpump_shard_1.176/Q_heat]
+                '177': [heatpump_shard_1.177/Q_heat]
+                '178': [heatpump_shard_1.178/Q_heat]
+                '179': [heatpump_shard_1.179/Q_heat]
+                '180': [heatpump_shard_1.180/Q_heat]
+                '181': [heatpump_shard_1.181/Q_heat]
+                '182': [heatpump_shard_1.182/Q_heat]
+                '183': [heatpump_shard_1.183/Q_heat]
+                '184': [heatpump_shard_1.184/Q_heat]
+                '185': [heatpump_shard_1.185/Q_heat]
+                '186': [heatpump_shard_1.186/Q_heat]
+                '187': [heatpump_shard_1.187/Q_heat]
+                '188': [heatpump_shard_1.188/Q_heat]
+                '189': [heatpump_shard_1.189/Q_heat]
+                '190': [heatpump_shard_1.190/Q_heat]
+                '191': [heatpump_shard_1.191/Q_heat]
+                '192': [heatpump_shard_1.192/Q_heat]
+                '193': [heatpump_shard_1.193/Q_heat]
+                '194': [heatpump_shard_1.194/Q_heat]
+                '195': [heatpump_shard_1.195/Q_heat]
+                '196': [heatpump_shard_1.196/Q_heat]
+                '197': [heatpump_shard_1.197/Q_heat]
+                '198': [heatpump_shard_1.198/Q_heat]
+                '199': [heatpump_shard_1.199/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 200
+            prefix: "building_shard_1"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      heatpump_shard_1:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets: [weather_shard_1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_shard_1.0/modulation]
+                '1': [pid_shard_1.1/modulation]
+                '2': [pid_shard_1.2/modulation]
+                '3': [pid_shard_1.3/modulation]
+                '4': [pid_shard_1.4/modulation]
+                '5': [pid_shard_1.5/modulation]
+                '6': [pid_shard_1.6/modulation]
+                '7': [pid_shard_1.7/modulation]
+                '8': [pid_shard_1.8/modulation]
+                '9': [pid_shard_1.9/modulation]
+                '10': [pid_shard_1.10/modulation]
+                '11': [pid_shard_1.11/modulation]
+                '12': [pid_shard_1.12/modulation]
+                '13': [pid_shard_1.13/modulation]
+                '14': [pid_shard_1.14/modulation]
+                '15': [pid_shard_1.15/modulation]
+                '16': [pid_shard_1.16/modulation]
+                '17': [pid_shard_1.17/modulation]
+                '18': [pid_shard_1.18/modulation]
+                '19': [pid_shard_1.19/modulation]
+                '20': [pid_shard_1.20/modulation]
+                '21': [pid_shard_1.21/modulation]
+                '22': [pid_shard_1.22/modulation]
+                '23': [pid_shard_1.23/modulation]
+                '24': [pid_shard_1.24/modulation]
+                '25': [pid_shard_1.25/modulation]
+                '26': [pid_shard_1.26/modulation]
+                '27': [pid_shard_1.27/modulation]
+                '28': [pid_shard_1.28/modulation]
+                '29': [pid_shard_1.29/modulation]
+                '30': [pid_shard_1.30/modulation]
+                '31': [pid_shard_1.31/modulation]
+                '32': [pid_shard_1.32/modulation]
+                '33': [pid_shard_1.33/modulation]
+                '34': [pid_shard_1.34/modulation]
+                '35': [pid_shard_1.35/modulation]
+                '36': [pid_shard_1.36/modulation]
+                '37': [pid_shard_1.37/modulation]
+                '38': [pid_shard_1.38/modulation]
+                '39': [pid_shard_1.39/modulation]
+                '40': [pid_shard_1.40/modulation]
+                '41': [pid_shard_1.41/modulation]
+                '42': [pid_shard_1.42/modulation]
+                '43': [pid_shard_1.43/modulation]
+                '44': [pid_shard_1.44/modulation]
+                '45': [pid_shard_1.45/modulation]
+                '46': [pid_shard_1.46/modulation]
+                '47': [pid_shard_1.47/modulation]
+                '48': [pid_shard_1.48/modulation]
+                '49': [pid_shard_1.49/modulation]
+                '50': [pid_shard_1.50/modulation]
+                '51': [pid_shard_1.51/modulation]
+                '52': [pid_shard_1.52/modulation]
+                '53': [pid_shard_1.53/modulation]
+                '54': [pid_shard_1.54/modulation]
+                '55': [pid_shard_1.55/modulation]
+                '56': [pid_shard_1.56/modulation]
+                '57': [pid_shard_1.57/modulation]
+                '58': [pid_shard_1.58/modulation]
+                '59': [pid_shard_1.59/modulation]
+                '60': [pid_shard_1.60/modulation]
+                '61': [pid_shard_1.61/modulation]
+                '62': [pid_shard_1.62/modulation]
+                '63': [pid_shard_1.63/modulation]
+                '64': [pid_shard_1.64/modulation]
+                '65': [pid_shard_1.65/modulation]
+                '66': [pid_shard_1.66/modulation]
+                '67': [pid_shard_1.67/modulation]
+                '68': [pid_shard_1.68/modulation]
+                '69': [pid_shard_1.69/modulation]
+                '70': [pid_shard_1.70/modulation]
+                '71': [pid_shard_1.71/modulation]
+                '72': [pid_shard_1.72/modulation]
+                '73': [pid_shard_1.73/modulation]
+                '74': [pid_shard_1.74/modulation]
+                '75': [pid_shard_1.75/modulation]
+                '76': [pid_shard_1.76/modulation]
+                '77': [pid_shard_1.77/modulation]
+                '78': [pid_shard_1.78/modulation]
+                '79': [pid_shard_1.79/modulation]
+                '80': [pid_shard_1.80/modulation]
+                '81': [pid_shard_1.81/modulation]
+                '82': [pid_shard_1.82/modulation]
+                '83': [pid_shard_1.83/modulation]
+                '84': [pid_shard_1.84/modulation]
+                '85': [pid_shard_1.85/modulation]
+                '86': [pid_shard_1.86/modulation]
+                '87': [pid_shard_1.87/modulation]
+                '88': [pid_shard_1.88/modulation]
+                '89': [pid_shard_1.89/modulation]
+                '90': [pid_shard_1.90/modulation]
+                '91': [pid_shard_1.91/modulation]
+                '92': [pid_shard_1.92/modulation]
+                '93': [pid_shard_1.93/modulation]
+                '94': [pid_shard_1.94/modulation]
+                '95': [pid_shard_1.95/modulation]
+                '96': [pid_shard_1.96/modulation]
+                '97': [pid_shard_1.97/modulation]
+                '98': [pid_shard_1.98/modulation]
+                '99': [pid_shard_1.99/modulation]
+                '100': [pid_shard_1.100/modulation]
+                '101': [pid_shard_1.101/modulation]
+                '102': [pid_shard_1.102/modulation]
+                '103': [pid_shard_1.103/modulation]
+                '104': [pid_shard_1.104/modulation]
+                '105': [pid_shard_1.105/modulation]
+                '106': [pid_shard_1.106/modulation]
+                '107': [pid_shard_1.107/modulation]
+                '108': [pid_shard_1.108/modulation]
+                '109': [pid_shard_1.109/modulation]
+                '110': [pid_shard_1.110/modulation]
+                '111': [pid_shard_1.111/modulation]
+                '112': [pid_shard_1.112/modulation]
+                '113': [pid_shard_1.113/modulation]
+                '114': [pid_shard_1.114/modulation]
+                '115': [pid_shard_1.115/modulation]
+                '116': [pid_shard_1.116/modulation]
+                '117': [pid_shard_1.117/modulation]
+                '118': [pid_shard_1.118/modulation]
+                '119': [pid_shard_1.119/modulation]
+                '120': [pid_shard_1.120/modulation]
+                '121': [pid_shard_1.121/modulation]
+                '122': [pid_shard_1.122/modulation]
+                '123': [pid_shard_1.123/modulation]
+                '124': [pid_shard_1.124/modulation]
+                '125': [pid_shard_1.125/modulation]
+                '126': [pid_shard_1.126/modulation]
+                '127': [pid_shard_1.127/modulation]
+                '128': [pid_shard_1.128/modulation]
+                '129': [pid_shard_1.129/modulation]
+                '130': [pid_shard_1.130/modulation]
+                '131': [pid_shard_1.131/modulation]
+                '132': [pid_shard_1.132/modulation]
+                '133': [pid_shard_1.133/modulation]
+                '134': [pid_shard_1.134/modulation]
+                '135': [pid_shard_1.135/modulation]
+                '136': [pid_shard_1.136/modulation]
+                '137': [pid_shard_1.137/modulation]
+                '138': [pid_shard_1.138/modulation]
+                '139': [pid_shard_1.139/modulation]
+                '140': [pid_shard_1.140/modulation]
+                '141': [pid_shard_1.141/modulation]
+                '142': [pid_shard_1.142/modulation]
+                '143': [pid_shard_1.143/modulation]
+                '144': [pid_shard_1.144/modulation]
+                '145': [pid_shard_1.145/modulation]
+                '146': [pid_shard_1.146/modulation]
+                '147': [pid_shard_1.147/modulation]
+                '148': [pid_shard_1.148/modulation]
+                '149': [pid_shard_1.149/modulation]
+                '150': [pid_shard_1.150/modulation]
+                '151': [pid_shard_1.151/modulation]
+                '152': [pid_shard_1.152/modulation]
+                '153': [pid_shard_1.153/modulation]
+                '154': [pid_shard_1.154/modulation]
+                '155': [pid_shard_1.155/modulation]
+                '156': [pid_shard_1.156/modulation]
+                '157': [pid_shard_1.157/modulation]
+                '158': [pid_shard_1.158/modulation]
+                '159': [pid_shard_1.159/modulation]
+                '160': [pid_shard_1.160/modulation]
+                '161': [pid_shard_1.161/modulation]
+                '162': [pid_shard_1.162/modulation]
+                '163': [pid_shard_1.163/modulation]
+                '164': [pid_shard_1.164/modulation]
+                '165': [pid_shard_1.165/modulation]
+                '166': [pid_shard_1.166/modulation]
+                '167': [pid_shard_1.167/modulation]
+                '168': [pid_shard_1.168/modulation]
+                '169': [pid_shard_1.169/modulation]
+                '170': [pid_shard_1.170/modulation]
+                '171': [pid_shard_1.171/modulation]
+                '172': [pid_shard_1.172/modulation]
+                '173': [pid_shard_1.173/modulation]
+                '174': [pid_shard_1.174/modulation]
+                '175': [pid_shard_1.175/modulation]
+                '176': [pid_shard_1.176/modulation]
+                '177': [pid_shard_1.177/modulation]
+                '178': [pid_shard_1.178/modulation]
+                '179': [pid_shard_1.179/modulation]
+                '180': [pid_shard_1.180/modulation]
+                '181': [pid_shard_1.181/modulation]
+                '182': [pid_shard_1.182/modulation]
+                '183': [pid_shard_1.183/modulation]
+                '184': [pid_shard_1.184/modulation]
+                '185': [pid_shard_1.185/modulation]
+                '186': [pid_shard_1.186/modulation]
+                '187': [pid_shard_1.187/modulation]
+                '188': [pid_shard_1.188/modulation]
+                '189': [pid_shard_1.189/modulation]
+                '190': [pid_shard_1.190/modulation]
+                '191': [pid_shard_1.191/modulation]
+                '192': [pid_shard_1.192/modulation]
+                '193': [pid_shard_1.193/modulation]
+                '194': [pid_shard_1.194/modulation]
+                '195': [pid_shard_1.195/modulation]
+                '196': [pid_shard_1.196/modulation]
+                '197': [pid_shard_1.197/modulation]
+                '198': [pid_shard_1.198/modulation]
+                '199': [pid_shard_1.199/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 200
+            prefix: "heatpump_shard_1"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_shard_1:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [building_shard_1.0/T_indoor]
+                '1': [building_shard_1.1/T_indoor]
+                '2': [building_shard_1.2/T_indoor]
+                '3': [building_shard_1.3/T_indoor]
+                '4': [building_shard_1.4/T_indoor]
+                '5': [building_shard_1.5/T_indoor]
+                '6': [building_shard_1.6/T_indoor]
+                '7': [building_shard_1.7/T_indoor]
+                '8': [building_shard_1.8/T_indoor]
+                '9': [building_shard_1.9/T_indoor]
+                '10': [building_shard_1.10/T_indoor]
+                '11': [building_shard_1.11/T_indoor]
+                '12': [building_shard_1.12/T_indoor]
+                '13': [building_shard_1.13/T_indoor]
+                '14': [building_shard_1.14/T_indoor]
+                '15': [building_shard_1.15/T_indoor]
+                '16': [building_shard_1.16/T_indoor]
+                '17': [building_shard_1.17/T_indoor]
+                '18': [building_shard_1.18/T_indoor]
+                '19': [building_shard_1.19/T_indoor]
+                '20': [building_shard_1.20/T_indoor]
+                '21': [building_shard_1.21/T_indoor]
+                '22': [building_shard_1.22/T_indoor]
+                '23': [building_shard_1.23/T_indoor]
+                '24': [building_shard_1.24/T_indoor]
+                '25': [building_shard_1.25/T_indoor]
+                '26': [building_shard_1.26/T_indoor]
+                '27': [building_shard_1.27/T_indoor]
+                '28': [building_shard_1.28/T_indoor]
+                '29': [building_shard_1.29/T_indoor]
+                '30': [building_shard_1.30/T_indoor]
+                '31': [building_shard_1.31/T_indoor]
+                '32': [building_shard_1.32/T_indoor]
+                '33': [building_shard_1.33/T_indoor]
+                '34': [building_shard_1.34/T_indoor]
+                '35': [building_shard_1.35/T_indoor]
+                '36': [building_shard_1.36/T_indoor]
+                '37': [building_shard_1.37/T_indoor]
+                '38': [building_shard_1.38/T_indoor]
+                '39': [building_shard_1.39/T_indoor]
+                '40': [building_shard_1.40/T_indoor]
+                '41': [building_shard_1.41/T_indoor]
+                '42': [building_shard_1.42/T_indoor]
+                '43': [building_shard_1.43/T_indoor]
+                '44': [building_shard_1.44/T_indoor]
+                '45': [building_shard_1.45/T_indoor]
+                '46': [building_shard_1.46/T_indoor]
+                '47': [building_shard_1.47/T_indoor]
+                '48': [building_shard_1.48/T_indoor]
+                '49': [building_shard_1.49/T_indoor]
+                '50': [building_shard_1.50/T_indoor]
+                '51': [building_shard_1.51/T_indoor]
+                '52': [building_shard_1.52/T_indoor]
+                '53': [building_shard_1.53/T_indoor]
+                '54': [building_shard_1.54/T_indoor]
+                '55': [building_shard_1.55/T_indoor]
+                '56': [building_shard_1.56/T_indoor]
+                '57': [building_shard_1.57/T_indoor]
+                '58': [building_shard_1.58/T_indoor]
+                '59': [building_shard_1.59/T_indoor]
+                '60': [building_shard_1.60/T_indoor]
+                '61': [building_shard_1.61/T_indoor]
+                '62': [building_shard_1.62/T_indoor]
+                '63': [building_shard_1.63/T_indoor]
+                '64': [building_shard_1.64/T_indoor]
+                '65': [building_shard_1.65/T_indoor]
+                '66': [building_shard_1.66/T_indoor]
+                '67': [building_shard_1.67/T_indoor]
+                '68': [building_shard_1.68/T_indoor]
+                '69': [building_shard_1.69/T_indoor]
+                '70': [building_shard_1.70/T_indoor]
+                '71': [building_shard_1.71/T_indoor]
+                '72': [building_shard_1.72/T_indoor]
+                '73': [building_shard_1.73/T_indoor]
+                '74': [building_shard_1.74/T_indoor]
+                '75': [building_shard_1.75/T_indoor]
+                '76': [building_shard_1.76/T_indoor]
+                '77': [building_shard_1.77/T_indoor]
+                '78': [building_shard_1.78/T_indoor]
+                '79': [building_shard_1.79/T_indoor]
+                '80': [building_shard_1.80/T_indoor]
+                '81': [building_shard_1.81/T_indoor]
+                '82': [building_shard_1.82/T_indoor]
+                '83': [building_shard_1.83/T_indoor]
+                '84': [building_shard_1.84/T_indoor]
+                '85': [building_shard_1.85/T_indoor]
+                '86': [building_shard_1.86/T_indoor]
+                '87': [building_shard_1.87/T_indoor]
+                '88': [building_shard_1.88/T_indoor]
+                '89': [building_shard_1.89/T_indoor]
+                '90': [building_shard_1.90/T_indoor]
+                '91': [building_shard_1.91/T_indoor]
+                '92': [building_shard_1.92/T_indoor]
+                '93': [building_shard_1.93/T_indoor]
+                '94': [building_shard_1.94/T_indoor]
+                '95': [building_shard_1.95/T_indoor]
+                '96': [building_shard_1.96/T_indoor]
+                '97': [building_shard_1.97/T_indoor]
+                '98': [building_shard_1.98/T_indoor]
+                '99': [building_shard_1.99/T_indoor]
+                '100': [building_shard_1.100/T_indoor]
+                '101': [building_shard_1.101/T_indoor]
+                '102': [building_shard_1.102/T_indoor]
+                '103': [building_shard_1.103/T_indoor]
+                '104': [building_shard_1.104/T_indoor]
+                '105': [building_shard_1.105/T_indoor]
+                '106': [building_shard_1.106/T_indoor]
+                '107': [building_shard_1.107/T_indoor]
+                '108': [building_shard_1.108/T_indoor]
+                '109': [building_shard_1.109/T_indoor]
+                '110': [building_shard_1.110/T_indoor]
+                '111': [building_shard_1.111/T_indoor]
+                '112': [building_shard_1.112/T_indoor]
+                '113': [building_shard_1.113/T_indoor]
+                '114': [building_shard_1.114/T_indoor]
+                '115': [building_shard_1.115/T_indoor]
+                '116': [building_shard_1.116/T_indoor]
+                '117': [building_shard_1.117/T_indoor]
+                '118': [building_shard_1.118/T_indoor]
+                '119': [building_shard_1.119/T_indoor]
+                '120': [building_shard_1.120/T_indoor]
+                '121': [building_shard_1.121/T_indoor]
+                '122': [building_shard_1.122/T_indoor]
+                '123': [building_shard_1.123/T_indoor]
+                '124': [building_shard_1.124/T_indoor]
+                '125': [building_shard_1.125/T_indoor]
+                '126': [building_shard_1.126/T_indoor]
+                '127': [building_shard_1.127/T_indoor]
+                '128': [building_shard_1.128/T_indoor]
+                '129': [building_shard_1.129/T_indoor]
+                '130': [building_shard_1.130/T_indoor]
+                '131': [building_shard_1.131/T_indoor]
+                '132': [building_shard_1.132/T_indoor]
+                '133': [building_shard_1.133/T_indoor]
+                '134': [building_shard_1.134/T_indoor]
+                '135': [building_shard_1.135/T_indoor]
+                '136': [building_shard_1.136/T_indoor]
+                '137': [building_shard_1.137/T_indoor]
+                '138': [building_shard_1.138/T_indoor]
+                '139': [building_shard_1.139/T_indoor]
+                '140': [building_shard_1.140/T_indoor]
+                '141': [building_shard_1.141/T_indoor]
+                '142': [building_shard_1.142/T_indoor]
+                '143': [building_shard_1.143/T_indoor]
+                '144': [building_shard_1.144/T_indoor]
+                '145': [building_shard_1.145/T_indoor]
+                '146': [building_shard_1.146/T_indoor]
+                '147': [building_shard_1.147/T_indoor]
+                '148': [building_shard_1.148/T_indoor]
+                '149': [building_shard_1.149/T_indoor]
+                '150': [building_shard_1.150/T_indoor]
+                '151': [building_shard_1.151/T_indoor]
+                '152': [building_shard_1.152/T_indoor]
+                '153': [building_shard_1.153/T_indoor]
+                '154': [building_shard_1.154/T_indoor]
+                '155': [building_shard_1.155/T_indoor]
+                '156': [building_shard_1.156/T_indoor]
+                '157': [building_shard_1.157/T_indoor]
+                '158': [building_shard_1.158/T_indoor]
+                '159': [building_shard_1.159/T_indoor]
+                '160': [building_shard_1.160/T_indoor]
+                '161': [building_shard_1.161/T_indoor]
+                '162': [building_shard_1.162/T_indoor]
+                '163': [building_shard_1.163/T_indoor]
+                '164': [building_shard_1.164/T_indoor]
+                '165': [building_shard_1.165/T_indoor]
+                '166': [building_shard_1.166/T_indoor]
+                '167': [building_shard_1.167/T_indoor]
+                '168': [building_shard_1.168/T_indoor]
+                '169': [building_shard_1.169/T_indoor]
+                '170': [building_shard_1.170/T_indoor]
+                '171': [building_shard_1.171/T_indoor]
+                '172': [building_shard_1.172/T_indoor]
+                '173': [building_shard_1.173/T_indoor]
+                '174': [building_shard_1.174/T_indoor]
+                '175': [building_shard_1.175/T_indoor]
+                '176': [building_shard_1.176/T_indoor]
+                '177': [building_shard_1.177/T_indoor]
+                '178': [building_shard_1.178/T_indoor]
+                '179': [building_shard_1.179/T_indoor]
+                '180': [building_shard_1.180/T_indoor]
+                '181': [building_shard_1.181/T_indoor]
+                '182': [building_shard_1.182/T_indoor]
+                '183': [building_shard_1.183/T_indoor]
+                '184': [building_shard_1.184/T_indoor]
+                '185': [building_shard_1.185/T_indoor]
+                '186': [building_shard_1.186/T_indoor]
+                '187': [building_shard_1.187/T_indoor]
+                '188': [building_shard_1.188/T_indoor]
+                '189': [building_shard_1.189/T_indoor]
+                '190': [building_shard_1.190/T_indoor]
+                '191': [building_shard_1.191/T_indoor]
+                '192': [building_shard_1.192/T_indoor]
+                '193': [building_shard_1.193/T_indoor]
+                '194': [building_shard_1.194/T_indoor]
+                '195': [building_shard_1.195/T_indoor]
+                '196': [building_shard_1.196/T_indoor]
+                '197': [building_shard_1.197/T_indoor]
+                '198': [building_shard_1.198/T_indoor]
+                '199': [building_shard_1.199/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 200
+            prefix: "pid_shard_1"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+  shard_2:
+    broker_config:
+      core_type: "zmq_ss"
+      federates: 4
+
+    federate_configs:
+
+      weather_shard_2:
+        type: "base"
+        host: "machine_a"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "DryBulb"
+              type: "double"
+              units: "°C"
+            - key: "GloHorzRad"
+              type: "double"
+              units: "W/m²"
+            - key: "DifHorzRad"
+              type: "double"
+              units: "W/m²"
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather_shard_2"
+            parallel_execution: false
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_data_bj.csv"
+            skip_rows: 0
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+
+      building_shard_2:
+        type: "base"
+        host: "machine_a"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets: [weather_shard_2.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump_shard_2.0/Q_heat]
+                '1': [heatpump_shard_2.1/Q_heat]
+                '2': [heatpump_shard_2.2/Q_heat]
+                '3': [heatpump_shard_2.3/Q_heat]
+                '4': [heatpump_shard_2.4/Q_heat]
+                '5': [heatpump_shard_2.5/Q_heat]
+                '6': [heatpump_shard_2.6/Q_heat]
+                '7': [heatpump_shard_2.7/Q_heat]
+                '8': [heatpump_shard_2.8/Q_heat]
+                '9': [heatpump_shard_2.9/Q_heat]
+                '10': [heatpump_shard_2.10/Q_heat]
+                '11': [heatpump_shard_2.11/Q_heat]
+                '12': [heatpump_shard_2.12/Q_heat]
+                '13': [heatpump_shard_2.13/Q_heat]
+                '14': [heatpump_shard_2.14/Q_heat]
+                '15': [heatpump_shard_2.15/Q_heat]
+                '16': [heatpump_shard_2.16/Q_heat]
+                '17': [heatpump_shard_2.17/Q_heat]
+                '18': [heatpump_shard_2.18/Q_heat]
+                '19': [heatpump_shard_2.19/Q_heat]
+                '20': [heatpump_shard_2.20/Q_heat]
+                '21': [heatpump_shard_2.21/Q_heat]
+                '22': [heatpump_shard_2.22/Q_heat]
+                '23': [heatpump_shard_2.23/Q_heat]
+                '24': [heatpump_shard_2.24/Q_heat]
+                '25': [heatpump_shard_2.25/Q_heat]
+                '26': [heatpump_shard_2.26/Q_heat]
+                '27': [heatpump_shard_2.27/Q_heat]
+                '28': [heatpump_shard_2.28/Q_heat]
+                '29': [heatpump_shard_2.29/Q_heat]
+                '30': [heatpump_shard_2.30/Q_heat]
+                '31': [heatpump_shard_2.31/Q_heat]
+                '32': [heatpump_shard_2.32/Q_heat]
+                '33': [heatpump_shard_2.33/Q_heat]
+                '34': [heatpump_shard_2.34/Q_heat]
+                '35': [heatpump_shard_2.35/Q_heat]
+                '36': [heatpump_shard_2.36/Q_heat]
+                '37': [heatpump_shard_2.37/Q_heat]
+                '38': [heatpump_shard_2.38/Q_heat]
+                '39': [heatpump_shard_2.39/Q_heat]
+                '40': [heatpump_shard_2.40/Q_heat]
+                '41': [heatpump_shard_2.41/Q_heat]
+                '42': [heatpump_shard_2.42/Q_heat]
+                '43': [heatpump_shard_2.43/Q_heat]
+                '44': [heatpump_shard_2.44/Q_heat]
+                '45': [heatpump_shard_2.45/Q_heat]
+                '46': [heatpump_shard_2.46/Q_heat]
+                '47': [heatpump_shard_2.47/Q_heat]
+                '48': [heatpump_shard_2.48/Q_heat]
+                '49': [heatpump_shard_2.49/Q_heat]
+                '50': [heatpump_shard_2.50/Q_heat]
+                '51': [heatpump_shard_2.51/Q_heat]
+                '52': [heatpump_shard_2.52/Q_heat]
+                '53': [heatpump_shard_2.53/Q_heat]
+                '54': [heatpump_shard_2.54/Q_heat]
+                '55': [heatpump_shard_2.55/Q_heat]
+                '56': [heatpump_shard_2.56/Q_heat]
+                '57': [heatpump_shard_2.57/Q_heat]
+                '58': [heatpump_shard_2.58/Q_heat]
+                '59': [heatpump_shard_2.59/Q_heat]
+                '60': [heatpump_shard_2.60/Q_heat]
+                '61': [heatpump_shard_2.61/Q_heat]
+                '62': [heatpump_shard_2.62/Q_heat]
+                '63': [heatpump_shard_2.63/Q_heat]
+                '64': [heatpump_shard_2.64/Q_heat]
+                '65': [heatpump_shard_2.65/Q_heat]
+                '66': [heatpump_shard_2.66/Q_heat]
+                '67': [heatpump_shard_2.67/Q_heat]
+                '68': [heatpump_shard_2.68/Q_heat]
+                '69': [heatpump_shard_2.69/Q_heat]
+                '70': [heatpump_shard_2.70/Q_heat]
+                '71': [heatpump_shard_2.71/Q_heat]
+                '72': [heatpump_shard_2.72/Q_heat]
+                '73': [heatpump_shard_2.73/Q_heat]
+                '74': [heatpump_shard_2.74/Q_heat]
+                '75': [heatpump_shard_2.75/Q_heat]
+                '76': [heatpump_shard_2.76/Q_heat]
+                '77': [heatpump_shard_2.77/Q_heat]
+                '78': [heatpump_shard_2.78/Q_heat]
+                '79': [heatpump_shard_2.79/Q_heat]
+                '80': [heatpump_shard_2.80/Q_heat]
+                '81': [heatpump_shard_2.81/Q_heat]
+                '82': [heatpump_shard_2.82/Q_heat]
+                '83': [heatpump_shard_2.83/Q_heat]
+                '84': [heatpump_shard_2.84/Q_heat]
+                '85': [heatpump_shard_2.85/Q_heat]
+                '86': [heatpump_shard_2.86/Q_heat]
+                '87': [heatpump_shard_2.87/Q_heat]
+                '88': [heatpump_shard_2.88/Q_heat]
+                '89': [heatpump_shard_2.89/Q_heat]
+                '90': [heatpump_shard_2.90/Q_heat]
+                '91': [heatpump_shard_2.91/Q_heat]
+                '92': [heatpump_shard_2.92/Q_heat]
+                '93': [heatpump_shard_2.93/Q_heat]
+                '94': [heatpump_shard_2.94/Q_heat]
+                '95': [heatpump_shard_2.95/Q_heat]
+                '96': [heatpump_shard_2.96/Q_heat]
+                '97': [heatpump_shard_2.97/Q_heat]
+                '98': [heatpump_shard_2.98/Q_heat]
+                '99': [heatpump_shard_2.99/Q_heat]
+                '100': [heatpump_shard_2.100/Q_heat]
+                '101': [heatpump_shard_2.101/Q_heat]
+                '102': [heatpump_shard_2.102/Q_heat]
+                '103': [heatpump_shard_2.103/Q_heat]
+                '104': [heatpump_shard_2.104/Q_heat]
+                '105': [heatpump_shard_2.105/Q_heat]
+                '106': [heatpump_shard_2.106/Q_heat]
+                '107': [heatpump_shard_2.107/Q_heat]
+                '108': [heatpump_shard_2.108/Q_heat]
+                '109': [heatpump_shard_2.109/Q_heat]
+                '110': [heatpump_shard_2.110/Q_heat]
+                '111': [heatpump_shard_2.111/Q_heat]
+                '112': [heatpump_shard_2.112/Q_heat]
+                '113': [heatpump_shard_2.113/Q_heat]
+                '114': [heatpump_shard_2.114/Q_heat]
+                '115': [heatpump_shard_2.115/Q_heat]
+                '116': [heatpump_shard_2.116/Q_heat]
+                '117': [heatpump_shard_2.117/Q_heat]
+                '118': [heatpump_shard_2.118/Q_heat]
+                '119': [heatpump_shard_2.119/Q_heat]
+                '120': [heatpump_shard_2.120/Q_heat]
+                '121': [heatpump_shard_2.121/Q_heat]
+                '122': [heatpump_shard_2.122/Q_heat]
+                '123': [heatpump_shard_2.123/Q_heat]
+                '124': [heatpump_shard_2.124/Q_heat]
+                '125': [heatpump_shard_2.125/Q_heat]
+                '126': [heatpump_shard_2.126/Q_heat]
+                '127': [heatpump_shard_2.127/Q_heat]
+                '128': [heatpump_shard_2.128/Q_heat]
+                '129': [heatpump_shard_2.129/Q_heat]
+                '130': [heatpump_shard_2.130/Q_heat]
+                '131': [heatpump_shard_2.131/Q_heat]
+                '132': [heatpump_shard_2.132/Q_heat]
+                '133': [heatpump_shard_2.133/Q_heat]
+                '134': [heatpump_shard_2.134/Q_heat]
+                '135': [heatpump_shard_2.135/Q_heat]
+                '136': [heatpump_shard_2.136/Q_heat]
+                '137': [heatpump_shard_2.137/Q_heat]
+                '138': [heatpump_shard_2.138/Q_heat]
+                '139': [heatpump_shard_2.139/Q_heat]
+                '140': [heatpump_shard_2.140/Q_heat]
+                '141': [heatpump_shard_2.141/Q_heat]
+                '142': [heatpump_shard_2.142/Q_heat]
+                '143': [heatpump_shard_2.143/Q_heat]
+                '144': [heatpump_shard_2.144/Q_heat]
+                '145': [heatpump_shard_2.145/Q_heat]
+                '146': [heatpump_shard_2.146/Q_heat]
+                '147': [heatpump_shard_2.147/Q_heat]
+                '148': [heatpump_shard_2.148/Q_heat]
+                '149': [heatpump_shard_2.149/Q_heat]
+                '150': [heatpump_shard_2.150/Q_heat]
+                '151': [heatpump_shard_2.151/Q_heat]
+                '152': [heatpump_shard_2.152/Q_heat]
+                '153': [heatpump_shard_2.153/Q_heat]
+                '154': [heatpump_shard_2.154/Q_heat]
+                '155': [heatpump_shard_2.155/Q_heat]
+                '156': [heatpump_shard_2.156/Q_heat]
+                '157': [heatpump_shard_2.157/Q_heat]
+                '158': [heatpump_shard_2.158/Q_heat]
+                '159': [heatpump_shard_2.159/Q_heat]
+                '160': [heatpump_shard_2.160/Q_heat]
+                '161': [heatpump_shard_2.161/Q_heat]
+                '162': [heatpump_shard_2.162/Q_heat]
+                '163': [heatpump_shard_2.163/Q_heat]
+                '164': [heatpump_shard_2.164/Q_heat]
+                '165': [heatpump_shard_2.165/Q_heat]
+                '166': [heatpump_shard_2.166/Q_heat]
+                '167': [heatpump_shard_2.167/Q_heat]
+                '168': [heatpump_shard_2.168/Q_heat]
+                '169': [heatpump_shard_2.169/Q_heat]
+                '170': [heatpump_shard_2.170/Q_heat]
+                '171': [heatpump_shard_2.171/Q_heat]
+                '172': [heatpump_shard_2.172/Q_heat]
+                '173': [heatpump_shard_2.173/Q_heat]
+                '174': [heatpump_shard_2.174/Q_heat]
+                '175': [heatpump_shard_2.175/Q_heat]
+                '176': [heatpump_shard_2.176/Q_heat]
+                '177': [heatpump_shard_2.177/Q_heat]
+                '178': [heatpump_shard_2.178/Q_heat]
+                '179': [heatpump_shard_2.179/Q_heat]
+                '180': [heatpump_shard_2.180/Q_heat]
+                '181': [heatpump_shard_2.181/Q_heat]
+                '182': [heatpump_shard_2.182/Q_heat]
+                '183': [heatpump_shard_2.183/Q_heat]
+                '184': [heatpump_shard_2.184/Q_heat]
+                '185': [heatpump_shard_2.185/Q_heat]
+                '186': [heatpump_shard_2.186/Q_heat]
+                '187': [heatpump_shard_2.187/Q_heat]
+                '188': [heatpump_shard_2.188/Q_heat]
+                '189': [heatpump_shard_2.189/Q_heat]
+                '190': [heatpump_shard_2.190/Q_heat]
+                '191': [heatpump_shard_2.191/Q_heat]
+                '192': [heatpump_shard_2.192/Q_heat]
+                '193': [heatpump_shard_2.193/Q_heat]
+                '194': [heatpump_shard_2.194/Q_heat]
+                '195': [heatpump_shard_2.195/Q_heat]
+                '196': [heatpump_shard_2.196/Q_heat]
+                '197': [heatpump_shard_2.197/Q_heat]
+                '198': [heatpump_shard_2.198/Q_heat]
+                '199': [heatpump_shard_2.199/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 200
+            prefix: "building_shard_2"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      heatpump_shard_2:
+        type: "base"
+        host: "machine_a"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets: [weather_shard_2.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_shard_2.0/modulation]
+                '1': [pid_shard_2.1/modulation]
+                '2': [pid_shard_2.2/modulation]
+                '3': [pid_shard_2.3/modulation]
+                '4': [pid_shard_2.4/modulation]
+                '5': [pid_shard_2.5/modulation]
+                '6': [pid_shard_2.6/modulation]
+                '7': [pid_shard_2.7/modulation]
+                '8': [pid_shard_2.8/modulation]
+                '9': [pid_shard_2.9/modulation]
+                '10': [pid_shard_2.10/modulation]
+                '11': [pid_shard_2.11/modulation]
+                '12': [pid_shard_2.12/modulation]
+                '13': [pid_shard_2.13/modulation]
+                '14': [pid_shard_2.14/modulation]
+                '15': [pid_shard_2.15/modulation]
+                '16': [pid_shard_2.16/modulation]
+                '17': [pid_shard_2.17/modulation]
+                '18': [pid_shard_2.18/modulation]
+                '19': [pid_shard_2.19/modulation]
+                '20': [pid_shard_2.20/modulation]
+                '21': [pid_shard_2.21/modulation]
+                '22': [pid_shard_2.22/modulation]
+                '23': [pid_shard_2.23/modulation]
+                '24': [pid_shard_2.24/modulation]
+                '25': [pid_shard_2.25/modulation]
+                '26': [pid_shard_2.26/modulation]
+                '27': [pid_shard_2.27/modulation]
+                '28': [pid_shard_2.28/modulation]
+                '29': [pid_shard_2.29/modulation]
+                '30': [pid_shard_2.30/modulation]
+                '31': [pid_shard_2.31/modulation]
+                '32': [pid_shard_2.32/modulation]
+                '33': [pid_shard_2.33/modulation]
+                '34': [pid_shard_2.34/modulation]
+                '35': [pid_shard_2.35/modulation]
+                '36': [pid_shard_2.36/modulation]
+                '37': [pid_shard_2.37/modulation]
+                '38': [pid_shard_2.38/modulation]
+                '39': [pid_shard_2.39/modulation]
+                '40': [pid_shard_2.40/modulation]
+                '41': [pid_shard_2.41/modulation]
+                '42': [pid_shard_2.42/modulation]
+                '43': [pid_shard_2.43/modulation]
+                '44': [pid_shard_2.44/modulation]
+                '45': [pid_shard_2.45/modulation]
+                '46': [pid_shard_2.46/modulation]
+                '47': [pid_shard_2.47/modulation]
+                '48': [pid_shard_2.48/modulation]
+                '49': [pid_shard_2.49/modulation]
+                '50': [pid_shard_2.50/modulation]
+                '51': [pid_shard_2.51/modulation]
+                '52': [pid_shard_2.52/modulation]
+                '53': [pid_shard_2.53/modulation]
+                '54': [pid_shard_2.54/modulation]
+                '55': [pid_shard_2.55/modulation]
+                '56': [pid_shard_2.56/modulation]
+                '57': [pid_shard_2.57/modulation]
+                '58': [pid_shard_2.58/modulation]
+                '59': [pid_shard_2.59/modulation]
+                '60': [pid_shard_2.60/modulation]
+                '61': [pid_shard_2.61/modulation]
+                '62': [pid_shard_2.62/modulation]
+                '63': [pid_shard_2.63/modulation]
+                '64': [pid_shard_2.64/modulation]
+                '65': [pid_shard_2.65/modulation]
+                '66': [pid_shard_2.66/modulation]
+                '67': [pid_shard_2.67/modulation]
+                '68': [pid_shard_2.68/modulation]
+                '69': [pid_shard_2.69/modulation]
+                '70': [pid_shard_2.70/modulation]
+                '71': [pid_shard_2.71/modulation]
+                '72': [pid_shard_2.72/modulation]
+                '73': [pid_shard_2.73/modulation]
+                '74': [pid_shard_2.74/modulation]
+                '75': [pid_shard_2.75/modulation]
+                '76': [pid_shard_2.76/modulation]
+                '77': [pid_shard_2.77/modulation]
+                '78': [pid_shard_2.78/modulation]
+                '79': [pid_shard_2.79/modulation]
+                '80': [pid_shard_2.80/modulation]
+                '81': [pid_shard_2.81/modulation]
+                '82': [pid_shard_2.82/modulation]
+                '83': [pid_shard_2.83/modulation]
+                '84': [pid_shard_2.84/modulation]
+                '85': [pid_shard_2.85/modulation]
+                '86': [pid_shard_2.86/modulation]
+                '87': [pid_shard_2.87/modulation]
+                '88': [pid_shard_2.88/modulation]
+                '89': [pid_shard_2.89/modulation]
+                '90': [pid_shard_2.90/modulation]
+                '91': [pid_shard_2.91/modulation]
+                '92': [pid_shard_2.92/modulation]
+                '93': [pid_shard_2.93/modulation]
+                '94': [pid_shard_2.94/modulation]
+                '95': [pid_shard_2.95/modulation]
+                '96': [pid_shard_2.96/modulation]
+                '97': [pid_shard_2.97/modulation]
+                '98': [pid_shard_2.98/modulation]
+                '99': [pid_shard_2.99/modulation]
+                '100': [pid_shard_2.100/modulation]
+                '101': [pid_shard_2.101/modulation]
+                '102': [pid_shard_2.102/modulation]
+                '103': [pid_shard_2.103/modulation]
+                '104': [pid_shard_2.104/modulation]
+                '105': [pid_shard_2.105/modulation]
+                '106': [pid_shard_2.106/modulation]
+                '107': [pid_shard_2.107/modulation]
+                '108': [pid_shard_2.108/modulation]
+                '109': [pid_shard_2.109/modulation]
+                '110': [pid_shard_2.110/modulation]
+                '111': [pid_shard_2.111/modulation]
+                '112': [pid_shard_2.112/modulation]
+                '113': [pid_shard_2.113/modulation]
+                '114': [pid_shard_2.114/modulation]
+                '115': [pid_shard_2.115/modulation]
+                '116': [pid_shard_2.116/modulation]
+                '117': [pid_shard_2.117/modulation]
+                '118': [pid_shard_2.118/modulation]
+                '119': [pid_shard_2.119/modulation]
+                '120': [pid_shard_2.120/modulation]
+                '121': [pid_shard_2.121/modulation]
+                '122': [pid_shard_2.122/modulation]
+                '123': [pid_shard_2.123/modulation]
+                '124': [pid_shard_2.124/modulation]
+                '125': [pid_shard_2.125/modulation]
+                '126': [pid_shard_2.126/modulation]
+                '127': [pid_shard_2.127/modulation]
+                '128': [pid_shard_2.128/modulation]
+                '129': [pid_shard_2.129/modulation]
+                '130': [pid_shard_2.130/modulation]
+                '131': [pid_shard_2.131/modulation]
+                '132': [pid_shard_2.132/modulation]
+                '133': [pid_shard_2.133/modulation]
+                '134': [pid_shard_2.134/modulation]
+                '135': [pid_shard_2.135/modulation]
+                '136': [pid_shard_2.136/modulation]
+                '137': [pid_shard_2.137/modulation]
+                '138': [pid_shard_2.138/modulation]
+                '139': [pid_shard_2.139/modulation]
+                '140': [pid_shard_2.140/modulation]
+                '141': [pid_shard_2.141/modulation]
+                '142': [pid_shard_2.142/modulation]
+                '143': [pid_shard_2.143/modulation]
+                '144': [pid_shard_2.144/modulation]
+                '145': [pid_shard_2.145/modulation]
+                '146': [pid_shard_2.146/modulation]
+                '147': [pid_shard_2.147/modulation]
+                '148': [pid_shard_2.148/modulation]
+                '149': [pid_shard_2.149/modulation]
+                '150': [pid_shard_2.150/modulation]
+                '151': [pid_shard_2.151/modulation]
+                '152': [pid_shard_2.152/modulation]
+                '153': [pid_shard_2.153/modulation]
+                '154': [pid_shard_2.154/modulation]
+                '155': [pid_shard_2.155/modulation]
+                '156': [pid_shard_2.156/modulation]
+                '157': [pid_shard_2.157/modulation]
+                '158': [pid_shard_2.158/modulation]
+                '159': [pid_shard_2.159/modulation]
+                '160': [pid_shard_2.160/modulation]
+                '161': [pid_shard_2.161/modulation]
+                '162': [pid_shard_2.162/modulation]
+                '163': [pid_shard_2.163/modulation]
+                '164': [pid_shard_2.164/modulation]
+                '165': [pid_shard_2.165/modulation]
+                '166': [pid_shard_2.166/modulation]
+                '167': [pid_shard_2.167/modulation]
+                '168': [pid_shard_2.168/modulation]
+                '169': [pid_shard_2.169/modulation]
+                '170': [pid_shard_2.170/modulation]
+                '171': [pid_shard_2.171/modulation]
+                '172': [pid_shard_2.172/modulation]
+                '173': [pid_shard_2.173/modulation]
+                '174': [pid_shard_2.174/modulation]
+                '175': [pid_shard_2.175/modulation]
+                '176': [pid_shard_2.176/modulation]
+                '177': [pid_shard_2.177/modulation]
+                '178': [pid_shard_2.178/modulation]
+                '179': [pid_shard_2.179/modulation]
+                '180': [pid_shard_2.180/modulation]
+                '181': [pid_shard_2.181/modulation]
+                '182': [pid_shard_2.182/modulation]
+                '183': [pid_shard_2.183/modulation]
+                '184': [pid_shard_2.184/modulation]
+                '185': [pid_shard_2.185/modulation]
+                '186': [pid_shard_2.186/modulation]
+                '187': [pid_shard_2.187/modulation]
+                '188': [pid_shard_2.188/modulation]
+                '189': [pid_shard_2.189/modulation]
+                '190': [pid_shard_2.190/modulation]
+                '191': [pid_shard_2.191/modulation]
+                '192': [pid_shard_2.192/modulation]
+                '193': [pid_shard_2.193/modulation]
+                '194': [pid_shard_2.194/modulation]
+                '195': [pid_shard_2.195/modulation]
+                '196': [pid_shard_2.196/modulation]
+                '197': [pid_shard_2.197/modulation]
+                '198': [pid_shard_2.198/modulation]
+                '199': [pid_shard_2.199/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 200
+            prefix: "heatpump_shard_2"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_shard_2:
+        type: "base"
+        host: "machine_a"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [building_shard_2.0/T_indoor]
+                '1': [building_shard_2.1/T_indoor]
+                '2': [building_shard_2.2/T_indoor]
+                '3': [building_shard_2.3/T_indoor]
+                '4': [building_shard_2.4/T_indoor]
+                '5': [building_shard_2.5/T_indoor]
+                '6': [building_shard_2.6/T_indoor]
+                '7': [building_shard_2.7/T_indoor]
+                '8': [building_shard_2.8/T_indoor]
+                '9': [building_shard_2.9/T_indoor]
+                '10': [building_shard_2.10/T_indoor]
+                '11': [building_shard_2.11/T_indoor]
+                '12': [building_shard_2.12/T_indoor]
+                '13': [building_shard_2.13/T_indoor]
+                '14': [building_shard_2.14/T_indoor]
+                '15': [building_shard_2.15/T_indoor]
+                '16': [building_shard_2.16/T_indoor]
+                '17': [building_shard_2.17/T_indoor]
+                '18': [building_shard_2.18/T_indoor]
+                '19': [building_shard_2.19/T_indoor]
+                '20': [building_shard_2.20/T_indoor]
+                '21': [building_shard_2.21/T_indoor]
+                '22': [building_shard_2.22/T_indoor]
+                '23': [building_shard_2.23/T_indoor]
+                '24': [building_shard_2.24/T_indoor]
+                '25': [building_shard_2.25/T_indoor]
+                '26': [building_shard_2.26/T_indoor]
+                '27': [building_shard_2.27/T_indoor]
+                '28': [building_shard_2.28/T_indoor]
+                '29': [building_shard_2.29/T_indoor]
+                '30': [building_shard_2.30/T_indoor]
+                '31': [building_shard_2.31/T_indoor]
+                '32': [building_shard_2.32/T_indoor]
+                '33': [building_shard_2.33/T_indoor]
+                '34': [building_shard_2.34/T_indoor]
+                '35': [building_shard_2.35/T_indoor]
+                '36': [building_shard_2.36/T_indoor]
+                '37': [building_shard_2.37/T_indoor]
+                '38': [building_shard_2.38/T_indoor]
+                '39': [building_shard_2.39/T_indoor]
+                '40': [building_shard_2.40/T_indoor]
+                '41': [building_shard_2.41/T_indoor]
+                '42': [building_shard_2.42/T_indoor]
+                '43': [building_shard_2.43/T_indoor]
+                '44': [building_shard_2.44/T_indoor]
+                '45': [building_shard_2.45/T_indoor]
+                '46': [building_shard_2.46/T_indoor]
+                '47': [building_shard_2.47/T_indoor]
+                '48': [building_shard_2.48/T_indoor]
+                '49': [building_shard_2.49/T_indoor]
+                '50': [building_shard_2.50/T_indoor]
+                '51': [building_shard_2.51/T_indoor]
+                '52': [building_shard_2.52/T_indoor]
+                '53': [building_shard_2.53/T_indoor]
+                '54': [building_shard_2.54/T_indoor]
+                '55': [building_shard_2.55/T_indoor]
+                '56': [building_shard_2.56/T_indoor]
+                '57': [building_shard_2.57/T_indoor]
+                '58': [building_shard_2.58/T_indoor]
+                '59': [building_shard_2.59/T_indoor]
+                '60': [building_shard_2.60/T_indoor]
+                '61': [building_shard_2.61/T_indoor]
+                '62': [building_shard_2.62/T_indoor]
+                '63': [building_shard_2.63/T_indoor]
+                '64': [building_shard_2.64/T_indoor]
+                '65': [building_shard_2.65/T_indoor]
+                '66': [building_shard_2.66/T_indoor]
+                '67': [building_shard_2.67/T_indoor]
+                '68': [building_shard_2.68/T_indoor]
+                '69': [building_shard_2.69/T_indoor]
+                '70': [building_shard_2.70/T_indoor]
+                '71': [building_shard_2.71/T_indoor]
+                '72': [building_shard_2.72/T_indoor]
+                '73': [building_shard_2.73/T_indoor]
+                '74': [building_shard_2.74/T_indoor]
+                '75': [building_shard_2.75/T_indoor]
+                '76': [building_shard_2.76/T_indoor]
+                '77': [building_shard_2.77/T_indoor]
+                '78': [building_shard_2.78/T_indoor]
+                '79': [building_shard_2.79/T_indoor]
+                '80': [building_shard_2.80/T_indoor]
+                '81': [building_shard_2.81/T_indoor]
+                '82': [building_shard_2.82/T_indoor]
+                '83': [building_shard_2.83/T_indoor]
+                '84': [building_shard_2.84/T_indoor]
+                '85': [building_shard_2.85/T_indoor]
+                '86': [building_shard_2.86/T_indoor]
+                '87': [building_shard_2.87/T_indoor]
+                '88': [building_shard_2.88/T_indoor]
+                '89': [building_shard_2.89/T_indoor]
+                '90': [building_shard_2.90/T_indoor]
+                '91': [building_shard_2.91/T_indoor]
+                '92': [building_shard_2.92/T_indoor]
+                '93': [building_shard_2.93/T_indoor]
+                '94': [building_shard_2.94/T_indoor]
+                '95': [building_shard_2.95/T_indoor]
+                '96': [building_shard_2.96/T_indoor]
+                '97': [building_shard_2.97/T_indoor]
+                '98': [building_shard_2.98/T_indoor]
+                '99': [building_shard_2.99/T_indoor]
+                '100': [building_shard_2.100/T_indoor]
+                '101': [building_shard_2.101/T_indoor]
+                '102': [building_shard_2.102/T_indoor]
+                '103': [building_shard_2.103/T_indoor]
+                '104': [building_shard_2.104/T_indoor]
+                '105': [building_shard_2.105/T_indoor]
+                '106': [building_shard_2.106/T_indoor]
+                '107': [building_shard_2.107/T_indoor]
+                '108': [building_shard_2.108/T_indoor]
+                '109': [building_shard_2.109/T_indoor]
+                '110': [building_shard_2.110/T_indoor]
+                '111': [building_shard_2.111/T_indoor]
+                '112': [building_shard_2.112/T_indoor]
+                '113': [building_shard_2.113/T_indoor]
+                '114': [building_shard_2.114/T_indoor]
+                '115': [building_shard_2.115/T_indoor]
+                '116': [building_shard_2.116/T_indoor]
+                '117': [building_shard_2.117/T_indoor]
+                '118': [building_shard_2.118/T_indoor]
+                '119': [building_shard_2.119/T_indoor]
+                '120': [building_shard_2.120/T_indoor]
+                '121': [building_shard_2.121/T_indoor]
+                '122': [building_shard_2.122/T_indoor]
+                '123': [building_shard_2.123/T_indoor]
+                '124': [building_shard_2.124/T_indoor]
+                '125': [building_shard_2.125/T_indoor]
+                '126': [building_shard_2.126/T_indoor]
+                '127': [building_shard_2.127/T_indoor]
+                '128': [building_shard_2.128/T_indoor]
+                '129': [building_shard_2.129/T_indoor]
+                '130': [building_shard_2.130/T_indoor]
+                '131': [building_shard_2.131/T_indoor]
+                '132': [building_shard_2.132/T_indoor]
+                '133': [building_shard_2.133/T_indoor]
+                '134': [building_shard_2.134/T_indoor]
+                '135': [building_shard_2.135/T_indoor]
+                '136': [building_shard_2.136/T_indoor]
+                '137': [building_shard_2.137/T_indoor]
+                '138': [building_shard_2.138/T_indoor]
+                '139': [building_shard_2.139/T_indoor]
+                '140': [building_shard_2.140/T_indoor]
+                '141': [building_shard_2.141/T_indoor]
+                '142': [building_shard_2.142/T_indoor]
+                '143': [building_shard_2.143/T_indoor]
+                '144': [building_shard_2.144/T_indoor]
+                '145': [building_shard_2.145/T_indoor]
+                '146': [building_shard_2.146/T_indoor]
+                '147': [building_shard_2.147/T_indoor]
+                '148': [building_shard_2.148/T_indoor]
+                '149': [building_shard_2.149/T_indoor]
+                '150': [building_shard_2.150/T_indoor]
+                '151': [building_shard_2.151/T_indoor]
+                '152': [building_shard_2.152/T_indoor]
+                '153': [building_shard_2.153/T_indoor]
+                '154': [building_shard_2.154/T_indoor]
+                '155': [building_shard_2.155/T_indoor]
+                '156': [building_shard_2.156/T_indoor]
+                '157': [building_shard_2.157/T_indoor]
+                '158': [building_shard_2.158/T_indoor]
+                '159': [building_shard_2.159/T_indoor]
+                '160': [building_shard_2.160/T_indoor]
+                '161': [building_shard_2.161/T_indoor]
+                '162': [building_shard_2.162/T_indoor]
+                '163': [building_shard_2.163/T_indoor]
+                '164': [building_shard_2.164/T_indoor]
+                '165': [building_shard_2.165/T_indoor]
+                '166': [building_shard_2.166/T_indoor]
+                '167': [building_shard_2.167/T_indoor]
+                '168': [building_shard_2.168/T_indoor]
+                '169': [building_shard_2.169/T_indoor]
+                '170': [building_shard_2.170/T_indoor]
+                '171': [building_shard_2.171/T_indoor]
+                '172': [building_shard_2.172/T_indoor]
+                '173': [building_shard_2.173/T_indoor]
+                '174': [building_shard_2.174/T_indoor]
+                '175': [building_shard_2.175/T_indoor]
+                '176': [building_shard_2.176/T_indoor]
+                '177': [building_shard_2.177/T_indoor]
+                '178': [building_shard_2.178/T_indoor]
+                '179': [building_shard_2.179/T_indoor]
+                '180': [building_shard_2.180/T_indoor]
+                '181': [building_shard_2.181/T_indoor]
+                '182': [building_shard_2.182/T_indoor]
+                '183': [building_shard_2.183/T_indoor]
+                '184': [building_shard_2.184/T_indoor]
+                '185': [building_shard_2.185/T_indoor]
+                '186': [building_shard_2.186/T_indoor]
+                '187': [building_shard_2.187/T_indoor]
+                '188': [building_shard_2.188/T_indoor]
+                '189': [building_shard_2.189/T_indoor]
+                '190': [building_shard_2.190/T_indoor]
+                '191': [building_shard_2.191/T_indoor]
+                '192': [building_shard_2.192/T_indoor]
+                '193': [building_shard_2.193/T_indoor]
+                '194': [building_shard_2.194/T_indoor]
+                '195': [building_shard_2.195/T_indoor]
+                '196': [building_shard_2.196/T_indoor]
+                '197': [building_shard_2.197/T_indoor]
+                '198': [building_shard_2.198/T_indoor]
+                '199': [building_shard_2.199/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 200
+            prefix: "pid_shard_2"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+  shard_3:
+    broker_config:
+      core_type: "zmq_ss"
+      federates: 4
+
+    federate_configs:
+
+      weather_shard_3:
+        type: "base"
+        host: "machine_b"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "DryBulb"
+              type: "double"
+              units: "°C"
+            - key: "GloHorzRad"
+              type: "double"
+              units: "W/m²"
+            - key: "DifHorzRad"
+              type: "double"
+              units: "W/m²"
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather_shard_3"
+            parallel_execution: false
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_data_bj.csv"
+            skip_rows: 0
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+
+      building_shard_3:
+        type: "base"
+        host: "machine_b"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets: [weather_shard_3.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [heatpump_shard_3.0/Q_heat]
+                '1': [heatpump_shard_3.1/Q_heat]
+                '2': [heatpump_shard_3.2/Q_heat]
+                '3': [heatpump_shard_3.3/Q_heat]
+                '4': [heatpump_shard_3.4/Q_heat]
+                '5': [heatpump_shard_3.5/Q_heat]
+                '6': [heatpump_shard_3.6/Q_heat]
+                '7': [heatpump_shard_3.7/Q_heat]
+                '8': [heatpump_shard_3.8/Q_heat]
+                '9': [heatpump_shard_3.9/Q_heat]
+                '10': [heatpump_shard_3.10/Q_heat]
+                '11': [heatpump_shard_3.11/Q_heat]
+                '12': [heatpump_shard_3.12/Q_heat]
+                '13': [heatpump_shard_3.13/Q_heat]
+                '14': [heatpump_shard_3.14/Q_heat]
+                '15': [heatpump_shard_3.15/Q_heat]
+                '16': [heatpump_shard_3.16/Q_heat]
+                '17': [heatpump_shard_3.17/Q_heat]
+                '18': [heatpump_shard_3.18/Q_heat]
+                '19': [heatpump_shard_3.19/Q_heat]
+                '20': [heatpump_shard_3.20/Q_heat]
+                '21': [heatpump_shard_3.21/Q_heat]
+                '22': [heatpump_shard_3.22/Q_heat]
+                '23': [heatpump_shard_3.23/Q_heat]
+                '24': [heatpump_shard_3.24/Q_heat]
+                '25': [heatpump_shard_3.25/Q_heat]
+                '26': [heatpump_shard_3.26/Q_heat]
+                '27': [heatpump_shard_3.27/Q_heat]
+                '28': [heatpump_shard_3.28/Q_heat]
+                '29': [heatpump_shard_3.29/Q_heat]
+                '30': [heatpump_shard_3.30/Q_heat]
+                '31': [heatpump_shard_3.31/Q_heat]
+                '32': [heatpump_shard_3.32/Q_heat]
+                '33': [heatpump_shard_3.33/Q_heat]
+                '34': [heatpump_shard_3.34/Q_heat]
+                '35': [heatpump_shard_3.35/Q_heat]
+                '36': [heatpump_shard_3.36/Q_heat]
+                '37': [heatpump_shard_3.37/Q_heat]
+                '38': [heatpump_shard_3.38/Q_heat]
+                '39': [heatpump_shard_3.39/Q_heat]
+                '40': [heatpump_shard_3.40/Q_heat]
+                '41': [heatpump_shard_3.41/Q_heat]
+                '42': [heatpump_shard_3.42/Q_heat]
+                '43': [heatpump_shard_3.43/Q_heat]
+                '44': [heatpump_shard_3.44/Q_heat]
+                '45': [heatpump_shard_3.45/Q_heat]
+                '46': [heatpump_shard_3.46/Q_heat]
+                '47': [heatpump_shard_3.47/Q_heat]
+                '48': [heatpump_shard_3.48/Q_heat]
+                '49': [heatpump_shard_3.49/Q_heat]
+                '50': [heatpump_shard_3.50/Q_heat]
+                '51': [heatpump_shard_3.51/Q_heat]
+                '52': [heatpump_shard_3.52/Q_heat]
+                '53': [heatpump_shard_3.53/Q_heat]
+                '54': [heatpump_shard_3.54/Q_heat]
+                '55': [heatpump_shard_3.55/Q_heat]
+                '56': [heatpump_shard_3.56/Q_heat]
+                '57': [heatpump_shard_3.57/Q_heat]
+                '58': [heatpump_shard_3.58/Q_heat]
+                '59': [heatpump_shard_3.59/Q_heat]
+                '60': [heatpump_shard_3.60/Q_heat]
+                '61': [heatpump_shard_3.61/Q_heat]
+                '62': [heatpump_shard_3.62/Q_heat]
+                '63': [heatpump_shard_3.63/Q_heat]
+                '64': [heatpump_shard_3.64/Q_heat]
+                '65': [heatpump_shard_3.65/Q_heat]
+                '66': [heatpump_shard_3.66/Q_heat]
+                '67': [heatpump_shard_3.67/Q_heat]
+                '68': [heatpump_shard_3.68/Q_heat]
+                '69': [heatpump_shard_3.69/Q_heat]
+                '70': [heatpump_shard_3.70/Q_heat]
+                '71': [heatpump_shard_3.71/Q_heat]
+                '72': [heatpump_shard_3.72/Q_heat]
+                '73': [heatpump_shard_3.73/Q_heat]
+                '74': [heatpump_shard_3.74/Q_heat]
+                '75': [heatpump_shard_3.75/Q_heat]
+                '76': [heatpump_shard_3.76/Q_heat]
+                '77': [heatpump_shard_3.77/Q_heat]
+                '78': [heatpump_shard_3.78/Q_heat]
+                '79': [heatpump_shard_3.79/Q_heat]
+                '80': [heatpump_shard_3.80/Q_heat]
+                '81': [heatpump_shard_3.81/Q_heat]
+                '82': [heatpump_shard_3.82/Q_heat]
+                '83': [heatpump_shard_3.83/Q_heat]
+                '84': [heatpump_shard_3.84/Q_heat]
+                '85': [heatpump_shard_3.85/Q_heat]
+                '86': [heatpump_shard_3.86/Q_heat]
+                '87': [heatpump_shard_3.87/Q_heat]
+                '88': [heatpump_shard_3.88/Q_heat]
+                '89': [heatpump_shard_3.89/Q_heat]
+                '90': [heatpump_shard_3.90/Q_heat]
+                '91': [heatpump_shard_3.91/Q_heat]
+                '92': [heatpump_shard_3.92/Q_heat]
+                '93': [heatpump_shard_3.93/Q_heat]
+                '94': [heatpump_shard_3.94/Q_heat]
+                '95': [heatpump_shard_3.95/Q_heat]
+                '96': [heatpump_shard_3.96/Q_heat]
+                '97': [heatpump_shard_3.97/Q_heat]
+                '98': [heatpump_shard_3.98/Q_heat]
+                '99': [heatpump_shard_3.99/Q_heat]
+                '100': [heatpump_shard_3.100/Q_heat]
+                '101': [heatpump_shard_3.101/Q_heat]
+                '102': [heatpump_shard_3.102/Q_heat]
+                '103': [heatpump_shard_3.103/Q_heat]
+                '104': [heatpump_shard_3.104/Q_heat]
+                '105': [heatpump_shard_3.105/Q_heat]
+                '106': [heatpump_shard_3.106/Q_heat]
+                '107': [heatpump_shard_3.107/Q_heat]
+                '108': [heatpump_shard_3.108/Q_heat]
+                '109': [heatpump_shard_3.109/Q_heat]
+                '110': [heatpump_shard_3.110/Q_heat]
+                '111': [heatpump_shard_3.111/Q_heat]
+                '112': [heatpump_shard_3.112/Q_heat]
+                '113': [heatpump_shard_3.113/Q_heat]
+                '114': [heatpump_shard_3.114/Q_heat]
+                '115': [heatpump_shard_3.115/Q_heat]
+                '116': [heatpump_shard_3.116/Q_heat]
+                '117': [heatpump_shard_3.117/Q_heat]
+                '118': [heatpump_shard_3.118/Q_heat]
+                '119': [heatpump_shard_3.119/Q_heat]
+                '120': [heatpump_shard_3.120/Q_heat]
+                '121': [heatpump_shard_3.121/Q_heat]
+                '122': [heatpump_shard_3.122/Q_heat]
+                '123': [heatpump_shard_3.123/Q_heat]
+                '124': [heatpump_shard_3.124/Q_heat]
+                '125': [heatpump_shard_3.125/Q_heat]
+                '126': [heatpump_shard_3.126/Q_heat]
+                '127': [heatpump_shard_3.127/Q_heat]
+                '128': [heatpump_shard_3.128/Q_heat]
+                '129': [heatpump_shard_3.129/Q_heat]
+                '130': [heatpump_shard_3.130/Q_heat]
+                '131': [heatpump_shard_3.131/Q_heat]
+                '132': [heatpump_shard_3.132/Q_heat]
+                '133': [heatpump_shard_3.133/Q_heat]
+                '134': [heatpump_shard_3.134/Q_heat]
+                '135': [heatpump_shard_3.135/Q_heat]
+                '136': [heatpump_shard_3.136/Q_heat]
+                '137': [heatpump_shard_3.137/Q_heat]
+                '138': [heatpump_shard_3.138/Q_heat]
+                '139': [heatpump_shard_3.139/Q_heat]
+                '140': [heatpump_shard_3.140/Q_heat]
+                '141': [heatpump_shard_3.141/Q_heat]
+                '142': [heatpump_shard_3.142/Q_heat]
+                '143': [heatpump_shard_3.143/Q_heat]
+                '144': [heatpump_shard_3.144/Q_heat]
+                '145': [heatpump_shard_3.145/Q_heat]
+                '146': [heatpump_shard_3.146/Q_heat]
+                '147': [heatpump_shard_3.147/Q_heat]
+                '148': [heatpump_shard_3.148/Q_heat]
+                '149': [heatpump_shard_3.149/Q_heat]
+                '150': [heatpump_shard_3.150/Q_heat]
+                '151': [heatpump_shard_3.151/Q_heat]
+                '152': [heatpump_shard_3.152/Q_heat]
+                '153': [heatpump_shard_3.153/Q_heat]
+                '154': [heatpump_shard_3.154/Q_heat]
+                '155': [heatpump_shard_3.155/Q_heat]
+                '156': [heatpump_shard_3.156/Q_heat]
+                '157': [heatpump_shard_3.157/Q_heat]
+                '158': [heatpump_shard_3.158/Q_heat]
+                '159': [heatpump_shard_3.159/Q_heat]
+                '160': [heatpump_shard_3.160/Q_heat]
+                '161': [heatpump_shard_3.161/Q_heat]
+                '162': [heatpump_shard_3.162/Q_heat]
+                '163': [heatpump_shard_3.163/Q_heat]
+                '164': [heatpump_shard_3.164/Q_heat]
+                '165': [heatpump_shard_3.165/Q_heat]
+                '166': [heatpump_shard_3.166/Q_heat]
+                '167': [heatpump_shard_3.167/Q_heat]
+                '168': [heatpump_shard_3.168/Q_heat]
+                '169': [heatpump_shard_3.169/Q_heat]
+                '170': [heatpump_shard_3.170/Q_heat]
+                '171': [heatpump_shard_3.171/Q_heat]
+                '172': [heatpump_shard_3.172/Q_heat]
+                '173': [heatpump_shard_3.173/Q_heat]
+                '174': [heatpump_shard_3.174/Q_heat]
+                '175': [heatpump_shard_3.175/Q_heat]
+                '176': [heatpump_shard_3.176/Q_heat]
+                '177': [heatpump_shard_3.177/Q_heat]
+                '178': [heatpump_shard_3.178/Q_heat]
+                '179': [heatpump_shard_3.179/Q_heat]
+                '180': [heatpump_shard_3.180/Q_heat]
+                '181': [heatpump_shard_3.181/Q_heat]
+                '182': [heatpump_shard_3.182/Q_heat]
+                '183': [heatpump_shard_3.183/Q_heat]
+                '184': [heatpump_shard_3.184/Q_heat]
+                '185': [heatpump_shard_3.185/Q_heat]
+                '186': [heatpump_shard_3.186/Q_heat]
+                '187': [heatpump_shard_3.187/Q_heat]
+                '188': [heatpump_shard_3.188/Q_heat]
+                '189': [heatpump_shard_3.189/Q_heat]
+                '190': [heatpump_shard_3.190/Q_heat]
+                '191': [heatpump_shard_3.191/Q_heat]
+                '192': [heatpump_shard_3.192/Q_heat]
+                '193': [heatpump_shard_3.193/Q_heat]
+                '194': [heatpump_shard_3.194/Q_heat]
+                '195': [heatpump_shard_3.195/Q_heat]
+                '196': [heatpump_shard_3.196/Q_heat]
+                '197': [heatpump_shard_3.197/Q_heat]
+                '198': [heatpump_shard_3.198/Q_heat]
+                '199': [heatpump_shard_3.199/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 200
+            prefix: "building_shard_3"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      heatpump_shard_3:
+        type: "base"
+        host: "machine_b"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets: [weather_shard_3.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_shard_3.0/modulation]
+                '1': [pid_shard_3.1/modulation]
+                '2': [pid_shard_3.2/modulation]
+                '3': [pid_shard_3.3/modulation]
+                '4': [pid_shard_3.4/modulation]
+                '5': [pid_shard_3.5/modulation]
+                '6': [pid_shard_3.6/modulation]
+                '7': [pid_shard_3.7/modulation]
+                '8': [pid_shard_3.8/modulation]
+                '9': [pid_shard_3.9/modulation]
+                '10': [pid_shard_3.10/modulation]
+                '11': [pid_shard_3.11/modulation]
+                '12': [pid_shard_3.12/modulation]
+                '13': [pid_shard_3.13/modulation]
+                '14': [pid_shard_3.14/modulation]
+                '15': [pid_shard_3.15/modulation]
+                '16': [pid_shard_3.16/modulation]
+                '17': [pid_shard_3.17/modulation]
+                '18': [pid_shard_3.18/modulation]
+                '19': [pid_shard_3.19/modulation]
+                '20': [pid_shard_3.20/modulation]
+                '21': [pid_shard_3.21/modulation]
+                '22': [pid_shard_3.22/modulation]
+                '23': [pid_shard_3.23/modulation]
+                '24': [pid_shard_3.24/modulation]
+                '25': [pid_shard_3.25/modulation]
+                '26': [pid_shard_3.26/modulation]
+                '27': [pid_shard_3.27/modulation]
+                '28': [pid_shard_3.28/modulation]
+                '29': [pid_shard_3.29/modulation]
+                '30': [pid_shard_3.30/modulation]
+                '31': [pid_shard_3.31/modulation]
+                '32': [pid_shard_3.32/modulation]
+                '33': [pid_shard_3.33/modulation]
+                '34': [pid_shard_3.34/modulation]
+                '35': [pid_shard_3.35/modulation]
+                '36': [pid_shard_3.36/modulation]
+                '37': [pid_shard_3.37/modulation]
+                '38': [pid_shard_3.38/modulation]
+                '39': [pid_shard_3.39/modulation]
+                '40': [pid_shard_3.40/modulation]
+                '41': [pid_shard_3.41/modulation]
+                '42': [pid_shard_3.42/modulation]
+                '43': [pid_shard_3.43/modulation]
+                '44': [pid_shard_3.44/modulation]
+                '45': [pid_shard_3.45/modulation]
+                '46': [pid_shard_3.46/modulation]
+                '47': [pid_shard_3.47/modulation]
+                '48': [pid_shard_3.48/modulation]
+                '49': [pid_shard_3.49/modulation]
+                '50': [pid_shard_3.50/modulation]
+                '51': [pid_shard_3.51/modulation]
+                '52': [pid_shard_3.52/modulation]
+                '53': [pid_shard_3.53/modulation]
+                '54': [pid_shard_3.54/modulation]
+                '55': [pid_shard_3.55/modulation]
+                '56': [pid_shard_3.56/modulation]
+                '57': [pid_shard_3.57/modulation]
+                '58': [pid_shard_3.58/modulation]
+                '59': [pid_shard_3.59/modulation]
+                '60': [pid_shard_3.60/modulation]
+                '61': [pid_shard_3.61/modulation]
+                '62': [pid_shard_3.62/modulation]
+                '63': [pid_shard_3.63/modulation]
+                '64': [pid_shard_3.64/modulation]
+                '65': [pid_shard_3.65/modulation]
+                '66': [pid_shard_3.66/modulation]
+                '67': [pid_shard_3.67/modulation]
+                '68': [pid_shard_3.68/modulation]
+                '69': [pid_shard_3.69/modulation]
+                '70': [pid_shard_3.70/modulation]
+                '71': [pid_shard_3.71/modulation]
+                '72': [pid_shard_3.72/modulation]
+                '73': [pid_shard_3.73/modulation]
+                '74': [pid_shard_3.74/modulation]
+                '75': [pid_shard_3.75/modulation]
+                '76': [pid_shard_3.76/modulation]
+                '77': [pid_shard_3.77/modulation]
+                '78': [pid_shard_3.78/modulation]
+                '79': [pid_shard_3.79/modulation]
+                '80': [pid_shard_3.80/modulation]
+                '81': [pid_shard_3.81/modulation]
+                '82': [pid_shard_3.82/modulation]
+                '83': [pid_shard_3.83/modulation]
+                '84': [pid_shard_3.84/modulation]
+                '85': [pid_shard_3.85/modulation]
+                '86': [pid_shard_3.86/modulation]
+                '87': [pid_shard_3.87/modulation]
+                '88': [pid_shard_3.88/modulation]
+                '89': [pid_shard_3.89/modulation]
+                '90': [pid_shard_3.90/modulation]
+                '91': [pid_shard_3.91/modulation]
+                '92': [pid_shard_3.92/modulation]
+                '93': [pid_shard_3.93/modulation]
+                '94': [pid_shard_3.94/modulation]
+                '95': [pid_shard_3.95/modulation]
+                '96': [pid_shard_3.96/modulation]
+                '97': [pid_shard_3.97/modulation]
+                '98': [pid_shard_3.98/modulation]
+                '99': [pid_shard_3.99/modulation]
+                '100': [pid_shard_3.100/modulation]
+                '101': [pid_shard_3.101/modulation]
+                '102': [pid_shard_3.102/modulation]
+                '103': [pid_shard_3.103/modulation]
+                '104': [pid_shard_3.104/modulation]
+                '105': [pid_shard_3.105/modulation]
+                '106': [pid_shard_3.106/modulation]
+                '107': [pid_shard_3.107/modulation]
+                '108': [pid_shard_3.108/modulation]
+                '109': [pid_shard_3.109/modulation]
+                '110': [pid_shard_3.110/modulation]
+                '111': [pid_shard_3.111/modulation]
+                '112': [pid_shard_3.112/modulation]
+                '113': [pid_shard_3.113/modulation]
+                '114': [pid_shard_3.114/modulation]
+                '115': [pid_shard_3.115/modulation]
+                '116': [pid_shard_3.116/modulation]
+                '117': [pid_shard_3.117/modulation]
+                '118': [pid_shard_3.118/modulation]
+                '119': [pid_shard_3.119/modulation]
+                '120': [pid_shard_3.120/modulation]
+                '121': [pid_shard_3.121/modulation]
+                '122': [pid_shard_3.122/modulation]
+                '123': [pid_shard_3.123/modulation]
+                '124': [pid_shard_3.124/modulation]
+                '125': [pid_shard_3.125/modulation]
+                '126': [pid_shard_3.126/modulation]
+                '127': [pid_shard_3.127/modulation]
+                '128': [pid_shard_3.128/modulation]
+                '129': [pid_shard_3.129/modulation]
+                '130': [pid_shard_3.130/modulation]
+                '131': [pid_shard_3.131/modulation]
+                '132': [pid_shard_3.132/modulation]
+                '133': [pid_shard_3.133/modulation]
+                '134': [pid_shard_3.134/modulation]
+                '135': [pid_shard_3.135/modulation]
+                '136': [pid_shard_3.136/modulation]
+                '137': [pid_shard_3.137/modulation]
+                '138': [pid_shard_3.138/modulation]
+                '139': [pid_shard_3.139/modulation]
+                '140': [pid_shard_3.140/modulation]
+                '141': [pid_shard_3.141/modulation]
+                '142': [pid_shard_3.142/modulation]
+                '143': [pid_shard_3.143/modulation]
+                '144': [pid_shard_3.144/modulation]
+                '145': [pid_shard_3.145/modulation]
+                '146': [pid_shard_3.146/modulation]
+                '147': [pid_shard_3.147/modulation]
+                '148': [pid_shard_3.148/modulation]
+                '149': [pid_shard_3.149/modulation]
+                '150': [pid_shard_3.150/modulation]
+                '151': [pid_shard_3.151/modulation]
+                '152': [pid_shard_3.152/modulation]
+                '153': [pid_shard_3.153/modulation]
+                '154': [pid_shard_3.154/modulation]
+                '155': [pid_shard_3.155/modulation]
+                '156': [pid_shard_3.156/modulation]
+                '157': [pid_shard_3.157/modulation]
+                '158': [pid_shard_3.158/modulation]
+                '159': [pid_shard_3.159/modulation]
+                '160': [pid_shard_3.160/modulation]
+                '161': [pid_shard_3.161/modulation]
+                '162': [pid_shard_3.162/modulation]
+                '163': [pid_shard_3.163/modulation]
+                '164': [pid_shard_3.164/modulation]
+                '165': [pid_shard_3.165/modulation]
+                '166': [pid_shard_3.166/modulation]
+                '167': [pid_shard_3.167/modulation]
+                '168': [pid_shard_3.168/modulation]
+                '169': [pid_shard_3.169/modulation]
+                '170': [pid_shard_3.170/modulation]
+                '171': [pid_shard_3.171/modulation]
+                '172': [pid_shard_3.172/modulation]
+                '173': [pid_shard_3.173/modulation]
+                '174': [pid_shard_3.174/modulation]
+                '175': [pid_shard_3.175/modulation]
+                '176': [pid_shard_3.176/modulation]
+                '177': [pid_shard_3.177/modulation]
+                '178': [pid_shard_3.178/modulation]
+                '179': [pid_shard_3.179/modulation]
+                '180': [pid_shard_3.180/modulation]
+                '181': [pid_shard_3.181/modulation]
+                '182': [pid_shard_3.182/modulation]
+                '183': [pid_shard_3.183/modulation]
+                '184': [pid_shard_3.184/modulation]
+                '185': [pid_shard_3.185/modulation]
+                '186': [pid_shard_3.186/modulation]
+                '187': [pid_shard_3.187/modulation]
+                '188': [pid_shard_3.188/modulation]
+                '189': [pid_shard_3.189/modulation]
+                '190': [pid_shard_3.190/modulation]
+                '191': [pid_shard_3.191/modulation]
+                '192': [pid_shard_3.192/modulation]
+                '193': [pid_shard_3.193/modulation]
+                '194': [pid_shard_3.194/modulation]
+                '195': [pid_shard_3.195/modulation]
+                '196': [pid_shard_3.196/modulation]
+                '197': [pid_shard_3.197/modulation]
+                '198': [pid_shard_3.198/modulation]
+                '199': [pid_shard_3.199/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 200
+            prefix: "heatpump_shard_3"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_shard_3:
+        type: "base"
+        host: "machine_b"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [building_shard_3.0/T_indoor]
+                '1': [building_shard_3.1/T_indoor]
+                '2': [building_shard_3.2/T_indoor]
+                '3': [building_shard_3.3/T_indoor]
+                '4': [building_shard_3.4/T_indoor]
+                '5': [building_shard_3.5/T_indoor]
+                '6': [building_shard_3.6/T_indoor]
+                '7': [building_shard_3.7/T_indoor]
+                '8': [building_shard_3.8/T_indoor]
+                '9': [building_shard_3.9/T_indoor]
+                '10': [building_shard_3.10/T_indoor]
+                '11': [building_shard_3.11/T_indoor]
+                '12': [building_shard_3.12/T_indoor]
+                '13': [building_shard_3.13/T_indoor]
+                '14': [building_shard_3.14/T_indoor]
+                '15': [building_shard_3.15/T_indoor]
+                '16': [building_shard_3.16/T_indoor]
+                '17': [building_shard_3.17/T_indoor]
+                '18': [building_shard_3.18/T_indoor]
+                '19': [building_shard_3.19/T_indoor]
+                '20': [building_shard_3.20/T_indoor]
+                '21': [building_shard_3.21/T_indoor]
+                '22': [building_shard_3.22/T_indoor]
+                '23': [building_shard_3.23/T_indoor]
+                '24': [building_shard_3.24/T_indoor]
+                '25': [building_shard_3.25/T_indoor]
+                '26': [building_shard_3.26/T_indoor]
+                '27': [building_shard_3.27/T_indoor]
+                '28': [building_shard_3.28/T_indoor]
+                '29': [building_shard_3.29/T_indoor]
+                '30': [building_shard_3.30/T_indoor]
+                '31': [building_shard_3.31/T_indoor]
+                '32': [building_shard_3.32/T_indoor]
+                '33': [building_shard_3.33/T_indoor]
+                '34': [building_shard_3.34/T_indoor]
+                '35': [building_shard_3.35/T_indoor]
+                '36': [building_shard_3.36/T_indoor]
+                '37': [building_shard_3.37/T_indoor]
+                '38': [building_shard_3.38/T_indoor]
+                '39': [building_shard_3.39/T_indoor]
+                '40': [building_shard_3.40/T_indoor]
+                '41': [building_shard_3.41/T_indoor]
+                '42': [building_shard_3.42/T_indoor]
+                '43': [building_shard_3.43/T_indoor]
+                '44': [building_shard_3.44/T_indoor]
+                '45': [building_shard_3.45/T_indoor]
+                '46': [building_shard_3.46/T_indoor]
+                '47': [building_shard_3.47/T_indoor]
+                '48': [building_shard_3.48/T_indoor]
+                '49': [building_shard_3.49/T_indoor]
+                '50': [building_shard_3.50/T_indoor]
+                '51': [building_shard_3.51/T_indoor]
+                '52': [building_shard_3.52/T_indoor]
+                '53': [building_shard_3.53/T_indoor]
+                '54': [building_shard_3.54/T_indoor]
+                '55': [building_shard_3.55/T_indoor]
+                '56': [building_shard_3.56/T_indoor]
+                '57': [building_shard_3.57/T_indoor]
+                '58': [building_shard_3.58/T_indoor]
+                '59': [building_shard_3.59/T_indoor]
+                '60': [building_shard_3.60/T_indoor]
+                '61': [building_shard_3.61/T_indoor]
+                '62': [building_shard_3.62/T_indoor]
+                '63': [building_shard_3.63/T_indoor]
+                '64': [building_shard_3.64/T_indoor]
+                '65': [building_shard_3.65/T_indoor]
+                '66': [building_shard_3.66/T_indoor]
+                '67': [building_shard_3.67/T_indoor]
+                '68': [building_shard_3.68/T_indoor]
+                '69': [building_shard_3.69/T_indoor]
+                '70': [building_shard_3.70/T_indoor]
+                '71': [building_shard_3.71/T_indoor]
+                '72': [building_shard_3.72/T_indoor]
+                '73': [building_shard_3.73/T_indoor]
+                '74': [building_shard_3.74/T_indoor]
+                '75': [building_shard_3.75/T_indoor]
+                '76': [building_shard_3.76/T_indoor]
+                '77': [building_shard_3.77/T_indoor]
+                '78': [building_shard_3.78/T_indoor]
+                '79': [building_shard_3.79/T_indoor]
+                '80': [building_shard_3.80/T_indoor]
+                '81': [building_shard_3.81/T_indoor]
+                '82': [building_shard_3.82/T_indoor]
+                '83': [building_shard_3.83/T_indoor]
+                '84': [building_shard_3.84/T_indoor]
+                '85': [building_shard_3.85/T_indoor]
+                '86': [building_shard_3.86/T_indoor]
+                '87': [building_shard_3.87/T_indoor]
+                '88': [building_shard_3.88/T_indoor]
+                '89': [building_shard_3.89/T_indoor]
+                '90': [building_shard_3.90/T_indoor]
+                '91': [building_shard_3.91/T_indoor]
+                '92': [building_shard_3.92/T_indoor]
+                '93': [building_shard_3.93/T_indoor]
+                '94': [building_shard_3.94/T_indoor]
+                '95': [building_shard_3.95/T_indoor]
+                '96': [building_shard_3.96/T_indoor]
+                '97': [building_shard_3.97/T_indoor]
+                '98': [building_shard_3.98/T_indoor]
+                '99': [building_shard_3.99/T_indoor]
+                '100': [building_shard_3.100/T_indoor]
+                '101': [building_shard_3.101/T_indoor]
+                '102': [building_shard_3.102/T_indoor]
+                '103': [building_shard_3.103/T_indoor]
+                '104': [building_shard_3.104/T_indoor]
+                '105': [building_shard_3.105/T_indoor]
+                '106': [building_shard_3.106/T_indoor]
+                '107': [building_shard_3.107/T_indoor]
+                '108': [building_shard_3.108/T_indoor]
+                '109': [building_shard_3.109/T_indoor]
+                '110': [building_shard_3.110/T_indoor]
+                '111': [building_shard_3.111/T_indoor]
+                '112': [building_shard_3.112/T_indoor]
+                '113': [building_shard_3.113/T_indoor]
+                '114': [building_shard_3.114/T_indoor]
+                '115': [building_shard_3.115/T_indoor]
+                '116': [building_shard_3.116/T_indoor]
+                '117': [building_shard_3.117/T_indoor]
+                '118': [building_shard_3.118/T_indoor]
+                '119': [building_shard_3.119/T_indoor]
+                '120': [building_shard_3.120/T_indoor]
+                '121': [building_shard_3.121/T_indoor]
+                '122': [building_shard_3.122/T_indoor]
+                '123': [building_shard_3.123/T_indoor]
+                '124': [building_shard_3.124/T_indoor]
+                '125': [building_shard_3.125/T_indoor]
+                '126': [building_shard_3.126/T_indoor]
+                '127': [building_shard_3.127/T_indoor]
+                '128': [building_shard_3.128/T_indoor]
+                '129': [building_shard_3.129/T_indoor]
+                '130': [building_shard_3.130/T_indoor]
+                '131': [building_shard_3.131/T_indoor]
+                '132': [building_shard_3.132/T_indoor]
+                '133': [building_shard_3.133/T_indoor]
+                '134': [building_shard_3.134/T_indoor]
+                '135': [building_shard_3.135/T_indoor]
+                '136': [building_shard_3.136/T_indoor]
+                '137': [building_shard_3.137/T_indoor]
+                '138': [building_shard_3.138/T_indoor]
+                '139': [building_shard_3.139/T_indoor]
+                '140': [building_shard_3.140/T_indoor]
+                '141': [building_shard_3.141/T_indoor]
+                '142': [building_shard_3.142/T_indoor]
+                '143': [building_shard_3.143/T_indoor]
+                '144': [building_shard_3.144/T_indoor]
+                '145': [building_shard_3.145/T_indoor]
+                '146': [building_shard_3.146/T_indoor]
+                '147': [building_shard_3.147/T_indoor]
+                '148': [building_shard_3.148/T_indoor]
+                '149': [building_shard_3.149/T_indoor]
+                '150': [building_shard_3.150/T_indoor]
+                '151': [building_shard_3.151/T_indoor]
+                '152': [building_shard_3.152/T_indoor]
+                '153': [building_shard_3.153/T_indoor]
+                '154': [building_shard_3.154/T_indoor]
+                '155': [building_shard_3.155/T_indoor]
+                '156': [building_shard_3.156/T_indoor]
+                '157': [building_shard_3.157/T_indoor]
+                '158': [building_shard_3.158/T_indoor]
+                '159': [building_shard_3.159/T_indoor]
+                '160': [building_shard_3.160/T_indoor]
+                '161': [building_shard_3.161/T_indoor]
+                '162': [building_shard_3.162/T_indoor]
+                '163': [building_shard_3.163/T_indoor]
+                '164': [building_shard_3.164/T_indoor]
+                '165': [building_shard_3.165/T_indoor]
+                '166': [building_shard_3.166/T_indoor]
+                '167': [building_shard_3.167/T_indoor]
+                '168': [building_shard_3.168/T_indoor]
+                '169': [building_shard_3.169/T_indoor]
+                '170': [building_shard_3.170/T_indoor]
+                '171': [building_shard_3.171/T_indoor]
+                '172': [building_shard_3.172/T_indoor]
+                '173': [building_shard_3.173/T_indoor]
+                '174': [building_shard_3.174/T_indoor]
+                '175': [building_shard_3.175/T_indoor]
+                '176': [building_shard_3.176/T_indoor]
+                '177': [building_shard_3.177/T_indoor]
+                '178': [building_shard_3.178/T_indoor]
+                '179': [building_shard_3.179/T_indoor]
+                '180': [building_shard_3.180/T_indoor]
+                '181': [building_shard_3.181/T_indoor]
+                '182': [building_shard_3.182/T_indoor]
+                '183': [building_shard_3.183/T_indoor]
+                '184': [building_shard_3.184/T_indoor]
+                '185': [building_shard_3.185/T_indoor]
+                '186': [building_shard_3.186/T_indoor]
+                '187': [building_shard_3.187/T_indoor]
+                '188': [building_shard_3.188/T_indoor]
+                '189': [building_shard_3.189/T_indoor]
+                '190': [building_shard_3.190/T_indoor]
+                '191': [building_shard_3.191/T_indoor]
+                '192': [building_shard_3.192/T_indoor]
+                '193': [building_shard_3.193/T_indoor]
+                '194': [building_shard_3.194/T_indoor]
+                '195': [building_shard_3.195/T_indoor]
+                '196': [building_shard_3.196/T_indoor]
+                '197': [building_shard_3.197/T_indoor]
+                '198': [building_shard_3.198/T_indoor]
+                '199': [building_shard_3.199/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 200
+            prefix: "pid_shard_3"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
