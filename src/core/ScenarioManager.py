@@ -928,39 +928,39 @@ class ScenarioManager:
         # Distributed SSH spawning: verify + deploy to remote machines before any
         # broker/federate process starts locally. No-op for fully local scenarios.
         self._setup_remote_execution()
-        if self.config.multi_computer and self.config.multi_computer_config:
-            self._setup_multi_computer_scenario() # TODO: multi computer must be implemented
-        else:
-            # Resolve broker/core/protocol settings for every federation and propagate
-            # them to each federate's core, so the YAML can be minimal (defaults filled
-            # in) or fully explicit (validated for consistency) without ever producing
-            # a broken HELICS wiring (mismatched protocols, missing broker addresses,
-            # clashing ports/core names, wrong federate counts, ...).
-            self._normalize_broker_and_core_configs()
-            # Automatically add a main (hierarchy) broker when there is more than one
-            # federation, so federations can talk to each other (e.g. the RL case).
-            # (for now with this method only 2 level hierarchy is supported)
-            if self._hierarchy_broker_config is not None:
-                if self._perf_enabled:
-                    _t0 = time.time()
-                self._start_local_hierarchy_broker(self._hierarchy_broker_config)
-                if self._perf_enabled:
-                    self._perf['broker_setup_s'] += time.time() - _t0
-            # uploading config for all federates
-            self._upload_config_on_redis()
-            self._enrich_dynamic_catalog_metadata()
-            self._assert_catalog_ready()
-            for federation_name, federation in self.config.federations.items():
-                self._setup_local_federation(federation_name, federation)
-            # Remote federates were only queued (by _create_federate ->
-            # _create_remote_federate) above: this is where they actually spawn, one ssh
-            # supervisor per machine, since a machine's federates can span federations.
-            # No-op when the scenario is fully local.
+        # if self.config.multi_computer and self.config.multi_computer_config:
+        #     self._setup_multi_computer_scenario() # TODO:  OLD replaced in remote execution multi computer must be implemented
+        #else:
+        # Resolve broker/core/protocol settings for every federation and propagate
+        # them to each federate's core, so the YAML can be minimal (defaults filled
+        # in) or fully explicit (validated for consistency) without ever producing
+        # a broken HELICS wiring (mismatched protocols, missing broker addresses,
+        # clashing ports/core names, wrong federate counts, ...).
+        self._normalize_broker_and_core_configs()
+        # Automatically add a main (hierarchy) broker when there is more than one
+        # federation, so federations can talk to each other (e.g. the RL case).
+        # (for now with this method only 2 level hierarchy is supported)
+        if self._hierarchy_broker_config is not None:
             if self._perf_enabled:
                 _t0 = time.time()
-            self._spawn_remote_batches()
+            self._start_local_hierarchy_broker(self._hierarchy_broker_config)
             if self._perf_enabled:
-                self._perf['federate_spawn_s'] += time.time() - _t0
+                self._perf['broker_setup_s'] += time.time() - _t0
+        # uploading config for all federates
+        self._upload_config_on_redis()
+        self._enrich_dynamic_catalog_metadata()
+        self._assert_catalog_ready()
+        for federation_name, federation in self.config.federations.items():
+            self._setup_local_federation(federation_name, federation)
+        # Remote federates were only queued (by _create_federate ->
+        # _create_remote_federate) above: this is where they actually spawn, one ssh
+        # supervisor per machine, since a machine's federates can span federations.
+        # No-op when the scenario is fully local.
+        if self._perf_enabled:
+            _t0 = time.time()
+        self._spawn_remote_batches()
+        if self._perf_enabled:
+            self._perf['federate_spawn_s'] += time.time() - _t0
 
     def _upload_config_on_redis(self):
         

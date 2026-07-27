@@ -1,0 +1,35 @@
+# Phase 1b — parallel-cost STAIRCASE vs M (LOCAL, single federate, par only).
+# Parallel cost scales as ceil(M/W)*c + O_par, so par per-tick cost is a STEP
+# function of M: it jumps each time M crosses a multiple of W (a worker picks up
+# one more instance). This matrix samples M just below/above the W-multiples for
+# three worker counts so the sawtooth is visible, and shows W-sensitivity.
+# Fixed model cost work=200000 (c ~ 26.8 ms) so each added instance-per-worker is
+# a clear, measurable jump ABOVE scheduling jitter (~10 ms) — at low cost
+# (c~3.4ms) the ~3.4ms steps were buried in noise. par mode only (seq has no
+# staircase — it's smooth M*c).
+runs:
+  # W=4 : steps at M = 4, 8, 12, 16 (ceil(M/4) = 1,2,3,4)
+  - {F: 1, N: 1, M: 3,  mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 4,  mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 5,  mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 7,  mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 8,  mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 9,  mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 11, mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 12, mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 16, mode: par, W: 4,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  # W=8 : steps at M = 8, 16, 24 (ceil(M/8) = 1,2,3)
+  - {F: 1, N: 1, M: 7,  mode: par, W: 8,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 8,  mode: par, W: 8,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 9,  mode: par, W: 8,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 15, mode: par, W: 8,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 16, mode: par, W: 8,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 17, mode: par, W: 8,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 24, mode: par, W: 8,  core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  # W=16 : steps at M = 16, 32 (ceil(M/16) = 1,2)
+  - {F: 1, N: 1, M: 15, mode: par, W: 16, core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 16, mode: par, W: 16, core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 17, mode: par, W: 16, core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 31, mode: par, W: 16, core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 32, mode: par, W: 16, core_type: zmq, model: heavy_compute_dummy, work: 200000, placement: local, ticks: 20}
+# 21 par cells. Overlays a matching seq baseline (M*c) computed from phase1b_instance_crossover.

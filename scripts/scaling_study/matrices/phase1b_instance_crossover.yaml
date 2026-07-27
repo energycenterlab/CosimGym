@@ -1,0 +1,67 @@
+# Phase 1b — INSTANCE-crossover, DISTRICT-SCALE M (LOCAL, single federate).
+# Dual of phase1 (which fixed M=16 and swept model cost). Here model cost is
+# fixed and the number of model instances M is swept — up to district scale
+# (M=1024, ~thousand buildings in one federate process) — to find the
+# *instance*-crossover M* where parallel_execution overtakes the sequential
+# loop, per the law:  M* - ceil(M*/W) = O_par / c.
+#
+# Two cost regimes, each swept over its own useful M range (runs: list so the
+# heavy regime isn't dragged to slow high-M cells that add no information):
+#
+#   LIGHT  work=2000  (c ~ 0.29 ms, RC-building-like): M up to 1024.
+#          Predicted M* ~ 181 -> the sweep brackets it (128 < M* < 192),
+#          demonstrating that parallel pays only at DISTRICT scale for cheap
+#          models. This is the district-relevant curve.
+#   HEAVY  work=25000 (c ~ 3.37 ms, medium-EnergyPlus-like): M up to 64.
+#          Predicted M* ~ 16 (matches phase1's cost-crossover) -> par pays at
+#          modest instance counts for detailed models.
+#
+# Memory note: heavy_compute_dummy is ~0 MB/instance (Phase 0d), so M=1024 is
+# compute-bound here, NOT memory-bound. Real building FMUs (~100s MB each) hit
+# a MEMORY ceiling at district scale — a separate axis (Phase 0d/5), not this one.
+#
+# W=8 workers fixed. seq+par. 20 ticks. Overlaid speedup(M) -> ceiling ~ W.
+runs:
+  # ---- LIGHT (work=2000, c~0.29ms) : district-scale M, brackets M*~181 ----
+  - {F: 1, N: 1, M: 8,    mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 8,    mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 16,   mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 16,   mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 32,   mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 32,   mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 64,   mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 64,   mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 128,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 128,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 192,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 192,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 256,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 256,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 384,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 384,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 512,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 512,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 768,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 768,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 1024, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 1024, mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 2000, placement: local, ticks: 20}
+  # ---- HEAVY (work=25000, c~3.37ms) : modest M, brackets M*~16 ----
+  - {F: 1, N: 1, M: 2,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 2,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 4,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 4,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 8,  mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 8,  mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 12, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 12, mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 16, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 16, mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 24, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 24, mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 32, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 32, mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 48, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 48, mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 64, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+  - {F: 1, N: 1, M: 64, mode: par, W: 8, core_type: zmq, model: heavy_compute_dummy, work: 25000, placement: local, ticks: 20}
+# 22 light + 18 heavy = 40 cells -> x3 repeats = 120 runs.
