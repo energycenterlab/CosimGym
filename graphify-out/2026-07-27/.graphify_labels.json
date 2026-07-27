@@ -171,5 +171,7 @@
   "169": "datetime",
   "170": "._setup_scenario",
   "171": "PV+Battery DQN Scenario",
-  "172": "Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)"
+  "172": "Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)",
+  "173": "Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring",
+  "174": "catalog-loader service"
 }

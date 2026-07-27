@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "src/core/ScenarioManager.py": {
-    "mtime": 1785145057.232267,
-    "ast_hash": "31982899a6d384d20ceebd405c09a5c4",
+    "mtime": 1784892833.143363,
+    "ast_hash": "fbe2939e57c7ae9c01f64e45b59e57a8",
     "semantic_hash": ""
   },
   "src/core/__init__.py": {
@@ -595,8 +595,8 @@
     "semantic_hash": ""
   },
   "src/models/model_catalog/catalog.yaml": {
-    "mtime": 1785139419.392976,
-    "ast_hash": "ab487c165831ae9042024d74efada299",
+    "mtime": 1783071113.9272985,
+    "ast_hash": "5c645dc4d91e2c6ea49736aacbd68ea9",
     "semantic_hash": ""
   },
   "src/models/model_catalog/catalog_old_backup.yaml": {
@@ -980,8 +980,8 @@
     "semantic_hash": ""
   },
   "src/scenarios/generate_scale_benchmark.py": {
-    "mtime": 1785152775.8963776,
-    "ast_hash": "227bdee273518335c74a696f1f575d18",
+    "mtime": 1784646907.2218041,
+    "ast_hash": "b4647d1e0dbdf5498991e91e40cc282c",
     "semantic_hash": ""
   },
   "src/scenarios/benchmark_scale_distributed.yaml": {
@@ -1040,8 +1040,8 @@
     "semantic_hash": ""
   },
   "docs/future_and_TODOs/scaling_study_plan.md": {
-    "mtime": 1785160997.8108077,
-    "ast_hash": "bc4cb7dcf502a870a1a579deaac61480",
+    "mtime": 1784878397.404852,
+    "ast_hash": "44476e4db121bad41324f9d7ffad9124",
     "semantic_hash": ""
   },
   "scripts/scaling_study/CONTRACT.md": {
@@ -1090,8 +1090,8 @@
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/phase01.md": {
-    "mtime": 1785143245.1358943,
-    "ast_hash": "bb7298b9461a10a0c177aa1f5ca16257",
+    "mtime": 1784890294.4133344,
+    "ast_hash": "317072a8cdfb3b87b449c8a4e1cb163c",
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/phase2_ceiling.md": {
@@ -1180,8 +1180,8 @@
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/01_crossover.png": {
-    "mtime": 1785142769.7298567,
-    "ast_hash": "2fbe1dac858b899339b6cf9958878d4a",
+    "mtime": 1784890297.9932647,
+    "ast_hash": "0f8946bdb33e1107f1ecc7673317a9e9",
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/02_sync_curve.png": {
@@ -1207,111 +1207,6 @@
   "scripts/scaling_study/findings/phase4_ratio_plot.png": {
     "mtime": 1784892564.73585,
     "ast_hash": "a9db2edb84c5b4c125c286838b34a40c",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase5_clean_fit_params.json": {
-    "mtime": 1784893348.3582652,
-    "ast_hash": "5840dfde5fe4f3f5616b0ced203f9f8b",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase5_pooled_fit_params.json": {
-    "mtime": 1784893262.759804,
-    "ast_hash": "b9ea575093e7cb42374bfa2ccfb37430",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/plot_crossover_clean.py": {
-    "mtime": 1785142786.6494937,
-    "ast_hash": "c0d4055708b6da2b41f674c09e6e3208",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/plot_instance_crossover.py": {
-    "mtime": 1785146141.3799446,
-    "ast_hash": "295cc7f56a73b3103388f0f322965c33",
-    "semantic_hash": ""
-  },
-  "src/models/model_catalog/physical_models/light_compute_dummy.py": {
-    "mtime": 1785139319.9429843,
-    "ast_hash": "e9e8a2f4676a852e49844d2f37a5ba71",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/README.md": {
-    "mtime": 1785152720.8012767,
-    "ast_hash": "9e9cf86992a6ab8e9d2617dec7197e0c",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/all_phases_synthesis.md": {
-    "mtime": 1785152815.41573,
-    "ast_hash": "2d40811f52a79b313068b5281c6552c8",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/bottlenecks.md": {
-    "mtime": 1784896794.280006,
-    "ast_hash": "74811b1d5351d5171df174e8120a8363",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/paper_ready_sentences.md": {
-    "mtime": 1785147179.676112,
-    "ast_hash": "860f5287938097e39adc4a397e0eb27b",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase5_validation.md": {
-    "mtime": 1784894014.9740806,
-    "ast_hash": "592054966e2d3e4fc454d2cab6a49fba",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase1b_instance_crossover.yaml": {
-    "mtime": 1785144492.6324816,
-    "ast_hash": "f39b66c9f17f4161e22e48f2425bdd03",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase1b_staircase.yaml": {
-    "mtime": 1785145595.8489738,
-    "ast_hash": "06d9c9546ef999aba862d75d3950041e",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase5a_recommend_check.yaml": {
-    "mtime": 1784893525.5110586,
-    "ast_hash": "af5473294e8792e077f652c3d2829f10",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase5a_validation_holdout.yaml": {
-    "mtime": 1784893370.593864,
-    "ast_hash": "584fec773757f8314589e5a0c7d0bc0c",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase5b_max_stable_M.yaml": {
-    "mtime": 1784893766.0306714,
-    "ast_hash": "ee610b140d1ea9288af4f78c00598d28",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase5b_max_stable_N.yaml": {
-    "mtime": 1784893644.3048956,
-    "ast_hash": "c3a0b9817f54f6fca7c7da2ef21ffe02",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/01_crossover_old.png": {
-    "mtime": 1784890297.9932647,
-    "ast_hash": "0f8946bdb33e1107f1ecc7673317a9e9",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/05_predicted_vs_measured.png": {
-    "mtime": 1784893830.409492,
-    "ast_hash": "562638ee88d6f281a4d342640202da21",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/07_instance_crossover.png": {
-    "mtime": 1785146148.571866,
-    "ast_hash": "a66ac3f3d41c78e4b6fe7202c83ed2e5",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/08_speedup_vs_M.png": {
-    "mtime": 1785146148.8558629,
-    "ast_hash": "ab7a0aa8bfbd60de7f23e93aacf449d1",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/09_par_staircase.png": {
-    "mtime": 1785146149.2478585,
-    "ast_hash": "8f96e8f43be89874deb4c82431f366a8",
     "semantic_hash": ""
   }
 }

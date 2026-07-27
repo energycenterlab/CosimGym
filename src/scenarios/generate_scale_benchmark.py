@@ -40,17 +40,26 @@ That is the expected, honest result and NOT a bug. Two reasons, both structural:
      perfectly compute-bound job could only gain 176/112 = 1.57x, and only with
      the core-proportional split used here.
 
-!! zmq_ss FEDERATE CEILING (measured on this LAN) !!
+!! zmq_ss FEDERATE CEILING — SUPERSEDED, see scaling_study/findings/README.md !!
+  HISTORICAL observation (kept for provenance), measured on this LAN on some days:
     zmq_ss  17 federates: OK OK OK        zmq  65 federates: OK OK OK
     zmq_ss  33 federates: OK OK OK        zmq  89 federates: OK OK OK
     zmq_ss  49 federates: FAIL FAIL OK   <-- flaky; single socket saturates
     zmq_ss  65 federates: FAIL
-  Failures appear as every federate dying with "[-101] lost comms" after a ~52s
-  timeout. zmq_ss is REQUIRED when remotes are behind NAT (see A0 in
-  docs/user_guide/multi_machine_test_walkthrough.md), so a distributed run on this
-  network is currently capped near ~33 federates. Both scenarios must use the SAME
-  core_type to stay comparable, which is why the local twin uses zmq_ss too even
-  though plain zmq would scale to 89 there.
+  Failures appeared as every federate dying with "[-101] lost comms" after a ~52s
+  timeout.
+  UPDATE (2026-07-24, Phase 2/5): this ceiling does NOT reproduce reliably. A
+  calibrated sweep passed zmq_ss/distributed to N=89, and N=200 on ONE broker
+  passed cleanly — i.e. the failures above were a TRANSIENT LAN condition, not an
+  intrinsic zmq_ss/HELICS limit (this file's git history also flags the behaviour
+  as non-deterministic). The only DETERMINISTIC failure found was an unrelated SSH
+  ControlPath / AF_UNIX 108-byte path-length bug at N>=112, since FIXED. Do not
+  treat "~33 federates" as a hard cap. Full analysis + numbers:
+  scripts/scaling_study/findings/phase2_ceiling.md.
+  zmq_ss is still REQUIRED when remotes are behind NAT (see A0 in
+  docs/user_guide/multi_machine_test_walkthrough.md). Both scenarios must use the
+  SAME core_type to stay comparable, which is why the local twin uses zmq_ss too
+  even though plain zmq would scale to 89 there.
 
 Usage:
     python src/scenarios/generate_scale_benchmark.py [--sites N] [--end YYYY-MM-DD]

@@ -1,5 +1,9 @@
 # Scaling Study — Synthesis (Phases 0–5)
 
+> **Canonical index is `README.md`** (trusted primitives, status, gaps, Phase 1b).
+> This file is the narrative roll-up of Phases 0–5; if it disagrees with README,
+> README wins. Not updated for Phase 1b (instance-count crossover) — see README.
+
 One page tying `phase01.md`, `phase2_ceiling.md`, `phase3_federations.md`,
 `phase4_distribution.md`, `phase5_validation.md` together. Read those for
 detail and evidence; this is the "so what" for the two questions the plan
