@@ -1,0 +1,13 @@
+# Phase 0a -- sync curve s(N): trivial model (work=1) isolates HELICS sync
+# cost vs federate count N on a single broker, plain zmq, local, seq.
+axes:
+  F: [1]
+  N: [2, 4, 8, 16, 32, 64]
+  M: [1]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq]
+  model: [heavy_compute_dummy]
+  work: [1]
+  placement: [local]
+  ticks: [30]

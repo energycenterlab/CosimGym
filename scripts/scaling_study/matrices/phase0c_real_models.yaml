@@ -1,0 +1,15 @@
+# Phase 0c -- real physical models, standalone (gen_scenario federates have
+# NO subscriptions -- self-contained). F=1,N=1,M=1,seq,ticks=20. Some models
+# may error standalone (need wired inputs e.g. weather) -- that's expected,
+# noted as a limitation, not a bug to fix here.
+axes:
+  F: [1]
+  N: [1]
+  M: [1]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq]
+  model: [simple_building, simple_heatpump, pv_dest]
+  work: [1]
+  placement: [local]
+  ticks: [20]

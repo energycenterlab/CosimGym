@@ -1,0 +1,17 @@
+# Phase 2a -- LOCAL zmq control (no NAT, single machine, single broker).
+# Establishes whether plain zmq on one box has a federate-count ceiling at
+# all. Prior note (generate_scale_benchmark.py) claims zmq scales to 89
+# locally with no failures. Trivial model (heavy_compute_dummy, work=1),
+# M=1 so this is comms/sync-bound, not compute-bound -- measuring the same
+# thing the zmq_ss NAT run (phase2b) measures, for a clean disentangler.
+axes:
+  F: [1]
+  N: [17, 33, 49, 65, 89, 112]
+  M: [1]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq]
+  model: [heavy_compute_dummy]
+  work: [1]
+  placement: [local]
+  ticks: [30]

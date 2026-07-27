@@ -1,0 +1,8 @@
+# Phase 3c -- distributed multifed composition check: Config A (3-machine
+# NAT, forces zmq_ss). Confirms multi-federation sharding + distributed SSH
+# placement compose without breaking. Total federate count kept < 112 per
+# Phase 2's finding that N>=112 trips the SSH ControlPath/AF_UNIX
+# 108-byte path-length bug (unrelated to HELICS/zmq_ss itself).
+runs:
+  - {F: 2, N: 16, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: distributed_nat, ticks: 30}
+  - {F: 2, N: 24, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: distributed_nat, ticks: 30}

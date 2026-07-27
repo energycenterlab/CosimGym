@@ -1,0 +1,15 @@
+# Phase 2b extension -- push distributed_nat zmq_ss well past the claimed ~33
+# ceiling and past 2b's own max (89) to find where (if anywhere) an actual
+# break happens in the current environment. 2 repeats (not 3) to keep this
+# exploratory extension cheap.
+axes:
+  F: [1]
+  N: [112, 150, 200]
+  M: [1]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq_ss]
+  model: [heavy_compute_dummy]
+  work: [1]
+  placement: [distributed_nat]
+  ticks: [30]

@@ -10,9 +10,11 @@ created: 2026-03-17
 
 """
 import importlib
+import json
 import math
 import os
 import sys
+import time
 import pprint
 from pathlib import Path
 import helics as h
@@ -82,6 +84,22 @@ class BaseFederate():
 
         # lazily created on first use only if config.streaming.stream is enabled
         self._stream_adapter = None
+
+        # D3 perf instrumentation (scaling-study CONTRACT.md): a single cheap env check
+        # at this boundary. When disabled, every other perf hook in this class is a
+        # no-op `if self._perf_enabled:` guard — no time.time() calls, no list growth,
+        # no file writes. This federate is a separate subprocess from ScenarioManager,
+        # so it cannot observe per-tick timing directly; instead it records its own
+        # tick times/readiness here and writes a JSON fragment (run()) into the same
+        # results dir + rsync channel store_local_file() already uses. ScenarioManager
+        # collects every federate's fragment post-run and reduces them into one
+        # results/<scenario>/<sim_id>/perf.json (see ScenarioManager._write_perf_log).
+        self._perf_enabled = os.environ.get('COSIM_PERF_LOG') == '1'
+        if self._perf_enabled:
+            self._perf_tick_times = []
+            self._perf_ready_at = None
+            self._perf_first_tick_start = None
+            self._perf_last_tick_end = None
 
         # lazily created on first use only if config.override_enabled is set (M4 digital-twin overrides)
         self._override_registry = None
@@ -463,8 +481,16 @@ class BaseFederate():
         self._enforce_startup_input_sync()
         # TODO: unclear whether the first time-advance request should target step 0 or step 1 (self.ts starts at 0)
 
+        # D3 perf: this federate is "ready" once startup sync completes, right before the
+        # tick loop starts — this is the timestamp ScenarioManager maxes across every
+        # federate's fragment to derive setup_s (scenario start -> all federates ready).
+        if self._perf_enabled:
+            self._perf_ready_at = time.time()
+
         try:
             while self.ts < self.stop_time:
+                if self._perf_enabled:
+                    _perf_tick_t0 = time.time()
 
                 self.logger.info('=======================================================================================================================')
                 # request time
@@ -507,11 +533,27 @@ class BaseFederate():
                 if self.mode == 'train' and self.episode_length is not None and self.ts > 0 and self.ts % self.episode_length == 0:
                     self._track_episodes() #TODO track the episodes and manage the end of episode conditions, this should be called at the end of the step after the reset to update the episode count and manage the end of episode conditions like setting a flag in the outputs or something like that, this is for now a simple episode tracking based on the number of steps but in the future it could be more complex and depend on specific conditions on the outputs or inputs
 
+                if self._perf_enabled:
+                    _perf_tick_t1 = time.time()
+                    self._perf_tick_times.append(_perf_tick_t1 - _perf_tick_t0)
+                    if self._perf_first_tick_start is None:
+                        self._perf_first_tick_start = _perf_tick_t0
+                    self._perf_last_tick_end = _perf_tick_t1
+
             # flush remaining storage at the end of the simulation
             if self._async_storage_writer is not None:
                 self._async_storage_writer.close()  # drain remaining queued rows first (no data loss)
                 self._parquet_storage_writer.close()  # finalize (close) the per-mode Parquet file(s)
             self.store_local_file() # TODO store the local file with the storage data, this is for testing purpose and will be substituted by the flushing to the database8
+            if self._perf_enabled:
+                self._write_perf_fragment(failure_mode=None)
+        except Exception as e:
+            if self._perf_enabled:
+                # Best-effort: write whatever tick data was collected so far, tagged with
+                # the failure. D2's own external failure detection is authoritative; this
+                # is just so a partial run still leaves a diagnosable fragment behind.
+                self._write_perf_fragment(failure_mode=f"{type(e).__name__}: {e}"[:200])
+            raise
         finally:
             # Guarantee worker processes are shut down on every exit path: normal
             # completion, an exception propagating out of the loop above, or a
@@ -519,6 +561,39 @@ class BaseFederate():
             # handlers/atexit — close() is idempotent so calling it again here is safe).
             if self.parallel_executor is not None:
                 self.parallel_executor.close()
+
+    def _write_perf_fragment(self, failure_mode):
+        """D3 perf instrumentation: write this federate's own tick-timing fragment.
+
+        Written into the same per-federate results dir (`_results_base_dir()`) that
+        `store_local_file()` already uses — for distributed federates that directory is
+        already rsync'd back to the manager by `ScenarioManager._collect_remote_results`,
+        so reusing it means no new transport is needed. ScenarioManager cannot see
+        per-tick timing directly (this federate is a separate subprocess), so it globs
+        every federate's fragment after the run and reduces them into one perf.json.
+        Only ever called when COSIM_PERF_LOG=1; never raises (perf logging must not
+        break a simulation run that otherwise completed or failed cleanly).
+        """
+        try:
+            base_dir = self._results_base_dir()
+            os.makedirs(base_dir, exist_ok=True)
+            fragment = {
+                "federate": self.name,
+                "federation": self.federation_name,
+                "ready_at": self._perf_ready_at,
+                "first_tick_start": self._perf_first_tick_start,
+                "last_tick_end": self._perf_last_tick_end,
+                "n_ticks": len(self._perf_tick_times),
+                "tick_times": self._perf_tick_times,
+                "failure_mode": failure_mode,
+            }
+            path = os.path.join(base_dir, f"{self.name}_perf_fragment.json")
+            with open(path, 'w') as f:
+                json.dump(fragment, f)
+            self.logger.info(f"Perf fragment written to {path}")
+        except Exception as e:
+            if self.logger:
+                self.logger.warning(f"Failed to write perf fragment: {e}")
 
     def _results_base_dir(self) -> str:
         scenario_name = self.simulation_id[:-16]
@@ -538,7 +613,6 @@ class BaseFederate():
             # ParquetStorageWriter.on_batch (S2), finalized in run() just before this call.
             self.logger.info("memory_config.sink='parquet' — storage already flushed via ParquetStorageWriter")
             return
-        import json
         base_dir = self._results_base_dir()
         os.makedirs(base_dir, exist_ok=True)
 

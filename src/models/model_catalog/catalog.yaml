@@ -2871,3 +2871,55 @@ models:
         required: false
         tags:
         - benchmark
+  light_compute_dummy:
+    class_name: LightComputeDummy
+    module_path: models.model_catalog.physical_models.light_compute_dummy
+    version: 1.0.0
+    description: Self-contained no-op dummy model that fast-forwards data with no
+      real CPU work (busy-loop skipped) — used as the light/near-zero-cost
+      baseline in vertical scaling tests against heavy_compute_dummy. No required
+      external inputs.
+    author: Pietro Rando Mazzarino
+    domain: benchmark
+    category: physical_model
+    tags:
+    - benchmark
+    - dummy
+    - cpu_light
+    - parallel_execution
+    dependencies: []
+    time_step: 1
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+    parameters:
+      iterations:
+        type: int
+        default_value: 100000
+        description: Nominal busy-loop iteration count per step() call. Accepted
+          for interface parity with heavy_compute_dummy; the light model does not
+          spend it (no real work performed).
+        unit: "-"
+        min_value: 1
+        max_value: 100000000
+        required: false
+        tags:
+        - benchmark
+    inputs: {}
+    outputs:
+      result:
+        type: float
+        default_value: 0.0
+        description: Running accumulator value (no physical meaning)
+        unit: "-"
+        required: false
+        tags:
+        - benchmark
+      step_count:
+        type: int
+        default_value: 0
+        description: Number of steps executed so far
+        unit: "-"
+        required: false
+        tags:
+        - benchmark

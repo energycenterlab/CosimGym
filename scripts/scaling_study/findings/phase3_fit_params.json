@@ -1,0 +1,32 @@
+{
+  "O_par": 0.0,
+  "c": {
+    "heavy_compute_dummy": {
+      "a": 0.00018208137734681843,
+      "b": 0.0
+    }
+  },
+  "notes": "s[zmq_ss]: regressed tick_mean_s ~ 1 + N + M over 24 seq rows (N varies: [4, 8, 16, 24, 32, 64]) | s[zmq]: no data -- defaulted to {s0:0, s1:0} | s[tcp]: no data -- defaulted to {s0:0, s1:0} | s[tcp_ss]: no data -- defaulted to {s0:0, s1:0} | c[heavy_compute_dummy]: work constant/absent ([1.0]) for model=heavy_compute_dummy; a = mean(c_sample) over 24 seq rows, b=0 | O_par: no par rows -- defaulted to 0.0 | rss_per_instance_mb[heavy_compute_dummy]: single M value ([1]) -- rss_per_instance = peak_rss_mb / M | rtt_s: mean (distributed_tick - matched_local_tick)/remote_hops over 2 pairs",
+  "rss_per_instance_mb": {
+    "heavy_compute_dummy": 4576.06640625
+  },
+  "rtt_s": 0.0,
+  "s": {
+    "tcp": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "tcp_ss": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "zmq": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "zmq_ss": {
+      "s0": 0.00017624069457512518,
+      "s1": 2.7621002337113964e-06
+    }
+  }
+}

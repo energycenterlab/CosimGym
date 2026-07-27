@@ -1,0 +1,12 @@
+# Phase 0d -- peak RSS vs instance count M (fixed per-instance work).
+axes:
+  F: [1]
+  N: [1]
+  M: [1, 4, 16, 64]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq]
+  model: [heavy_compute_dummy]
+  work: [100]
+  placement: [local]
+  ticks: [20]

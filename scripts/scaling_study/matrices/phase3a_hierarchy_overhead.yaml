@@ -1,0 +1,27 @@
+# Phase 3a -- hierarchy-broker overhead at FIXED total federate count (~32),
+# varying how that total is sharded across F federations. Local, trivial
+# model (heavy_compute_dummy, work=1) so setup_s + tick_mean_s isolate
+# broker/sync overhead, not compute. Explicit `runs:` list (not `axes:`)
+# because we need exact F*N pairs (F=1,N=32),(F=2,N=16),(F=4,N=8),(F=8,N=4)
+# -- a cartesian product of F and N would give the wrong (F,N) combos.
+#
+# DEVIATION from the task's literal "core_type=zmq": gen_scenario.py (D1)
+# assigns per-federation broker ports as `23500+f` (1 apart). ScenarioManager
+# reserves BOTH `port` and `port+1` for a plain `zmq` broker (its paired
+# reply socket, `_broker_ports()`/`ScenarioManager.py:1533-1538`), so for
+# ANY F>=2, federation_f's `port+1` collides with federation_(f+1)'s `port`
+# (e.g. F=2: federation_1={23501,23502}, federation_2 port=23502 -> bind
+# fails with "port(s) 23502 already in use"). Confirmed deterministic
+# (100% repro, F=2/4/8, no orphaned broker process, no listener on the
+# port -- a real gen_scenario.py port-spacing bug, not a stale-process
+# artifact). zmq_ss ("single socket") does NOT reserve `port+1`
+# (`core_type == 'zmq'` guard in `_broker_ports`), so it is unaffected and
+# was used here instead for F>=2 -- verified F=1 also runs cleanly under
+# zmq_ss (single-federation case has no port collision either way). This
+# is a HARNESS BUG (report only, not fixed here per task instructions) --
+# see phase3_federations.md.
+runs:
+  - {F: 1, N: 32, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
+  - {F: 2, N: 16, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
+  - {F: 4, N: 8,  M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
+  - {F: 8, N: 4,  M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}

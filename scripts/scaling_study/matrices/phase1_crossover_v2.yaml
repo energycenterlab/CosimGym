@@ -1,0 +1,15 @@
+# Phase 1 -- crossover (seq vs par) at large per-instance work. Earlier data
+# (benchmark_parallel_{seq,par}) showed par is fixed-overhead-bound
+# (O_par ~= 0.039 s/tick) while seq scales with work -- crossover needs LARGE
+# work values to show up. F=1,N=1,M=16,W=8, zmq, heavy_compute_dummy.
+axes:
+  F: [1]
+  N: [1]
+  M: [16]
+  mode: [seq, par]
+  W: [8]
+  core_type: [zmq]
+  model: [heavy_compute_dummy]
+  work: [1000, 10000, 25000, 50000, 100000]
+  placement: [local]
+  ticks: [20]

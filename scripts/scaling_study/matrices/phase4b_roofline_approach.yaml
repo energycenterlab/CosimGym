@@ -1,0 +1,17 @@
+# Phase 4b -- approach the roofline. N near the SSH-ControlPath cap (<112),
+# work=50000 (compute-bound region identified in 4a / Phase 1's crossover),
+# local vs distributed_nat, both pinned to zmq_ss. Question: as the manager
+# fills up (fewer idle cores to give away, but also more federates placed on
+# the 32c remotes proportionally), does the distributed/local ratio close in
+# on the 1.57x = 176/112 hardware roofline ceiling?
+axes:
+  F: [1]
+  N: [64, 88]
+  M: [1]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq_ss]
+  model: [heavy_compute_dummy]
+  work: [50000]
+  placement: [local, distributed_nat]
+  ticks: [30]

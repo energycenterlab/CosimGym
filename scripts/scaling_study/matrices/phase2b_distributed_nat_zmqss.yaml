@@ -1,0 +1,18 @@
+# Phase 2b -- Config A: 3-machine NAT deployment (manager ipazia/112c +
+# cloud1/32c + cloud5/32c), forces zmq_ss. THE test for the claimed ~33
+# federate zmq_ss ceiling (prior note: 33 OK, 49 flaky, 65 fail, dying
+# "[-101] lost comms" after ~52s). Same comms/sync-bound design as 2a
+# (trivial model, M=1) so the two runs are a clean disentangler: any
+# ceiling seen here that ISN'T seen in 2a is zmq_ss/NAT/multi-machine
+# specific, not a generic federate-count limit.
+axes:
+  F: [1]
+  N: [17, 33, 49, 65, 89]
+  M: [1]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq_ss]
+  model: [heavy_compute_dummy]
+  work: [1]
+  placement: [distributed_nat]
+  ticks: [30]

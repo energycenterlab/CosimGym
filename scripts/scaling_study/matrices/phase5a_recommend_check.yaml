@@ -1,0 +1,3 @@
+runs:
+  - {F: 1, N: 96, M: 1, mode: seq, core_type: tcp, model: heavy_compute_dummy, work: 20000, placement: local, ticks: 30}
+  - {F: 1, N: 96, M: 1, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 20000, placement: local, ticks: 30}

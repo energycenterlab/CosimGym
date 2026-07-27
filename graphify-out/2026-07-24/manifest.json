@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "src/core/ScenarioManager.py": {
-    "mtime": 1784892833.143363,
-    "ast_hash": "fbe2939e57c7ae9c01f64e45b59e57a8",
+    "mtime": 1784879356.067567,
+    "ast_hash": "dccc1bc93de9ff63c6a791c7c6441ccc",
     "semantic_hash": ""
   },
   "src/core/__init__.py": {
@@ -985,12 +985,12 @@
     "semantic_hash": ""
   },
   "src/scenarios/benchmark_scale_distributed.yaml": {
-    "mtime": 1784891182.6638315,
+    "mtime": 1784646907.2218041,
     "ast_hash": "4c678322557328e25b0d4dc71d6fc753",
     "semantic_hash": ""
   },
   "src/scenarios/benchmark_scale_local.yaml": {
-    "mtime": 1784891182.6678314,
+    "mtime": 1784646907.2218041,
     "ast_hash": "e6e9eb5a771cd4933511fb7d3b0eb981",
     "semantic_hash": ""
   },
@@ -1035,8 +1035,8 @@
     "semantic_hash": ""
   },
   "scripts/scaling_study/gen_scenario.py": {
-    "mtime": 1784892840.5672355,
-    "ast_hash": "6255cf0986ba97624a7203d36ebe3423",
+    "mtime": 1784879266.4655056,
+    "ast_hash": "cb1527433dcffa3f11e3e015bb36f127",
     "semantic_hash": ""
   },
   "docs/future_and_TODOs/scaling_study_plan.md": {
@@ -1072,141 +1072,6 @@
   "scripts/scaling_study/matrices/smoke.yaml": {
     "mtime": 1784879771.0628922,
     "ast_hash": "6a38dc6334a470c56406c1898e88c064",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/fit_params.json": {
-    "mtime": 1784890297.9932647,
-    "ast_hash": "8aabbee0150bf3bc741c1dd326259458",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase3_fit_params.json": {
-    "mtime": 1784891885.8658414,
-    "ast_hash": "d79f1144929978ab89162d3907b84bac",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase4_fit_params.json": {
-    "mtime": 1784892489.5090554,
-    "ast_hash": "c5423a3a19357374409266508c77d651",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase01.md": {
-    "mtime": 1784890294.4133344,
-    "ast_hash": "317072a8cdfb3b87b449c8a4e1cb163c",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase2_ceiling.md": {
-    "mtime": 1784891249.6345015,
-    "ast_hash": "f52f4333ab1322d35639f5d4ae4f9064",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase3_federations.md": {
-    "mtime": 1784892056.6712422,
-    "ast_hash": "b2418f9856581bf66b693c67947f7515",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase4_distribution.md": {
-    "mtime": 1784892634.1307151,
-    "ast_hash": "2a3d58848e02123266188f28b24a964d",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase0a_sync_curve.yaml": {
-    "mtime": 1784889531.392392,
-    "ast_hash": "e692a809283ee324bb1eb6a216ffceae",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase0b_cost_work.yaml": {
-    "mtime": 1784889537.3642702,
-    "ast_hash": "b0f1571bb8a3ee4b97e4bb06dbfb3ace",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase0c_real_models.yaml": {
-    "mtime": 1784889545.776099,
-    "ast_hash": "c166509a6c1249963e3793cfafcdac89",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase0d_rss.yaml": {
-    "mtime": 1784889542.340169,
-    "ast_hash": "5b3f4a72b0baaa4e8b7a79b8e0c13ca9",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase1_crossover.yaml": {
-    "mtime": 1784880533.0396144,
-    "ast_hash": "8f494783cfde2f9a940fff0d9258db83",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase1_crossover_v2.yaml": {
-    "mtime": 1784889784.479254,
-    "ast_hash": "3845b33d1997baef3925f752b70417c1",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase2a_local_zmq.yaml": {
-    "mtime": 1784890466.5099754,
-    "ast_hash": "db02118fec5a8ae820f4322442393566",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase2b_distributed_nat_zmqss.yaml": {
-    "mtime": 1784890622.1109204,
-    "ast_hash": "43698dd3ae62441771833ff383ac5dbe",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase2b_extended_high_n.yaml": {
-    "mtime": 1784890904.453347,
-    "ast_hash": "5b09cf49664c1574e414ead2990883f1",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase3a_hierarchy_overhead.yaml": {
-    "mtime": 1784891624.3230498,
-    "ast_hash": "9eee539ec7c2c1b5db4fdfaef62c16b2",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase3b_multifed_scale.yaml": {
-    "mtime": 1784891634.758842,
-    "ast_hash": "39eb0f0a08f094feae34fe188306c5be",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase3c_distributed_multifed.yaml": {
-    "mtime": 1784891439.6147249,
-    "ast_hash": "c675a6343f35c105a6b23e0aed5ed52e",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase4a_distribution_overhead.yaml": {
-    "mtime": 1784892212.065204,
-    "ast_hash": "2a9855b3097474223f564ac57c94324b",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/phase4b_roofline_approach.yaml": {
-    "mtime": 1784892216.5491414,
-    "ast_hash": "e5db9e62505f8196f9c0149a9209ed5f",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/01_crossover.png": {
-    "mtime": 1784890297.9932647,
-    "ast_hash": "0f8946bdb33e1107f1ecc7673317a9e9",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/02_sync_curve.png": {
-    "mtime": 1784890297.9972646,
-    "ast_hash": "19171092e23a7f3cfd5945e1b49f6e6c",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/03_roofline.png": {
-    "mtime": 1784892572.4437249,
-    "ast_hash": "b7fd8ba3ccccd933007804f98edde1e7",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/04_ceiling_vs_network.png": {
-    "mtime": 1784891155.472371,
-    "ast_hash": "7e5fdbcf5053b0e38d0810b3b37f000f",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/06_federation_sharding.png": {
-    "mtime": 1784892002.2238908,
-    "ast_hash": "d6c92bdbfb98411f36aa3ee0dc1b944b",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/phase4_ratio_plot.png": {
-    "mtime": 1784892564.73585,
-    "ast_hash": "a9db2edb84c5b4c125c286838b34a40c",
     "semantic_hash": ""
   }
 }

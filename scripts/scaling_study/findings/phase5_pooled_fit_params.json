@@ -1,0 +1,42 @@
+{
+  "O_par": 0.03471549508947714,
+  "c": {
+    "heavy_compute_dummy": {
+      "a": 6.793982135750428e-05,
+      "b": 9.38774693767591e-08
+    },
+    "simple_building": {
+      "a": 0.0,
+      "b": 0.0
+    },
+    "simple_heatpump": {
+      "a": 0.0,
+      "b": 0.0
+    }
+  },
+  "notes": "s[zmq]: regressed tick_mean_s ~ 1 + N + M over 62 seq rows (N varies: [1, 2, 4, 8, 16, 32, 64]) | s[zmq_ss]: regressed tick_mean_s ~ 1 + N + M over 50 seq rows (N varies: [4, 8, 16, 24, 32, 48, 64, 88]) | s[tcp]: no data -- defaulted to {s0:0, s1:0} | s[tcp_ss]: no data -- defaulted to {s0:0, s1:0} | c[heavy_compute_dummy]: lstsq c ~ 1 + work over 106 seq rows (work varies: [1.0, 100.0, 1000.0, 5000.0, 10000.0, 20000.0, 25000.0, 50000.0, 100000.0]) | c[simple_building]: work constant/absent ([1.0]) for model=simple_building; a = mean(c_sample) over 3 seq rows, b=0 | c[simple_heatpump]: work constant/absent ([1.0]) for model=simple_heatpump; a = mean(c_sample) over 3 seq rows, b=0 | O_par: mean residual (tick_mean_s - ceil(M/W)*c - sync) over 15 par rows | rss_per_instance_mb[heavy_compute_dummy]: regressed peak_rss_mb ~ 1 + M over 121 rows | rss_per_instance_mb[simple_building]: single M value ([1]) -- rss_per_instance = peak_rss_mb / M | rss_per_instance_mb[simple_heatpump]: single M value ([1]) -- rss_per_instance = peak_rss_mb / M | rtt_s: mean (distributed_tick - matched_local_tick)/remote_hops over 15 pairs",
+  "rss_per_instance_mb": {
+    "heavy_compute_dummy": 0.0,
+    "simple_building": 304.33203125,
+    "simple_heatpump": 305.2109375
+  },
+  "rtt_s": 0.0,
+  "s": {
+    "tcp": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "tcp_ss": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "zmq": {
+      "s0": 0.01474050303130426,
+      "s1": -0.00034820619007316727
+    },
+    "zmq_ss": {
+      "s0": 0.0,
+      "s1": 0.00041879053702083535
+    }
+  }
+}

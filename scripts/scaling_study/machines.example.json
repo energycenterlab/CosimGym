@@ -1,0 +1,14 @@
+{
+  "manager": {
+    "cores": 112,
+    "ram_mb": 257689
+  },
+  "machine_a": {
+    "cores": 32,
+    "ram_mb": 128000
+  },
+  "machine_b": {
+    "cores": 32,
+    "ram_mb": 128000
+  }
+}

@@ -1,0 +1,5 @@
+runs:
+  - {F: 1, N: 24, M: 1, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 12000, placement: local, ticks: 30}
+  - {F: 1, N: 1,  M: 12, mode: par, W: 4, core_type: zmq, model: heavy_compute_dummy, work: 30000, placement: local, ticks: 30}
+  - {F: 1, N: 56, M: 1, mode: seq, core_type: zmq, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
+  - {F: 1, N: 64, M: 1, mode: seq, core_type: zmq_ss, model: heavy_compute_dummy, work: 50000, placement: distributed_nat, ticks: 30}

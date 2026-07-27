@@ -1,0 +1,21 @@
+{
+  "c": {
+    "heavy_compute_dummy": {"a": 1.5103e-05, "b": 1.3437e-07},
+    "simple_building": {"a": 6.4e-05, "b": 0.0},
+    "simple_heatpump": {"a": 6.2e-05, "b": 0.0}
+  },
+  "s": {
+    "zmq": {"s0": 6.4762e-05, "s1": 2.6471e-06},
+    "zmq_ss": {"s0": 7.8018e-05, "s1": 1.5917e-06},
+    "tcp": {"s0": 0.0, "s1": 0.0},
+    "tcp_ss": {"s0": 0.0, "s1": 0.0}
+  },
+  "O_par": 0.04393,
+  "rss_per_instance_mb": {
+    "heavy_compute_dummy": 0.0,
+    "simple_building": 304.33,
+    "simple_heatpump": 305.21
+  },
+  "rtt_s": 0.0,
+  "notes": "HAND-ASSEMBLED per-axis-CLEAN params for Phase-5 validation (not cost_model.py's pooled `fit` output, which re-collinearizes when single-axis sweeps are concatenated -- same DoE gotcha flagged in phase01.md/phase4_distribution.md). Sourced from the ISOLATED single-axis sweeps only: c(heavy_compute_dummy) from results/scaling/bench_phase0b.csv (work-only sweep, N=1,M=1, matches phase1's independent b=1.3371e-7 to <1%); s(zmq) from results/scaling/bench_phase0a.csv (N-only sweep, M=1,work=1); s(zmq_ss) from findings/phase2b_distributed_nat_zmqss.csv (N-only sweep, distributed_nat placement -- s0/s1 here already include typical LAN/SSH RTT for this placement, hence rtt_s=0 to avoid double-counting); O_par from results/scaling/bench_phase1.csv's isolated fit (0.04393, matches phase01.md's two independent estimates 0.0329-0.0462 and the task-quoted ~0.039); rss_per_instance(heavy_compute_dummy)=0 confirmed flat in phase0d (peak_rss_mb ~304-305MB regardless of M in {1,4,16,64} -- base process footprint dominates, no measurable per-instance growth); simple_building/simple_heatpump c and rss from phase0c (M=1 only, not separable from base footprint for rss). Sanity check vs task-quoted primitives: b=1.3437e-7 matches quoted 1.34e-7 almost exactly; s1[zmq]=2.6471e-6 matches quoted 2.65e-6 almost exactly; O_par=0.04393 close to quoted ~0.039 (8% high, within phase01's own 0.033-0.046 spread); s0[zmq]=6.48e-5 is ~2x lower than the quoted 1.3e-4 (task's number likely traces to phase01.md's prose rounding of a slightly different N-window fit than the exact one reproduced here) and c's `a` intercept (1.51e-5 here vs quoted 1.6e-6) differs by an order of magnitude but is negligible either way against b*work for any work>~100 -- both flagged, neither changes the crossover-region predictions materially since a << b*work there."
+}

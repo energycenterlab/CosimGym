@@ -1,0 +1,18 @@
+# Phase 4a -- distribution overhead vs compute intensity.
+# Fixed N=48 (well under the SSH-ControlPath N>=112 cap from Phase 2), sweep
+# `work` from near-zero (sync-bound) to heavy (compute-bound) at both
+# placements. core_type pinned to zmq_ss for BOTH placements (not just
+# distributed_nat) so local and distributed are compared on the identical
+# wire protocol -- matches generate_scale_benchmark.py's twin-scenario logic
+# ("both scenarios must use the SAME core_type to stay comparable").
+axes:
+  F: [1]
+  N: [48]
+  M: [1]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq_ss]
+  model: [heavy_compute_dummy]
+  work: [1, 5000, 50000]
+  placement: [local, distributed_nat]
+  ticks: [30]

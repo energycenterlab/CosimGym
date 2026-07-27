@@ -1,0 +1,13 @@
+# Phase 0b -- cost c(work) for heavy_compute_dummy: fixed F/N/M, sweep work
+# param to fit c = a + b*work.
+axes:
+  F: [1]
+  N: [1]
+  M: [4]
+  mode: [seq]
+  W: [1]
+  core_type: [zmq]
+  model: [heavy_compute_dummy]
+  work: [1, 100, 1000, 5000, 20000]
+  placement: [local]
+  ticks: [30]

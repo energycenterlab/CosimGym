@@ -1,0 +1,10 @@
+axes:
+  F: [1]
+  N: [112, 150, 200]
+  M: [1]
+  mode: [seq]
+  core_type: [zmq_ss]
+  model: [heavy_compute_dummy]
+  work: [1]
+  placement: [distributed_nat]
+  ticks: [30]

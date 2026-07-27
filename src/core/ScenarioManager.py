@@ -16,10 +16,13 @@ import signal
 import os
 from pathlib import Path
 import shutil
+import tempfile
+import hashlib
 import atexit
 import threading
 import logging
 import json
+import statistics
 import pprint
 import socket
 import pandas as pd
@@ -119,7 +122,20 @@ class ScenarioManager:
         self.redis_url = None
         self.dynamic_catalog_index_key = None
 
-       
+        # D3 perf instrumentation (scaling-study CONTRACT.md): one cheap env check at
+        # this boundary. Every other perf hook in this class is gated behind
+        # `if self._perf_enabled:` — when unset, none of the time.time() calls, dict
+        # accumulation, or the final write happen, so behavior/overhead is unchanged.
+        # Federates are separate subprocesses and can't be observed tick-by-tick from
+        # here, so they self-record and write a fragment (BaseFederate._write_perf_fragment)
+        # under their own results dir; this manager only times what it can see directly
+        # (broker startup, federate spawn) and reduces every fragment + those manager-side
+        # timings into results/<scenario_name>/<sim_id>/perf.json in _write_perf_log.
+        self._perf_enabled = os.environ.get('COSIM_PERF_LOG') == '1'
+        if self._perf_enabled:
+            self._perf = {'broker_setup_s': 0.0, 'federate_spawn_s': 0.0}
+            self._perf_failure_reason = None
+
         # register various graceful and emergency cleanups
         atexit.register(self._emergency_cleanup)  # Register cleanup function to run on exit
         signal.signal(signal.SIGINT, self._signal_handler) # Register signal handlers for graceful shutdown
@@ -261,6 +277,12 @@ class ScenarioManager:
             except Exception:
                 pass
 
+        # D3 perf: written before the prune check below so a perf.json documenting a
+        # total failure (setup never got past broker/federate spawn) isn't itself pruned
+        # away as "nothing but metadata.json" — its presence is exactly why the folder
+        # is worth keeping in that case.
+        self._write_perf_log()
+
         self._prune_empty_results_folder()
 
         if success:
@@ -341,6 +363,8 @@ class ScenarioManager:
             failed = self.metrics['process_counts']['federates_failed']
             if failed:
                 started = self.metrics['process_counts']['federates_started']
+                if self._perf_enabled:
+                    self._perf_failure_reason = f"federate_failed:{failed}/{started}"
                 raise RuntimeError(
                     f"{failed}/{started} federate(s) exited with a non-zero code — see the per-federate "
                     f"logs under {self.logger_system.scenario_log_dir}/federates/"
@@ -351,9 +375,13 @@ class ScenarioManager:
 
         except KeyboardInterrupt:
             self.logger.warning("\nKeyboard interrupt received. Shutting down...")
+            if self._perf_enabled and not self._perf_failure_reason:
+                self._perf_failure_reason = "keyboard_interrupt"
             success = False
         except Exception as e:
             self.logger.error(f"Scenario error: {e}")
+            if self._perf_enabled and not self._perf_failure_reason:
+                self._perf_failure_reason = f"{type(e).__name__}: {e}"[:200]
             success = False
         finally:
             # Always cleanup (but only once due to lock mechanism)
@@ -447,6 +475,119 @@ class ScenarioManager:
                 self.logger.info(f"Removed empty results folder (run produced no results): {results_dir}")
         except Exception as e:
             self.logger.debug(f"Could not prune results folder {results_dir}: {e}")
+
+    def _write_perf_log(self):
+        """D3 perf log (scaling-study CONTRACT.md): reduce every federate's fragment
+        (`BaseFederate._write_perf_fragment`) plus this manager's own broker/spawn
+        timings into one `results/<scenario_name>/<sim_id>/perf.json`. No-op when
+        COSIM_PERF_LOG is unset. Never raises — perf logging must not affect cleanup
+        or the run's success/failure outcome.
+
+        Federates are separate subprocesses, so this manager cannot see per-tick
+        timing directly. Reduction across fragments (documented here per the
+        contract's "document whatever reduction you choose"):
+          - setup_s: max(fragment.ready_at) - scenario setup start. Both are wall-clock
+            time.time()/datetime.now(), exact for local federates; for distributed
+            federates this mixes clocks across machines (only as good as their NTP
+            sync). Falls back to the manager's own setup-phase duration if no fragment
+            recorded a ready_at (e.g. every federate died before its tick loop).
+          - sim_wall_s / n_ticks: each federate's own (first_tick_start -> last_tick_end)
+            span is measured on a single process's clock, so no cross-machine skew.
+            HELICS is lockstep, so the federate with the largest span is the one every
+            other federate waited on each tick ("the gating federate") — its span and
+            tick count become sim_wall_s/n_ticks.
+          - tick_mean_s/median_s/p95_s: computed from the gating federate's own
+            tick_times only (not pooled across federates) — a faster federate's tick
+            times would dilute the number that actually explains the wall-clock cost.
+          - failure_mode: a federate's own self-reported failure wins if present;
+            otherwise the manager-level reason captured in start_scenario's
+            except/failure-count paths; else null on clean success.
+        """
+        if not self._perf_enabled:
+            return
+        try:
+            repo_root = Path(__file__).resolve().parents[2]
+            sim_id = self.simulation_id[-15:]
+            results_dir = getattr(self, '_results_dir', None) or str(
+                repo_root / "results" / self.scenario_name / sim_id
+            )
+
+            fragments = []
+            if os.path.isdir(results_dir):
+                for frag_path in Path(results_dir).rglob('*_perf_fragment.json'):
+                    try:
+                        with open(frag_path) as f:
+                            fragments.append(json.load(f))
+                    except Exception as e:
+                        self.logger.warning(f"Could not read perf fragment {frag_path}: {e}")
+
+            setup_start_epoch = (
+                self.metrics['setup_start'].timestamp() if self.metrics.get('setup_start') else None
+            )
+            ready_ats = [f['ready_at'] for f in fragments if f.get('ready_at') is not None]
+            if ready_ats and setup_start_epoch is not None:
+                setup_s = max(ready_ats) - setup_start_epoch
+            else:
+                setup_s = self.metrics['phase_durations'].get('setup_duration') or 0.0
+
+            def _span(fragment):
+                if fragment.get('first_tick_start') is not None and fragment.get('last_tick_end') is not None:
+                    return fragment['last_tick_end'] - fragment['first_tick_start']
+                return 0.0
+
+            gating = max(fragments, key=_span, default=None)
+            if gating is not None and _span(gating) > 0:
+                sim_wall_s = _span(gating)
+                n_ticks = gating.get('n_ticks', 0)
+                tick_times = gating.get('tick_times') or []
+            else:
+                sim_wall_s = self.metrics['phase_durations'].get('simulation_duration') or 0.0
+                n_ticks = 0
+                tick_times = []
+
+            if tick_times:
+                tick_mean_s = statistics.mean(tick_times)
+                tick_median_s = statistics.median(tick_times)
+                tick_p95_s = self._percentile(tick_times, 0.95)
+            else:
+                tick_mean_s = 0.0
+                tick_median_s = 0.0
+                tick_p95_s = 0.0
+
+            failure_mode = next((f['failure_mode'] for f in fragments if f.get('failure_mode')), None)
+            if failure_mode is None:
+                failure_mode = getattr(self, '_perf_failure_reason', None)
+
+            perf_log = {
+                "sim_id": sim_id,
+                "scenario_name": self.scenario_name,
+                "setup_s": setup_s,
+                "broker_setup_s": self._perf.get('broker_setup_s', 0.0),
+                "federate_spawn_s": self._perf.get('federate_spawn_s', 0.0),
+                "sim_wall_s": sim_wall_s,
+                "n_ticks": n_ticks,
+                "tick_mean_s": tick_mean_s,
+                "tick_median_s": tick_median_s,
+                "tick_p95_s": tick_p95_s,
+                "failure_mode": failure_mode,
+            }
+
+            os.makedirs(results_dir, exist_ok=True)
+            perf_path = os.path.join(results_dir, "perf.json")
+            with open(perf_path, 'w') as f:
+                json.dump(perf_log, f, indent=2)
+            self.logger.info(f"Perf log written to {perf_path}")
+        except Exception as e:
+            self.logger.warning(f"Failed to write perf log: {e}")
+
+    @staticmethod
+    def _percentile(data, pct):
+        """Nearest-rank percentile without a numpy dependency (perf log keeps imports minimal)."""
+        if not data:
+            return 0.0
+        ordered = sorted(data)
+        idx = min(len(ordered) - 1, max(0, int(round(pct * (len(ordered) - 1)))))
+        return ordered[idx]
 
     def _setup_results_folder(self):
         repo_root = Path(__file__).resolve().parents[2]
@@ -717,7 +858,18 @@ class ScenarioManager:
             return
 
         deployment = self.config.deployment
-        control_dir = str(self.logger_system.scenario_log_dir / 'ssh_control')
+        # SSH ControlPath must stay short: OpenSSH's unix_listener() appends a ~17-char
+        # random suffix to ControlPath before binding an AF_UNIX socket (sun_path cap is
+        # 108 bytes total). Building this under scenario_log_dir (logs/<scenario_name>/
+        # <timestamp>/ssh_control/cm-<alias>) let the scenario name (which often embeds
+        # federate count N) push the base path past the limit at high N — the socket bind
+        # then fails with "too long for Unix domain socket". Use a short, fixed-width
+        # temp-dir path instead, keyed by a short hash of scenario_name+timestamp so
+        # concurrent runs (and re-runs of the same scenario) never collide.
+        run_hash = hashlib.sha1(
+            f'{self.logger_system.scenario_name}_{self.logger_system.run_timestamp}'.encode()
+        ).hexdigest()[:8]
+        control_dir = os.path.join(tempfile.gettempdir(), 'cosim-ssh', run_hash)
         project_root = str(Path(__file__).resolve().parents[2])
 
         used_aliases = {
@@ -789,17 +941,26 @@ class ScenarioManager:
             # federation, so federations can talk to each other (e.g. the RL case).
             # (for now with this method only 2 level hierarchy is supported)
             if self._hierarchy_broker_config is not None:
+                if self._perf_enabled:
+                    _t0 = time.time()
                 self._start_local_hierarchy_broker(self._hierarchy_broker_config)
+                if self._perf_enabled:
+                    self._perf['broker_setup_s'] += time.time() - _t0
             # uploading config for all federates
             self._upload_config_on_redis()
             self._enrich_dynamic_catalog_metadata()
             self._assert_catalog_ready()
             for federation_name, federation in self.config.federations.items():
                 self._setup_local_federation(federation_name, federation)
-            # Remote federates were only queued above: start them now, one ssh supervisor
-            # per machine, since a machine's federates can span federations. No-op when the
-            # scenario is fully local.
+            # Remote federates were only queued (by _create_federate ->
+            # _create_remote_federate) above: this is where they actually spawn, one ssh
+            # supervisor per machine, since a machine's federates can span federations.
+            # No-op when the scenario is fully local.
+            if self._perf_enabled:
+                _t0 = time.time()
             self._spawn_remote_batches()
+            if self._perf_enabled:
+                self._perf['federate_spawn_s'] += time.time() - _t0
 
     def _upload_config_on_redis(self):
         
@@ -1313,12 +1474,20 @@ class ScenarioManager:
         self.logger.info(f"Setting up federation: {federation_name}...")
 
         # Start broker for this federation (each federation has a broker)
+        if self._perf_enabled:
+            _t0 = time.time()
         self._start_local_federation_broker(federation_conf.broker_config, federation_name)
-        
+        if self._perf_enabled:
+            self._perf['broker_setup_s'] += time.time() - _t0
+
         # Start all federates of one federation
         for federate_name, federate_config in federation_conf.federate_configs.items():
+            if self._perf_enabled:
+                _t0 = time.time()
             self._create_federate(federate_name, federate_config, federation_name)
-    
+            if self._perf_enabled:
+                self._perf['federate_spawn_s'] += time.time() - _t0
+
 
         self.logger.info("All federates started. Monitoring execution...")
     
@@ -2106,6 +2275,7 @@ class ScenarioManager:
         if not self.remote_executors:
             return
 
+        control_dirs = set()
         for alias, executor in self.remote_executors.items():
             try:
                 # rc=1 (no match) is fine — we ignore the return code.
@@ -2116,6 +2286,13 @@ class ScenarioManager:
                 executor.close()
             except Exception as e:
                 self.logger.warning(f"[{alias}] closing ssh control master failed during cleanup: {e}")
+            control_dirs.add(executor.control_dir)
+
+        # The ssh ControlPath dir lives under the system temp dir (see
+        # _setup_remote_execution), not under the scenario's logs/ tree — remove it here
+        # so it doesn't linger once every control socket in it is closed.
+        for control_dir in control_dirs:
+            shutil.rmtree(control_dir, ignore_errors=True)
 
         self.remote_executors = {}
 

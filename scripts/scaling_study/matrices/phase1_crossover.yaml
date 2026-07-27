@@ -1,0 +1,14 @@
+# Phase 1 — instance-parallelism crossover (LOCAL, manager only, bounded).
+# Question: as per-instance model work grows, when does parallel_execution
+# overtake the sequential loop? Sweeps work x {seq,par} at fixed M.
+axes:
+  F: [1]
+  N: [1]
+  M: [8]
+  core_type: [zmq]
+  model: [heavy_compute_dummy]
+  placement: [local]
+  ticks: [20]
+  mode: [seq, par]
+  W: [4]
+  work: [1, 100, 500, 2000, 8000]

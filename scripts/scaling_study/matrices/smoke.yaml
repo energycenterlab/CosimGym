@@ -1,0 +1,19 @@
+# Tiny smoke matrix for run_bench.py (D2). Local only, heavy_compute_dummy, short
+# ticks -- meant to finish in well under a minute total, just enough to exercise
+# every column of the bench CSV. See CONTRACT.md D2 for the row schema and
+# scripts/scaling_study/gen_scenario.py (D1) for what each knob does.
+#
+# `axes:` is expanded to the cartesian product of all listed values (4 cells here:
+# M in {2,4} x mode in {seq,par}). Use `runs:` instead for an explicit list of
+# knob-dicts when the sweep isn't a clean cartesian product.
+axes:
+  F: [1]
+  N: [2]
+  M: [2, 4]
+  mode: [seq, par]
+  W: [2]
+  core_type: [zmq]
+  model: [heavy_compute_dummy]
+  work: [200]
+  placement: [local]
+  ticks: [10]

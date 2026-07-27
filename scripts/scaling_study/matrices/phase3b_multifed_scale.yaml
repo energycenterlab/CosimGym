@@ -1,0 +1,19 @@
+# Phase 3b -- scale TOTAL federate count via multifed sharding, LOCAL only
+# (no SSH/broker-count cap locally -- Phase 2 showed local zmq has no
+# federate-count ceiling through N=112 on a single federation; this checks
+# whether sharding across federations lets the total go well past that on
+# one machine). Trivial model, comms/sync-bound design as in 3a. Explicit
+# `runs:` list -- these four points are NOT a cartesian product of F and N.
+#
+# DEVIATION from the task's literal "core_type=zmq": same gen_scenario.py
+# port-spacing bug as phase3a (see that file's header) makes plain `zmq`
+# fail deterministically for ANY F>=2 locally (federation_f's paired
+# port+1 collides with federation_(f+1)'s port). Used `zmq_ss` instead for
+# all rows here (F=1 row included for continuity/consistency with the
+# F>=2 rows) -- reported as a harness bug, not fixed. See
+# phase3_federations.md.
+runs:
+  - {F: 1, N: 64, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
+  - {F: 4, N: 32, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
+  - {F: 8, N: 16, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
+  - {F: 8, N: 32, M: 1, mode: seq, W: 1, core_type: zmq_ss, model: heavy_compute_dummy, work: 1, placement: local, ticks: 30}
