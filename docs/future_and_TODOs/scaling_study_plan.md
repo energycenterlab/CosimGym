@@ -31,7 +31,7 @@ Answer three coupled questions for CosimGym at large scale:
 
 Two orthogonal gating knobs:
 - **Placement** — which machine each federate runs on (`deployment` + `host:`).
-- **Core type** — `zmq` / `tcp` / `zmq_ss` / `tcp_ss`; forced `*_ss` behind NAT.
+- **Core type** — `zmq` / `tcp` / `zmq_ss` / `tcp_ss`; forced `*_ss` behind NAT but try the canonical core type on NAT servers to chekc if the allowing commands worked.
 
 ---
 
@@ -263,3 +263,136 @@ Gates (repo convention `known_issues_from_regression.md` + "ask before massive r
 2. **Real case-study spec (Phase G):** which energy models, what data, what topology
    / scale — needed to design G's graph to mirror a Phase-D dummy graph.
 3. **Exclusive-machine window** for Phases E/F/G (clean distribution + stress).
+
+---
+
+## 8. Execution guide for a fresh session (READ BEFORE TOUCHING ANYTHING)
+
+This section makes the plan hand-off-safe. A new session implementing Part B MUST
+follow it exactly. It defines what may run autonomously, what must hard-stop, the
+exact interfaces to extend (no inventing schemas), and the "done" bar per phase.
+
+### 8.0 Read order (orient before coding)
+1. `scripts/scaling_study/findings/README.md` — canonical state (what exists, gaps).
+2. `scripts/scaling_study/CONTRACT.md` — the LOCKED knob/CSV/JSON schemas. Any new
+   knob MUST be added here first, matching its naming convention.
+3. `scripts/scaling_study/gen_scenario.py` — current generator (self-contained
+   federations, **no subscriptions**). Phase D extends this file, does not replace it.
+4. This §8. Then the relevant Part-B phase in §3.
+5. Repo root `CLAUDE.md` (env, ports, "ask before massive runs") + graphify rule
+   (`graphify query "<q>"` before reading source).
+
+### 8.1 Environment preamble (every run)
+```bash
+docker compose -f src/docker-compose.yaml up -d      # redis, mqtt, minio — must be up
+conda run -n cosim_gym python ...                     # `conda activate` fails from scripts here — use `conda run`
+# run from repo root ALWAYS. perf log is opt-in:
+COSIM_PERF_LOG=1 conda run -n cosim_gym python scripts/scaling_study/run_bench.py ...
+```
+If a `catalog.yaml` model is added/changed, reload Redis catalog:
+`conda run -n cosim_gym python src/models/model_catalog/catalog_loader.py`.
+
+### 8.2 Scope boundary — autonomous vs gated
+| Phase | Fresh session may run autonomously? |
+|-------|-------------------------------------|
+| **D** (data-exchange, LOCAL: intra-fed + cross-fed only) | **YES** — dummy models, local, tiny→moderate. This is the turnkey work. |
+| **D** cross-**machine** edges | **YES** — needs machines use cloud1 cloud5 and manager + go-ahead (see 8.7). |
+| **H** (broker-remote design note) | **YES** — writing a plan only, no runs. |
+| **E** (idle roofline) | **YES** — needs exclusive idle window + go-ahead. |
+| **F** (placement + stress) | **NO** — depends on D's comms fit + large runs + go-ahead. |
+| **G** (real case study) | **NO** — needs user model/data spec + go-ahead. |
+
+**Default: implement Phase D local + draft Phase H. STOP before anything that has go ahead, show wplain simply what you are going to perform/run and ask for permission.**
+
+### 8.3 Phase-D cross-wiring contract (extends CONTRACT.md — add these there too)
+Today every federate is self-contained (`subscribes: []`). Phase D adds a wiring
+layer to `gen_scenario.py`. New knobs (canonical names — add to CONTRACT.md D1 table
+AND the locked CSV column list, both, before use):
+
+| knob | type | meaning |
+|------|------|---------|
+| `exchange` | "none" \| "on" | wiring off (Part-A behavior, default) vs on |
+| `distance` | "intra_fed" \| "cross_fed" \| "cross_machine" | where subscribers live relative to publishers |
+| `fanout` | "1to1" \| "1toN" \| "Nto1" \| "all2all" | edge pattern between publisher/subscriber federates |
+| `msg_width` | int | payload vector length per published value |
+| `freq` | int | subscriber consumes every `freq`-th tick (1 = every tick) |
+| `causality` | "same_step" \| "next_step" | on critical path vs offset-absorbed |
+
+Wiring rules (deterministic, no cross-federation cycles for `intra_fed`):
+- Publisher key format stays catalog-derived. Subscription target strings MUST use
+  the repo's exact format: `<federate>.<instance>/<pub_key>` (same federation),
+  `<federation>.<federate>.<instance>/<pub_key>` (cross-federation). See CLAUDE.md
+  "Subscription target format".
+- `intra_fed`: wire within each federation only. `cross_fed`: wire federation f→f+1.
+  `cross_machine`: only valid under a distributed placement (gated).
+- `fanout` maps publisher federate(s) → subscriber federate(s) by the pattern above.
+- Backward-compat: `exchange: none` (default) MUST reproduce today's exact YAML —
+  verify a diff of a generated `exchange=none` scenario against the current output
+  is empty before landing the change.
+- `<out>.spec.json` gains the new knobs; `run_bench.py` writes them as new CSV columns.
+
+### 8.4 Dummy exchange model spec (new catalog model)
+`heavy_compute_dummy` has NO inputs — it cannot receive data, so Phase D needs a
+model that actually consumes subscriptions. Add `exchange_dummy` (near-zero compute,
+the comms-isolating counterpart to the compute-isolating heavy/light dummies):
+- Params: `msg_width` (int, output vector length), optional `iterations` (default 0,
+  reuse the busy-loop only if a compute+comms combo cell is needed).
+- Declares a vector output of length `msg_width` in `catalog.yaml` outputs.
+- `step()`: MUST read every subscribed input value (touch it — e.g. sum into a field
+  the output depends on) so HELICS actually transfers the payload and the optimizer
+  can't elide it. Publishes its `msg_width`-wide output. Otherwise no work.
+- Register in `catalog.yaml`, reload Redis catalog (8.1). Add a regression scenario
+  per repo convention (CLAUDE.md pre-merge suite is the living contract).
+
+### 8.5 `comms` fit signature (extends the locked fit_params.json)
+Add to `cost_model.py fit` and the fitted-params JSON (CONTRACT.md D4 block):
+```json
+"comms": {
+  "per_edge_s":  {"intra_fed": 0.0, "cross_fed": 0.0, "cross_machine": 0.0},
+  "per_byte_s":  0.0,           // marginal cost of msg_width payload
+  "fixed_per_sub_s": 0.0        // per-subscription registration/poll cost
+}
+```
+`predict()` adds `comms_m = Σ_edges(per_edge_s[distance] + per_byte_s·bytes) +
+fixed_per_sub_s·n_subs` into `T_tick` (plan §2). `fit` must recover a synthetic
+ground truth exactly (same discipline used for `c`/`s`/`O_par` in Part A).
+
+### 8.6 Per-phase acceptance criteria (self-verify; don't declare done without these)
+**Phase D (autonomous target):**
+1. `gen_scenario.py --exchange on --distance intra_fed --fanout 1to1 --msg-width 1
+   --F 1 --N 2 --M 1 --ticks 10 --placement local` emits valid YAML whose subscriber
+   federate has a non-empty `subscribes:` list with a correctly-formatted target.
+2. `--exchange none` output is byte-identical to the pre-change generator (empty diff).
+3. Smoke run (10 ticks, local) of an `intra_fed 1to1` scenario completes with
+   `failure_mode` empty AND the subscriber observably receives non-zero data.
+4. A local `matrices/phaseD_local.yaml` (distance∈{intra,cross_fed} × fanout ×
+   msg_width × freq × causality, tiny) runs green via `run_bench.py`; CSV has the new columns.
+5. `cost_model.py fit` on that CSV emits a `comms` block; a synthetic round-trip
+   recovers the injected coefficients within ~10%.
+6. One plot: throughput vs coupling per distance (extend `make_report.py`).
+7. `paper_ready_sentences.md` gains a data-exchange subsection; `findings/README.md`
+   updated (it is canonical — record Phase D there).
+
+**Phase H (autonomous):** a design note appended to §3 Phase H (or a leaf it links) —
+no code. Covers `broker_config.host`, inverted uplink discovery, SSH broker spawn/monitor.
+
+### 8.7 HARD STOP gates (do NOT cross without explicit user go-ahead)
+Stop, report what's ready, and ask — never proceed past any of these autonomously:
+- Any **cross-machine / distributed** run (Phase D cross_machine, E, F, G).
+- Any run larger than **F=2, N=4, M=4, ticks=30** on the shared manager.
+- Any run when `uptime` shows high load or `free -g` shows the 40%-free-RAM budget
+  would be exceeded — check both immediately before scaling up.
+- Phase G at all — it requires the user's model/data/topology spec first (§7).
+- Config B — machine params are `TBD_*` placeholders in `gen_scenario.py`; do not
+  invent them.
+
+### 8.8 Anti-digression rules
+- **Do not** create parallel docs/harness. Extend the existing files (§4.1 map). The
+  ONLY canonical result doc is `findings/README.md`; the ONLY plan is this file.
+- **Do not** relax `CONTRACT.md` schemas silently — extend them explicitly, in-place.
+- **`run_bench.py` APPENDS** to its CSV — delete the target CSV before any rerun or a
+  fit will mix work levels (this exact bug already bit Phase 1b).
+- **Do not** change behavior when `COSIM_PERF_LOG` is unset (zero-overhead rule).
+- Match existing code style; add a regression scenario for every new feature.
+- Report back: files changed, how smoke-tested, any CONTRACT deviation — then STOP at
+  the first §8.7 gate and hand back to the user.

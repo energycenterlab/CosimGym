@@ -1279,7 +1279,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_base_adapter",
-      "community": 158,
+      "community": 61,
       "norm_label": "base_adapter.py"
     },
     {
@@ -1289,7 +1289,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_interfaceadapter",
-      "community": 153,
+      "community": 61,
       "norm_label": "interfaceadapter"
     },
     {
@@ -1299,7 +1299,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "abc",
-      "community": 69,
+      "community": 61,
       "norm_label": "abc"
     },
     {
@@ -1309,7 +1309,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_interfaceadapter_connect",
-      "community": 153,
+      "community": 61,
       "norm_label": ".connect()"
     },
     {
@@ -1319,7 +1319,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_interfaceadapter_publish",
-      "community": 153,
+      "community": 61,
       "norm_label": ".publish()"
     },
     {
@@ -1329,7 +1329,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_py_any",
-      "community": 153,
+      "community": 61,
       "norm_label": "any"
     },
     {
@@ -1339,7 +1339,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_interfaceadapter_subscribe",
-      "community": 153,
+      "community": 61,
       "norm_label": ".subscribe()"
     },
     {
@@ -1349,7 +1349,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_interfaceadapter_latest",
-      "community": 153,
+      "community": 61,
       "norm_label": ".latest()"
     },
     {
@@ -1359,7 +1359,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_interfaceadapter_close",
-      "community": 153,
+      "community": 61,
       "norm_label": ".close()"
     },
     {
@@ -1369,7 +1369,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_1",
-      "community": 158,
+      "community": 61,
       "norm_label": "base_adapter.py  abstract transport adapter used by the `stream` outbound mirror"
     },
     {
@@ -1379,7 +1379,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_19",
-      "community": 153,
+      "community": 61,
       "norm_label": "transport adapter contract shared by the `stream` mirror and interfacefederate."
     },
     {
@@ -1389,7 +1389,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_23",
-      "community": 153,
+      "community": 61,
       "norm_label": "open the transport connection. must not block the sim thread once returned."
     },
     {
@@ -1399,7 +1399,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_27",
-      "community": 153,
+      "community": 61,
       "norm_label": "enqueue *payload* for outbound delivery on *topic*. non-blocking."
     },
     {
@@ -1409,7 +1409,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_31",
-      "community": 153,
+      "community": 61,
       "norm_label": "subscribe to *topics* so their values become readable via `latest()`."
     },
     {
@@ -1419,7 +1419,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_35",
-      "community": 153,
+      "community": 61,
       "norm_label": "return the most recently received payload for *topic*, or none."
     },
     {
@@ -1429,7 +1429,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_adapters_base_adapter_rationale_39",
-      "community": 153,
+      "community": 61,
       "norm_label": "close the transport connection and stop any background threads."
     },
     {
@@ -1439,7 +1439,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_mqtt_adapter",
-      "community": 158,
+      "community": 61,
       "norm_label": "mqtt_adapter.py"
     },
     {
@@ -1569,7 +1569,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_adapters_mqtt_adapter_rationale_1",
-      "community": 158,
+      "community": 61,
       "norm_label": "mqtt_adapter.py  mqtt implementation of interfaceadapter, backed by mosquitto. `"
     },
     {
@@ -1659,7 +1659,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_basefederate",
-      "community": 158,
+      "community": 146,
       "norm_label": "basefederate.py"
     },
     {
@@ -1819,7 +1819,7 @@
       "source_location": "L565",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_write_perf_fragment",
-      "community": 30,
+      "community": 153,
       "norm_label": "._write_perf_fragment()"
     },
     {
@@ -1829,7 +1829,7 @@
       "source_location": "L598",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_results_base_dir",
-      "community": 30,
+      "community": 153,
       "norm_label": "._results_base_dir()"
     },
     {
@@ -1839,7 +1839,7 @@
       "source_location": "L604",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_store_local_file",
-      "community": 30,
+      "community": 153,
       "norm_label": ".store_local_file()"
     },
     {
@@ -1859,7 +1859,7 @@
       "source_location": "L642",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_read_subscription_value",
-      "community": 25,
+      "community": 160,
       "norm_label": "._read_subscription_value()"
     },
     {
@@ -1999,7 +1999,7 @@
       "source_location": "L827",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_receive_inputs",
-      "community": 25,
+      "community": 160,
       "norm_label": "._receive_inputs()"
     },
     {
@@ -2049,7 +2049,7 @@
       "source_location": "L925",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_update_storage",
-      "community": 30,
+      "community": 153,
       "norm_label": ".update_storage()"
     },
     {
@@ -2059,7 +2059,7 @@
       "source_location": "L967",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_enqueue_async_storage_row",
-      "community": 30,
+      "community": 153,
       "norm_label": "._enqueue_async_storage_row()"
     },
     {
@@ -2069,7 +2069,7 @@
       "source_location": "L992",
       "_origin": "ast",
       "id": "src_core_basefederate_basefederate_stream_outbound",
-      "community": 61,
+      "community": 30,
       "norm_label": "._stream_outbound()"
     },
     {
@@ -2109,7 +2109,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_1",
-      "community": 158,
+      "community": 146,
       "norm_label": "basefederate.py  base class for helics federates in the cosim_gym framework, man"
     },
     {
@@ -2209,7 +2209,7 @@
       "source_location": "L566",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_566",
-      "community": 30,
+      "community": 153,
       "norm_label": "d3 perf instrumentation: write this federate's own tick-timing fragment."
     },
     {
@@ -2219,7 +2219,7 @@
       "source_location": "L605",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_605",
-      "community": 30,
+      "community": 153,
       "norm_label": "store each mode partition as a separate json file (train / test).         will b"
     },
     {
@@ -2239,7 +2239,7 @@
       "source_location": "L643",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_643",
-      "community": 25,
+      "community": 160,
       "norm_label": "read the current helics input value based on declared type."
     },
     {
@@ -2279,7 +2279,7 @@
       "source_location": "L828",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_828",
-      "community": 25,
+      "community": 160,
       "norm_label": "method to receive inputs from subscriptions and endpoints. thought to be overrid"
     },
     {
@@ -2319,7 +2319,7 @@
       "source_location": "L968",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_968",
-      "community": 30,
+      "community": 153,
       "norm_label": "hands a per-tick row snapshot to the background asyncstoragewriter         (s1),"
     },
     {
@@ -2329,7 +2329,7 @@
       "source_location": "L993",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_993",
-      "community": 61,
+      "community": 30,
       "norm_label": "opt-in mqtt mirror of this step's inputs/outputs for live dashboards.         no"
     },
     {
@@ -2349,7 +2349,7 @@
       "source_location": "L482",
       "_origin": "ast",
       "id": "src_core_basefederate_rationale_482",
-      "community": 158,
+      "community": 146,
       "norm_label": "# todo: unclear whether the first time-advance request should target step 0 or s"
     },
     {
@@ -2449,7 +2449,7 @@
       "source_location": "L221",
       "_origin": "ast",
       "id": "src_core_interfacefederate_interfacefederate_publish_outputs",
-      "community": 160,
+      "community": 108,
       "norm_label": "._publish_outputs()"
     },
     {
@@ -2459,7 +2459,7 @@
       "source_location": "L250",
       "_origin": "ast",
       "id": "src_core_interfacefederate_interfacefederate_publish_override_bridges",
-      "community": 160,
+      "community": 108,
       "norm_label": "._publish_override_bridges()"
     },
     {
@@ -2479,7 +2479,7 @@
       "source_location": "L337",
       "_origin": "ast",
       "id": "src_core_interfacefederate_interfacefederate_finalize",
-      "community": 160,
+      "community": 108,
       "norm_label": ".finalize()"
     },
     {
@@ -2549,7 +2549,7 @@
       "source_location": "L222",
       "_origin": "ast",
       "id": "src_core_interfacefederate_rationale_222",
-      "community": 160,
+      "community": 108,
       "norm_label": "publish each 'input'-scope bridge's current value: the external adapter"
     },
     {
@@ -2559,7 +2559,7 @@
       "source_location": "L251",
       "_origin": "ast",
       "id": "src_core_interfacefederate_rationale_251",
-      "community": 160,
+      "community": 108,
       "norm_label": "`scope: output`/`param` bridges: write (or clear) the shared override         re"
     },
     {
@@ -3209,7 +3209,7 @@
       "source_location": "L391",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_setup_scenario",
-      "community": 170,
+      "community": 43,
       "norm_label": "._setup_scenario()"
     },
     {
@@ -3259,7 +3259,7 @@
       "source_location": "L615",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_get_rl_period",
-      "community": 170,
+      "community": 43,
       "norm_label": "._get_rl_period()"
     },
     {
@@ -3269,7 +3269,7 @@
       "source_location": "L625",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_get_rl_pubsubs",
-      "community": 10,
+      "community": 43,
       "norm_label": "._get_rl_pubsubs()"
     },
     {
@@ -3279,7 +3279,7 @@
       "source_location": "L659",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_get_rl_controlled_models",
-      "community": 170,
+      "community": 43,
       "norm_label": "._get_rl_controlled_models()"
     },
     {
@@ -3289,7 +3289,7 @@
       "source_location": "L665",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_build_rl_reset_observation_defaults",
-      "community": 170,
+      "community": 43,
       "norm_label": "._build_rl_reset_observation_defaults()"
     },
     {
@@ -3299,7 +3299,7 @@
       "source_location": "L720",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_offline_learning",
-      "community": 170,
+      "community": 43,
       "norm_label": "._offline_learning()"
     },
     {
@@ -3309,7 +3309,7 @@
       "source_location": "L727",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_create_rl_federation",
-      "community": 170,
+      "community": 43,
       "norm_label": "._create_rl_federation()"
     },
     {
@@ -3319,7 +3319,7 @@
       "source_location": "L795",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_modify_config_for_testing",
-      "community": 170,
+      "community": 43,
       "norm_label": "._modify_config_for_testing()"
     },
     {
@@ -3329,7 +3329,7 @@
       "source_location": "L825",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_modify_config_for_online_training",
-      "community": 170,
+      "community": 43,
       "norm_label": "._modify_config_for_online_training()"
     },
     {
@@ -3569,7 +3569,7 @@
       "source_location": "L1466",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_setup_local_federation",
-      "community": 43,
+      "community": 22,
       "norm_label": "._setup_local_federation()"
     },
     {
@@ -3589,7 +3589,7 @@
       "source_location": "L1513",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_broker_binds_externally",
-      "community": 43,
+      "community": 22,
       "norm_label": "._broker_binds_externally()"
     },
     {
@@ -3599,7 +3599,7 @@
       "source_location": "L1523",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_port_is_free",
-      "community": 43,
+      "community": 22,
       "norm_label": "._port_is_free()"
     },
     {
@@ -3609,7 +3609,7 @@
       "source_location": "L1546",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_broker_ports",
-      "community": 43,
+      "community": 22,
       "norm_label": "._broker_ports()"
     },
     {
@@ -3619,7 +3619,7 @@
       "source_location": "L1553",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_assert_broker_ports_free",
-      "community": 43,
+      "community": 22,
       "norm_label": "._assert_broker_ports_free()"
     },
     {
@@ -3629,7 +3629,7 @@
       "source_location": "L1567",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_wait_for_broker_listening",
-      "community": 43,
+      "community": 22,
       "norm_label": "._wait_for_broker_listening()"
     },
     {
@@ -3649,7 +3649,7 @@
       "source_location": "L1802",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_start_local_hierarchy_broker",
-      "community": 43,
+      "community": 22,
       "norm_label": "._start_local_hierarchy_broker()"
     },
     {
@@ -3659,7 +3659,7 @@
       "source_location": "L1864",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_start_local_federation_broker",
-      "community": 43,
+      "community": 22,
       "norm_label": "._start_local_federation_broker()"
     },
     {
@@ -3669,7 +3669,7 @@
       "source_location": "L1926",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_start_broker_log_reader",
-      "community": 43,
+      "community": 22,
       "norm_label": "._start_broker_log_reader()"
     },
     {
@@ -3679,7 +3679,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_core_scenariomanager_py_popen",
-      "community": 43,
+      "community": 22,
       "norm_label": "popen"
     },
     {
@@ -3689,7 +3689,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_core_scenariomanager_py_logger",
-      "community": 43,
+      "community": 22,
       "norm_label": "logger"
     },
     {
@@ -3699,7 +3699,7 @@
       "source_location": "L1940",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_broker_cmd_logger_set",
-      "community": 43,
+      "community": 22,
       "norm_label": "._broker_cmd_logger_set()"
     },
     {
@@ -3709,7 +3709,7 @@
       "source_location": "L1953",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_build_federate_args",
-      "community": 43,
+      "community": 22,
       "norm_label": "._build_federate_args()"
     },
     {
@@ -3719,7 +3719,7 @@
       "source_location": "L1977",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_redis_url_for",
-      "community": 43,
+      "community": 22,
       "norm_label": "._redis_url_for()"
     },
     {
@@ -3729,7 +3729,7 @@
       "source_location": "L1985",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_create_federate",
-      "community": 43,
+      "community": 22,
       "norm_label": "._create_federate()"
     },
     {
@@ -3739,7 +3739,7 @@
       "source_location": "L1996",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_create_local_federate",
-      "community": 43,
+      "community": 22,
       "norm_label": "._create_local_federate()"
     },
     {
@@ -3749,7 +3749,7 @@
       "source_location": "L2049",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_create_remote_federate",
-      "community": 43,
+      "community": 22,
       "norm_label": "._create_remote_federate()"
     },
     {
@@ -3849,7 +3849,7 @@
       "source_location": "L2326",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_get_running_processes",
-      "community": 150,
+      "community": 70,
       "norm_label": ".get_running_processes()"
     },
     {
@@ -3879,7 +3879,7 @@
       "source_location": "L2413",
       "_origin": "ast",
       "id": "src_core_scenariomanager_scenariomanager_get_execution_metrics",
-      "community": 150,
+      "community": 70,
       "norm_label": ".get_execution_metrics()"
     },
     {
@@ -3889,7 +3889,7 @@
       "source_location": "L2423",
       "_origin": "ast",
       "id": "src_core_scenariomanager_main",
-      "community": 150,
+      "community": 70,
       "norm_label": "main()"
     },
     {
@@ -3969,7 +3969,7 @@
       "source_location": "L392",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_392",
-      "community": 170,
+      "community": 43,
       "norm_label": "set up the scenario by initializing all federations."
     },
     {
@@ -4059,7 +4059,7 @@
       "source_location": "L1467",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1467",
-      "community": 43,
+      "community": 22,
       "norm_label": "set up the federation by starting broker and all federates.                  thi"
     },
     {
@@ -4069,7 +4069,7 @@
       "source_location": "L1514",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1514",
-      "community": 43,
+      "community": 22,
       "norm_label": "true if this broker must accept connections from other machines.          keyed"
     },
     {
@@ -4079,7 +4079,7 @@
       "source_location": "L1524",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1524",
-      "community": 43,
+      "community": 22,
       "norm_label": "true if a broker could bind `port` on this machine right now.          probing b"
     },
     {
@@ -4089,7 +4089,7 @@
       "source_location": "L1547",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1547",
-      "community": 43,
+      "community": 22,
       "norm_label": "every port a broker occupies: the advertised one, plus zmq's paired reply socket"
     },
     {
@@ -4099,7 +4099,7 @@
       "source_location": "L1554",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1554",
-      "community": 43,
+      "community": 22,
       "norm_label": "fail before spawning a broker whose ports are already taken.          most often"
     },
     {
@@ -4109,7 +4109,7 @@
       "source_location": "L1568",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1568",
-      "community": 43,
+      "community": 22,
       "norm_label": "block until the broker is really accepting connections, or raise.          a bri"
     },
     {
@@ -4129,7 +4129,7 @@
       "source_location": "L1803",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1803",
-      "community": 43,
+      "community": 22,
       "norm_label": "start a hierarchy broker for multi-federation coordination."
     },
     {
@@ -4139,7 +4139,7 @@
       "source_location": "L1865",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1865",
-      "community": 43,
+      "community": 22,
       "norm_label": "start helics broker for a federation with logging support."
     },
     {
@@ -4149,7 +4149,7 @@
       "source_location": "L1927",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1927",
-      "community": 43,
+      "community": 22,
       "norm_label": "spawn daemon threads that drain broker stdout/stderr into broker_logger."
     },
     {
@@ -4159,7 +4159,7 @@
       "source_location": "L1954",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1954",
-      "community": 43,
+      "community": 22,
       "norm_label": "build the federate_launcher.py cli arg list, shared by the local and remote spaw"
     },
     {
@@ -4169,7 +4169,7 @@
       "source_location": "L1978",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1978",
-      "community": 43,
+      "community": 22,
       "norm_label": "redis url a federate should use: manager_address for a remote federate (redis al"
     },
     {
@@ -4179,7 +4179,7 @@
       "source_location": "L1986",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1986",
-      "community": 43,
+      "community": 22,
       "norm_label": "create and start one federate, dispatching to local popen or remote ssh spawn."
     },
     {
@@ -4189,7 +4189,7 @@
       "source_location": "L1997",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_1997",
-      "community": 43,
+      "community": 22,
       "norm_label": "create and start a federate subprocess with logging support.         uses redis"
     },
     {
@@ -4199,7 +4199,7 @@
       "source_location": "L2050",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_2050",
-      "community": 43,
+      "community": 22,
       "norm_label": "queue a federate to be started on a remote machine; does not spawn it yet."
     },
     {
@@ -4299,7 +4299,7 @@
       "source_location": "L2327",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_2327",
-      "community": 150,
+      "community": 70,
       "norm_label": "get status of all managed processes for debugging."
     },
     {
@@ -4329,7 +4329,7 @@
       "source_location": "L2414",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_2414",
-      "community": 150,
+      "community": 70,
       "norm_label": "return copy of current metrics dict."
     },
     {
@@ -4339,7 +4339,7 @@
       "source_location": "L2424",
       "_origin": "ast",
       "id": "src_core_scenariomanager_rationale_2424",
-      "community": 150,
+      "community": 70,
       "norm_label": "entry point: run the named scenario (from src/scenarios/) end-to-end via scenari"
     },
     {
@@ -4399,7 +4399,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_init",
-      "community": 150,
+      "community": 70,
       "norm_label": "__init__.py"
     },
     {
@@ -4409,7 +4409,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_init_rationale_1",
-      "community": 150,
+      "community": 70,
       "norm_label": "core module  this module contains the core functionality for managing helics fed"
     },
     {
@@ -4479,7 +4479,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_core_override_registry_parse_target",
-      "community": 160,
+      "community": 108,
       "norm_label": "parse_target()"
     },
     {
@@ -4559,7 +4559,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_core_override_registry_rationale_33",
-      "community": 160,
+      "community": 108,
       "norm_label": "parse a bridge's `helics_key` (an override target, not a helics name here)     i"
     },
     {
@@ -5289,7 +5289,7 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_get_scenarios",
-      "community": 4,
+      "community": 41,
       "norm_label": "get_scenarios()"
     },
     {
@@ -5299,7 +5299,7 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_get_simulation_ids",
-      "community": 4,
+      "community": 41,
       "norm_label": "get_simulation_ids()"
     },
     {
@@ -5419,7 +5419,7 @@
       "source_location": "L393",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_render_sidebar",
-      "community": 4,
+      "community": 41,
       "norm_label": "render_sidebar()"
     },
     {
@@ -5479,7 +5479,7 @@
       "source_location": "L749",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_render_rl_episode_section",
-      "community": 57,
+      "community": 4,
       "norm_label": "render_rl_episode_section()"
     },
     {
@@ -5569,7 +5569,7 @@
       "source_location": "L886",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_reset_plot_state_if_selection_changed",
-      "community": 4,
+      "community": 41,
       "norm_label": "_reset_plot_state_if_selection_changed()"
     },
     {
@@ -5609,7 +5609,7 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_rationale_110",
-      "community": 4,
+      "community": 41,
       "norm_label": "get scenarios using metadata index cache for faster lookups."
     },
     {
@@ -5619,7 +5619,7 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_app_rationale_118",
-      "community": 4,
+      "community": 41,
       "norm_label": "get simulation ids using metadata index cache."
     },
     {
@@ -5669,7 +5669,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_cache",
-      "community": 15,
+      "community": 41,
       "norm_label": "dashboard_cache.py"
     },
     {
@@ -5819,7 +5819,7 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_cache_get_global_metadata_index",
-      "community": 4,
+      "community": 41,
       "norm_label": "get_global_metadata_index()"
     },
     {
@@ -5829,7 +5829,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_cache_rationale_1",
-      "community": 15,
+      "community": 41,
       "norm_label": "advanced caching layer for dashboard performance optimization. handles persisten"
     },
     {
@@ -5939,7 +5939,7 @@
       "source_location": "L164",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_cache_rationale_164",
-      "community": 4,
+      "community": 41,
       "norm_label": "get the global metadata index instance."
     },
     {
@@ -6149,7 +6149,7 @@
       "source_location": "L276",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_build_dataframe",
-      "community": 109,
+      "community": 14,
       "norm_label": "build_dataframe()"
     },
     {
@@ -6159,7 +6159,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_py_dataframe",
-      "community": 109,
+      "community": 14,
       "norm_label": "dataframe"
     },
     {
@@ -6169,7 +6169,7 @@
       "source_location": "L307",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_build_episode_dataframe",
-      "community": 109,
+      "community": 14,
       "norm_label": "build_episode_dataframe()"
     },
     {
@@ -6339,7 +6339,7 @@
       "source_location": "L285",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_rationale_285",
-      "community": 109,
+      "community": 14,
       "norm_label": "build a filtered time-series dataframe from flat storage records."
     },
     {
@@ -6349,7 +6349,7 @@
       "source_location": "L308",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_data_rationale_308",
-      "community": 109,
+      "community": 14,
       "norm_label": "build an rl episode-level dataframe from flat records."
     },
     {
@@ -6449,7 +6449,7 @@
       "source_location": "L151",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_parquet_cache_clear_parquet_cache",
-      "community": 4,
+      "community": 41,
       "norm_label": "clear_parquet_cache()"
     },
     {
@@ -6509,7 +6509,7 @@
       "source_location": "L152",
       "_origin": "ast",
       "id": "src_dashboard_dashboard_parquet_cache_rationale_152",
-      "community": 4,
+      "community": 41,
       "norm_label": "clear all parquet cache files."
     },
     {
@@ -6767,7 +6767,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dashboard_streamlit_dashboard",
-      "community": 19,
+      "community": 4,
       "norm_label": "streamlit_dashboard.py"
     },
     {
@@ -6777,7 +6777,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dashboard_streamlit_dashboard_rationale_1",
-      "community": 19,
+      "community": 4,
       "norm_label": "streamlit application entrypoint. combines the post-run results explorer (`dashb"
     },
     {
@@ -7297,7 +7297,7 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rlagent_compute_reward",
-      "community": 49,
+      "community": 158,
       "norm_label": ".compute_reward()"
     },
     {
@@ -7307,7 +7307,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rlagent_desanitize_obs_if_needed",
-      "community": 49,
+      "community": 158,
       "norm_label": "._desanitize_obs_if_needed()"
     },
     {
@@ -7477,7 +7477,7 @@
       "source_location": "L566",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_dictkeynamewrapper_desanitize_observation",
-      "community": 49,
+      "community": 158,
       "norm_label": ".desanitize_observation()"
     },
     {
@@ -7547,7 +7547,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rationale_94",
-      "community": 49,
+      "community": 158,
       "norm_label": "compute reward for the current transition.          if a reward function was spe"
     },
     {
@@ -7557,7 +7557,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rationale_113",
-      "community": 49,
+      "community": 158,
       "norm_label": "desanitize observation if dictkeynamewrapper is in the env wrapper chain."
     },
     {
@@ -7717,7 +7717,7 @@
       "source_location": "L567",
       "_origin": "ast",
       "id": "src_models_base_agent_rl_rationale_567",
-      "community": 49,
+      "community": 158,
       "norm_label": "convert observation dict keys from sanitized format back to original format with"
     },
     {
@@ -8987,7 +8987,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions",
-      "community": 163,
+      "community": 32,
       "norm_label": "reward_functions.py"
     },
     {
@@ -8997,7 +8997,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_spring_oscillation_reward",
-      "community": 163,
+      "community": 32,
       "norm_label": "spring_oscillation_reward()"
     },
     {
@@ -9007,7 +9007,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_heatpump_comfort_efficiency_reward",
-      "community": 163,
+      "community": 32,
       "norm_label": "heatpump_comfort_efficiency_reward()"
     },
     {
@@ -9017,7 +9017,7 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_building_heatpump_comfort",
-      "community": 41,
+      "community": 32,
       "norm_label": "building_heatpump_comfort()"
     },
     {
@@ -9027,7 +9027,7 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_soc_reward",
-      "community": 171,
+      "community": 32,
       "norm_label": "soc_reward()"
     },
     {
@@ -9037,7 +9037,7 @@
       "source_location": "L190",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_soc_band_clip_simple",
-      "community": 163,
+      "community": 32,
       "norm_label": "soc_band_clip_simple()"
     },
     {
@@ -9047,7 +9047,7 @@
       "source_location": "L251",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_bui0_setpoint_comfort",
-      "community": 167,
+      "community": 32,
       "norm_label": "bui0_setpoint_comfort()"
     },
     {
@@ -9057,7 +9057,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_1",
-      "community": 163,
+      "community": 32,
       "norm_label": "reward functions library  centralised collection of reward functions for use acr"
     },
     {
@@ -9067,7 +9067,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_27",
-      "community": 163,
+      "community": 32,
       "norm_label": "encourages the spring-mass-damper to oscillate between +1 m and -1 m.      terms"
     },
     {
@@ -9077,7 +9077,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_53",
-      "community": 163,
+      "community": 32,
       "norm_label": "balances thermal comfort and energy efficiency for the building/heat-pump scenar"
     },
     {
@@ -9087,7 +9087,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_94",
-      "community": 41,
+      "community": 32,
       "norm_label": "comfort-only reward for the building/heat-pump scenario.      encourages maintai"
     },
     {
@@ -9097,7 +9097,7 @@
       "source_location": "L191",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_191",
-      "community": 163,
+      "community": 32,
       "norm_label": "simple, well-scaled reward for battery case studies:       1) keep soc inside [0"
     },
     {
@@ -9107,7 +9107,7 @@
       "source_location": "L252",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_reward_functions_rationale_252",
-      "community": 167,
+      "community": 32,
       "norm_label": "comfort(+optional energy) reward for the bui0 energyplus fmu setpoint-control ex"
     },
     {
@@ -9457,7 +9457,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent",
-      "community": 74,
+      "community": 49,
       "norm_label": "rl_simple_agent.py"
     },
     {
@@ -9467,7 +9467,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent",
-      "community": 74,
+      "community": 49,
       "norm_label": "rl_simple_agent"
     },
     {
@@ -9477,7 +9477,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_init",
-      "community": 74,
+      "community": 49,
       "norm_label": ".__init__()"
     },
     {
@@ -9487,7 +9487,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_act",
-      "community": 74,
+      "community": 49,
       "norm_label": ".act()"
     },
     {
@@ -9497,7 +9497,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_compute_reward",
-      "community": 74,
+      "community": 49,
       "norm_label": ".compute_reward()"
     },
     {
@@ -9507,7 +9507,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_online_training_loop",
-      "community": 74,
+      "community": 49,
       "norm_label": ".online_training_loop()"
     },
     {
@@ -9517,7 +9517,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rl_simple_agent_testing_loop",
-      "community": 74,
+      "community": 49,
       "norm_label": ".testing_loop()"
     },
     {
@@ -9527,7 +9527,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_rl_agents_rl_simple_agent_rationale_1",
-      "community": 74,
+      "community": 49,
       "norm_label": "rl_simple_agent.py  skeleton implementation for a simple rl agent providing a te"
     },
     {
@@ -11837,7 +11837,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_resources_generate_electric_load_profile",
-      "community": 169,
+      "community": 56,
       "norm_label": "generate_electric_load_profile.py"
     },
     {
@@ -12247,7 +12247,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_test_input_model",
-      "community": 22,
+      "community": 130,
       "norm_label": "test_input_model.py"
     },
     {
@@ -12257,7 +12257,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_test_input_model_testinputmodel",
-      "community": 22,
+      "community": 130,
       "norm_label": "testinputmodel"
     },
     {
@@ -12267,7 +12267,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_test_input_model_testinputmodel_init",
-      "community": 22,
+      "community": 130,
       "norm_label": ".__init__()"
     },
     {
@@ -12277,7 +12277,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_test_input_model_testinputmodel_initialize",
-      "community": 22,
+      "community": 130,
       "norm_label": ".initialize()"
     },
     {
@@ -12287,7 +12287,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_test_input_model_testinputmodel_step",
-      "community": 22,
+      "community": 130,
       "norm_label": ".step()"
     },
     {
@@ -12297,7 +12297,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_test_input_model_testinputmodel_finalize",
-      "community": 22,
+      "community": 130,
       "norm_label": ".finalize()"
     },
     {
@@ -12307,7 +12307,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_models_model_catalog_physical_models_test_input_model_rationale_7",
-      "community": 22,
+      "community": 130,
       "norm_label": "minimal signal generator for feeding deterministic test inputs to other federate"
     },
     {
@@ -12417,7 +12417,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_scenarios_bk4_demo_external_sensor",
-      "community": 169,
+      "community": 56,
       "norm_label": "bk4_demo_external_sensor.py"
     },
     {
@@ -12427,7 +12427,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_scenarios_bk4_demo_external_sensor_main",
-      "community": 169,
+      "community": 56,
       "norm_label": "main()"
     },
     {
@@ -12437,7 +12437,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_scenarios_bk4_demo_external_sensor_rationale_1",
-      "community": 169,
+      "community": 56,
       "norm_label": "bk4_demo_external_sensor.py \u2014 stand-in \"real hardware\" for the bk4 digital-twin"
     },
     {
@@ -12847,7 +12847,7 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_startupsyncconfig",
-      "community": 10,
+      "community": 43,
       "norm_label": "startupsyncconfig"
     },
     {
@@ -12897,7 +12897,7 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_fedpublication",
-      "community": 10,
+      "community": 43,
       "norm_label": "fedpublication"
     },
     {
@@ -12907,7 +12907,7 @@
       "source_location": "L175",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_fedsubscription",
-      "community": 10,
+      "community": 43,
       "norm_label": "fedsubscription"
     },
     {
@@ -12917,7 +12917,7 @@
       "source_location": "L188",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_fedconnections",
-      "community": 10,
+      "community": 43,
       "norm_label": "fedconnections"
     },
     {
@@ -13167,7 +13167,7 @@
       "source_location": "L485",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_reinforcementlearningconfig",
-      "community": 6,
+      "community": 10,
       "norm_label": "reinforcementlearningconfig"
     },
     {
@@ -13197,7 +13197,7 @@
       "source_location": "L522",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_bridgespec",
-      "community": 6,
+      "community": 60,
       "norm_label": "bridgespec"
     },
     {
@@ -13207,7 +13207,7 @@
       "source_location": "L543",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_bridgespec_check_passthrough_source",
-      "community": 6,
+      "community": 60,
       "norm_label": "._check_passthrough_source()"
     },
     {
@@ -13267,7 +13267,7 @@
       "source_location": "L634",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_brokerconfig",
-      "community": 10,
+      "community": 43,
       "norm_label": "brokerconfig"
     },
     {
@@ -13397,7 +13397,7 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_rationale_87",
-      "community": 10,
+      "community": 43,
       "norm_label": "policy for a federate's startup input-synchronization pass (forcing subscription"
     },
     {
@@ -13447,7 +13447,7 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_rationale_166",
-      "community": 10,
+      "community": 43,
       "norm_label": "a single `connections.publishes` entry: one helics global publication."
     },
     {
@@ -13457,7 +13457,7 @@
       "source_location": "L176",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_rationale_176",
-      "community": 10,
+      "community": 43,
       "norm_label": "a single `connections.subscribes` entry: one helics subscription and its source"
     },
     {
@@ -13467,7 +13467,7 @@
       "source_location": "L189",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_rationale_189",
-      "community": 10,
+      "community": 43,
       "norm_label": "a federate's full `connections` block: endpoints, subscriptions, and publication"
     },
     {
@@ -13647,7 +13647,7 @@
       "source_location": "L486",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_rationale_486",
-      "community": 6,
+      "community": 10,
       "norm_label": "root `reinforcement_learning_config` block: the four axes (environment/agent/run"
     },
     {
@@ -13677,7 +13677,7 @@
       "source_location": "L523",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_rationale_523",
-      "community": 6,
+      "community": 60,
       "norm_label": "external -> co-sim: adapter inbound, publish onto a helics key.      `helics_key"
     },
     {
@@ -13737,7 +13737,7 @@
       "source_location": "L635",
       "_origin": "ast",
       "id": "src_utils_config_dataclasses_rationale_635",
-      "community": 10,
+      "community": 43,
       "norm_label": "a federation's `broker_config` block: helics core type, port, expected federate"
     },
     {
@@ -14107,7 +14107,7 @@
       "source_location": "L130",
       "_origin": "ast",
       "id": "src_utils_logging_config_federationlogger_create_run_summary",
-      "community": 169,
+      "community": 1,
       "norm_label": ".create_run_summary()"
     },
     {
@@ -14117,7 +14117,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "datetime",
-      "community": 169,
+      "community": 56,
       "norm_label": "datetime"
     },
     {
@@ -14207,7 +14207,7 @@
       "source_location": "L132",
       "_origin": "ast",
       "id": "src_utils_logging_config_rationale_132",
-      "community": 169,
+      "community": 1,
       "norm_label": "create a summary file for this run."
     },
     {
@@ -14517,7 +14517,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_redis_client",
-      "community": 146,
+      "community": 45,
       "norm_label": "redis_client.py"
     },
     {
@@ -14617,7 +14617,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_redis_client_rationale_1",
-      "community": 146,
+      "community": 45,
       "norm_label": "redis_client.py  client wrapper for redis interactions, managing connection and"
     },
     {
@@ -14777,7 +14777,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_regression_suite",
-      "community": 168,
+      "community": 152,
       "norm_label": "regression_suite.py"
     },
     {
@@ -14787,7 +14787,7 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_regression_suite_shorten",
-      "community": 168,
+      "community": 152,
       "norm_label": "_shorten()"
     },
     {
@@ -14797,7 +14797,7 @@
       "source_location": "L148",
       "_origin": "ast",
       "id": "tests_regression_suite_classify",
-      "community": 168,
+      "community": 152,
       "norm_label": "_classify()"
     },
     {
@@ -14807,7 +14807,7 @@
       "source_location": "L162",
       "_origin": "ast",
       "id": "tests_regression_suite_run_scenario",
-      "community": 168,
+      "community": 152,
       "norm_label": "run_scenario()"
     },
     {
@@ -14817,7 +14817,7 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "tests_regression_suite_run_pytest",
-      "community": 168,
+      "community": 152,
       "norm_label": "run_pytest()"
     },
     {
@@ -14827,7 +14827,7 @@
       "source_location": "L222",
       "_origin": "ast",
       "id": "tests_regression_suite_main",
-      "community": 168,
+      "community": 152,
       "norm_label": "main()"
     },
     {
@@ -14837,7 +14837,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "tests_regression_suite_rationale_112",
-      "community": 168,
+      "community": 152,
       "norm_label": "trim a scenario for a fast functional check, on a copy. returns the dict."
     },
     {
@@ -14847,7 +14847,7 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "tests_regression_suite_rationale_163",
-      "community": 168,
+      "community": 152,
       "norm_label": "shorten on a temp copy, run in an isolated process group, classify. retries"
     },
     {
@@ -16347,7 +16347,7 @@
       "source_location": "L350",
       "_origin": "ast",
       "id": "tests_test_rl_config_testinterfaceoverrideconfig_test_parse_target_same_federation_reconstructs_entity_id",
-      "community": 160,
+      "community": 108,
       "norm_label": ".test_parse_target_same_federation_reconstructs_entity_id()"
     },
     {
@@ -16357,7 +16357,7 @@
       "source_location": "L358",
       "_origin": "ast",
       "id": "tests_test_rl_config_testinterfaceoverrideconfig_test_parse_target_cross_federation",
-      "community": 160,
+      "community": 108,
       "norm_label": ".test_parse_target_cross_federation()"
     },
     {
@@ -18687,7 +18687,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_future_and_todos_scaling_study_plan",
-      "community": 64,
+      "community": 161,
       "norm_label": "scaling_study_plan.md"
     },
     {
@@ -18841,10 +18841,20 @@
       "norm_label": "4. deliverables (reuse existing harness; note extensions)"
     },
     {
+      "label": "4.1 Harness file map (this plan \u2194 `scripts/scaling_study/`)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L201",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_4_1_harness_file_map_this_plan_scripts_scaling_study",
+      "community": 64,
+      "norm_label": "4.1 harness file map (this plan \u2194 `scripts/scaling_study/`)"
+    },
+    {
       "label": "5. Machine configs under study (reused)",
       "file_type": "document",
       "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
-      "source_location": "L203",
+      "source_location": "L231",
       "_origin": "ast",
       "id": "docs_future_and_todos_scaling_study_plan_5_machine_configs_under_study_reused",
       "community": 64,
@@ -18854,7 +18864,7 @@
       "label": "6. Sequencing & gates",
       "file_type": "document",
       "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
-      "source_location": "L215",
+      "source_location": "L243",
       "_origin": "ast",
       "id": "docs_future_and_todos_scaling_study_plan_6_sequencing_gates",
       "community": 64,
@@ -18864,11 +18874,111 @@
       "label": "7. Open decisions needed from the user",
       "file_type": "document",
       "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
-      "source_location": "L231",
+      "source_location": "L259",
       "_origin": "ast",
       "id": "docs_future_and_todos_scaling_study_plan_7_open_decisions_needed_from_the_user",
       "community": 64,
       "norm_label": "7. open decisions needed from the user"
+    },
+    {
+      "label": "8. Execution guide for a fresh session (READ BEFORE TOUCHING ANYTHING)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L269",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "community": 64,
+      "norm_label": "8. execution guide for a fresh session (read before touching anything)"
+    },
+    {
+      "label": "8.0 Read order (orient before coding)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L275",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_0_read_order_orient_before_coding",
+      "community": 64,
+      "norm_label": "8.0 read order (orient before coding)"
+    },
+    {
+      "label": "8.1 Environment preamble (every run)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L285",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_1_environment_preamble_every_run",
+      "community": 64,
+      "norm_label": "8.1 environment preamble (every run)"
+    },
+    {
+      "label": "8.2 Scope boundary \u2014 autonomous vs gated",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L295",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_2_scope_boundary_autonomous_vs_gated",
+      "community": 64,
+      "norm_label": "8.2 scope boundary \u2014 autonomous vs gated"
+    },
+    {
+      "label": "8.3 Phase-D cross-wiring contract (extends CONTRACT.md \u2014 add these there too)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L307",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_3_phase_d_cross_wiring_contract_extends_contract_md_add_these_there_too",
+      "community": 64,
+      "norm_label": "8.3 phase-d cross-wiring contract (extends contract.md \u2014 add these there too)"
+    },
+    {
+      "label": "8.4 Dummy exchange model spec (new catalog model)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L334",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_4_dummy_exchange_model_spec_new_catalog_model",
+      "community": 64,
+      "norm_label": "8.4 dummy exchange model spec (new catalog model)"
+    },
+    {
+      "label": "8.5 `comms` fit signature (extends the locked fit_params.json)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L347",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_5_comms_fit_signature_extends_the_locked_fit_params_json",
+      "community": 64,
+      "norm_label": "8.5 `comms` fit signature (extends the locked fit_params.json)"
+    },
+    {
+      "label": "8.6 Per-phase acceptance criteria (self-verify; don't declare done without these)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L360",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_6_per_phase_acceptance_criteria_self_verify_don_t_declare_done_without_these",
+      "community": 64,
+      "norm_label": "8.6 per-phase acceptance criteria (self-verify; don't declare done without these)"
+    },
+    {
+      "label": "8.7 HARD STOP gates (do NOT cross without explicit user go-ahead)",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L379",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_7_hard_stop_gates_do_not_cross_without_explicit_user_go_ahead",
+      "community": 64,
+      "norm_label": "8.7 hard stop gates (do not cross without explicit user go-ahead)"
+    },
+    {
+      "label": "8.8 Anti-digression rules",
+      "file_type": "document",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L389",
+      "_origin": "ast",
+      "id": "docs_future_and_todos_scaling_study_plan_8_8_anti_digression_rules",
+      "community": 64,
+      "norm_label": "8.8 anti-digression rules"
     },
     {
       "label": "scenario_yaml_fixes_needed.md",
@@ -22337,7 +22447,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_bottlenecks",
-      "community": 68,
+      "community": 161,
       "norm_label": "bottlenecks.md"
     },
     {
@@ -22477,7 +22587,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences",
-      "community": 28,
+      "community": 161,
       "norm_label": "paper_ready_sentences.md"
     },
     {
@@ -22577,7 +22687,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_vertical_scalability_the_instance_axis_m_phase_1b",
-      "community": 28,
+      "community": 74,
       "norm_label": "vertical scalability \u2014 the instance axis (m) (phase 1b)"
     },
     {
@@ -22587,7 +22697,7 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_framing_see_terminology_note_at_end_of_file",
-      "community": 28,
+      "community": 74,
       "norm_label": "framing (see terminology note at end of file)"
     },
     {
@@ -22597,7 +22707,7 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_methods_114",
-      "community": 28,
+      "community": 74,
       "norm_label": "methods"
     },
     {
@@ -22607,7 +22717,7 @@
       "source_location": "L122",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_results_instance_crossover_dual_of_the_cost_crossover",
-      "community": 28,
+      "community": 74,
       "norm_label": "results \u2014 instance-crossover (dual of the cost-crossover)"
     },
     {
@@ -22617,7 +22727,7 @@
       "source_location": "L134",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_results_speedup_ceiling",
-      "community": 28,
+      "community": 74,
       "norm_label": "results \u2014 speedup ceiling"
     },
     {
@@ -22627,7 +22737,7 @@
       "source_location": "L144",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_results_the_m_w_staircase_supplementary",
-      "community": 28,
+      "community": 74,
       "norm_label": "results \u2014 the \u2308m/w\u2309 staircase (supplementary)"
     },
     {
@@ -22637,7 +22747,7 @@
       "source_location": "L154",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_table_z_instance_crossover_measured_vs_law_w_8",
-      "community": 28,
+      "community": 74,
       "norm_label": "table z \u2014 instance-crossover (measured vs law, w = 8)"
     },
     {
@@ -22647,7 +22757,7 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_vertical_vs_horizontal_one_line_framing",
-      "community": 28,
+      "community": 74,
       "norm_label": "vertical vs. horizontal \u2014 one-line framing"
     },
     {
@@ -22657,7 +22767,7 @@
       "source_location": "L179",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_paper_ready_sentences_terminology_note_vertical_scalability_is_it_correct",
-      "community": 28,
+      "community": 74,
       "norm_label": "terminology note \u2014 \"vertical scalability\" (is it correct?)"
     },
     {
@@ -22897,7 +23007,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "scripts_scaling_study_findings_phase4_distribution",
-      "community": 151,
+      "community": 161,
       "norm_label": "phase4_distribution.md"
     },
     {
@@ -23480,7 +23590,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "catalog entry: test_input_model",
       "id": "src_models_model_catalog_catalog_test_input_model"
     },
@@ -23519,7 +23629,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "catalog entry: simple_building (1r1c model)",
       "id": "src_models_model_catalog_catalog_simple_building"
     },
@@ -23532,7 +23642,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "catalog entry: simple_heatpump",
       "id": "src_models_model_catalog_catalog_simple_heatpump"
     },
@@ -23545,7 +23655,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 171,
+      "community": 32,
       "norm_label": "catalog entry: pv_dest",
       "id": "src_models_model_catalog_catalog_pv_dest"
     },
@@ -23558,7 +23668,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 171,
+      "community": 32,
       "norm_label": "catalog entry: battery_dest",
       "id": "src_models_model_catalog_catalog_battery_dest"
     },
@@ -23597,7 +23707,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 171,
+      "community": 32,
       "norm_label": "catalog entry: base_csv_reader",
       "id": "src_models_model_catalog_catalog_base_csv_reader"
     },
@@ -23610,7 +23720,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "catalog entry: weather_csv_reader",
       "id": "src_models_model_catalog_catalog_weather_csv_reader"
     },
@@ -23623,7 +23733,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "catalog entry: simple_pid_controller",
       "id": "src_models_model_catalog_catalog_simple_pid_controller"
     },
@@ -23636,7 +23746,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 49,
       "norm_label": "catalog entry: rl_simple_agent",
       "id": "src_models_model_catalog_catalog_rl_simple_agent"
     },
@@ -23649,7 +23759,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "catalog entry: rl_simple_dqn",
       "id": "src_models_model_catalog_catalog_rl_simple_dqn"
     },
@@ -23662,7 +23772,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "catalog entry: rl_simple_sacsb3",
       "id": "src_models_model_catalog_catalog_rl_simple_sacsb3"
     },
@@ -23675,7 +23785,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 47,
       "norm_label": "catalog entry: rl_simple_rllib",
       "id": "src_models_model_catalog_catalog_rl_simple_rllib"
     },
@@ -23701,7 +23811,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "catalog entry: test_feedthrough_fmi3",
       "id": "src_models_model_catalog_catalog_test_feedthrough_fmi3"
     },
@@ -23714,7 +23824,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "catalog entry: bui0_input_feeder",
       "id": "src_models_model_catalog_catalog_bui0_input_feeder"
     },
@@ -23727,7 +23837,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "catalog entry: bui0_building_fmu (bui0 energyplus fmu, fmi 2.0)",
       "id": "src_models_model_catalog_catalog_bui0_building_fmu"
     },
@@ -23740,7 +23850,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "catalog entry: rc_building (5r1c iso 13790 model)",
       "id": "src_models_model_catalog_catalog_rc_building"
     },
@@ -23753,7 +23863,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "catalog entry: pandapower_grid",
       "id": "src_models_model_catalog_catalog_pandapower_grid"
     },
@@ -23766,7 +23876,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "catalog entry: pandapipes_grid",
       "id": "src_models_model_catalog_catalog_pandapipes_grid"
     },
@@ -23870,7 +23980,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "scenario: adelaide_test (pid + adelaide energyplus fmu)",
       "id": "src_scenarios_adelaide_test"
     },
@@ -23883,7 +23993,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "scenario: bui0_fmu_test (feeder + bui0 energyplus fmu smoke test)",
       "id": "src_scenarios_bui0_fmu_test"
     },
@@ -23896,7 +24006,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "scenario: bui0_heatingpower_dqn (rl dqn control of bui0 heating radiative power)",
       "id": "src_scenarios_bui0_heatingpower_dqn"
     },
@@ -23909,7 +24019,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "scenario: bui0_setpoint_dqn (rl dqn control of bui0 zone set-point, discrete)",
       "id": "src_scenarios_bui0_setpoint_dqn"
     },
@@ -23922,7 +24032,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "scenario: bui0_setpoint_sac (rl sac control of bui0 zone set-point, continuous)",
       "id": "src_scenarios_bui0_setpoint_sac"
     },
@@ -23935,7 +24045,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "scenario: bui_hp_dqn (building+heatpump dqn rl, csv weather)",
       "id": "src_scenarios_bui_hp_dqn"
     },
@@ -23948,7 +24058,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "scenario: bui_hp_dqn_rollingreset (dqn rl with rolling reset mode)",
       "id": "src_scenarios_bui_hp_dqn_rollingreset"
     },
@@ -23961,7 +24071,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "scenario: bui_hp_sac (building+heatpump sac rl, csv weather)",
       "id": "src_scenarios_bui_hp_sac"
     },
@@ -23974,7 +24084,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "scenario: bui_hp_sac_rollingreset (sac rl with rolling reset mode)",
       "id": "src_scenarios_bui_hp_sac_rollingreset"
     },
@@ -23987,7 +24097,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 32,
       "norm_label": "scenario: bui_hp_test_base (pid-driven heat pump base co-simulation)",
       "id": "src_scenarios_bui_hp_test_base"
     },
@@ -24000,7 +24110,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "scenario: dh_district_jan_base (10-building district heating network, parquet sink)",
       "id": "src_scenarios_dh_district_jan_base"
     },
@@ -24013,7 +24123,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 167,
+      "community": 32,
       "norm_label": "scenario: fmu_feedthrough_test (fmi 3.0 feedthrough fmu smoke test)",
       "id": "src_scenarios_fmu_feedthrough_test"
     },
@@ -24130,7 +24240,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "multi-building grid test scenario",
       "id": "src_scenarios_multi_building_grid_test"
     },
@@ -24143,7 +24253,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "pandapipes grid test base scenario",
       "id": "src_scenarios_pandapipes_grid_test_base"
     },
@@ -24156,7 +24266,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "pandapower grid test base scenario",
       "id": "src_scenarios_pandapower_grid_test_base"
     },
@@ -24169,7 +24279,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 171,
+      "community": 32,
       "norm_label": "pv+battery dqn scenario",
       "id": "src_scenarios_pv_batt_dqn"
     },
@@ -24182,7 +24292,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 171,
+      "community": 32,
       "norm_label": "pv+battery sac scenario",
       "id": "src_scenarios_pv_batt_sac"
     },
@@ -24195,7 +24305,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 171,
+      "community": 32,
       "norm_label": "pv+battery test base scenario",
       "id": "src_scenarios_pv_batt_test_base"
     },
@@ -24208,7 +24318,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "rc building parquet sink test",
       "id": "src_scenarios_rc_building_parquet_test"
     },
@@ -24221,7 +24331,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "rc building test base scenario",
       "id": "src_scenarios_rc_building_test_base"
     },
@@ -24234,7 +24344,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 163,
+      "community": 32,
       "norm_label": "simple spring dqn test",
       "id": "src_scenarios_simple_dqn_test"
     },
@@ -24299,7 +24409,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 49,
       "norm_label": "simple test rl agent scenario",
       "id": "src_scenarios_simple_test_rlagent"
     },
@@ -24312,7 +24422,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "stress multi-building test (json sink)",
       "id": "src_scenarios_stress_multi_building_json"
     },
@@ -24325,7 +24435,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 162,
+      "community": 32,
       "norm_label": "stress multi-building test (parquet sink)",
       "id": "src_scenarios_stress_multi_building_parquet"
     },
@@ -57880,6 +57990,106 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L212",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_contract",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L223",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_all_phases_synthesis",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L223",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_bottlenecks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L223",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_paper_ready_sentences",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L222",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_phase01",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L222",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_phase2_ceiling",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L222",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_phase3_federations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L222",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_phase4_distribution",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L222",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_phase5_validation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L221",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan",
+      "target": "scripts_scaling_study_findings_readme",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
@@ -57933,7 +58143,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
-      "source_location": "L203",
+      "source_location": "L231",
       "weight": 1.0,
       "source": "docs_future_and_todos_scaling_study_plan_scaling_study_optimal_configuration_framework_final_comprehensive_plan",
       "target": "docs_future_and_todos_scaling_study_plan_5_machine_configs_under_study_reused",
@@ -57943,7 +58153,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
-      "source_location": "L215",
+      "source_location": "L243",
       "weight": 1.0,
       "source": "docs_future_and_todos_scaling_study_plan_scaling_study_optimal_configuration_framework_final_comprehensive_plan",
       "target": "docs_future_and_todos_scaling_study_plan_6_sequencing_gates",
@@ -57953,10 +58163,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
-      "source_location": "L231",
+      "source_location": "L259",
       "weight": 1.0,
       "source": "docs_future_and_todos_scaling_study_plan_scaling_study_optimal_configuration_framework_final_comprehensive_plan",
       "target": "docs_future_and_todos_scaling_study_plan_7_open_decisions_needed_from_the_user",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L269",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_scaling_study_optimal_configuration_framework_final_comprehensive_plan",
+      "target": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
       "confidence_score": 1.0
     },
     {
@@ -58047,6 +58267,106 @@
       "weight": 1.0,
       "source": "docs_future_and_todos_scaling_study_plan_3_part_b_the_new_study_per_the_5_constraints",
       "target": "docs_future_and_todos_scaling_study_plan_phase_h_future_feature_draft_only_brokers_on_remote_machines",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L201",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_4_deliverables_reuse_existing_harness_note_extensions",
+      "target": "docs_future_and_todos_scaling_study_plan_4_1_harness_file_map_this_plan_scripts_scaling_study",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L275",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_0_read_order_orient_before_coding",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L285",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_1_environment_preamble_every_run",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L295",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_2_scope_boundary_autonomous_vs_gated",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L307",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_3_phase_d_cross_wiring_contract_extends_contract_md_add_these_there_too",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L334",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_4_dummy_exchange_model_spec_new_catalog_model",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L347",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_5_comms_fit_signature_extends_the_locked_fit_params_json",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L360",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_6_per_phase_acceptance_criteria_self_verify_don_t_declare_done_without_these",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L379",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_7_hard_stop_gates_do_not_cross_without_explicit_user_go_ahead",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/future_and_TODOs/scaling_study_plan.md",
+      "source_location": "L389",
+      "weight": 1.0,
+      "source": "docs_future_and_todos_scaling_study_plan_8_execution_guide_for_a_fresh_session_read_before_touching_anything",
+      "target": "docs_future_and_todos_scaling_study_plan_8_8_anti_digression_rules",
       "confidence_score": 1.0
     },
     {
@@ -65368,5 +65688,5 @@
       "source_file": "docs/paper/PAPER_PLAN.md"
     }
   ],
-  "built_at_commit": "1cc796521825abbaf43c5eebb3acdd8c5a3e8fb3"
+  "built_at_commit": "2a6da062df03e842058db0dc3e717083e37af5ce"
 }
