@@ -1,0 +1,41 @@
+{
+  "O_par": 0.0,
+  "c": {
+    "exchange_dummy": {
+      "a": 0.00019713952217573002,
+      "b": 0.0
+    }
+  },
+  "comms": {
+    "in_per_link_s": 1.2088338862658353e-05,
+    "per_byte_s": 1.9542533792043496e-09,
+    "per_edge_s": {
+      "cross_fed": 0.0,
+      "cross_machine": 0.0,
+      "intra_fed": 3.3821698420817248e-06
+    }
+  },
+  "notes": "s[zmq]: N constant (4) for core_type=zmq; extrapolated tick_mean_s to M=0 over 135 seq rows for s0, s1 defaulted to 0 (N-dependence unidentifiable) | s[tcp]: no data -- defaulted to {s0:0, s1:0} | s[zmq_ss]: no data -- defaulted to {s0:0, s1:0} | s[tcp_ss]: no data -- defaulted to {s0:0, s1:0} | c[exchange_dummy]: work constant/absent ([]) for model=exchange_dummy; a = mean(c_sample) over 135 seq rows, b=0 | O_par: no par rows -- defaulted to 0.0 | rss_per_instance_mb[exchange_dummy]: regressed peak_rss_mb ~ 1 + M over 135 rows | rtt_s: local-only fit -- defaulted to 0.0 | comms: columns ['per_edge_s.cross_machine'] all-zero in usable data -- no data -- defaulted to 0.0 | comms: clamped negative coefficient(s) ['per_edge_s.cross_fed'] to 0.0 (delta likely buried in noise) | comms: weighted-least-squares fit (per_edge_s[distance]*n_edges + in_per_link_s*max_fed_in [pooled across distance] + per_byte_s*8*msg_width*n_edges/freq), weight=1/max(|delta|,20us) to minimize relative error, used 120 wired row(s), distances with data = ['cross_fed', 'intra_fed'], weighted R^2 = 0.4146, median relative error = 33.65%",
+  "rss_per_instance_mb": {
+    "exchange_dummy": 1.9844995471013773
+  },
+  "rtt_s": 0.0,
+  "s": {
+    "tcp": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "tcp_ss": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "zmq": {
+      "s0": 0.0,
+      "s1": 0.0
+    },
+    "zmq_ss": {
+      "s0": 0.0,
+      "s1": 0.0
+    }
+  }
+}

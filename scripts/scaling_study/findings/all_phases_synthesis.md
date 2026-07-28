@@ -3,6 +3,13 @@
 > **Canonical index is `README.md`** (trusted primitives, status, gaps, Phase 1b).
 > This file is the narrative roll-up of Phases 0–5; if it disagrees with README,
 > README wins. Not updated for Phase 1b (instance-count crossover) — see README.
+>
+> **⚠ Written before Phase D (data exchange).** Every conclusion below was measured
+> with **zero subscriptions**, so it describes compute + sync only. Phase D
+> (`phaseD_exchange.md`) shows coupling is the *dominant* per-tick cost once a
+> federation is realistically wired — at 65 536 edges it is ~88% of tick time. Read
+> the "best config" advice below as necessary but not sufficient, and see
+> `phaseD_exchange.md` §8 for what changes.
 
 One page tying `phase01.md`, `phase2_ceiling.md`, `phase3_federations.md`,
 `phase4_distribution.md`, `phase5_validation.md` together. Read those for
@@ -67,6 +74,14 @@ and a machine set (`machines.json`):
    the ~2.5× prediction gap, because the budget had enough margin.
 
 ## 2. Max-scale story
+
+- **Superseded headline (Phase D, 2026-07-28): 32 768 model instances in 8
+  federates, WITH data exchange on (65 536 edges), no failure** — the stress
+  ladder exhausted its rungs with 97% of host RAM still free, at 329 ms/tick and
+  3.6 GB. That is 20× the 1 600-instance figure quoted below, which was measured
+  with no subscriptions. **The instance axis is not a wall**: cost is exactly
+  linear in M (`≈0.080 ms · M`) and memory is near-flat per instance, because all
+  M instances share one federate process. See `phaseD_exchange.md` §8.1.
 
 - **The ~33-federate zmq_ss ceiling documented in
   `generate_scale_benchmark.py` does not reproduce today, at any N tested

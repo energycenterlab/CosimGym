@@ -72,6 +72,11 @@ KNOB_TO_FLAG = {
     "machine_b_host": "--machine-b-host", "machine_b_user": "--machine-b-user",
     "machine_b_workdir": "--machine-b-workdir", "machine_b_python": "--machine-b-python",
     "manager_address": "--manager-address",
+    # Phase-D data-exchange wiring knobs (CONTRACT.md "Part-B / Phase-D additions").
+    # `n_edges` is deliberately absent: it is DERIVED by the generator and arrives
+    # via the spec.json sidecar, so a matrix that tried to set it would be lying.
+    "exchange": "--exchange", "distance": "--distance", "fanout": "--fanout",
+    "msg_width": "--msg-width", "freq": "--freq", "causality": "--causality",
 }
 
 # CONTRACT.md D2 row schema: all knobs + repeat + perf.json fields + derived metrics.
@@ -87,6 +92,11 @@ CSV_FIELDS = [
     "setup_s", "broker_setup_s", "federate_spawn_s", "sim_wall_s",
     "perf_n_ticks", "tick_mean_s", "tick_median_s", "tick_p95_s",
     "failure_mode", "peak_rss_mb", "cpu_util_pct", "throughput_inst_steps_s",
+    # Phase-D exchange columns are APPENDED, never inserted: every Part-A CSV stays
+    # readable and readers key by header, so old files simply lack these columns.
+    # A Part-A-style (unwired) run records `none,,,1,1,,0`.
+    "exchange", "distance", "fanout", "msg_width", "freq", "causality",
+    "n_edges", "n_subs", "max_fed_in", "max_fed_out",
 ]
 
 RUN_CODE = ("import sys; sys.path.insert(0, 'src'); "
@@ -186,6 +196,36 @@ def _poll_tree(root_pid, tracked, cpu_samples, rss_samples):
         rss_samples.append(rss_total / (1024 * 1024))
 
 
+def _reap_orphan_brokers(started_after):
+    """Kill helics_broker processes this run leaked (timeout path only).
+
+    Deliberately narrow, because this is a SHARED machine: only processes owned
+    by the current uid, whose cmdline mentions helics_broker, and which started
+    after this run began. A co-user's broker, or one belonging to a concurrently
+    running benchmark started earlier, can never match all three.
+    """
+    if psutil is None:
+        return 0
+    me = os.getuid()
+    killed = 0
+    for p in psutil.process_iter(["pid", "name", "cmdline", "create_time", "uids"]):
+        try:
+            info = p.info
+            if info["uids"] is None or info["uids"].real != me:
+                continue
+            if info["create_time"] < started_after:
+                continue
+            if not any("helics_broker" in str(a) for a in (info["cmdline"] or [])):
+                continue
+            p.kill()
+            killed += 1
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    if killed:
+        print(f"    reaped {killed} orphaned helics_broker process(es) after timeout")
+    return killed
+
+
 def run_once(scenario_path, timeout, poll_interval=0.3):
     """Run one generated scenario in an isolated subprocess (regression_suite's
     launch mechanism: Popen(['-c', code], start_new_session=True), SIGKILL the
@@ -231,6 +271,14 @@ def run_once(scenario_path, timeout, poll_interval=0.3):
             pr.wait(timeout=5)
         except Exception:
             pass
+        # killpg is NOT enough: ScenarioManager's helics_broker children end up
+        # outside the manager's process group, so they survive the group kill,
+        # keep holding their TCP ports, and every SUBSEQUENT cell then dies with
+        # "port(s) NNNNN already in use -- most likely an orphaned broker from an
+        # earlier run". One timeout thereby poisons the rest of the matrix: a
+        # single hung distributed cell produced 19 spurious failures before this
+        # was caught. Reap them so a timeout stays a one-row failure.
+        _reap_orphan_brokers(started_after=t0)
 
     reader.join(timeout=5)
     return {

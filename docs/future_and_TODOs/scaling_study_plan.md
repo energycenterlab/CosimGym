@@ -1,8 +1,18 @@
 # Scaling Study & Optimal-Configuration Framework — Final Comprehensive Plan
 
 Status: **Part A (Phases 0–5 + 1b) EXECUTED (2026-07-24 → 07-27).**
-**Part B (data-exchange → placement → real case study) DESIGNED, awaiting
-go-ahead.** Written 2026-07-24; rewritten as the final comprehensive plan 07-27.
+**Phase D (data exchange) EXECUTED 2026-07-28** — local + cross-machine; see
+`scripts/scaling_study/findings/phaseD_exchange.md`. **Phases E/F/G still open.**
+Written 2026-07-24; rewritten as the final comprehensive plan 07-27.
+
+> **⚠ Phase D invalidated this plan's placement premise.** §2 and Phase F below
+> assume placement should *minimise cross-machine data-exchange edges*, on the
+> expectation that `κ(cross_machine) ≫ κ(local)`. **Measured, that is false:**
+> κ_LAN ≈ 0.8 × κ_local — a LAN edge is slightly *cheaper* than a local one,
+> because HELICS's lockstep barrier hides the round-trip while moving federates
+> off the manager relieves core contention. Phase F's objective must be rewritten
+> around **compute/contention balance**, not edge cuts. Details + scope limits in
+> the findings leaf §9.
 
 > **Single source of truth.** Executed results, trusted primitives, figures, and
 > known gaps live ONLY in `scripts/scaling_study/findings/README.md` (canonical
@@ -95,9 +105,15 @@ minimize    T_sim
 subject to  N_broker ≤ ceiling(core_type, network)     # flaky, not hard (Phase 2)
             Σ_m RSS ≤ RAM_m                             # per-machine memory = true wall
             placement compute-balanced ∝ cores_m        # slowest machine gates tick
-            placement MINIMIZES cross-machine data-exchange edges   # NEW, needs comms term
+            minimize TOTAL edges + payload bytes        # comms is linear in n_edges (Phase D)
+            prefer intra- over cross-FEDERATION edges   # ~30%/edge; federation assignment
 ```
-Once `comms(...)` is fitted, "best config" stays a small search, not a brute force.
+`placement MINIMIZES cross-machine data-exchange edges` was the original fourth
+constraint. **Phase D removed it:** `κ_LAN ≈ 0.8 · κ_local`, so cross-machine edges
+carry no penalty to minimise — coupling cost depends on how MANY edges and how wide
+their payloads are, not which machine they cross. Machine placement is a
+compute/contention-balance problem; edge locality matters only at the *federation*
+level. Once `comms(...)` is fitted, "best config" stays a small search, not a brute force.
 
 ---
 
@@ -115,8 +131,19 @@ Constraints (user, 2026-07-27):
 Phases below are ordered by dependency. Each large/long hardware phase is gated by
 "ask before massive runs" and preceded by a short smoke run.
 
-### Phase D — Data-exchange characterization  *(the core new work)*
+### Phase D — Data-exchange characterization  *(the core new work)* — **EXECUTED 2026-07-28**
 **Goal:** fit the missing `comms(...)` term; show how coupling degrades throughput.
+
+> **Done.** Results: `scripts/scaling_study/findings/phaseD_exchange.md` (canonical
+> summary in `findings/README.md`). Delivered: `exchange_dummy` catalog model,
+> cross-wiring in `gen_scenario.py`, fitted `comms` term in `cost_model.py`
+> (+ `tests/test_cost_model_comms.py`), matrices `phaseD_local{,_wide}.yaml` and
+> `phaseD_cross_machine.yaml`, figures 10–14, `stress_ramp.py`.
+> Headline: `comms = per_edge[distance]·n_edges + per_byte·bytes`; **total edge
+> count** is the regressor (not edge placement — a narrow matrix said the opposite
+> and was wrong through collinearity); κ_LAN ≈ κ_local; publish cadence is the
+> cheapest lever (−90% at every-10th-tick). New blockers found: **B10** (fixed) and
+> **B12** (open, blocks Phase F).
 
 **Taxonomy (the axes to sweep):**
 - **Topology distance:** intra-federation · cross-federation · cross-machine.
@@ -147,14 +174,33 @@ Phase 4 was confounded (shared host, load ~67). Rerun local-vs-distributed on an
 Reuse Phase-4 matrices + `make_report.py` roofline plot as-is.
 
 ### Phase F — Optimal placement under stress
-Depends on Phase D's `comms` term.
-- **Optimizer:** extend `cost_model.py recommend` to emit a federate→machine map —
-  graph-partition objective: **minimize cross-machine data-exchange edges** while
-  **balancing compute ∝ cores** (slowest machine gates the tick). Cross-machine
-  edges are the expensive ones per Phase D.
+Depends on Phase D's `comms` term — **and its objective is now the opposite of
+what this section originally specified.**
+
+- **Optimizer:** extend `cost_model.py recommend` to emit a federate→machine map.
+  ~~graph-partition objective: minimize cross-machine data-exchange edges~~ —
+  **superseded.** Phase D measured `κ_LAN ≈ 0.8 · κ_local`: a cross-machine edge is
+  *not* more expensive than a local one, so an edge-cut objective optimises a cost
+  that does not exist. The real objective is **balance compute + contention across
+  machines** (the slowest machine gates every tick, and Phase D's own controls show
+  distribution helping even with no wiring at all: 272 µs distributed vs 382 µs
+  local at M=16). Edge placement enters only as the mild **intra- vs
+  cross-federation** preference (~30% per edge), which is a *federation-assignment*
+  decision, not a machine-assignment one.
+  Scope limit to respect: measured on a same-campus LAN with an idle remote and
+  ≤64 edges. Re-measure before trusting it on a WAN or a saturated link.
+- **Blocked on B12.** `bottlenecks.md` B12 — the **teardown stall**: the simulation
+  completes but the run never returns, one side of the federation having
+  force-disconnected while the other blocks forever. It triggers at **≥256
+  federates locally** (plain zmq) and at **≳1 kB/tick over distributed `_ss`**, and
+  it strands processes that then poison subsequent runs. Both thresholds sit
+  underneath the configurations Phase F exists to explore, so it must be diagnosed
+  first.
 - **Stress while placing:** for each candidate placement, push `M_total`/`N_total`
   until first failure; record the failure mode (comms `[-101]`, OOM, missed
   real-time deadline). Confirm memory (RSS × federates) is the true wall.
+  Harness for this exists: `scripts/scaling_study/stress_ramp.py` (geometric
+  ladder, RAM/load guards, stops at first failure).
 - **Deliverable:** `recommend()` emits+justifies a placement; validated against a
   measured run (predicted vs measured T_sim + max stable scale).
 
@@ -179,6 +225,7 @@ the natural scale-out for a district sharded one-federation-per-machine.
 - `ScenarioManager` must spawn + monitor brokers over SSH (today it only spawns
   remote *federates*).
 Design sketch only — deliver as a short design note, not code.
+Design note: [`phaseH_remote_brokers_design.md`](phaseH_remote_brokers_design.md).
 
 ---
 

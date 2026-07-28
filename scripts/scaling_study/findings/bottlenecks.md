@@ -166,6 +166,128 @@ A CosimGym run is always in one of four **regimes** — the whole story reduces 
   `CLAUDE.md`.
 - **Status.** Fixed in `gen_scenario.py`.
 
+## B10 — Per-federation port BLOCK must be sized from N  *(FIXED — B9's fix was incomplete)*
+
+- **Mechanism.** B9's fix (stride federation broker ports by 10) addressed only the
+  broker's own `port+1` reply socket. It missed the larger consumer: with plain
+  `zmq`/`tcp`, **every federate core binds its own inbound listener** at
+  `broker_port + 10 + n` for `n` in `0..N-1` (`ScenarioManager.py:1640`). A
+  federation therefore occupies a port *block* of width `10 + N`, not a fixed 10.
+  Once `N ≥ 8`, federation_f's cores climb into federation_(f+1)'s broker port.
+- **Evidence (Phase D, 2026-07-28).** Every cell with `N ≥ 8` failed, at F=2, local,
+  plain zmq — 48/177 runs. Federate log: `Unable to bind zmq pull socket giving up
+  tcp://127.0.0.1:23521` → `[-1] Unable to connect to broker->unable to register
+  federate`. Federation_1's broker sat at 23510 so its cores wanted 23520-23527,
+  while federation_2's broker held 23520.
+- **Why it was not caught earlier.** It fails identically for **unwired** (`exchange:
+  none`) scenarios — it is a port-planning bug, not a data-exchange limit — but every
+  Part-A run large enough to trigger it used `zmq_ss`, whose cores bind **no** inbound
+  listener and are structurally immune. Verified: all `N ≥ 8` rows in
+  `phase3b_multifed_scale.csv` are `zmq_ss`, so **Phase 3's 256-federate result is
+  unaffected**. Phase D was the first campaign to run multi-federation plain zmq at
+  N ≥ 8.
+- **When it dominates.** Any multi-federation (`F ≥ 2`) scenario on `zmq`/`tcp` with
+  `N ≥ 8` federates per federation. Immediate, deterministic, at federation-formation
+  time — never intermittent.
+- **Push it back.** Size the block from N: `port_f = base + f·(N + 22)` (10 core
+  offset + N listeners + 12 headroom incl. the broker's `port+1`). Fixed in
+  `gen_scenario.py`; verified at N=32 (64 federates) local zmq. **General lesson for
+  CosimGym users, not just this harness:** a hand-written multi-federation zmq
+  scenario must leave ≥ `N + 11` ports between consecutive federation broker ports.
+  `*_ss` core types sidestep the whole class.
+
+## B11 — Data-exchange coupling `comms`  *(the dominant per-tick cost at scale)*
+
+- **Mechanism.** Every wired HELICS link costs per-tick routing work regardless of
+  where it attaches: publication, broker routing, and a subscriber-side poll +
+  deserialise. Cost is linear in the scenario's **total** edge count.
+- **Evidence (Phase D).** `3.14 µs/edge` intra-federation, `4.36 µs/edge`
+  cross-federation (fitted, all wired rows; payload-free slice gives 3.66/4.90).
+  At 4096 edges the coupling term is **22.3 ms/tick against a 211 µs unwired
+  baseline — >100×**. Payload adds `1.66 ns/byte`, flat below ~512 B/message.
+- **When it dominates.** Any realistically-coupled federation. Part A's tick
+  numbers, measured with zero subscriptions, are a *floor* — coupling, not
+  compute, is what makes a large federation slow.
+- **Push it back.** In order of leverage: (1) **cut publish frequency** — every
+  10th tick removes 90% of the cost, and cost tracks messages sent, not
+  subscriptions registered; (2) keep payloads under ~64 doubles/message, where
+  width is nearly free; (3) prefer intra-federation edges (~30% cheaper than
+  cross-federation); (4) spread coupling over more, smaller federates — at equal
+  edge count, concentrating on few fat federates cost 3.1× more.
+
+## B12 — Teardown stall: one side finishes, the other hangs forever  *(OPEN — the most serious limit found)*
+
+- **Symptom.** The simulation **completes** — federates reach the final tick — but
+  the run never returns. The manager waits until the harness timeout kills it.
+  Federates that finished log `disconnect Timer expired forcing disconnect`; the
+  rest are stuck in HELICS with empty logs. Leaves **orphaned federate and broker
+  processes** holding their ports (see "cascade" below).
+- **Mechanism (hypothesis, not yet confirmed).** With bipartite wiring, one side
+  reaches the end, waits on a disconnect handshake that never completes, and
+  force-disconnects on its own timer — orphaning the other side, which blocks
+  forever waiting on inputs from federates that have already left. It is a
+  **lifecycle/teardown** failure, not a throughput one: the physics all ran.
+- **Evidence — it is NOT distribution-specific, and not `_ss`-specific.**
+  Originally recorded as a distributed-`zmq_ss` byte-threshold bug; the local
+  stress ladder then reproduced the identical signature on **plain zmq, local**:
+
+  | config | scale | result |
+  |---|---|---|
+  | local zmq, F=2 N=64 M=4 | 128 federates | ok (101 ms/tick) |
+  | local zmq, F=2 **N=128** M=4 | **256 federates** | **stall** — exactly 128/256 federates reached t=100 and hit the disconnect timer; the other federation never finished |
+  | distributed `zmq_ss`, N=4 M=16 | 2 kB/tick | stall ×3 |
+  | distributed `zmq_ss`, N=4 M=4 w=64 | 32 kB/tick | stall ×3 |
+  | local `zmq_ss`, N=4 M=4 w=1024 | 512 kB/tick | `[-101] lost connection` ×2/3 |
+
+  So there are (at least) two triggers for the same teardown stall: **high federate
+  count** (local, plain zmq, ≥256 federates) and **exchanged bytes per tick** over
+  `_ss` cores (≳1 kB distributed). Deterministic at every failing point.
+- **Cascade — this is what makes it expensive.** The stranded processes survive the
+  run. `killpg` does not reach them (brokers and federates sit outside the
+  manager's process group), so they keep holding TCP ports and **every subsequent
+  run fails** with `port(s) NNNNN already in use — most likely an orphaned broker
+  from an earlier run`. One stall produced **19 spurious failures** in the cells
+  that followed before this was diagnosed. `run_bench.py` now reaps orphaned
+  brokers after a timeout, but stranded `federate_launcher` processes must still be
+  cleaned by hand (`pkill -f federate_launcher`) after any stall.
+- **When it dominates.** Large local federations (≥256 federates) and essentially
+  every distributed scenario with non-trivial coupling — precisely the shapes
+  Phase F (placement) and Phase G (real case study) need. **Blocks Phase F.**
+- **Push it back.** Not diagnosed. Highest-value next investigation: instrument
+  `ScenarioManager`'s shutdown path and the HELICS disconnect handshake, and check
+  whether raising/removing the federate disconnect timeout changes the threshold.
+  Interim: keep local federations under ~256 federates, keep distributed per-tick
+  exchanged bytes under ~1 kB, and sweep for orphans between runs.
+
+---|---|---|---|
+  | M=1, w=1 | 16 | 128 B | ok |
+  | M=4, w=1 | 64 | 512 B | ok |
+  | M=16, w=1 | 256 | 2 kB | **hang** ×3 |
+  | M=4, w=64 | 64 | 32 kB | **hang** ×3 |
+  | M=4, w=1024 | 64 | 512 kB | **hang** ×3 |
+
+  Deterministic (3/3 repeats at each failing point), so not a flake.
+- **It is `_ss`-specific, and partly distribution-specific.** Plain `zmq` locally
+  carried `msg_width=4096` (64 edges × 32 kB/msg) with no trouble at all
+  (`phaseD_local_wide.csv`). Local `zmq_ss` survives further than distributed
+  `zmq_ss` but still breaks: `w=1024` local dies with
+  `HelicsException: [-101] lost connection with server`.
+- **Why this matters more than it looks.** `*_ss` is not optional for the NAT rig —
+  single-socket cores are *required* to reach machines behind NAT (see B10 and
+  `distributed_deployment.md`). So the core type that distribution depends on is
+  the one that cannot carry payload. Any distributed district exchanging vectors
+  (profiles, forecasts, state vectors) hits this almost immediately.
+- **When it dominates.** Every distributed scenario with non-trivial coupling —
+  precisely the shape Phase F (placement) and Phase G (real case study) need.
+- **Push it back.** Not diagnosed. Suspects, in order: HELICS `_ss` core message
+  buffering/queue limits over a real socket; the manager's remote
+  results-collection/teardown path (its rsync of a non-existent results dir under
+  `sink: none` already logs an error); a disconnect handshake that never completes
+  when a remote federate exits on its own disconnect timer. Interim workaround:
+  keep per-tick exchanged bytes under ~1 kB per distributed federation, or use a
+  directly-routable network so plain `zmq` becomes available (Config B).
+  **Blocks Phase F.**
+
 ---
 
 ## Not a runtime bottleneck, but a modeling gap: N×work interaction
@@ -202,3 +324,6 @@ completeness since it's the obvious next bottleneck for write-heavy long runs.
 | B7 | 300 MB/federate memory | capacity | inherent | many instances, few federates |
 | B8 | SSH ControlPath 108 B | hard cap @N≥112 | **FIXED** | — |
 | B9 | zmq port+1 collision | hard fail @F≥2 | **FIXED** | — |
+| B10 | port block < 10+N (zmq/tcp) | hard fail @F≥2,N≥8 | **FIXED** | block = N+22, or use `*_ss` |
+| B11 | Data-exchange coupling `comms` | per-tick (dominant) | inherent | raise `freq` (−90%); narrow payloads; spread edges over more federates |
+| B12 | Teardown stall (sim completes, run hangs) | hard hang @≥256 feds local, or >~1 kB/tick distributed `_ss` | **OPEN** | stay under thresholds; reap orphans between runs |

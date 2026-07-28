@@ -51,6 +51,7 @@ SCENARIOS = [
     ("DIST remote-ssh",        "distributed_demo"),
     ("PARALLEL model exec",    "benchmark_parallel_par"),
     ("SEQUENTIAL (par twin)",  "benchmark_parallel_seq"),
+    ("COMMS exchange dummy",   "exchange_dummy_test"),
     ("INTERFACE (dig-twin)",   "m0_interface_smoke_test"),
     ("INTERFACE outbound",     "m2_interface_outbound_smoke_test"),
     ("INTERFACE inbound",      "m3_interface_inbound_smoke_test"),

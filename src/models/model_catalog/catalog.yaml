@@ -2871,6 +2871,86 @@ models:
         required: false
         tags:
         - benchmark
+  exchange_dummy:
+    class_name: ExchangeDummy
+    module_path: models.model_catalog.physical_models.exchange_dummy
+    version: 1.0.0
+    description: Self-contained, comms-isolating dummy model that does near-zero
+      compute but consumes every subscribed input and publishes a
+      configurable-width vector payload — the comms counterpart of
+      heavy_compute_dummy, used to measure HELICS data-exchange cost.
+    author: Pietro Rando Mazzarino
+    domain: benchmark
+    category: physical_model
+    tags:
+    - benchmark
+    - dummy
+    - data_exchange
+    - comms
+    dependencies: []
+    time_step: 1
+    max_time_step: 3600
+    min_time_step: 1
+    user_defined: {}
+    parameters:
+      msg_width:
+        type: int
+        default_value: 1
+        description: Length of the published payload vector.
+        unit: "-"
+        min_value: 1
+        max_value: 4096
+        required: false
+        tags:
+        - benchmark
+      iterations:
+        type: int
+        default_value: 0
+        description: Optional busy-loop iterations of float math per step()
+          call. 0 (default) skips the loop entirely (no compute).
+        unit: "-"
+        min_value: 0
+        max_value: 100000000
+        required: false
+        tags:
+        - benchmark
+      publish_every:
+        type: int
+        default_value: 1
+        description: Publish the payload only every k-th step.
+        unit: "-"
+        min_value: 1
+        max_value: 3600
+        required: false
+        tags:
+        - benchmark
+    inputs:
+      payload_in:
+        type: list
+        default_value: 0.0
+        description: Wired data-exchange input, consumed (folded into the
+          accumulator) each step.
+        unit: "-"
+        required: false
+        tags:
+        - benchmark
+    outputs:
+      payload:
+        type: list
+        description: Published vector payload, length msg_width, derived from
+          the accumulator of consumed inputs.
+        unit: "-"
+        required: false
+        tags:
+        - benchmark
+      n_received:
+        type: float
+        default_value: 0.0
+        description: Count of subscribed input values consumed on the last step.
+        unit: "-"
+        required: false
+        tags:
+        - benchmark
   light_compute_dummy:
     class_name: LightComputeDummy
     module_path: models.model_catalog.physical_models.light_compute_dummy

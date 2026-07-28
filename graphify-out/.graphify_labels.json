@@ -161,8 +161,14 @@
   "159": "TestSpawnUsesPtyAndDetachedGroup",
   "160": "parse_target",
   "161": "._enrich_dynamic_catalog_metadata",
+  "162": "parquet_storage.py",
+  "163": "catalog-loader service",
   "164": "BaseFederateConfig",
   "165": "Scaling Study — Phase 2 (federate sweep + zmq_ss ceiling investigation)",
   "166": "main",
+  "167": "Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring",
+  "168": "parse_target",
+  "169": "_rl_scenario_yamls",
+  "170": ".__init__",
   "172": "Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)"
 }

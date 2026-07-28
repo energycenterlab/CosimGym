@@ -1,0 +1,51 @@
+# Phase D (cross-machine) -- kappa(LAN): the per-link cost of a network hop.
+#
+# Answers the one coefficient the placement optimizer (Phase F) cannot work
+# without: how much dearer is a data-exchange link that crosses machines than
+# one that stays on the box. Rig = Config A (NAT): manager 130.192.177.14 (112c)
+# + machine_a 130.192.238.9 (32c); zmq_ss forced (NAT-safe single-socket core).
+# gen_scenario pins the subscriber side to the manager and the publisher side to
+# machine_a, so every wired link is a real LAN hop.
+#
+# TWO-ARM DESIGN, and the second arm is the point. Comparing these distributed
+# runs against the plain-zmq LOCAL matrix would confound the LAN hop with the
+# zmq -> zmq_ss core-type change. So each distributed cell has a local zmq_ss
+# twin: same core type, same wiring, no network. kappa(LAN) is the difference
+# between the arms, not between this file and phaseD_local_wide.yaml.
+#
+# Distributed CONTROLS (exchange=none, distributed_nat) are likewise required:
+# they absorb the cost of distribution itself (SSH-spawned federates, remote
+# sync) so the paired delta isolates comms alone. Phase 4 was confounded for
+# want of exactly this kind of control.
+#
+# M=16 cross_machine cells are DELIBERATELY ABSENT (2026-07-28): they hang
+# deterministically -- the remote publishers finish and exit 0, the manager never
+# completes -- and burn the full timeout. Worse, the timed-out run leaked its
+# helics_broker processes, which held their ports and caused 19 spurious "port
+# already in use" failures in the cells that followed. run_bench.py now reaps
+# orphaned brokers after a timeout, but the hang itself is unfixed: tracked as
+# bottlenecks.md B12. Re-add these cells once it is diagnosed. The M=16 LOCAL
+# twin is kept -- it completes normally, which is what localises the bug to the
+# distributed path.
+#
+# HARD-GATED run (plan Sec.8.7) -- user cleared it 2026-07-28 with both cloud
+# machines verified idle (cloud1 load 0.02, cloud5 0.01).
+#
+# DELETE the target CSV before running: run_bench.py APPENDS.
+{runs: [{F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 1, core_type: zmq_ss, placement: local, exchange: none}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 1, core_type: zmq_ss,
+      placement: distributed_nat, exchange: none}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: local, exchange: none}, {F: 2, mode: seq, model: exchange_dummy,
+      ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: distributed_nat, exchange: none}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 16, core_type: zmq_ss, placement: local, exchange: none},
+    {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 16, core_type: zmq_ss, placement: distributed_nat, exchange: none}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 1, core_type: zmq_ss,
+      placement: local, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 4, core_type: zmq_ss,
+      placement: local, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 16, core_type: zmq_ss,
+      placement: local, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 1, core_type: zmq_ss,
+      placement: distributed_nat, distance: cross_machine, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300, N: 4, M: 4,
+      core_type: zmq_ss, placement: distributed_nat, distance: cross_machine, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy, ticks: 300,
+      N: 4, M: 4, core_type: zmq_ss, placement: distributed_nat, distance: cross_machine, fanout: Nto1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy,
+      ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: distributed_nat, distance: cross_machine, fanout: 1toN, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy,
+      ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: distributed_nat, distance: cross_machine, fanout: 1to1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy,
+      ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: distributed_nat, distance: cross_machine, fanout: all2all, exchange: 'on', msg_width: 64, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy,
+      ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: local, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 64, freq: 1, causality: same_step}, {F: 2, mode: seq, model: exchange_dummy,
+      ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: distributed_nat, distance: cross_machine, fanout: all2all, exchange: 'on', msg_width: 1024, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      model: exchange_dummy, ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: local, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1024, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      model: exchange_dummy, ticks: 300, N: 4, M: 4, core_type: zmq_ss, placement: distributed_nat, distance: cross_machine, fanout: all2all, exchange: 'on', msg_width: 1, freq: 10, causality: same_step}]}

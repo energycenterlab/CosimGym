@@ -1,0 +1,77 @@
+# Phase D (local, WIDE) -- data-exchange law over a district-scale range.
+#
+# Supersedes the range of phaseD_local.yaml (which the Sec.8.7 autonomous gate
+# capped at F=2/N=4/M=4/ticks=30, reaching only max_fed_in=16). User cleared the
+# gate 2026-07-28 for N<=32, M<=64, ticks=300 on the idle manager.
+#
+# Designed for IDENTIFIABILITY, not coverage. The Sec.8.7-capped run could not
+# separate the regressors: cross_fed all2all has max_fed_in == max_fed_out in
+# every cell, so in/out coefficients were collinear and the fit clamped one to
+# zero. Here:
+#   W1 sweeps M at fixed N -> max_fed_in = 4M (4..256) with handle width fixed
+#   W2 sweeps N at fixed M -> varies targets-per-handle instead of instances,
+#      breaking the M/handle-width confound W1 alone leaves
+#   W3 Nto1/1toN/1to1 at two load levels -> in and out move INDEPENDENTLY,
+#      the only cells that identify the in-vs-out asymmetry (measured 3.7x)
+#   W4/W5 payload and cadence; W6 causality; W7 intra_fed mirror of W1/W2
+# Extremes are deliberately not crossed (no N=32 x M=64): that cell would
+# register ~131k edges and measures registration blowup, not per-tick cost.
+#
+# Every wired (N,M) has a matching exchange=none CONTROL -- the fit is a paired
+# delta and silently drops wired rows whose control is missing.
+#
+# DELETE the target CSV before running: run_bench.py APPENDS.
+{runs: [{F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 2, M: 4, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300,
+      N: 4, M: 1, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 2, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy,
+      placement: local, ticks: 300, N: 4, M: 4, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 8, exchange: none}, {F: 2, mode: seq, core_type: zmq,
+      model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 16, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 32, exchange: none},
+    {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 64, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300,
+      N: 8, M: 4, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 4, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy,
+      placement: local, ticks: 300, N: 16, M: 16, exchange: none}, {F: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 32, M: 4, exchange: none}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 1, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 2, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 8, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 16, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 32, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 64, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 2, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 8, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 32, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: Nto1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: 1toN, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: 1to1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 16, distance: cross_fed, fanout: Nto1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 16, distance: cross_fed, fanout: 1toN, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 16, distance: cross_fed, fanout: 1to1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 4, distance: cross_fed, fanout: Nto1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 4, distance: cross_fed, fanout: 1toN, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 4, distance: cross_fed, fanout: 1to1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 16, distance: cross_fed, fanout: Nto1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 16, distance: cross_fed, fanout: 1toN, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 16, distance: cross_fed, fanout: 1to1, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 16, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 64, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 256, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1024, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 4096, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 2, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 5, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 10, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 30, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: next_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 32, distance: cross_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: next_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 1, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 2, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 8, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 16, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 32, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 64, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 2, M: 4, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 4, M: 4, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 8, M: 4, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 16, M: 4, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}, {F: 2, mode: seq,
+      core_type: zmq, model: exchange_dummy, placement: local, ticks: 300, N: 32, M: 4, distance: intra_fed, fanout: all2all, exchange: 'on', msg_width: 1, freq: 1, causality: same_step}]}

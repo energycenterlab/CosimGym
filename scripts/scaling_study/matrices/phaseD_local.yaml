@@ -1,0 +1,71 @@
+# Phase D (local) -- data-exchange characterisation, ONE-FACTOR-AT-A-TIME.
+#
+# Isolates the missing `comms` term of T_tick = compute + sync + comms
+# (scaling_study_plan.md Sec.2). Every cell uses `exchange_dummy` (near-zero
+# compute, consumes every subscribed input) so compute ~ 0 and the measured
+# delta against the `exchange: none` CONTROL rows is comms + the extra sync a
+# subscription costs. Deliberately NOT a cartesian product: Part A showed a
+# pooled cartesian fit goes DoE-collinear (findings/README.md "Trusted
+# primitives" -- use per-axis isolated fits). OFAT keeps every coefficient
+# identifiable.
+#
+# Baseline cell: F=2, N=4, M=4, seq, zmq, local, ticks=30 -- the largest run
+# allowed autonomously on the shared manager (scaling_study_plan.md Sec.8.7).
+#
+# Wiring is bipartite (CONTRACT.md): intra_fed splits each federation 2 pub /
+# 2 sub; cross_fed makes federation_1 the subscriber side and federation_2 the
+# publisher side. n_edges (derived, in the CSV) therefore ranges 4 -> 64 here.
+#
+# 25 cells. Run with --repeats 3. DELETE the target CSV first -- run_bench.py
+# APPENDS (the bug that already bit Phase 1b).
+runs:
+  # -- CONTROL: identical scenarios with wiring OFF. The T_tick these produce is
+  # subtracted from every wired cell below; the M sweep gives the control for
+  # the edge-count cells in block B.
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: none}
+  - {F: 2, N: 4, M: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: none}
+  - {F: 2, N: 4, M: 1, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: none}
+
+  # -- BLOCK A: distance x fanout at constant M/width/freq/causality.
+  # 1to1, 1toN and Nto1 carry the SAME edge count by construction, so any
+  # difference between them is fan-out SHAPE (where the edges attach), not
+  # volume -- i.e. it tests whether total n_edges is even the right regressor.
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: 1to1,    msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: 1toN,    msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: Nto1,    msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: all2all, msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: 1to1,    msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: 1toN,    msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: Nto1,    msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 1, freq: 1, causality: same_step}
+
+  # -- BLOCK B: edge COUNT, swept through M (instance-paired wiring => edges
+  # scale linearly in M). N is pinned at 4 by the autonomous-run gate, so M is
+  # the only edge-count lever available without asking first.
+  - {F: 2, N: 4, M: 1, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: all2all, msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: all2all, msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 1, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 1, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 2, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 1, freq: 1, causality: same_step}
+
+  # -- BLOCK C: payload width (8 B per vector element) at max edge count, both
+  # distances -> per_byte_s, and whether it differs by distance.
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 16,   freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 256,  freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 4096, freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: all2all, msg_width: 256,  freq: 1, causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: all2all, msg_width: 4096, freq: 1, causality: same_step}
+
+  # -- BLOCK D: publish frequency (publisher emits every freq-th tick). Tests
+  # whether cost tracks messages-on-the-wire or merely the registered edges:
+  # the subscriptions still exist and are polled every tick either way.
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 1, freq: 2,  causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 1, freq: 5,  causality: same_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 1, freq: 10, causality: same_step}
+
+  # -- BLOCK E: causality. same_step puts the edge on the tick's critical path;
+  # next_step lets the auto-offset absorb it. Paired against the matching
+  # same_step cells in blocks A/B.
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: all2all, msg_width: 1, freq: 1, causality: next_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: cross_fed, fanout: 1to1,    msg_width: 1, freq: 1, causality: next_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: all2all, msg_width: 1, freq: 1, causality: next_step}
+  - {F: 2, N: 4, M: 4, mode: seq, core_type: zmq, model: exchange_dummy, placement: local, ticks: 30, exchange: "on", distance: intra_fed, fanout: 1to1,    msg_width: 1, freq: 1, causality: next_step}

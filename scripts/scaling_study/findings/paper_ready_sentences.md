@@ -195,3 +195,152 @@ vertical *scaling response* is `parallel_execution` recruiting more local cores.
 Phrase it as "vertical scalability: how a single federate/host absorbs a growing
 model-instance count, sequentially or by recruiting local cores." Reserve
 "horizontal scalability" for the federate/federation/machine sharding axis.
+
+---
+
+# Data-exchange coupling — the `comms` term (Phase D)
+
+All numbers from `phaseD_local_wide.csv` (59 cells × 3 repetitions, 300 ticks,
+112-core host, plain zmq, local) unless noted. Figures `10`–`14`. Every value is
+a **paired delta** against an identically-configured control run with the wiring
+removed, so it is the marginal cost of coupling, not a raw tick time.
+
+## Methods
+
+> To isolate the cost of data exchange from computation, we introduced a second
+> synthetic model (`exchange_dummy`) that performs negligible arithmetic but
+> consumes every subscribed input and publishes a vector payload of configurable
+> width. Federations were wired bipartitely — a disjoint publisher side and
+> subscriber side — which keeps every dependency graph acyclic; this is required
+> because CosimGym rejects `same_step` dependency cycles outright, as
+> non-iterative HELICS time requests cannot resolve them. We swept topology
+> distance (intra- vs cross-federation), fan-out pattern, payload width, publish
+> cadence and subscription causality, varying the federate count N and the
+> instance count M independently so that scenario-wide edge count and
+> per-federate link count could be identified separately. Each configuration was
+> compared against an otherwise identical control run with no subscriptions, and
+> the coupling cost taken as the difference in mean per-tick wall time.
+
+## Results — the coupling law
+
+> Per-tick coupling cost grows linearly with the total number of HELICS
+> input→target links in the scenario, at 3.66 µs per link for intra-federation
+> edges and 4.90 µs per link for cross-federation edges (a 34% premium for
+> traffic routed through the hierarchy broker). Coupling is not a second-order
+> effect: at 4096 edges the coupling term reaches 22.3 ms per tick against a
+> 211 µs baseline for the same federation with its subscriptions removed — a
+> hundredfold inflation of per-tick cost. Adding a payload term of 1.66 ns per
+> byte routed gives
+> `comms = per_edge[distance]·n_edges + per_byte·(8·msg_width·n_edges/freq)`,
+> which reproduces the measurements with a median relative error of 31% across
+> three orders of magnitude of coupling. We also evaluated a term proportional to
+> the busiest subscriber federate's inbound link count: it is well determined on
+> payload-free configurations (≈2.1 µs per link) but fits negative once
+> payload-bearing configurations are included, so we report the concentration
+> effect it was intended to capture as an unmodelled residual rather than as a
+> fitted coefficient.
+
+## Results — placement implication (the useful one)
+
+> Because the dominant term depends only on the total edge count, which is known
+> statically from the scenario graph, coupling cost can be predicted without
+> simulation — the property that makes placement optimisation tractable. The
+> secondary term rewards spreading a given amount of coupling across many small
+> federates rather than concentrating it: at a fixed 512 edges, hosting the
+> coupling on 8 federates of 64 instances cost 3541 µs/tick, while the same 512
+> edges spread over 32 federates of 4 instances cost 1124 µs/tick — a 3.1×
+> penalty for concentration at identical total coupling.
+
+## Results — payload and cadence
+
+> Payload width is free until roughly 512 bytes per message: widening the
+> published vector from 1 to 64 doubles raised coupling cost by only 41%. Beyond
+> that the cost becomes linear in bytes at ≈5.6 ns/byte, and at 4096 doubles
+> (32 kB/message) payload dominates every other term. Publish cadence is the
+> single most effective mitigation available: emitting on every tenth tick rather
+> than every tick removed 90% of the coupling cost, because cost tracks messages
+> actually transferred rather than subscriptions registered — the input handles
+> remain and are still polled each tick.
+
+## Negative result worth reporting (causality)
+
+> We found no consistent benefit from deferring subscriptions to the following
+> step. `next_step` causality was 32% more expensive than `same_step` at low
+> coupling and 7% cheaper at high coupling, with the direction of the effect
+> reversing across the range. We attribute the absence of the expected
+> critical-path saving to the near-zero computational cost of the probe model:
+> deferring a read only pays when there is computation to overlap it with, while
+> the deferred-input bookkeeping is paid every tick regardless.
+
+## Methodological caution (recommended for the paper — it is a real finding)
+
+> An intermediate fit performed on a narrower design, in which the federate count
+> was held fixed, indicated that the *placement* of edges dominated their number
+> (per-federate model R² = 0.73 against 0.53 for a total-count model). Widening
+> the design reversed this conclusion decisively (R² = 0.22 against 0.97): with a
+> fixed federate count the two regressors are collinear, and no fit statistic on
+> that design revealed the problem. Two configurations with identical per-federate
+> load but 64 versus 1024 total edges differ 23-fold in cost. We therefore report
+> total edge count as the primary regressor and note that cost models for
+> co-simulation coupling must vary topology breadth and depth independently to be
+> identifiable.
+
+## Figure captions
+
+> **Figure 10.** Marginal per-tick cost of HELICS coupling against total edge
+> count, for intra- and cross-federation topologies (log–log; 300 ticks, 3
+> repetitions, payload width 1, every-tick publication, `same_step` causality).
+> Dashed lines are relative-error-weighted fits through the origin. Vertical
+> spread at fixed edge count reflects the secondary dependence on per-federate
+> link concentration.
+
+> **Figure 12.** Coupling cost against published payload width. Cost is
+> essentially flat below ~512 bytes per message and linear in bytes above it.
+
+> **Figure 13.** Coupling cost against publish cadence. Publishing every k-th
+> tick reduces cost roughly in proportion to 1/k, reaching a 90% reduction at
+> k = 10.
+
+## Structural limits to state in the paper
+
+> Two structural constraints emerged that are properties of the framework rather
+> than of its performance. First, `same_step` dependency cycles are rejected at
+> validation time, so fully-coupled topologies cannot be expressed without
+> designating at least one edge as next-step; a bipartite publisher/subscriber
+> decomposition is the natural way to keep a coupling study well-posed. Second,
+> HELICS's summing multi-input handler reduces vector payloads across all
+> elements, so an aggregating subscription yields a scalar rather than an
+> element-wise sum — aggregation cannot preserve per-source payload structure
+> without the vectorising handler.
+
+## Results — stress to first failure (max scale)
+
+> To locate the framework's actual limits we ramped each scaling axis
+> geometrically until a run failed, re-checking host headroom before every step.
+> Along the model-instance axis no failure was reached: eight federates hosted
+> 32,768 instances exchanging 65,536 coupled values per tick at 329 ms per tick and
+> 3.6 GB resident, with 97% of host memory still free when the ladder was
+> exhausted. Per-tick cost was exactly linear in instance count (≈0.080 ms per
+> instance) and memory grew sub-linearly, since all instances of a federate share
+> one process. Along the federate axis the limit was reached at 128 federates;
+> per-tick cost grew quadratically (1.27, 6.1, 24 and 101 ms as the federate count
+> doubled) and memory linearly at ≈143 MB per federate. The quadratic growth is not
+> a property of federates but of the topology their number implies: with
+> all-to-all coupling the edge count grows as the square of the federate count, and
+> cost is linear in edge count.
+
+> The failure at 256 federates was not resource exhaustion. Memory was 96% free, no
+> communication error was raised, and no deadline was missed: the simulation ran to
+> completion and the *run* never terminated. Exactly half the federates reached the
+> final tick and force-disconnected on their own timers while the remaining
+> federation blocked indefinitely. The same signature appears in distributed runs
+> once per-tick exchanged data exceeds roughly one kilobyte. We therefore report the
+> binding limit on the federate axis as a shutdown-path defect rather than a
+> scalability property, and note that the instance-axis limit was never reached.
+
+## Takeaway sentence (one line)
+
+> Coupling, not computation, sets the scale of a co-simulation: instance count is
+> essentially free (32,768 instances on one host, linear cost, no failure), whereas
+> coupled federate count is limited both by an edge count that grows quadratically
+> with it and by a shutdown-path defect that binds well before any resource does.

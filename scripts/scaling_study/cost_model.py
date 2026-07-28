@@ -50,6 +50,10 @@ CSV_FIELDS = [
     "setup_s", "broker_setup_s", "federate_spawn_s", "sim_wall_s",
     "perf_n_ticks", "tick_mean_s", "tick_median_s", "tick_p95_s",
     "failure_mode", "peak_rss_mb", "cpu_util_pct", "throughput_inst_steps_s",
+    # Phase-D extension (2026-07-28): appended, never inserted -- absent
+    # entirely in every Part-A CSV. See DEFAULT_EXCHANGE / load_bench_csv.
+    "exchange", "distance", "fanout", "msg_width", "freq", "causality",
+    "n_edges", "n_subs", "max_fed_in", "max_fed_out",
 ]
 
 # Per-broker federate ceiling defaults (Section 2 of the plan: the zmq_ss
@@ -79,12 +83,36 @@ def _to_int(v):
     return int(float(v))
 
 
+# Phase-D exchange columns (CONTRACT.md "Phase-D extension") -- appended after
+# throughput_inst_steps_s. Every Part-A CSV lacks them entirely; DEFAULT_EXCHANGE
+# gives the "no wiring" values used both when the column is absent and when a
+# row leaves it blank.
+DEFAULT_EXCHANGE = {
+    "exchange": "none",
+    "distance": "",
+    "fanout": "",
+    "msg_width": 1,
+    "freq": 1,
+    "causality": "",
+    "n_edges": 0,
+    "n_subs": 0,
+    "max_fed_in": 0,
+    "max_fed_out": 0,
+}
+
+
 def load_bench_csv(path):
     """Read the D2 bench CSV into a list of dicts with proper python types.
 
     Numeric knob/metric columns are cast to float/int (None when blank);
     string columns kept as-is. Robust to a thin file (few rows / few distinct
     values per column) -- never raises on missing optional columns.
+
+    Phase-D exchange columns (`exchange,distance,fanout,msg_width,freq,
+    causality,n_edges,n_subs,max_fed_in,max_fed_out`) are optional: absent
+    entirely (every Part-A CSV) or blank per-row both default per
+    DEFAULT_EXCHANGE (exchange=none, n_edges=n_subs=max_fed_in=max_fed_out=0,
+    msg_width=freq=1).
     """
     rows = []
     with open(path, newline="") as f:
@@ -103,6 +131,15 @@ def load_bench_csv(path):
                 if k in row:
                     row[k] = _to_float(row[k])
             row["failure_mode"] = raw.get("failure_mode") or None
+            # Phase-D exchange columns: typed + defaulted (missing column or
+            # blank value both fall back to DEFAULT_EXCHANGE).
+            for k in ("exchange", "distance", "fanout", "causality"):
+                v = row.get(k)
+                row[k] = v if v not in (None, "") else DEFAULT_EXCHANGE[k]
+            for k in ("msg_width", "freq", "n_edges", "n_subs", "max_fed_in", "max_fed_out"):
+                v = row.get(k)
+                iv = _to_int(v) if v not in (None, "") else None
+                row[k] = iv if iv is not None else DEFAULT_EXCHANGE[k]
             rows.append(row)
     return rows
 
@@ -119,6 +156,44 @@ def _lstsq(X, y):
     y = np.asarray(y, dtype=float)
     coef, *_ = np.linalg.lstsq(X, y, rcond=None)
     return coef
+
+
+def _r_squared(y, pred):
+    """Coefficient of determination. 1.0 for a perfect fit (or a degenerate
+    all-equal-y sample with zero residual); 0.0 for the degenerate all-equal-y
+    sample with nonzero residual (mean-of-y R^2 is undefined -> treat as no
+    explanatory power rather than raising)."""
+    y = np.asarray(y, dtype=float)
+    pred = np.asarray(pred, dtype=float)
+    if len(y) == 0:
+        return 0.0
+    ss_res = float(np.sum((y - pred) ** 2))
+    ss_tot = float(np.sum((y - float(np.mean(y))) ** 2))
+    if ss_tot == 0.0:
+        return 1.0 if ss_res == 0.0 else 0.0
+    return 1.0 - ss_res / ss_tot
+
+
+def _r_squared_weighted(y, pred, weights):
+    """Weighted coefficient of determination -- same degenerate-input handling
+    as `_r_squared`, but both the residual and total sum-of-squares (and the
+    mean of y they're centered on) are weighted. Used for the comms fit,
+    which is solved by weighted least squares (see `fit()` section 6) so the
+    reported R^2 should reflect the same weighting, not plain OLS R^2."""
+    y = np.asarray(y, dtype=float)
+    pred = np.asarray(pred, dtype=float)
+    weights = np.asarray(weights, dtype=float)
+    if len(y) == 0:
+        return 0.0
+    wsum = float(np.sum(weights))
+    if wsum == 0.0:
+        return 0.0
+    ybar = float(np.sum(weights * y) / wsum)
+    ss_res = float(np.sum(weights * (y - pred) ** 2))
+    ss_tot = float(np.sum(weights * (y - ybar) ** 2))
+    if ss_tot == 0.0:
+        return 1.0 if ss_res == 0.0 else 0.0
+    return 1.0 - ss_res / ss_tot
 
 
 # ---------------------------------------------------------------------------
@@ -283,6 +358,167 @@ def fit(bench_csv, notes_extra=None):
         rtt_s = 0.0
         notes.append("rtt_s: local-only fit -- defaulted to 0.0")
 
+    # --- 6. comms: per_edge_s[distance], in_per_link_s[distance], ---------
+    #        per_byte_s (2026-07-28 wide-matrix revision -- CONTRACT.md
+    #        "comms cost term"). Iteration 1 fit only a shared per-edge
+    #        routing cost on scenario-wide totals (per_edge_s*n_edges).
+    #        Iteration 2 replaced it with a purely per-federate shape
+    #        (in/out_per_link_s*max_fed_in/out + fixed_per_tick_s) because a
+    #        narrow 27-cell matrix with N pinned at 4 made n_edges and
+    #        max_fed_in collinear -- it looked like edge PLACEMENT dominated.
+    #        A wide matrix (N up to 32, M up to 64, edge counts 8..4096, 177
+    #        runs) showed the per-federate-only shape scores R^2=0.22 there
+    #        vs 0.97 for the totals shape: at N=16/M=4 cross_fed, Nto1 and
+    #        all2all share max_fed_in=64 but differ 64 vs 1024 edges and
+    #        +234us vs +5383us delta -- proof n_edges is NOT redundant with
+    #        max_fed_in. Both mechanisms are real, so this shape keeps both:
+    #        a dominant shared per-edge routing cost, plus a smaller
+    #        per-federate inbound-polling cost. fixed_per_tick_s and
+    #        out_per_link_s are dropped entirely -- the wide fit found the
+    #        intercept statistically indistinguishable from zero once the
+    #        edge term was present, and max_fed_out added nothing beyond
+    #        max_fed_in.
+    # Paired delta against CONTROL rows (exchange != "on") sharing every other
+    # knob: compute+sync are already fitted above from Part-A data, so we do
+    # NOT want comms to re-absorb them. delta = wired_tick - control_tick for
+    # matched (F,N,M,mode,W,core_type,model,work,placement,n_ticks).
+    DISTANCES = ("intra_fed", "cross_fed", "cross_machine")
+
+    def _comms_key(r):
+        return (r["F"], r["N"], r["M"], r["mode"], r["W"], r["core_type"],
+                r["model"], r.get("work"), r.get("placement"), r["n_ticks"])
+
+    control_rows = [r for r in rows if r.get("exchange") != "on"]
+    wired_rows = [r for r in rows if r.get("exchange") == "on"]
+
+    control_by_key = {}
+    for r in control_rows:
+        control_by_key.setdefault(_comms_key(r), []).append(r["tick_mean_s"])
+    control_mean_by_key = {k: float(np.mean(v)) for k, v in control_by_key.items()}
+
+    deltas = []
+    design_rows = []
+    n_skipped_no_control = 0
+    for r in wired_rows:
+        k = _comms_key(r)
+        control_mean = control_mean_by_key.get(k)
+        if control_mean is None:
+            n_skipped_no_control += 1
+            continue
+        delta = r["tick_mean_s"] - control_mean
+        distance = r.get("distance") or ""
+        n_edges = r.get("n_edges") or 0
+        max_fed_in = r.get("max_fed_in") or 0
+        msg_width = r.get("msg_width") or 1
+        freq = r.get("freq") or 1
+        design_rows.append([
+            n_edges if distance == "intra_fed" else 0.0,
+            n_edges if distance == "cross_fed" else 0.0,
+            n_edges if distance == "cross_machine" else 0.0,
+            # in_per_link_s is POOLED across distance -- deliberately one column,
+            # not one per distance. Physically, `distance` describes an edge's
+            # ROUTING path (which broker chain carries it), whereas max_fed_in
+            # prices the subscriber's own per-tick poll+deserialise loop, which is
+            # local CPU work and cannot know where the value came from. Splitting it
+            # per distance is also unidentifiable in practice: within a distance
+            # stratum n_edges and max_fed_in correlate ~0.4-0.5 (most cells sit near
+            # a fixed n_edges = k*max_fed_in ratio), and the per-distance split
+            # produced a 9.5x-too-high intra_fed coefficient and a NEGATIVE
+            # cross_fed one (clamped to 0) -- while pooling recovers 3.95e-6 /
+            # 1.67e-6, matching the hand-computed values.
+            max_fed_in,
+            8.0 * msg_width * n_edges / freq,
+        ])
+        deltas.append(delta)
+
+    comms_col_names = [
+        "per_edge_s.intra_fed", "per_edge_s.cross_fed", "per_edge_s.cross_machine",
+        "in_per_link_s",
+        "per_byte_s",
+    ]
+
+    per_edge_s = {d: 0.0 for d in DISTANCES}
+    in_per_link_s = 0.0
+    per_byte_s = 0.0
+
+    if n_skipped_no_control:
+        notes.append(f"comms: skipped {n_skipped_no_control} wired row(s) -- "
+                      f"no matching control row found for their (F,N,M,mode,W,"
+                      f"core_type,model,work,placement,n_ticks) key")
+
+    if not design_rows:
+        notes.append("comms: no usable wired rows (with matched control) -- "
+                      "all comms terms defaulted to 0.0")
+    else:
+        X_full = np.asarray(design_rows, dtype=float)
+        y = np.asarray(deltas, dtype=float)
+
+        # Weighted least squares, weight = 1 / max(|delta|, 20e-6): deltas in
+        # the wide matrix span ~50us to ~22000us (nearly 3 orders of
+        # magnitude), so plain OLS minimizes ABSOLUTE squared error and ends
+        # up fitting only the largest cells while effectively ignoring
+        # everything below ~1ms. Weighting by the inverse delta instead
+        # minimizes RELATIVE error, so a district-scale scenario built from
+        # thousands of small edges is represented as faithfully as the few
+        # huge all2all cells at the top of the measured range -- this is the
+        # difference between a model that works at district scale and one
+        # that only works at the top of the range. The 20us floor guards
+        # against divide-by-~0 for near-zero/noisy deltas.
+        weights = 1.0 / np.maximum(np.abs(y), 20e-6)
+        sqrt_w = np.sqrt(weights)
+        X_weighted = X_full * sqrt_w[:, None]
+        y_weighted = y * sqrt_w
+
+        # Drop all-zero columns before solving -- an unidentifiable column
+        # (e.g. no cross_machine rows in this csv) otherwise poisons lstsq.
+        nonzero_mask = np.any(X_full != 0.0, axis=0)
+        dropped = [comms_col_names[i] for i in range(len(comms_col_names)) if not nonzero_mask[i]]
+        if dropped:
+            notes.append(f"comms: columns {dropped} all-zero in usable data -- "
+                          f"no data -- defaulted to 0.0")
+        if nonzero_mask.any():
+            X_reduced = X_weighted[:, nonzero_mask]
+            coef_reduced = _lstsq(X_reduced, y_weighted)
+            coef = np.zeros(len(comms_col_names))
+            coef[nonzero_mask] = coef_reduced
+        else:
+            coef = np.zeros(len(comms_col_names))
+
+        clamped = []
+        for i, name in enumerate(comms_col_names):
+            if coef[i] < 0.0:
+                clamped.append(name)
+                coef[i] = 0.0
+        if clamped:
+            notes.append(f"comms: clamped negative coefficient(s) {clamped} to 0.0 "
+                          f"(delta likely buried in noise)")
+
+        per_edge_s = {"intra_fed": float(coef[0]), "cross_fed": float(coef[1]),
+                      "cross_machine": float(coef[2])}
+        in_per_link_s = float(coef[3])
+        per_byte_s = float(coef[4])
+
+        pred = X_full @ coef
+        r2 = _r_squared_weighted(y, pred, weights)
+        rel_errs = np.abs(pred - y) / np.maximum(np.abs(y), 20e-6)
+        median_rel_err = float(np.median(rel_errs))
+        distances_with_data = sorted({r.get("distance") for r in wired_rows
+                                       if r.get("distance") and
+                                       _comms_key(r) in control_mean_by_key})
+        notes.append(f"comms: weighted-least-squares fit (per_edge_s[distance]*n_edges "
+                      f"+ in_per_link_s*max_fed_in [pooled across distance] + "
+                      f"per_byte_s*8*msg_width*n_edges/freq), weight=1/max(|delta|,20us) "
+                      f"to minimize relative error, used {len(design_rows)} wired "
+                      f"row(s), distances with data = {distances_with_data}, "
+                      f"weighted R^2 = {r2:.4f}, median relative error = "
+                      f"{median_rel_err * 100:.2f}%")
+
+    comms_params = {
+        "per_edge_s": per_edge_s,
+        "in_per_link_s": in_per_link_s,
+        "per_byte_s": per_byte_s,
+    }
+
     if notes_extra:
         notes.append(notes_extra)
 
@@ -292,6 +528,7 @@ def fit(bench_csv, notes_extra=None):
         "O_par": float(O_par),
         "rss_per_instance_mb": rss_params,
         "rtt_s": float(rtt_s),
+        "comms": comms_params,
         "notes": " | ".join(notes),
     }
 
@@ -303,6 +540,11 @@ def _empty_params(note):
         "O_par": 0.0,
         "rss_per_instance_mb": {},
         "rtt_s": 0.0,
+        "comms": {
+            "per_edge_s": {"intra_fed": 0.0, "cross_fed": 0.0, "cross_machine": 0.0},
+            "in_per_link_s": 0.0,
+            "per_byte_s": 0.0,
+        },
         "notes": note,
     }
 
@@ -315,11 +557,31 @@ def predict(config, params, machines=None):
     """Apply the T_tick/T_sim framework to a single config.
 
     `config` keys: F, N, M, mode, W, core_type, model, work, placement,
-    n_ticks. `machines` is currently unused for a single homogeneous config
-    (kept as a parameter for interface symmetry with recommend(); a config
-    with placement != "local" adds one rtt_s hop regardless of which machine).
+    n_ticks, plus the optional Phase-D exchange knobs `exchange` ("none"|"on",
+    default "none"), `distance` ("intra_fed"|"cross_fed"|"cross_machine"),
+    `msg_width` (default 1), `freq` (default 1), `n_edges` (default 0),
+    `max_fed_in` (default 0). `n_subs`/`max_fed_out` are still accepted on
+    the config dict (harmless -- unused by predict()) for callers still
+    carrying the older per-federate-only knob set. `machines` is currently
+    unused for a single homogeneous config (kept as a parameter for
+    interface symmetry with recommend(); a config with placement != "local"
+    adds one rtt_s hop
+    regardless of which machine).
 
     Returns dict with compute_s, sync_s, comms_s, T_tick_s, T_sim_s.
+    `comms_s` = the existing distributed rtt_s hop PLUS the Phase-D
+    data-exchange term (2026-07-28 wide-matrix revision -- CONTRACT.md "comms
+    cost term"): per_edge_s[distance]*n_edges + in_per_link_s[distance]*
+    max_fed_in + per_byte_s*8*msg_width*n_edges/freq. Both a shared per-edge
+    routing cost and a per-federate inbound-polling cost are real (a wide
+    N/M/edge-count matrix showed the edge-count term is NOT redundant with
+    max_fed_in -- see `fit()` section 6 for the measurement), so both are
+    applied. The `comms` params block is optional -- a pre-Phase-D params
+    dict (no "comms" key) makes this term zero. A params dict still carrying
+    an older shape (e.g. fixed_per_tick_s/out_per_link_s from the superseded
+    per-federate-only iteration) also does not raise: the missing current
+    keys default to 0.0/empty dict, so only its same-named `per_byte_s` --
+    now applied against n_edges instead of max_fed_in -- carries over.
     """
     model = config["model"]
     work = config.get("work")
@@ -349,6 +611,30 @@ def predict(config, params, machines=None):
 
     rtt_s = params.get("rtt_s", 0.0)
     comms = rtt_s if placement and placement != "local" else 0.0
+
+    # Phase-D data-exchange term (additive to the existing rtt_s hop above;
+    # optional "comms" params block -- absent (pre-Phase-D params) -> zero).
+    # Both mechanisms are real (see fit() section 6): a shared per-edge
+    # routing cost (n_edges) and a per-federate inbound-polling cost
+    # (max_fed_in) -- a wide N/M/edge-count matrix showed neither term alone
+    # explains the data (n_edges is not redundant with max_fed_in).
+    exchange = config.get("exchange", "none")
+    if exchange == "on":
+        distance = config.get("distance")
+        n_edges = config.get("n_edges", 0) or 0
+        max_fed_in = config.get("max_fed_in", 0) or 0
+        msg_width = config.get("msg_width", 1) or 1
+        freq = config.get("freq", 1) or 1
+        comms_entry = params.get("comms", {})
+        per_edge_s = comms_entry.get("per_edge_s", {}).get(distance, 0.0)
+        # in_per_link_s is a scalar (pooled across distance). Older params files
+        # stored it as a per-distance dict -- accept both so they still load.
+        _in_raw = comms_entry.get("in_per_link_s", 0.0)
+        in_per_link_s = _in_raw.get(distance, 0.0) if isinstance(_in_raw, dict) else _in_raw
+        per_byte_s = comms_entry.get("per_byte_s", 0.0)
+        comms += (per_edge_s * n_edges
+                  + in_per_link_s * max_fed_in
+                  + per_byte_s * 8 * msg_width * n_edges / freq)
 
     # T_tick = max over machines(compute+sync+comms); for a single homogeneous
     # config every federate/machine sees the same contribution, so the max is
@@ -525,6 +811,10 @@ def _cmd_predict(args):
         "F": args.F, "N": args.N, "M": args.M, "mode": args.mode, "W": args.W,
         "core_type": args.core_type, "model": args.model, "work": args.work,
         "placement": args.placement, "n_ticks": args.n_ticks,
+        "exchange": args.exchange, "distance": args.distance, "fanout": args.fanout,
+        "msg_width": args.msg_width, "freq": args.freq, "causality": args.causality,
+        "n_edges": args.n_edges, "n_subs": args.n_subs,
+        "max_fed_in": args.max_fed_in,
     }
     result = predict(config, params, machines)
     print(f"config: {config}")
@@ -581,6 +871,29 @@ def build_parser():
     p_pred.add_argument("--work", type=float, default=None)
     p_pred.add_argument("--placement", default="local")
     p_pred.add_argument("--n-ticks", dest="n_ticks", type=int, default=100)
+    p_pred.add_argument("--exchange", choices=["none", "on"], default="none",
+                         help="Phase-D data-exchange wiring: none (default, Part-A) | on")
+    p_pred.add_argument("--distance", choices=["intra_fed", "cross_fed", "cross_machine"],
+                         default=None, help="where subscribers live relative to publishers")
+    p_pred.add_argument("--fanout", choices=["1to1", "1toN", "Nto1", "all2all"], default=None,
+                         help="edge pattern between publisher/subscriber federates (informational)")
+    p_pred.add_argument("--msg-width", dest="msg_width", type=int, default=1,
+                         help="published payload vector length in doubles (default 1)")
+    p_pred.add_argument("--freq", type=int, default=1,
+                         help="publisher emits every freq-th tick (default 1)")
+    p_pred.add_argument("--causality", choices=["same_step", "next_step"], default=None,
+                         help="subscription causality (informational)")
+    p_pred.add_argument("--n-edges", dest="n_edges", type=int, default=0,
+                         help="total HELICS input->target links (default 0; used by "
+                              "predict() for per_edge_s[distance]*n_edges and the "
+                              "per_byte_s bytes-routed term)")
+    p_pred.add_argument("--n-subs", dest="n_subs", type=int, default=0,
+                         help="total HELICS input handles registered (default 0; "
+                              "informational -- predict() regresses on n_edges/"
+                              "max_fed_in, not this total)")
+    p_pred.add_argument("--max-fed-in", dest="max_fed_in", type=int, default=0,
+                         help="M x targets on the busiest subscriber federate (default 0; "
+                              "used by predict() for in_per_link_s[distance]*max_fed_in)")
     p_pred.set_defaults(func=_cmd_predict)
 
     p_rec = sub.add_parser("recommend", help="Recommend a config for a target scenario + machine set.")
