@@ -1,16 +1,16 @@
-# Graph Report - CosimGym  (2026-08-21)
+# Graph Report - CosimGym  (2026-07-28)
 
 ## Corpus Check
-- 171 files · ~433,479 words
+- 168 files · ~423,062 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2641 nodes · 4086 edges · 178 communities (159 shown, 19 thin omitted)
-- Extraction: 91% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 346 edges (avg confidence: 0.59)
+- 2579 nodes · 4025 edges · 172 communities (156 shown, 16 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 346 edges (avg confidence: 0.59)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `120e4675`
+- Built from commit: `c9ea3bce`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -179,13 +179,7 @@
 - [[_COMMUNITY_parse_target|parse_target]]
 - [[_COMMUNITY__rl_scenario_yamls|_rl_scenario_yamls]]
 - [[_COMMUNITY_.__init__|.__init__]]
-- [[_COMMUNITY_.publish|.publish]]
 - [[_COMMUNITY_Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)|Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)]]
-- [[_COMMUNITY_._enforce_startup_input_sync|._enforce_startup_input_sync]]
-- [[_COMMUNITY_TestInputModel|TestInputModel]]
-- [[_COMMUNITY_parallel_executor.py|parallel_executor.py]]
-- [[_COMMUNITY_.finalize|.finalize]]
-- [[_COMMUNITY_.best_path|.best_path]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `ScenarioManager` - 96 edges
@@ -222,7 +216,7 @@
 - **Multi-Building Grid Stress-Test Family (base + json/parquet sink twins)** — src_scenarios_multi_building_grid_test, src_scenarios_stress_multi_building_json, src_scenarios_stress_multi_building_parquet [EXTRACTED 0.90]
 - **PV+Battery RL Case Study (CS3) — PAPER_PLAN mapping** — docs_paper_paper_plan, src_scenarios_pv_batt_test_base, src_scenarios_pv_batt_dqn, src_scenarios_pv_batt_sac [EXTRACTED 0.90]
 
-## Communities (178 total, 19 thin omitted)
+## Communities (172 total, 16 thin omitted)
 
 ### Community 0 - "RL Gym Space Building"
 Cohesion: 0.06
@@ -250,7 +244,7 @@ Nodes (7): Model, PV_dest, F1F2(), PV_model, Step of PV model.      Args:       
 
 ### Community 6 - "RL Config Dataclasses"
 Cohesion: 0.06
-Nodes (41): ActionSpec, AgentConfig, CheckpointConfig, EnvironmentConfig, ExperimentConfig, FedTimingConfig, Hyperparameters, InterfaceConfig (+33 more)
+Nodes (40): ActionSpec, AgentConfig, CheckpointConfig, EnvironmentConfig, ExperimentConfig, FedTimingConfig, Hyperparameters, InterfaceConfig (+32 more)
 
 ### Community 7 - "Interface Adapter Base"
 Cohesion: 0.18
@@ -265,12 +259,12 @@ Cohesion: 0.17
 Nodes (15): Colors, main(), Check if tool is available, Check if required tools are installed, Verify required project files exist, Create conda environment from environment.yml, Start Docker containers, Validate complete setup (+7 more)
 
 ### Community 10 - "Base Model Abstraction"
-Cohesion: 0.07
-Nodes (39): AutoOffsetConfig, BaseFederateConfig, BrokerConfig, FedConnections, FedEndpoint, _FederateConfigBase, FederationConfig, FedFlags (+31 more)
+Cohesion: 0.08
+Nodes (33): AutoOffsetConfig, BaseFederateConfig, FedEndpoint, _FederateConfigBase, FederationConfig, FedFlags, FedSubscription, ModelConfig (+25 more)
 
 ### Community 11 - "Model Parameter Resolution"
-Cohesion: 0.09
-Nodes (20): BaseModel, Any, Get default values from catalog, Resolve parameter value based on instance number. and return warining in case of, Set model interfaces using catalog metadata., Internal step method to update time state and call user-defined step., Update time-related state variables., Set input values for the model.                  Args:             inputs: Dicti (+12 more)
+Cohesion: 0.12
+Nodes (10): Any, Get default values from catalog, Resolve parameter value based on instance number. and return warining in case of, Set model interfaces using catalog metadata., Internal step method to update time state and call user-defined step., Update time-related state variables., Set input values for the model.                  Args:             inputs: Dicti, Get output values from the model.          Returns:             Dictionary conta (+2 more)
 
 ### Community 12 - "CosimGym Paper Contributions"
 Cohesion: 0.10
@@ -305,16 +299,16 @@ Cohesion: 0.14
 Nodes (11): _get_runner(), _get_subscriber(), _list_scenarios(), _LiveSubscriber, live_dashboard.py — Streamlit live view for streamed cosim data (digitaltwin_int, Launches `ScenarioManager.main(scenario_name)` as a detached background     subp, Render the live-view page. Callable as an `st.Page` target — `st.set_page_config, Background paho-mqtt client feeding a lock-guarded per-topic history buffer. (+3 more)
 
 ### Community 20 - "Model Catalog Metadata"
-Cohesion: 0.14
-Nodes (13): ParameterSpec, Specification for a model parameter, input, or output., Any, Logger, Reconstruct a ModelMetadata dataclass from a raw dict (as stored in Redis)., Fetch and return ModelMetadata for *model_name* from Redis., Return only the inputs and outputs sections for *model_name*.          Returns a, Generic leaf accessor using a dot-separated path.          The first segment mus (+5 more)
+Cohesion: 0.16
+Nodes (11): Any, Logger, Reconstruct a ModelMetadata dataclass from a raw dict (as stored in Redis)., Fetch and return ModelMetadata for *model_name* from Redis., Return only the inputs and outputs sections for *model_name*.          Returns a, Generic leaf accessor using a dot-separated path.          The first segment mus, Return all models matching the given filters (all optional)., Redis-backed model catalog.      Fetches model metadata from keys populated by c (+3 more)
 
 ### Community 21 - "Battery Model"
 Cohesion: 0.12
 Nodes (8): battery_dest, battery_dest.py  Battery model wrapper for integrating energy storage systems in, BESS, :return: the current remaining energy in BESS, :return: the current SOC of the BESS, set SOC, especially when initializing the BESS         :param SOC:         :re, get the legal value of charging/discharging power         :param power: the exp, calculate the charging/discharging process of BESS by a timestep; after charging
 
 ### Community 22 - "ScenarioManager Lifecycle"
-Cohesion: 0.07
-Nodes (28): 0. One-time setup per shell session, 1. Sanity check before any campaign, 2. Re-run the experiments exactly as published, 2a. Local, gate-limited (~10 min, 135 runs), 2b. Local, wide range (~40 min, 177 runs) — the main result, 2c. Across machines (~25 min, 57 runs) — needs the cloud machines, 2d & 2e. Stress ladders (~5 min and ~20 min), 2f. Re-fit and re-plot (seconds) (+20 more)
+Cohesion: 0.09
+Nodes (16): Logger, Popen, Set up the federation by starting broker and all federates.                  Thi, True if this broker must accept connections from other machines.          Keyed, True if a broker could bind `port` on this machine right now.          Probing b, Every port a broker occupies: the advertised one, plus zmq's paired reply socket, Fail before spawning a broker whose ports are already taken.          Most often, Block until the broker is really accepting connections, or raise.          A bri (+8 more)
 
 ### Community 23 - "Federate Launcher & Config Reader"
 Cohesion: 0.23
@@ -325,8 +319,8 @@ Cohesion: 0.25
 Nodes (18): Federation A Broker (HELICS), Federation B Broker (HELICS), Additional Federation Brokers (HELICS, N), HELICS Core (per-federate), Co-sim Environment (outer boundary), CosimGym Architecture Overview Diagram, Federation A Federate 1 (Core + Model), Federation A Federate 2 (Core + Model) (+10 more)
 
 ### Community 25 - "BaseFederate Core"
-Cohesion: 0.21
-Nodes (3): BaseFederate, Base class for all HELICS federates.          This class provides the basic stru, Clear staged next_step inputs (used on episode reset boundaries).
+Cohesion: 0.13
+Nodes (7): BaseFederate, Finalize and cleanup the federate.                  This method should be overri, Base class for all HELICS federates.          This class provides the basic stru, Read the current HELICS input value based on declared type., Ensure required inputs are available before entering the first model step., Clear staged next_step inputs (used on episode reset boundaries)., Method to receive inputs from subscriptions and endpoints. Thought to be overrid
 
 ### Community 26 - "ScenarioManager Module"
 Cohesion: 0.27
@@ -337,8 +331,8 @@ Cohesion: 0.10
 Nodes (14): Popen, Open the ControlMaster connection. All later ssh/rsync calls reuse this socket., Run a one-shot remote command (relative to no particular cwd), return (rc, stdou, Preflight checks: control connection alive, workdir writable, env sane, Redis re, rsync `src/` (delta transfer) into `<workdir>/src`, create remote logs/ and resu, Start this machine's federate supervisor, returning the local ssh child as its h, rsync a remote directory back to a local one (results/ or logs/ after run end)., Close the ControlMaster socket. Never raises — cleanup must not block scenario t (+6 more)
 
 ### Community 28 - "Process Cleanup & Shutdown"
-Cohesion: 0.18
-Nodes (11): Data-exchange coupling — the `comms` term (Phase D), Figure captions, Methodological caution (recommended for the paper — it is a real finding), Methods, Negative result worth reporting (causality), Results — payload and cadence, Results — placement implication (the useful one), Results — stress to first failure (max scale) (+3 more)
+Cohesion: 0.07
+Nodes (27): Data-exchange coupling — the `comms` term (Phase D), Decision rule (one line), Figure captions, Figure X — caption, Framing (see terminology note at end of file), Headline takeaway (one line), Methodological caution (recommended for the paper — it is a real finding), Methods (+19 more)
 
 ### Community 29 - "Catalog Loader & Redis"
 Cohesion: 0.15
@@ -385,16 +379,16 @@ Cohesion: 0.19
 Nodes (11): Exception, ConfigValidationError, ConfigValidator, Any, Configuration Validation Module  Validates federate and model configurations to, # TODO: use validation at federation manager before starting the processes, # TODO: there is a validation method also inside config_reader join them or deci, Raised when configuration validation fails (+3 more)
 
 ### Community 41 - "MQTT Adapter"
-Cohesion: 0.07
-Nodes (21): InterfaceFederate, InterfaceFederate.py  Model-less HELICS federate whose "model" is a network brid, Build HELICS pubs/subs from `interface_config`: `streams` (co-sim -> external,, Publish each 'input'-scope bridge's current value: the external adapter, `scope: output`/`param` bridges: write (or clear) the shared override         re, Mirrors BaseFederate.update_storage()'s json/parquet branching, but         read, A federate whose "model" is a transport adapter instead of physics., Storage/attribute label for a relayed value: the full helics_key.         Using (+13 more)
+Cohesion: 0.19
+Nodes (9): BridgeSpec, co-sim -> external: subscribe in HELICS, publish to the adapter., external -> co-sim: adapter inbound, publish onto a HELICS key.      `helics_key, StreamSpec, _make_federate(), test_interface_federate_storage.py — unit tests for InterfaceFederate's json/par, TestCreateStoragePartition, TestUpdateStorageJson (+1 more)
 
 ### Community 42 - "InterfaceFederate Storage Tests"
 Cohesion: 0.07
 Nodes (30): Accessing the Dashboard on a Remote Ubuntu Server, Advanced: Interactive Development, Alternative: Expose the Dashboard on the Server Network, Automated Setup Tooling, Available Commands, Detailed Options, Dev Container — Detailed Reference, Dev Container + VS Code (+22 more)
 
 ### Community 43 - "Broker/Federate Process Spawning"
-Cohesion: 0.05
-Nodes (29): Logger, Popen, Populate scenario-scoped Redis overrides for models with dynamic IO metadata., Fail fast if required IO specs for RL spaces are missing before federate startup, Set up scenario for multi-computer execution.         TODO: this is a placeholde, Set up the federation by starting broker and all federates.                  Thi, True if this broker must accept connections from other machines.          Keyed, True if a broker could bind `port` on this machine right now.          Probing b (+21 more)
+Cohesion: 0.06
+Nodes (22): Populate scenario-scoped Redis overrides for models with dynamic IO metadata., Fail fast if required IO specs for RL spaces are missing before federate startup, Set up scenario for multi-computer execution.         TODO: this is a placeholde, Resolve a fully-specified, internally-consistent broker/core/protocol         wi, Start one supervisor per remote machine, each covering all that machine's federa, Context manager entry., Stop all broker processes specifically.         Useful for debugging or partial, Initialize Redis client for configuration distribution. (+14 more)
 
 ### Community 44 - "Dashboard Episode Fingerprint Cache"
 Cohesion: 0.29
@@ -441,8 +435,8 @@ Cohesion: 0.09
 Nodes (22): 1.1 Time model, 1.2 Offsets (tie-breaking within a tick), 1.3 Causality (per-subscription), 1.4 Per-step loop order, 1.5 Cycle validation, 1.6 Where causality is resolved (two independent code paths — the root of the bug), 1. How synchronization works today (definitive overview), 2.1 Mechanism (+14 more)
 
 ### Community 55 - "Simple RL Agent Skeleton"
-Cohesion: 0.13
-Nodes (14): 1. Headline law, 2. Total edge count is the regressor — not edge placement, 3. The residual: concentration (open gap), 4. Payload width — the dominant lever at scale, 5. Publish cadence — the cheapest mitigation available, 6. Causality — no consistent effect (hypothesis not supported), 7. Structural limits found (not performance — hard walls), 8.1 Stress to first failure — the instance axis has no wall (+6 more)
+Cohesion: 0.15
+Nodes (12): 1. Headline law, 2. Total edge count is the regressor — not edge placement, 3. The residual: concentration (open gap), 4. Payload width — the dominant lever at scale, 5. Publish cadence — the cheapest mitigation available, 6. Causality — no consistent effect (hypothesis not supported), 7. Structural limits found (not performance — hard walls), 8.1 Stress to first failure — the instance axis has no wall (+4 more)
 
 ### Community 56 - "Simple 1R1C Building Model"
 Cohesion: 0.06
@@ -461,12 +455,12 @@ Cohesion: 0.13
 Nodes (14): Architecture, CLAUDE.md, Config Reference, Digital-Twin Interfaces & Live Streaming (opt-in, off by default), Execution Flow, graphify, Key Timing Concepts, Model Catalog (+6 more)
 
 ### Community 60 - "Dynamic Catalog IO Enrichment"
-Cohesion: 0.18
-Nodes (8): main(), federate_launcher.py  Entry point for launching HELICS federates as standalone p, Main entry point when running as separate process.          This function parses, override_registry.py  Shared Redis-backed channel for the digital-twin interface, logging_config.py  Centralized logging system for managing logs across federated, Setup logger for individual processes (brokers/federates).     This function is, setup_process_logger(), redis_client.py  Client wrapper for Redis interactions, managing connection and
+Cohesion: 0.22
+Nodes (7): main(), federate_launcher.py  Entry point for launching HELICS federates as standalone p, Main entry point when running as separate process.          This function parses, logging_config.py  Centralized logging system for managing logs across federated, Setup logger for individual processes (brokers/federates).     This function is, setup_process_logger(), redis_client.py  Client wrapper for Redis interactions, managing connection and
 
 ### Community 61 - "District Heating Scenario Catalog"
-Cohesion: 0.14
-Nodes (10): ABC, InterfaceAdapter, Any, base_adapter.py  Abstract transport adapter used by the `stream` outbound mirror, Transport adapter contract shared by the `stream` mirror and InterfaceFederate., Open the transport connection. Must not block the sim thread once returned., Enqueue *payload* for outbound delivery on *topic*. Non-blocking., Subscribe to *topics* so their values become readable via `latest()`. (+2 more)
+Cohesion: 0.06
+Nodes (22): ABC, InterfaceAdapter, Any, base_adapter.py  Abstract transport adapter used by the `stream` outbound mirror, Transport adapter contract shared by the `stream` mirror and InterfaceFederate., Open the transport connection. Must not block the sim thread once returned., Enqueue *payload* for outbound delivery on *topic*. Non-blocking., Subscribe to *topics* so their values become readable via `latest()`. (+14 more)
 
 ### Community 62 - "Heat Pump Model"
 Cohesion: 0.20
@@ -485,20 +479,20 @@ Cohesion: 0.20
 Nodes (5): HeavyComputeDummy, heavy_compute_dummy.py  Self-contained, deliberately CPU-heavy dummy model used, Dummy model whose step() burns CPU doing real (non-optimizable-away)     floatin, Seed the accumulator/counter outputs., Burn CPU with real float math so the work can't be optimized away.
 
 ### Community 66 - "Override Registry (Redis)"
-Cohesion: 0.12
-Nodes (12): Connect to Redis using REDIS_HOST env var + centralized port (utils.ports)., Manager Redis port. Env: COSIM_REDIS_PORT (or legacy REDIS_PORT). Default 6379., redis_port(), Any, Logger, Delete a key from Redis., A simple wrapper around redis-py to handle connecting, setting,     and getting, Establish connection to the Redis server. (+4 more)
+Cohesion: 0.13
+Nodes (10): Connect to Redis using REDIS_HOST env var + centralized port (utils.ports)., Any, Logger, Delete a key from Redis., A simple wrapper around redis-py to handle connecting, setting,     and getting, Establish connection to the Redis server., Store a dictionary as JSON in Redis using RedisJSON module.                  Arg, Retrieve JSON data from Redis using RedisJSON module.                  Args: (+2 more)
 
 ### Community 67 - "BUI0 EnergyPlus FMU Scenarios"
 Cohesion: 0.20
 Nodes (7): DeploymentConfig, Scenario-level `deployment` block: LAN address remote machines reach the manager, _base_scenario(), test_deployment_config.py — validate deployment/host schema for distributed SSH, TestDeploymentSchema, TestDeploymentValidation, TestNoDeploymentUnchanged
 
 ### Community 68 - "Checkpoint Manager"
-Cohesion: 0.05
-Nodes (36): B10 — Per-federation port BLOCK must be sized from N  *(FIXED — B9's fix was incomplete)*, B11 — Data-exchange coupling `comms`  *(the dominant per-tick cost at scale)*, B12 addendum — the distributed `_ss` byte threshold (same signature, kept for detail), B12 — Teardown stall: one side finishes, the other hangs forever  *(OPEN — the most serious limit found)*, B13 — `par` worker oversubscription at large N  *(per-tick; the reason big federations lose their parallelism)*, B1 — HELICS per-tick synchronization barrier `s(N)`  *(the floor)*, B2 — Parallel-worker dispatch overhead `O_par`  *(the reason par usually loses)*, B3 — Federation hierarchy-broker startup tax  *(one-time, not per-tick)* (+28 more)
+Cohesion: 0.12
+Nodes (16): B10 — Per-federation port BLOCK must be sized from N  *(FIXED — B9's fix was incomplete)*, B11 — Data-exchange coupling `comms`  *(the dominant per-tick cost at scale)*, B12 — Distributed `zmq_ss` stalls above ~1 kB of exchanged data per tick  *(OPEN — the most serious limit found)*, B1 — HELICS per-tick synchronization barrier `s(N)`  *(the floor)*, B2 — Parallel-worker dispatch overhead `O_par`  *(the reason par usually loses)*, B3 — Federation hierarchy-broker startup tax  *(one-time, not per-tick)*, B4 — Host CPU / process-count contention  *(the real N-scaling wall on one box)*, B5 — Shared-machine co-user contention  *(measurement hazard + real slowdown)* (+8 more)
 
 ### Community 69 - "Federate Module Docstrings"
-Cohesion: 0.23
-Nodes (14): catalog entry: bui0_building_fmu (BUI0 EnergyPlus FMU, FMI 2.0), catalog entry: bui0_input_feeder, catalog entry: rl_simple_DQN, catalog entry: test_feedthrough_fmi3, bui0_setpoint_comfort(), Comfort(+optional energy) reward for the BUI0 EnergyPlus FMU setpoint-control ex, Encourages the spring-mass-damper to oscillate between +1 m and -1 m.      Terms, spring_oscillation_reward() (+6 more)
+Cohesion: 0.44
+Nodes (9): catalog entry: bui0_building_fmu (BUI0 EnergyPlus FMU, FMI 2.0), catalog entry: bui0_input_feeder, catalog entry: rl_simple_DQN, bui0_setpoint_comfort(), Comfort(+optional energy) reward for the BUI0 EnergyPlus FMU setpoint-control ex, Scenario: bui0_fmu_test (feeder + BUI0 EnergyPlus FMU smoke test), Scenario: bui0_heatingpower_DQN (RL DQN control of BUI0 heating radiative power), Scenario: bui0_setpoint_DQN (RL DQN control of BUI0 zone set-point, discrete) (+1 more)
 
 ### Community 70 - "PV+Battery Scenario Catalog"
 Cohesion: 0.07
@@ -593,8 +587,8 @@ Cohesion: 0.20
 Nodes (6): ModelLoggerAdapter, Logger adapter that adds model prefix to logs., Initialize the model with given parameters.                  This method is call, A model instance's mutable runtime state: parameters, current inputs/outputs, an, Initialize the base model with mandatory class variables.                  These, State
 
 ### Community 108 - "render_sidebar"
-Cohesion: 0.19
-Nodes (22): BK4 Config-Only Sim-to-Real Pattern, Interface Federate Pattern (type: interface), Override Registry Pattern (scope: output/param bridges), mosquitto service (Mosquitto MQTT broker, port 11883), catalog entry: inputs4spring, catalog entry: mqtt_adapter (MQTT transport adapter), old catalog entry: inputs4spring, old catalog entry: spring_mass_damper (+14 more)
+Cohesion: 0.06
+Nodes (37): BK4 Config-Only Sim-to-Real Pattern, Interface Federate Pattern (type: interface), Override Registry Pattern (scope: output/param bridges), InterfaceFederate, Build HELICS pubs/subs from `interface_config`: `streams` (co-sim -> external,, Publish each 'input'-scope bridge's current value: the external adapter, `scope: output`/`param` bridges: write (or clear) the shared override         re, Mirrors BaseFederate.update_storage()'s json/parquet branching, but         read (+29 more)
 
 ### Community 109 - "build_dataframe"
 Cohesion: 0.30
@@ -629,8 +623,8 @@ Cohesion: 0.20
 Nodes (9): 1. Extending `BaseModel`, 2. Registering in the Catalog, 3. How the Catalog is distributed, 4. Interface Adapters (transport, not physics), Custom Models & Catalog, `finalize(self)`, `initialize(self)`, Minimal example (+1 more)
 
 ### Community 118 - ".__init__"
-Cohesion: 0.09
-Nodes (10): base_csv_reader.py  CSV Reader model for parsing and serving time-series data wi, # TODO: implement resampling logic — currently always a no-op identity pass-thro, # TODO: implement logic of starting point maybe from datetime — currently always, base_FMU_model.py  Wrapper that integrates any FMU (FMI 2.0 and FMI 3.0 co-simul, base_model.py  Primary base class and logging adapters for all physical and beha, Inputs4Spring, pandapipes_grid.py  Stepped pandapipes fluid/gas network model for CosimGym co-s, pandapower_grid.py  Stepped pandapower power grid model for CosimGym co-simulati (+2 more)
+Cohesion: 0.12
+Nodes (9): base_csv_reader.py  CSV Reader model for parsing and serving time-series data wi, # TODO: implement resampling logic — currently always a no-op identity pass-thro, # TODO: implement logic of starting point maybe from datetime — currently always, base_FMU_model.py  Wrapper that integrates any FMU (FMI 2.0 and FMI 3.0 co-simul, base_model.py  Primary base class and logging adapters for all physical and beha, pandapipes_grid.py  Stepped pandapipes fluid/gas network model for CosimGym co-s, pandapower_grid.py  Stepped pandapower power grid model for CosimGym co-simulati, pv_dest.py  Photovoltaic (PV) system model for generating solar power outputs ba (+1 more)
 
 ### Community 119 - "Framework Terminology"
 Cohesion: 0.22
@@ -676,6 +670,10 @@ Nodes (5): Adding RL to your Scenario, Reinforcement Learning Integration, Suppo
 Cohesion: 0.33
 Nodes (6): File location, Hierarchy, Minimal working example — plain co-simulation, Scenario Configuration, Sections, Top-level structure
 
+### Community 130 - "Inputs4Spring"
+Cohesion: 0.08
+Nodes (14): BaseModel, Reset the model to its initial state.                  This method can be used t, Finalize the model and clean up resources.                  This method is calle, Base model class for HELICS co-simulation framework.          This abstract base, BUI0InputFeeder, Time-varying input feeder for the BUI0 EnergyPlus FMU.      Drives the six FMU i, Minimal signal generator for feeding deterministic test inputs to other federate, TestInputModel (+6 more)
+
 ### Community 131 - "Introduction"
 Cohesion: 0.40
 Nodes (4): Introduction, The Challenge, The Solution, Why Choose CosimGym?
@@ -685,8 +683,8 @@ Cohesion: 0.40
 Nodes (5): Dashboard & Analytics, Headless Environments, How To Use The Dashboard, Live View (during a run), The Data Pipeline
 
 ### Community 133 - "Digital-Twin Interfaces & Live Streaming"
-Cohesion: 0.14
-Nodes (11): Base Co-Simulation (Physics & Math), Provided Examples List, Reinforcement Learning Training, Architecture, Diagram, High-Level Execution Flow, (A) `stream` — outbound telemetry mirror, (B) Interface federate — bidirectional external bridge (+3 more)
+Cohesion: 0.21
+Nodes (6): Base Co-Simulation (Physics & Math), Provided Examples List, Reinforcement Learning Training, Architecture, Diagram, High-Level Execution Flow
 
 ### Community 134 - ".__init__"
 Cohesion: 0.33
@@ -701,16 +699,16 @@ Cohesion: 0.20
 Nodes (9): 0. Ground rules (read fully before touching anything), Case-Study Experiment Implementation Instructions (Paper: CosimGym SIMPAT), Final checklist, S1 — Baseline co-simulation (PID), S2 — RL control + reset-strategy benchmark (LONGEST STAGE), S3 — Model-formalism swap (EnergyPlus FMU), S4 — Scalability (three sub-experiments), S5 — Digital-twin swap (BRIEF) (+1 more)
 
 ### Community 137 - "._create_rl_storage_partition"
-Cohesion: 0.16
-Nodes (16): helics_port_range(), _int(), _load_env_file(), minio_console_port(), minio_endpoint(), minio_port(), mqtt_port(), Centralized default ports for CosimGym infra services.  Single source of truth = (+8 more)
+Cohesion: 0.15
+Nodes (18): helics_port_range(), _int(), _load_env_file(), minio_console_port(), minio_endpoint(), minio_port(), mqtt_port(), Centralized default ports for CosimGym infra services.  Single source of truth = (+10 more)
 
 ### Community 138 - ".store_local_file"
 Cohesion: 0.11
 Nodes (28): bench_one(), _classify_failure(), _empty_row(), expand_matrix(), gen_scenario(), main(), _newest_subdir(), parse_args() (+20 more)
 
 ### Community 139 - "._create_federate"
-Cohesion: 0.29
-Nodes (4): ParallelModelExecutor, Owns a pool of persistent worker processes stepping a partition of a     federat, Fan out this tick's inputs to workers, gather and merge outputs., Idempotent, escalating shutdown: sentinel -> join -> terminate -> join -> kill.
+Cohesion: 0.17
+Nodes (9): _build_models(), ParallelModelExecutor, parallel_executor.py  Persistent-worker-process parallel execution of a federate, Owns a pool of persistent worker processes stepping a partition of a     federat, Fan out this tick's inputs to workers, gather and merge outputs., Idempotent, escalating shutdown: sentinel -> join -> terminate -> join -> kill., Rebuild a shard of model instances from a picklable build spec.      Mirrors the, Entry point run inside each persistent worker process.      Rebuilds its shard o (+1 more)
 
 ### Community 140 - ".__enter__"
 Cohesion: 0.18
@@ -725,16 +723,16 @@ Cohesion: 0.25
 Nodes (6): 1. Catalog entry, 2. Communication step must match the FMU, 3. EnergyPlus FMUs: defined stop time, 4. Worked example — BUI0 building FMU, FMU Models, FMU sources
 
 ### Community 144 - ".__init__"
-Cohesion: 0.33
-Nodes (13): catalog entry: pandapipes_grid, catalog entry: pandapower_grid, catalog entry: rc_building (5R1C ISO 13790 model), catalog entry: test_input_model, catalog entry: weather_csv_reader, Scenario: dh_district_jan_base (10-building district heating network, parquet sink), Multi-Building Grid Test Scenario, Pandapipes Grid Test Base Scenario (+5 more)
+Cohesion: 0.56
+Nodes (9): catalog entry: pandapower_grid, catalog entry: rc_building (5R1C ISO 13790 model), catalog entry: weather_csv_reader, Scenario: dh_district_jan_base (10-building district heating network, parquet sink), Multi-Building Grid Test Scenario, RC Building Parquet Sink Test, RC Building Test Base Scenario, Stress Multi-Building Test (JSON sink) (+1 more)
 
 ### Community 145 - ".best_path"
 Cohesion: 0.10
 Nodes (14): Core Module  This module contains the core functionality for managing HELICS fed, remote_executor.py  Wraps plain OpenSSH client (subprocess.Popen, ControlMaster, main(), ScenarioManager.py  Orchestrates HELICS federations, managing the lifecycle of b, # TODO: converting to int will only accept model frequency that are divisors of, # TODO: localhost addresses won't be reachable from remote brokers;, Get status of all managed processes for debugging., Return copy of current metrics dict. (+6 more)
 
 ### Community 146 - "OverrideRegistry"
-Cohesion: 0.40
-Nodes (3): mqtt_adapter.py  MQTT implementation of InterfaceAdapter, backed by Mosquitto. `, BaseFederate.py  Base class for HELICS federates in the Cosim_gym framework, man, # TODO: unclear whether the first time-advance request should target step 0 or s
+Cohesion: 0.33
+Nodes (4): BaseFederate.py  Base class for HELICS federates in the Cosim_gym framework, man, # TODO: unclear whether the first time-advance request should target step 0 or s, InterfaceFederate.py  Model-less HELICS federate whose "model" is a network brid, override_registry.py  Shared Redis-backed channel for the digital-twin interface
 
 ### Community 147 - "WeatherCSVReader"
 Cohesion: 0.20
@@ -757,24 +755,24 @@ Cohesion: 0.20
 Nodes (10): 4a — distribution overhead vs compute intensity (N=48, sweep work), 4b — approaching the roofline (N ∈ {64, 88}, work=50000, compute-bound), Cost-model fit, Files in this directory, Headline result — the opposite of the expectation in the task brief, No harness bugs found this phase, Optional parallel_execution variant, Scaling Study — Phase 4 (distribution roofline) (+2 more)
 
 ### Community 152 - "verify_distributed_demo.py"
-Cohesion: 0.13
-Nodes (14): 0. Vocabulary (read this once, everything else follows), 1. Map of the campaign, 2. Experiment 1 — first look, deliberately small, 3. Experiment 2 — widen the range, and overturn Experiment 1, 4. Experiment 3 — does crossing a network cost extra?, 5. Experiments 4 & 5 — how far can it actually go?, 5b. Experiment 6 — the biggest thing we ran, on one PC and on three, 6. What broke, and why it matters (+6 more)
+Cohesion: 0.22
+Nodes (8): heatpump_comfort_efficiency_reward(), Reward Functions Library  Centralised collection of reward functions for use acr, Simple, well-scaled reward for battery case studies:       1) keep SOC inside [0, Encourages the spring-mass-damper to oscillate between +1 m and -1 m.      Terms, Balances thermal comfort and energy efficiency for the building/heat-pump scenar, soc_band_clip_simple(), spring_oscillation_reward(), Simple Spring DQN Test
 
 ### Community 153 - "._create_federate"
 Cohesion: 0.25
 Nodes (3): D3 perf instrumentation: write this federate's own tick-timing fragment., Store each mode partition as a separate JSON file (train / test).         Will b, Hands a per-tick row snapshot to the background AsyncStorageWriter         (S1),
 
 ### Community 154 - "Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring"
-Cohesion: 0.25
-Nodes (5): Any, Convert to dictionary for serialization., Export catalog to JSON for external systems., Export data in format suitable for knowledge graph creation., Convert to dictionary for serialization.
+Cohesion: 0.20
+Nodes (7): ParameterSpec, Any, Convert to dictionary for serialization., Export catalog to JSON for external systems., Export data in format suitable for knowledge graph creation., Specification for a model parameter, input, or output., Convert to dictionary for serialization.
 
 ### Community 155 - ".start_scenario"
 Cohesion: 0.20
 Nodes (5): LightComputeDummy, heavy_compute_dummy.py  Self-contained, deliberately CPU-heavy dummy model used, Dummy model whose step() burns CPU doing real (non-optimizable-away)     floatin, Seed the accumulator/counter outputs., doing nothing just fast forwarding data to the next step, accessing input and wr
 
 ### Community 156 - "._enqueue_async_storage_row"
-Cohesion: 0.15
-Nodes (7): MqttAdapter, Logger, Stop the drain thread and disconnect from the broker., MQTT-backed InterfaceAdapter (see module docstring for the non-blocking threadin, Construct the paho client and internal queues; does not connect yet (see `connec, Connect to the broker and start the paho network thread plus the outbound drain, Register topics with the broker; incoming messages populate the latest-value dic
+Cohesion: 0.25
+Nodes (7): Known gaps / open, Max scale reached (bounded, not to failure), Phases done, Reproduce, Scaling Study — canonical index (single source of truth), The zmq_ss "ceiling" — resolved, Trusted primitives (use these; ignore the pooled fits)
 
 ### Community 157 - "Scaling Study -- Phase 3 (federation sharding, the F axis)"
 Cohesion: 0.22
@@ -789,48 +787,32 @@ Cohesion: 0.47
 Nodes (3): spawn_many() itself calls subprocess.Popen — verify the argv it builds without l, The command must stay a fixed size: the federate list travels via Redis, not arg, TestSpawnUsesPtyAndDetachedGroup
 
 ### Community 160 - "parse_target"
-Cohesion: 0.24
-Nodes (12): catalog entry: base_csv_reader, catalog entry: battery_dest, catalog entry: pv_dest, heatpump_comfort_efficiency_reward(), Reward Functions Library  Centralised collection of reward functions for use acr, Simple, well-scaled reward for battery case studies:       1) keep SOC inside [0, Balances thermal comfort and energy efficiency for the building/heat-pump scenar, soc_band_clip_simple() (+4 more)
+Cohesion: 0.62
+Nodes (7): catalog entry: base_csv_reader, catalog entry: battery_dest, catalog entry: pv_dest, soc_reward(), PV+Battery DQN Scenario, PV+Battery SAC Scenario, PV+Battery Test Base Scenario
 
 ### Community 161 - "._enrich_dynamic_catalog_metadata"
 Cohesion: 0.22
 Nodes (4): 1. What is the best config for a scenario? (per the framework), 2. Max-scale story, Scaling Study — Synthesis (Phases 0–5), Where the framework should be extended next (not done here, out of scope
 
 ### Community 163 - "catalog-loader service"
-Cohesion: 0.18
-Nodes (6): Runge-Kutta 4th order integration step for the spring-mass-damper system., Finalize the spring-mass-damper model simulation.                  Logs final st, Initialize the spring-mass-damper model.                  Sets up initial condit, Execute one simulation step of the spring-mass-damper system.                  I, Spring-Mass-Damper system model implementation.          This model simulates a, SpringMassDamper
-
-### Community 164 - "BaseFederateConfig"
-Cohesion: 0.22
-Nodes (9): Decision rule (one line), Figure X — caption, Headline takeaway (one line), Methods, Open anchor (to make the EnergyPlus mapping measured, not cited), Paper-ready sentences — seq/par crossover & real-model mapping, Real-model mapping (EnergyPlus reference — see provenance note), Results — the crossover law (+1 more)
+Cohesion: 0.40
+Nodes (6): catalog entry: pandapipes_grid, catalog entry: test_feedthrough_fmi3, catalog entry: test_input_model, Scenario: fmu_feedthrough_test (FMI 3.0 feedthrough FMU smoke test), Pandapipes Grid Test Base Scenario, Pandapower Grid Test Base Scenario
 
 ### Community 165 - "Scaling Study — Phase 2 (federate sweep + zmq_ss ceiling investigation)"
 Cohesion: 0.25
 Nodes (7): 1. 2a — LOCAL zmq control (no NAT, single machine), 2. 2b — Config A distributed zmq_ss (NAT, 3 machines) — THE test, 3. Sanity check — does the ORIGINAL (heavier, real-subscription) topology reproduce the ceiling?, 4. Pushing further — where does something actually break?, 5. Verdict, Files in this directory, Scaling Study — Phase 2 (federate sweep + zmq_ss ceiling investigation)
 
 ### Community 167 - "Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring"
-Cohesion: 0.22
-Nodes (9): Framing (see terminology note at end of file), Methods, Results — instance-crossover (dual of the cost-crossover), Results — speedup ceiling, Results — the ⌈M/W⌉ staircase (supplementary), Table Z — instance-crossover (measured vs law, W = 8), Terminology note — "vertical scalability" (is it correct?), Vertical scalability — the instance axis (M) (Phase 1b) (+1 more)
+Cohesion: 0.40
+Nodes (5): (A) `stream` — outbound telemetry mirror, (B) Interface federate — bidirectional external bridge, Digital-Twin Interfaces & Live Streaming  ⚠️ enabled but still under testing & refactoring, Live dashboard, The BK4 pattern: config-only sim-to-real
 
 ### Community 169 - "_rl_scenario_yamls"
 Cohesion: 0.50
 Nodes (4): Yield (path, name) for every .yaml in src/scenarios/., Yield (path, name) for RL scenarios only., _rl_scenario_yamls(), _scenario_yamls()
 
-### Community 171 - ".publish"
-Cohesion: 0.29
-Nodes (4): Any, Background-thread loop: pull queued (topic, payload) pairs and publish them via, Enqueue a payload for the drain thread to publish; never blocks (drop-oldest on, Return the most recently received payload for `topic`, or None if nothing arrive
-
 ### Community 172 - "Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)"
 Cohesion: 0.33
 Nodes (5): Files in this directory, Fitted primitives, Phase 1 — crossover result, Real models tried standalone (Phase 0c), Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)
-
-### Community 173 - "._enforce_startup_input_sync"
-Cohesion: 0.29
-Nodes (3): Read the current HELICS input value based on declared type., Ensure required inputs are available before entering the first model step., Method to receive inputs from subscriptions and endpoints. Thought to be overrid
-
-### Community 175 - "parallel_executor.py"
-Cohesion: 0.40
-Nodes (5): _build_models(), parallel_executor.py  Persistent-worker-process parallel execution of a federate, Rebuild a shard of model instances from a picklable build spec.      Mirrors the, Entry point run inside each persistent worker process.      Rebuilds its shard o, _worker_loop()
 
 ## Ambiguous Edges - Review These
 - `Model Catalog Registry (catalog.yaml)` → `Model Catalog Entry Template (model_template.yaml)`  [AMBIGUOUS]
@@ -841,9 +823,9 @@ Nodes (5): _build_models(), parallel_executor.py  Persistent-worker-process para
   docs/images/overviewCosimGym.png · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **587 isolated node(s):** `run_dashboard.sh script`, `What This Project Is`, `Pre-merge regression suite`, `Ports (shared-machine port conflicts)`, `Execution Flow` (+582 more)
+- **540 isolated node(s):** `run_dashboard.sh script`, `What This Project Is`, `Pre-merge regression suite`, `Ports (shared-machine port conflicts)`, `Execution Flow` (+535 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -854,11 +836,11 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: shares_data_with) - confidence is low._
 - **What is the exact relationship between `RL Federate (Core + RL agent)` and `Physical Model (per-federate, one or more stacked instances)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `BaseModel` connect `Model Parameter Resolution` to `FMU Loading & MinIO`, `Inputs4Spring`, `PV Model`, `RL Config Dataclasses`, `5R1C Building Physics`, `Base Model Abstraction`, `WeatherCSVReader`, `Battery Model`, `rb_bems`, `CheckpointManager`, `.start_scenario`, `BaseFederate.py`, `Pandapower Grid Model`, `parquet_storage.py`, `catalog-loader service`, `MQTT Adapter`, `Test Input Model & Catalog Entries`, `TestInputModel`, `District Heating Scenario Catalog`, `Heat Pump Model`, `PID Controller Model`, `Reward Functions Library`, `BUI0 EnergyPlus FMU Scenarios`, `BaseCSVReader`, `7. Enhancements & Additional Features`, `.__init__`?**
-  _High betweenness centrality (0.160) - this node is a cross-community bridge._
-- **Why does `ScenarioManager` connect `Broker/Federate Process Spawning` to `Base CSV Reader Model`, `Override Registry (Redis)`, `PV+Battery Scenario Catalog`, `RL Config Dataclasses`, `parse_target`, `Base Model Abstraction`, `CosimGym Paper Contributions`, `.best_path`, `Federate Launcher & Config Reader`, `Architecture Overview Diagram`, `Redis Client Wrapper`?**
-  _High betweenness centrality (0.102) - this node is a cross-community bridge._
-- **Why does `BaseFederate` connect `BaseFederate Core` to `RL Gym Space Building`, `Interface Adapter Base`, `Base Model Abstraction`, `._create_federate`, `CosimGym Paper Contributions`, `.best_path`, `OverrideRegistry`, `Async Storage Writer`, `Model Catalog Metadata`, `Architecture Overview Diagram`, `._create_federate`, `._enqueue_async_storage_row`, `Federate Step Loop`, `ModelCatalog Class`, `MQTT Adapter`, `.__init__`, `._enforce_startup_input_sync`, `Building/Heat-Pump Scenario Catalog`, `.finalize`, `Base Model & Catalog Types`, `Storage Partition Init`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **Why does `BaseModel` connect `Inputs4Spring` to `FMU Loading & MinIO`, `PV Model`, `RL Config Dataclasses`, `5R1C Building Physics`, `Base Model Abstraction`, `Model Parameter Resolution`, `WeatherCSVReader`, `Battery Model`, `rb_bems`, `CheckpointManager`, `.start_scenario`, `BaseFederate.py`, `Pandapower Grid Model`, `parquet_storage.py`, `BaseFederateConfig`, `MQTT Adapter`, `Broker/Federate Process Spawning`, `Test Input Model & Catalog Entries`, `District Heating Scenario Catalog`, `Heat Pump Model`, `PID Controller Model`, `Reward Functions Library`, `BUI0 EnergyPlus FMU Scenarios`, `BaseCSVReader`, `7. Enhancements & Additional Features`, `render_sidebar`, `.__init__`?**
+  _High betweenness centrality (0.170) - this node is a cross-community bridge._
+- **Why does `ScenarioManager` connect `Broker/Federate Process Spawning` to `Base CSV Reader Model`, `Override Registry (Redis)`, `PV+Battery Scenario Catalog`, `RL Config Dataclasses`, `Base Model Abstraction`, `CosimGym Paper Contributions`, `.best_path`, `ScenarioManager Lifecycle`, `Federate Launcher & Config Reader`, `Architecture Overview Diagram`, `Redis Client Wrapper`?**
+  _High betweenness centrality (0.103) - this node is a cross-community bridge._
+- **Why does `BaseFederate` connect `BaseFederate Core` to `RL Gym Space Building`, `Interface Adapter Base`, `._create_federate`, `CosimGym Paper Contributions`, `.best_path`, `OverrideRegistry`, `Async Storage Writer`, `Model Catalog Metadata`, `Architecture Overview Diagram`, `._create_federate`, `Federate Step Loop`, `ModelCatalog Class`, `.__init__`, `Broker/Federate Process Spawning`, `Building/Heat-Pump Scenario Catalog`, `Base Model & Catalog Types`, `District Heating Scenario Catalog`, `Storage Partition Init`, `render_sidebar`?**
+  _High betweenness centrality (0.083) - this node is a cross-community bridge._
 - **Are the 17 inferred relationships involving `ScenarioManager` (e.g. with `Hierarchy Broker (top-level HELICS broker)` and `RemoteExecutor`) actually correct?**
   _`ScenarioManager` has 17 INFERRED edges - model-reasoned connections that need verification._

@@ -690,9 +690,9 @@
     "semantic_hash": "a5a9cc370ca23eb56e1e7fd483c5cb91"
   },
   "src/scenarios/m5_bk4_demo_a_full_sim.yaml": {
-    "mtime": 1785503356.1743476,
-    "ast_hash": "f4f846aa35d93497078eb93645e67e37",
-    "semantic_hash": ""
+    "mtime": 1782983869.3948865,
+    "ast_hash": "3c4463008128be7aba673c75902bb614",
+    "semantic_hash": "3c4463008128be7aba673c75902bb614"
   },
   "src/scenarios/m5_bk4_demo_b_digital_twin.yaml": {
     "mtime": 1782983869.3948865,
@@ -1020,13 +1020,13 @@
     "semantic_hash": ""
   },
   "docs/future_and_TODOs/scaling_study_plan.md": {
-    "mtime": 1787302484.94312,
-    "ast_hash": "a8eb6119377e29f91d834c36ad975bcb",
+    "mtime": 1785234452.5936823,
+    "ast_hash": "20109ea7c0b5abe78334308ae008aabd",
     "semantic_hash": ""
   },
   "scripts/scaling_study/CONTRACT.md": {
-    "mtime": 1785240527.8170063,
-    "ast_hash": "15e478964f098501cbf14c55d6f6ee78",
+    "mtime": 1785234486.6491508,
+    "ast_hash": "9e51df10fd44a2ccb577337bf4c7dbc6",
     "semantic_hash": ""
   },
   "scripts/scaling_study/cost_model.py": {
@@ -1215,23 +1215,23 @@
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/README.md": {
-    "mtime": 1787302390.0049663,
-    "ast_hash": "a66a9651c55c7f8321d51bcd36aa9bf8",
+    "mtime": 1785233555.6683018,
+    "ast_hash": "1f560ef3f97035ce12cff450ad7b9f95",
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/all_phases_synthesis.md": {
-    "mtime": 1787302509.4426434,
-    "ast_hash": "738e1a7ed2e51ce72f9ee1d03fd83e40",
+    "mtime": 1785152815.41573,
+    "ast_hash": "2d40811f52a79b313068b5281c6552c8",
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/bottlenecks.md": {
-    "mtime": 1787302437.4040446,
-    "ast_hash": "da010f48ae6642cff6acd0ebd028027e",
+    "mtime": 1785233503.7412448,
+    "ast_hash": "5c3d61729985a6cceab857270139f065",
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/paper_ready_sentences.md": {
-    "mtime": 1785239989.85264,
-    "ast_hash": "429db20be68f25053f34b081a2b1ba4b",
+    "mtime": 1785229046.8781488,
+    "ast_hash": "569d1683e4b49abd8f09b84d41bcd4fa",
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/phase5_validation.md": {
@@ -1295,8 +1295,8 @@
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/phaseD_fit_params.json": {
-    "mtime": 1785240015.460174,
-    "ast_hash": "7dba9be8d14e03b55bf71ba1a6b03a5b",
+    "mtime": 1785224510.3060355,
+    "ast_hash": "d45d753eafa4c8fe8654520fe20f28ae",
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/phaseD_wide_fit_params.json": {
@@ -1330,8 +1330,8 @@
     "semantic_hash": ""
   },
   "scripts/scaling_study/findings/phaseD_exchange.md": {
-    "mtime": 1785240534.2488656,
-    "ast_hash": "52edfd6b0dcc8f2704574f30102541b0",
+    "mtime": 1785234543.9522457,
+    "ast_hash": "abfba5fd38de6a9668bfeb8bcb3612f1",
     "semantic_hash": ""
   },
   "scripts/scaling_study/matrices/phaseD_cross_machine.yaml": {
@@ -1382,26 +1382,6 @@
   "docs/future_and_TODOs/distributed_ssh_spawning_plan_DONE.md": {
     "mtime": 1784646907.1738052,
     "ast_hash": "cc625439cd5b931b12b5f419ab93ae87",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/EXPERIMENTS.md": {
-    "mtime": 1787302472.9953525,
-    "ast_hash": "1f8b137c9a1dc5d710f85ff47050711a",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/RUNBOOK.md": {
-    "mtime": 1785244818.0811052,
-    "ast_hash": "5596640ac19ea93c25cbb4f529733858",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/findings/hugescale_multipc.md": {
-    "mtime": 1787302314.5464334,
-    "ast_hash": "0fac3eb24f68b0abae0de0cc2f5dea5a",
-    "semantic_hash": ""
-  },
-  "scripts/scaling_study/matrices/test_matrix_hugescale_multipc.yaml": {
-    "mtime": 1787302326.9941914,
-    "ast_hash": "09b4eac1f757857354dfe466be9800cd",
     "semantic_hash": ""
   }
 }

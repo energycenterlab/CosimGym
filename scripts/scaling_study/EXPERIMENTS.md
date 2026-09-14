@@ -24,7 +24,7 @@ each other.
 | **Federation** | A group of federates that share one coordinator. |
 | **Broker** | The coordinator process for a federation. All messages inside that federation pass through it. With more than one federation, an extra "hierarchy broker" sits above and links them. |
 | **Tick** | One step of simulated time. Every federate must finish its tick before *anybody* moves to the next one — a lockstep barrier. So **the slowest federate sets the pace for everyone**. |
-| **`tick_mean_s`** | Average wall-clock seconds per tick. The headline performance number throughout. |
+| **`tick_mean_s`** | Average wall-clock seconds per tick. The headline performance number throughout — **but only up to ~64 federates**. Above that the very first tick absorbs the whole spawn skew (at 176 federates one tick took 27 s of a 27.2 s run), and the mean stops describing steady-state cost. Use `tick_median_s` there. See Experiment 6. |
 | **Publication / subscription** | A federate *publishes* a value under a name; other federates *subscribe* to that name to receive it. |
 | **Edge** (`n_edges`) | One publisher→subscriber link. If 10 federates each subscribe to 1 value, that is 10 edges. This turned out to be **the** number that predicts cost. |
 | **Payload / `msg_width`** | How much data one message carries, counted in doubles (8 bytes each). `msg_width=1` is a single number; `msg_width=1024` is an 8 kB vector. |
@@ -76,8 +76,13 @@ Five experiment runs, in the order performed. Each row links its inputs to outpu
 | 3 | Across machines | `matrices/phaseD_cross_machine.yaml` | `findings/phaseD_cross_machine.csv` | 54 |
 | 4 | Stress: instances | *(no matrix — CLI ladder)* | `findings/stress_M.csv` | 7 |
 | 5 | Stress: federates | *(no matrix — CLI ladder)* | `findings/stress_N.csv` | 5 |
+| 6 | Huge scale, one PC vs three | `matrices/test_matrix_hugescale_multipc.yaml` | `findings/large_test_Pietro_remote.csv` | 8 |
 
-**Total: 448 scenario runs**, each in its own isolated subprocess.
+**Total: 456 scenario runs**, each in its own isolated subprocess.
+
+Experiment 6 was run by hand at the end of the campaign and is **exploratory**
+(one run per cell, no repeats). It is written up in
+`findings/hugescale_multipc.md` and deliberately kept out of the paper prose.
 
 ### Tools used
 
@@ -244,6 +249,52 @@ different walls, and the instance wall was never found.
 
 ---
 
+## 5b. Experiment 6 — the biggest thing we ran, on one PC and on three
+
+Everything above stresses **one** axis at a time. This last run pushes two at once:
+**176 federates** — exactly one per core across the whole rig (112 + 32 + 32) —
+each holding 10, then 100, then 1 000, then 10 000 model instances. The same four
+steps were run twice: all on the manager, then spread over the three machines. The
+two runs differ in *nothing* except where the federates live, so subtracting them
+isolates what distribution buys. No data exchange in this one (back to the Part-A
+dummy model), so read the tick numbers as a floor.
+
+**It held to 176 000 model instances.** N=176 × M=1 000 finished on both
+placements — 432 ms/tick on one machine, 271 ms/tick on three. That is the largest
+*federates × instances* product in the whole study; the stress ladders above each
+pushed a single axis.
+
+**Spreading over three machines bought almost exactly what the core count
+predicts.** Three machines have 176 cores against the manager's 112 — a ceiling of
+1.57×. Measured end-to-end speedup: **1.48–1.68×**. The network hop cost nothing
+visible, which is the same conclusion Experiment 3 reached from a completely
+different angle. Startup got faster too: spawning 176 federates over SSH beat
+spawning them all locally by 1.7–2.8×.
+
+**Parallel workers stopped paying off at high instance counts.** Compare each run
+against a "perfect packing" bound — all the model work spread evenly over every
+core. At 100 instances/federate on three machines the run sat at **1.3× the
+bound**, near-ideal. At 1 000 instances/federate **both** placements degraded to
+**~9.5× the bound**, identically — so it is not a network effect. The prime
+suspect is worker oversubscription: 176 federates × 10 workers is 1 760 processes
+competing for 112 cores. It stays a suspect, not a conclusion, because no
+sequential control run was made (`bottlenecks.md` B13).
+
+**The next rung broke.** 10 000 instances/federate — 1.76 million instances — timed
+out on both placements. Whether that is the teardown stall (B12) or an honest
+resource wall is **unknown**: the harness deleted the logs on cleanup. Redo it with
+`--keep-scratch`.
+
+**A measurement lesson worth more than any single number.** At 176 federates,
+`tick_mean_s` became meaningless — one startup tick swallowed 27 of the run's 27.2
+seconds while the typical tick took 2 ms. The average was describing how long
+federates took to *start*, not how long a tick *costs*. Above ~64 federates, read
+medians. The same distortion is baked into the CSV's `throughput_inst_steps_s`
+column, which divides by total wall time: it reports 1 296 instance-steps/s where
+the steady state is 834 000.
+
+---
+
 ## 6. What broke, and why it matters
 
 Three failures were found. Two are fixed; one is open and is the most important
@@ -282,7 +333,8 @@ thresholds sit underneath the configurations that phase needs to explore.
 |---|---|
 | Numbers, tables, caveats | `findings/phaseD_exchange.md` |
 | Sentences to paste into the paper | `findings/paper_ready_sentences.md` |
-| What breaks and how to avoid it | `findings/bottlenecks.md` (B10, B11, B12) |
+| What breaks and how to avoid it | `findings/bottlenecks.md` (B10, B11, B12, B13) |
+| The huge-scale one-PC-vs-three probe | `findings/hugescale_multipc.md` |
 | Status of the whole study | `findings/README.md` ← wins any disagreement |
 | Figures | `findings/10…14_*.png` |
 | How to re-run or change any of this | `RUNBOOK.md` |

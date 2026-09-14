@@ -14,6 +14,7 @@ report the discrepancy rather than trusting the other.
 - **Paper prose:** `paper_ready_sentences.md`
 - **Bottleneck catalog:** `bottlenecks.md`
 - **Cross-phase roll-up (narrative):** `all_phases_synthesis.md`
+- **Huge-scale multi-PC probe (exploratory, n=1):** `hugescale_multipc.md`
 
 > **Scope caveat that colours every PART-A result below:** all Part-A sweeps used
 > `heavy_compute_dummy` with **zero data exchange** (self-contained federates, no
@@ -37,6 +38,7 @@ report the discrepancy rather than trusting the other.
 | 5 | max scale + framework validation | `phase5_validation.md` | 200 feds / 1600 instances, 0 fail; predictor under-predicts 2.3–3.3× when N and work both high | ✅ / ⚠️ gap |
 | **D** | **data exchange (`comms`)** | `phaseD_exchange.md`, figs `10–14` | `comms = per_edge[dist]·n_edges + per_byte·bytes`; **total edge count**, not edge placement, is the regressor (a narrow matrix said the opposite — collinearity); payload free to ~512 B then linear; publishing every 10th tick cuts 90% | ✅ (concentration residual open) |
 | **D-x** | **cross-machine κ(LAN)** | `phaseD_exchange.md` §9 | **κ_LAN ≈ κ_local** (ratio 0.99 @M=1, 0.66 @M=4) — a LAN edge costs no more than a local one; distribution is cost-**neutral**. But distributed `zmq_ss` **stalls above ~1 kB/tick** (B12) | ✅ / ⚠️ B12 blocks Phase F |
+| **HS** | **huge-scale multi-PC probe** (N=176 × M→10⁴, local vs 3-machine) | `hugescale_multipc.md`, `large_test_Pietro_remote.csv` | **176 000 instances over 176 federates ran clean** (new combined-axis max, unwired); distribution wall-speedup **1.48–1.68× vs the 1.57× core-pool roofline**; both arms **9.5× above the perfect-packing bound at M=1000**; `O_par` shown **regime-bound** (model errs 21× high at M=10, 9× low at M=1000); M=10 000 **times out, undiagnosed** | ⚠️ exploratory (n=1, 20 ticks, no `seq` arm) |
 
 ## Trusted primitives (use these; ignore the pooled fits)
 
@@ -45,7 +47,10 @@ Per-axis isolated fits only (pooled `fit_params.json` is DoE-collinear — do no
 - `c(simple_building) ≈ 6.4e-5`, `c(simple_heatpump) ≈ 6.2e-5` s/tick
 - `s(zmq): s0 ≈ 6.5e-5–1.3e-4, s1 ≈ 2.65e-6` s/federate/tick
 - `s(zmq_ss): s0 ≈ 1.76e-4, s1 ≈ 2.76e-6` s/federate/tick
-- `O_par ≈ 0.044` s/tick (0.033–0.046 across estimates)
+- `O_par ≈ 0.044` s/tick (0.033–0.046 across estimates) — **regime-bound, do not
+  extrapolate**: at N=176/W=10 it over-predicts the tick 21× at M=10 (persistent
+  workers are pre-warmed, so per-tick dispatch is ms, not 44 ms) and under-predicts
+  9× at M=1000 (`hugescale_multipc.md` §7). Valid where it was fitted: small N, W≈8.
 - RSS ≈ **300 MB/federate** base; ~0 extra per instance for `heavy_compute_dummy`
 - **Crossover law:** parallel wins when `(M − ⌈M/W⌉)·c > O_par`. Cost-crossover `c* ≈ 3.3 ms` (M16/W8). Instance-crossover `M* = O_par/c → ⌈⌉` (≈212 light, ≈15 detailed).
 - **`comms` (Phase D):** `per_edge_s[distance]·n_edges + per_byte_s·(8·msg_width·n_edges/freq)`.
@@ -72,6 +77,15 @@ supersedes the bounded Part-A figures below:
   the simulation completes and the run never returns. Memory ≈143 MB/federate.
 - Tick time is **quadratic in N** under all-to-all coupling — because `n_edges =
   M·N²`, not because federates are inherently expensive.
+
+**Combined-axis maximum (HS probe, 2026-07-28, unwired, n=1):** **176 000 model
+instances over 176 federates** (N=176 × M=1000, `par` W=10) completed on both
+placements — 432 ms/tick local, 271 ms/tick distributed. This is the largest
+*federates × instances* product reached anywhere in the study; the Phase-D maxima
+above each push a single axis. The next rung (M=10 000, **1.76 M instances**)
+**times out on both placements, cause undiagnosed** (§8 of `hugescale_multipc.md`) —
+it is not known whether that is B12 or a genuine resource wall, because the logs
+were auto-cleaned.
 
 Part-A figures (bounded, not to failure, **no data exchange**): 200 federates
 (distributed, 1 broker) · 1,600 model instances (N8×M200 local) · 256 total
@@ -106,14 +120,34 @@ a short hashed `/tmp` path). Also fixed: `gen_scenario.py` zmq broker-port strid
    that then poison subsequent runs with port conflicts. Deterministic,
    undiagnosed, **blocks Phase F** — highest-priority open item.
 3. **N×work interaction gap** — additive model under-predicts 2.3–3.3× when both
-   are high; fix = a joint N×work calibration matrix (none exists).
+   are high; fix = a joint N×work calibration matrix (none exists). **Widened by
+   the HS probe:** the same failure appears on the **N×M×W** axis, and there the
+   model errs in *both* directions (21× high at N=176/M=10, 9× low at M=1000)
+   because `O_par` is treated as a scale-free constant when it is not.
 4. **Distribution confounded** (Phase 4) — redo on an idle manager. Partly
    addressed by Phase D's cross-machine arm (idle both ends, paired controls):
-   distribution measured **cost-neutral**, κ_LAN ≈ κ_local.
+   distribution measured **cost-neutral**, κ_LAN ≈ κ_local. The HS probe adds the
+   first roofline-shaped evidence at scale — wall speedup 1.48–1.68× against a
+   `Σcores/local_cores = 1.57×` ceiling — but n=1 with unrecorded host load, so
+   Phase E still owns the clean answer. Rerun the HS grid as Phase E's first cell.
 5. **Cost model has no F term** — Phase 3 derived `broker_setup_s ≈ -0.070 + 0.369·F`
    by hand; add it as a one-time setup term.
 6. **tcp / tcp_ss unmeasured** — `recommend()` can pick them by data-gap artifact.
 7. **Fig 09 (staircase) noisy** — clean rerun (60 ticks × 5 reps, idle host) pending.
+8. **Packing efficiency collapses at high M** — at N=176/M=1000 both local and
+   distributed run **9.5× above the perfect-packing bound** `N·M·c/cores`, while
+   the same config at M=100 distributed runs at 1.3×. Not a distribution effect
+   (both arms identical). Suspect `par` worker oversubscription (1760 processes
+   on 112 cores) + memory pressure; **unfalsified — no `seq` control arm was run**
+   (B13, `hugescale_multipc.md` §5).
+9. **Reporting convention** — above ~64 federates, `tick_mean_s` measures **spawn
+   skew**, not steady-state cost (one startup tick absorbed 27 s of a 27.2 s run at
+   N=176), and the CSV's `throughput_inst_steps_s` inherits the same distortion
+   because it divides by `sim_wall_s`. Use `tick_median_s`, and read
+   `EXPERIMENTS.md`'s "`tick_mean_s` is the headline number" as small-N only.
+10. **M=10 000/federate (1.76 M instances) times out, cause unknown** — both
+   placements, logs auto-cleaned. Rerun with `--keep-scratch` + large `--timeout`
+   to tell B12 apart from a resource wall (`hugescale_multipc.md` §8).
 
 ## Reproduce
 

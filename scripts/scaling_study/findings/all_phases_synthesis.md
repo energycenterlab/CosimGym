@@ -83,6 +83,13 @@ and a machine set (`machines.json`):
   linear in M (`≈0.080 ms · M`) and memory is near-flat per instance, because all
   M instances share one federate process. See `phaseD_exchange.md` §8.1.
 
+- **Largest *combined-axis* run (huge-scale probe, exploratory n=1):
+  176 000 model instances over 176 federates**, unwired, completed on one machine
+  (432 ms/tick) and on three (271 ms/tick). The Phase-D figures above each push a
+  single axis; this is the only run that pushed federates *and* instances together.
+  The next rung (M=10 000/federate, 1.76 M instances) times out on both placements,
+  cause undiagnosed. See `hugescale_multipc.md`.
+
 - **The ~33-federate zmq_ss ceiling documented in
   `generate_scale_benchmark.py` does not reproduce today, at any N tested
   (up to 200)** — Phase 2 found it passes cleanly through N=89 with the

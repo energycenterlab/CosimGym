@@ -259,7 +259,13 @@ A CosimGym run is always in one of four **regimes** — the whole story reduces 
   Interim: keep local federations under ~256 federates, keep distributed per-tick
   exchanged bytes under ~1 kB, and sweep for orphans between runs.
 
----|---|---|---|
+### B12 addendum — the distributed `_ss` byte threshold (same signature, kept for detail)
+
+  Original evidence for the byte-triggered arm of B12 (distributed `zmq_ss`, N=4,
+  `exchange` on), which is what first exposed the stall:
+
+  | config | edges | bytes/tick | result |
+  |---|---|---|---|
   | M=1, w=1 | 16 | 128 B | ok |
   | M=4, w=1 | 64 | 512 B | ok |
   | M=16, w=1 | 256 | 2 kB | **hang** ×3 |
@@ -287,6 +293,41 @@ A CosimGym run is always in one of four **regimes** — the whole story reduces 
   keep per-tick exchanged bytes under ~1 kB per distributed federation, or use a
   directly-routable network so plain `zmq` becomes available (Config B).
   **Blocks Phase F.**
+- **Possible third trigger, unconfirmed (2026-07-28).** The huge-scale probe
+  (`hugescale_multipc.md` §8) timed out at **N=176 × M=10 000 = 1.76 M instances**,
+  **unwired**, on *both* local and distributed placements. Neither known trigger
+  applies (176 < 256 federates; zero bytes exchanged), so this is either a new
+  trigger or an honest resource wall — undecidable because the default cleanup
+  deleted the logs. Rerun with `--keep-scratch` and check for
+  `disconnect Timer expired forcing disconnect` before counting it as B12.
+
+## B13 — `par` worker oversubscription at large N  *(per-tick; the reason big federations lose their parallelism)*
+
+- **Mechanism.** `parallel_execution` spawns `W` persistent worker processes **per
+  federate**. Total runnable processes is `N·W`, and nothing in the framework
+  relates that product to the machine's core count. At N=176 with W=10 that is
+  **1760 processes on 112 cores — 15.7× oversubscription**.
+- **Evidence (`hugescale_multipc.md` §5, exploratory n=1).** Measured tick vs the
+  perfect-packing bound `N·M·c/cores`:
+
+  | config | M=100 | M=1000 |
+  |---|---|---|
+  | local (112 cores, 15.7× oversubscribed) | 3.0× bound | **9.7× bound** |
+  | distributed (176 cores, 10× oversubscribed) | **1.3× bound** | **9.5× bound** |
+
+  Both arms degrade to the *same* ~9.5× at M=1000, so the loss is **not** a
+  distribution or LAN effect — it tracks per-federate instance count and worker
+  count. At M=100 distributed (uniform 10× oversubscription, lower memory
+  pressure) the federation ran at 1.3× the theoretical bound, the best packing
+  efficiency measured anywhere in the study.
+- **Not isolated.** Memory pressure is a co-suspect at M=1000 (261 GB summed RSS
+  against 251 GB physical), and no `seq` control arm was run at this N — so
+  oversubscription is the leading hypothesis, not a demonstrated cause.
+- **Push it back.** Size `W` against `cores / N`, not against `M` alone: past
+  `N·W ≈ cores` extra workers only add context switching. Concretely, at
+  district-scale N prefer `mode: seq` unless the crossover law
+  `(M−⌈M/W⌉)·c > O_par` clears by a wide margin — and note `O_par` itself is
+  regime-bound at this scale (see the modeling-gap section below).
 
 ---
 
@@ -296,7 +337,12 @@ The cost model itself under-predicts by **2.3–3.3×** when a config has *both*
 nontrivial N *and* nontrivial per-instance work (Phase 5 validation). **Why:** the
 additive `T_tick = compute + sync` form has no interaction term, and no calibration
 matrix ever varied N and work *together* — so the region is unmodeled, not
-mismeasured. This bounds how much you can trust `recommend()`'s absolute `T_sim`
+mismeasured. **The same gap reappears on the N×M×W axis** (`hugescale_multipc.md`
+§7): at N=176/W=10 the additive form over-predicts the tick **21×** at M=10 and
+under-predicts it **9×** at M=1000, because it carries `O_par = 0.044 s/tick` as a
+scale-free constant. It is not one — pre-warmed persistent workers cost
+milliseconds per tick in the small-M regime, and far more than 44 ms in the
+oversubscribed one (B13). This bounds how much you can trust `recommend()`'s absolute `T_sim`
 (read it as an optimistic floor); the *structure* (crossover law, sync curve,
 regime boundaries) held up. Fix: add a joint N×work calibration sweep.
 
@@ -327,3 +373,4 @@ completeness since it's the obvious next bottleneck for write-heavy long runs.
 | B10 | port block < 10+N (zmq/tcp) | hard fail @F≥2,N≥8 | **FIXED** | block = N+22, or use `*_ss` |
 | B11 | Data-exchange coupling `comms` | per-tick (dominant) | inherent | raise `freq` (−90%); narrow payloads; spread edges over more federates |
 | B12 | Teardown stall (sim completes, run hangs) | hard hang @≥256 feds local, or >~1 kB/tick distributed `_ss` | **OPEN** | stay under thresholds; reap orphans between runs |
+| B13 | `par` worker oversubscription (`N·W` ≫ cores) | per-tick | inherent | size `W` from `cores/N`; prefer `seq` at district-scale N |

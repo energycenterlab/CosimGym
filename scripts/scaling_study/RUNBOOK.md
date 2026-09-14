@@ -396,3 +396,29 @@ them first when a run misbehaves.
   the rest of a compound command. Append `|| true`.
 - Long runs: use `nohup … &` or a background runner; `conda run` has been killed
   early on multi-minute jobs.
+
+## Additional insights on how to debug and run this procedure:
+1. Failure — where to look
+
+  bench.csv's failure_mode column first (regex-classified from subprocess stdout: HELICS error code or first error... line, truncated ~120 chars).
+  
+  Default run deletes everything per cell — scratch yaml, results/<scenario_name>/<sim_id>/, logs/<scenario_name>/<sim_id>/ — even on failure. Full subprocess stdout is captured in memory but never written
+  anywhere, only mined for that one-line classification.
+  
+  To actually see logs: rerun with --keep-scratch. Then:
+  - generated yaml + spec.json survive in results/scaling/_scratch/bench_<tag>.yaml(.spec.json)
+  - results/<scenario_name>/<sim_id>/perf.json survives
+  - logs/<scenario_name>/<sim_id>/ survives — normal per-federate/broker logs (logging_config.py), same as any manual run
+  
+  2. Verify the generated scenario yaml
+  
+  gen_scenario.py is standalone — run it directly with the same flags your matrix cell would produce, inspect the yaml + <out>.spec.json sidecar before feeding to run_bench.py. Or --keep-scratch a real run and read
+  results/scaling/_scratch/bench_*.yaml after. It's a normal scenario yaml — src/utils/config_reader.read_scenario_config() / config_validator.py will parse-validate it like any other, or just run it directly via
+  ScenarioManager (like test_script.py) outside the bench harness.
+  
+  3. Storing simulation results — not by default
+  
+  gen_scenario.py hardcodes memory_config: {"sink": "none", "attrs": "all"} (lines 423 & 496) — scaling-study scenarios are throwaway-timing-only by design, and cleanup wipes the results dir every cell regardless.
+  Two ways around it:
+  - Hand-edit generated yaml's memory_config.sink to json/parquet + run run_bench.py --keep-scratch so the results dir survives cleanup, or
+  - Skip the bench harness for that run — take the generated yaml, edit sink, run it straight through ScenarioManager yourself.

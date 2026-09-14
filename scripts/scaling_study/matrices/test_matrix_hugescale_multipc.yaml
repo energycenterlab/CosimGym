@@ -1,0 +1,18 @@
+# Huge-scale multi-PC probe — N=176 federates (= 112+32+32 cores, one federate per core)
+# swept over M = 10 -> 10000 instances/federate, run twice: all-local vs spread over the
+# 3-machine NAT rig. Paired arms differ ONLY in `placement`.
+# Results + analysis: findings/hugescale_multipc.md (raw: findings/large_test_Pietro_remote.csv)
+# NOTE: as run on 2026-07-28 this was 1 repeat / 20 ticks and the two arms were launched
+# as two separate invocations; both arms are listed here so one run reproduces the probe.
+# M=10000 timed out on both arms -- use --keep-scratch and a large --timeout to diagnose.
+runs:
+  # --- local arm (manager only, 112 cores) ---
+  - {F: 1, N: 176, M: 10, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: local, ticks: 20}
+  - {F: 1, N: 176, M: 100, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: local, ticks: 20}
+  - {F: 1, N: 176, M: 1000, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: local, ticks: 20}
+  - {F: 1, N: 176, M: 10000, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: local, ticks: 20}
+  # --- distributed arm (manager 112 + machine_a 32 + machine_b 32) ---
+  - {F: 1, N: 176, M: 10, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: distributed_nat, ticks: 20}
+  - {F: 1, N: 176, M: 100, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: distributed_nat, ticks: 20}
+  - {F: 1, N: 176, M: 1000, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: distributed_nat, ticks: 20}
+  - {F: 1, N: 176, M: 10000, mode: par, W: 10, core_type: zmq_ss, model: heavy_compute_dummy, work: 100, placement: distributed_nat, ticks: 20}

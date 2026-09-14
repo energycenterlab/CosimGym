@@ -173,6 +173,16 @@ Phase 4 was confounded (shared host, load ~67). Rerun local-vs-distributed on an
 `Σcores / local_cores`. **Requires an exclusive-machine window (user schedules).**
 Reuse Phase-4 matrices + `make_report.py` roofline plot as-is.
 
+**Concrete starting point (new, 2026-08-21):** the exploratory huge-scale probe
+(`findings/hugescale_multipc.md`, matrix `matrices/test_matrix_hugescale_multipc.yaml`)
+already ran the paired local-vs-3-machine grid at N=176 (one federate per core across
+the rig) and measured a wall speedup of **1.48–1.68× against the 1.57× core-pool
+ceiling** — i.e. the roofline appears to hold, from n=1 with unrecorded host load.
+Phase E's first job is to rerun **that exact grid** with ≥3 repeats, ≥60 ticks,
+`uptime`/`free -g` captured per cell, and **both `seq` and `par` arms** (the probe had
+no `seq` control, which is why B13 — worker oversubscription — remains a hypothesis).
+If it reproduces, gap #4 closes and B13 is decided in the same campaign.
+
 ### Phase F — Optimal placement under stress
 Depends on Phase D's `comms` term — **and its objective is now the opposite of
 what this section originally specified.**
