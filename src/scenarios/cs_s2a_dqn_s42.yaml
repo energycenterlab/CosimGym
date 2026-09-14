@@ -1,6 +1,6 @@
 version: 1.0.0
-name: cs_s2_dqn_s42
-scenario_description: 'Paper case study S2: building thermal model controlled by a
+name: cs_s2a_dqn_s42
+scenario_description: 'Paper case study S2a: building thermal model controlled by a
   DQN RL agent (discrete action space), with real weather data from CSV.'
 start_time: '2024-01-01T00:00:00'
 end_time: '2024-01-02T00:00:00'

@@ -13,11 +13,11 @@
 #   the minimum real_period as tick 1.
 
 version: "1.0.0"
-name: "cs_s1_baseline"
+name: "cs_s0_baseline"
 scenario_description: "Paper case study S1: building thermal model controlled by a PID-driven heat pump, multi-rate (hourly weather / per-minute control), real weather data from CSV, 48h winter horizon."
 
 start_time: "2024-01-01T00:00:00"
-end_time: "2024-01-03T00:00:00"
+end_time: "2024-12-31T00:00:00"
 log_level: DEBUG
 
 memory_config:
@@ -105,7 +105,7 @@ federations:
         core_type: "tcp"
 
         timing_configs:
-          real_period: 60
+          real_period: 900
           time_offset: 0.1
 
 
@@ -136,9 +136,9 @@ federations:
 
           parameters:
             T_setpoint: 20.0   # target indoor temperature [°C]
-            Kp: 0.05
-            Ki: 0.001
-            Kd: 0.0
+            Kp: 0.03
+            Ki: 0.00001
+            Kd: 0.9
 
           init_state:
             T_indoor: 18.0
@@ -157,7 +157,7 @@ federations:
         core_type: "tcp"
 
         timing_configs:
-          real_period: 60
+          real_period: 900
           time_offset: 0.2
 
         flags:
@@ -223,7 +223,7 @@ federations:
         core_type: "tcp"
 
         timing_configs:
-          real_period: 60
+          real_period: 900
           time_offset: 0.3
 
         flags:

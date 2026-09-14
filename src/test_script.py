@@ -47,13 +47,17 @@ from core.ScenarioManager import main, ScenarioManager
 
 
 #parquet results
-main('rc_building_parquet_test')
+#main('rc_building_parquet_test')
 #main('fmu_feedthrough_test')
 #main('bui0_fmu_test')
 #main ('m5_bk4_demo_a_full_sim')
 #main ('m5_bk4_demo_b_digital_twin')
 
 
+
+# RUN Paper casestudies
+#main('cs_s0_baseline')  # S0: baseline, PID control
+main('cs_s2a_dqn_s42') # S2a: DQN RL agent, discrete action space, 1-day horizon
 
 
 
