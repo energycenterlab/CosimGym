@@ -1,0 +1,151 @@
+version: "1.0.0"
+name: "cs_s4_vert_seq_N10"
+scenario_description: >
+  S4a vertical-scaling sweep point (N=10, sequential). 4 federates, each with
+  10 self-contained heavy_compute_dummy instances (no grid, no weather — the
+  dummy model has no external inputs). instantiation.parallel_execution is
+  false. Byte-identical to cs_s4_vert_par_N10.yaml except the
+  parallel_execution value (and this description) — pair used to measure the
+  persistent-worker-process speedup at this N.
+
+start_time: "2024-01-01T00:00:00"
+end_time:   "2024-01-01T00:00:40"
+log_level: ERROR
+
+memory_config:
+  sink: none
+  attrs: "all"
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+
+federations:
+  federation_1:
+    broker_config:
+      core_type: "tcp"
+      host: "localhost"
+      federates: 4
+      log_level: ERROR
+
+    federate_configs:
+
+      heavy_federate_1:
+        name: "heavy_federate_1"
+        type: "base"
+        log_level: ERROR
+        core_name: "fed_heavy1"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 10
+            prefix: "hc1"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_2:
+        name: "heavy_federate_2"
+        type: "base"
+        log_level: ERROR
+        core_name: "fed_heavy2"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 10
+            prefix: "hc2"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_3:
+        name: "heavy_federate_3"
+        type: "base"
+        log_level: ERROR
+        core_name: "fed_heavy3"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 10
+            prefix: "hc3"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}
+
+      heavy_federate_4:
+        name: "heavy_federate_4"
+        type: "base"
+        log_level: ERROR
+        core_name: "fed_heavy4"
+        core_type: "tcp"
+        timing_configs:
+          real_period: 1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "result"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "heavy_compute_dummy"
+            n_instances: 10
+            prefix: "hc4"
+            parallel_execution: false
+          parameters:
+            iterations: 1000000
+          init_state: {}
+          user_defined: {}

@@ -1,0 +1,3609 @@
+# ============================================================================
+# GENERATED FILE — DO NOT EDIT BY HAND.
+# Source: src/scenarios/generate_scale_sharded.py   (re-run it to regenerate)
+#
+# S4c-REAL CEILING SWEEP — 81 federates, single broker, local zmq_ss
+#
+# PLACEMENT: everything local (manager), 1 federation, 20 sites = 81 federates
+#
+# CEILING RATIONALE: zmq_ss (required for NAT'd remotes, single outbound
+# socket) has a measured per-broker federate ceiling on this LAN of ~33
+# (17 OK, 33 OK, 49 flaky, 65 fails — see generate_scale_benchmark.py
+# docstring). That ceiling is PER FEDERATION (= per broker), not per machine,
+# so one federation spread over many machines does NOT lift it. This scenario
+# therefore SHARDS the workload: one self-contained federation per machine,
+# each sized at the known-safe 20-site / 81-federate ceiling.
+# Total federates in this file: 1 shard(s) x 81 = 81.
+# ============================================================================
+
+version: "1.0.0"
+name: "cs_s4c_ceiling_20"
+scenario_description: "Ceiling-characterization throwaway: 1 federation, 1 machine (local), 20 sites, 81 federates, zmq_ss."
+
+start_time: "2024-01-01T00:00:00"
+end_time: "2024-01-15T00:00:00"
+log_level: ERROR          # quiet: 81 federates would otherwise flood the log
+
+memory_config:
+  batch_size: 1000
+  attrs: ["PV_power", "T_indoor", "Q_heat", "P_elec"]
+  sink: none
+
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: "same_step"
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: false
+    require_finite_numeric: true
+    invalid_numeric_sentinels: [-1.0e49]
+    missing_inputs_policy: "warn"
+    invalid_inputs_policy: "warn"
+
+federations:
+  shard_1:
+    broker_config:
+      core_type: "zmq_ss"        # single socket: NAT-proof, no inbound rules on remotes
+      federates: 81
+
+    federate_configs:
+
+      weather_s1:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+            - key: "DryBulb"
+              type: "double"
+              units: "°C"
+            - key: "GloHorzRad"
+              type: "double"
+              units: "W/m²"
+            - key: "DifHorzRad"
+              type: "double"
+              units: "W/m²"
+        model_configs:
+          instantiation:
+            model_name: "base_csv_reader"
+            n_instances: 1
+            prefix: "weather_s1"
+            parallel_execution: false
+          parameters:
+            csv_path: "model_catalog/physical_models/resources/weather_data_bj.csv"
+            skip_rows: 0
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+
+      pv_s1_01:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_01"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_01:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_01.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_01"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_01:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_01.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_01"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_01:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_01.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_01"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_02:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_02"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_02:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_02.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_02"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_02:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_02.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_02"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_02:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_02.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_02"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_03:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_03"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_03:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_03.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_03"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_03:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_03.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_03"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_03:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_03.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_03"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_04:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_04"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_04:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_04.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_04"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_04:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_04.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_04"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_04:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_04.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_04"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_05:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_05"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_05:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_05.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_05"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_05:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_05.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_05"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_05:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_05.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_05"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_06:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_06"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_06:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_06.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_06"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_06:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_06.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_06"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_06:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_06.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_06"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_07:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_07"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_07:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_07.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_07"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_07:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_07.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_07"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_07:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_07.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_07"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_08:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_08"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_08:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_08.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_08"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_08:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_08.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_08"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_08:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_08.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_08"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_09:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_09"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_09:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_09.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_09"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_09:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_09.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_09"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_09:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_09.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_09"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_10:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_10"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_10:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_10.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_10"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_10:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_10.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_10"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_10:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_10.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_10"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_11:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_11"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_11:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_11.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_11"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_11:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_11.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_11"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_11:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_11.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_11"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_12:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_12"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_12:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_12.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_12"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_12:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_12.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_12"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_12:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_12.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_12"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_13:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_13"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_13:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_13.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_13"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_13:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_13.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_13"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_13:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_13.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_13"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_14:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_14"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_14:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_14.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_14"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_14:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_14.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_14"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_14:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_14.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_14"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_15:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_15"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_15:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_15.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_15"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_15:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_15.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_15"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_15:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_15.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_15"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_16:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_16"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_16:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_16.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_16"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_16:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_16.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_16"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_16:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_16.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_16"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_17:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_17"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_17:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_17.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_17"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_17:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_17.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_17"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_17:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_17.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_17"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_18:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_18"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_18:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_18.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_18"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_18:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_18.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_18"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_18:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_18.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_18"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_19:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_19"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_19:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_19.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_19"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_19:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_19.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_19"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_19:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_19.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_19"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
+
+      pv_s1_20:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "GHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/GloHorzRad]
+            - key: "DHI"
+              type: "double"
+              units: "W/m²"
+              targets:
+                '0': [weather_s1.0/DifHorzRad]
+          publishes:
+            - key: "PV_power"
+              type: "double"
+              units: "W"
+        model_configs:
+          instantiation:
+            model_name: "pv_dest"
+            n_instances: 1
+            prefix: "pv_s1_20"
+            parallel_execution: false
+          parameters:
+            lat: [39.8]
+            long: [116.467]
+            calc_area: [50]
+            Tilt_angle: [0.6981317010]
+            Azimuth_angle: [0.9]
+            area_ratio: [1]
+            SVF_hori: [1]
+            Reflectance: [0.2]
+            NOCT: [45]
+            Power_rated_pv: [410]
+            length: [2.05]
+            width: [1.02]
+            solar_constant: [1353]
+            std_long: [120]
+          init_state: {}
+
+      bldg_s1_20:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+              targets:
+                '0': [hp_s1_20.0/Q_heat]
+          publishes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+        model_configs:
+          instantiation:
+            model_name: "simple_building"
+            n_instances: 1
+            prefix: "bldg_s1_20"
+            parallel_execution: false
+          parameters:
+            thermal_capacitance: 1000000.0
+            thermal_resistance: 0.005
+            T_initial: 18.0
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor: 18.0
+
+      hp_s1_20:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_ext"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [weather_s1.0/DryBulb]
+            - key: "modulation"
+              type: "double"
+              units: "-"
+              targets:
+                '0': [pid_s1_20.0/modulation]
+          publishes:
+            - key: "Q_heat"
+              type: "double"
+              units: "W"
+            - key: "P_elec"
+              type: "double"
+              units: "W"
+            - key: "COP"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_heatpump"
+            n_instances: 1
+            prefix: "hp_s1_20"
+            parallel_execution: false
+          parameters:
+            P_rated: 5000.0
+            eta_carnot: 0.45
+            T_supply: 45.0
+            COP_min: 1.5
+            COP_max: 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+
+      pid_s1_20:
+        type: "base"
+        core_type: "zmq_ss"
+        log_level: ERROR
+        timing_configs:
+          real_period: 3600
+        flags:
+          terminate_on_error: true
+        connections:
+          endpoints: []
+          subscribes:
+            - key: "T_indoor"
+              type: "double"
+              units: "°C"
+              targets:
+                '0': [bldg_s1_20.0/T_indoor]
+              causality: "next_step"     # breaks the bldg->pid->hp->bldg loop
+          publishes:
+            - key: "modulation"
+              type: "double"
+              units: "-"
+        model_configs:
+          instantiation:
+            model_name: "simple_pid_controller"
+            n_instances: 1
+            prefix: "pid_s1_20"
+            parallel_execution: false
+          parameters:
+            T_setpoint: 20.0
+            Kp: 0.05
+            Ki: 0.001
+            Kd: 0.0
+          init_state:
+            T_indoor: 18.0
+            modulation: 0.0
