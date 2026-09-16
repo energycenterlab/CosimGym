@@ -1716,7 +1716,8 @@ models:
     module_path: models.model_catalog.physical_models.bui0_input_feeder
     version: 1.0.0
     description: Time-varying input feeder driving the six BUI0 EnergyPlus FMU
-      schedules (occupancy, lighting, equipment, set-point) from hour of day.
+      schedules (occupancy, lighting, equipment, set-point) from hour of day,
+      with a season-aware (heating/cooling) set-point schedule.
     author: Pietro Rando Mazzarino
     domain: testing
     category: physical_model
@@ -1818,22 +1819,107 @@ models:
         required: false
         tags:
         - schedule
-      setpoint_day_c:
+      heating_season_start_month:
+        type: int
+        default_value: 10
+        description: First month of the heating season (inclusive, wraps across
+          the new year when greater than heating_season_end_month)
+        unit: '-'
+        required: false
+        tags:
+        - schedule
+        - season
+      heating_season_end_month:
+        type: int
+        default_value: 4
+        description: Last month of the heating season (inclusive); every month
+          outside the heating season belongs to the cooling season
+        unit: '-'
+        required: false
+        tags:
+        - schedule
+        - season
+      heating_setpoint_day_c:
         type: float
         default_value: 21.0
-        description: Zone heating set-point during occupied hours
+        description: Heating-season zone set-point during occupied hours
         unit: degC
         required: false
         tags:
         - schedule
-      setpoint_night_c:
+        - season
+      heating_setpoint_night_c:
         type: float
         default_value: 18.0
-        description: Zone heating set-point during unoccupied hours (set-back)
+        description: Heating-season zone set-point during unoccupied hours (set-back)
         unit: degC
         required: false
         tags:
         - schedule
+        - season
+      cooling_season_mode:
+        type: string
+        default_value: setback
+        description: What the feeder publishes during the cooling season -
+          'setback' (publish cooling_season_setback_c, correct for heating-only
+          zones such as BUI0) or 'cooling' (publish the cooling set-points, for
+          zones with a real cooling thermostat)
+        unit: '-'
+        required: false
+        tags:
+        - schedule
+        - season
+      cooling_season_setback_c:
+        type: float
+        default_value: 12.0
+        description: Zone set-point published during the cooling season when
+          cooling_season_mode is 'setback' - low enough that a heating-only
+          thermostat stays idle
+        unit: degC
+        required: false
+        tags:
+        - schedule
+        - season
+      cooling_setpoint_day_c:
+        type: float
+        default_value: 26.0
+        description: Cooling-season zone set-point during occupied hours (used
+          only when cooling_season_mode is 'cooling')
+        unit: degC
+        required: false
+        tags:
+        - schedule
+        - season
+      cooling_setpoint_night_c:
+        type: float
+        default_value: 28.0
+        description: Cooling-season zone set-point during unoccupied hours (used
+          only when cooling_season_mode is 'cooling')
+        unit: degC
+        required: false
+        tags:
+        - schedule
+        - season
+      setpoint_day_c:
+        type: float
+        default_value: null
+        description: DEPRECATED alias of heating_setpoint_day_c - when set it
+          overrides the heating-season occupied set-point
+        unit: degC
+        required: false
+        tags:
+        - schedule
+        - deprecated
+      setpoint_night_c:
+        type: float
+        default_value: null
+        description: DEPRECATED alias of heating_setpoint_night_c - when set it
+          overrides the heating-season unoccupied set-point
+        unit: degC
+        required: false
+        tags:
+        - schedule
+        - deprecated
     inputs: {}
     outputs:
       PeopleNumber:
@@ -1879,11 +1965,21 @@ models:
       ZoneSetPoint:
         type: float
         default_value: 20.0
-        description: Zone heating set-point fed to the FMU
+        description: Zone set-point fed to the FMU (season-aware)
         unit: degC
         required: true
         tags:
         - schedule
+      HeatingSeason:
+        type: float
+        default_value: 1.0
+        description: Season flag - 1.0 during the heating season, 0.0 during the
+          cooling season
+        unit: '-'
+        required: false
+        tags:
+        - schedule
+        - season
   bui0_building_fmu:
     class_name: BaseFMUModel
     module_path: models.base_FMU_model

@@ -1,0 +1,499 @@
+# cs_s1_models_N2.yaml — GENERATED FILE, DO NOT EDIT BY HAND.
+#
+# Produced by src/scenarios/generate_s1_replicas.py:
+#     python src/scenarios/generate_s1_replicas.py --N 2 --seed 42
+#
+# cs_s1_models.yaml replicated to N=2 model instances per federate. The
+# federation, the 7 federates and the wiring are the template's; only
+# n_instances, the per-instance target maps and the per-instance parameter
+# lists change with N. Instance i of every federate is connected only to
+# instance i of the others; the single weather instance feeds all of them.
+
+version: 1.0.0
+name: cs_s1_models_N2
+scenario_description: S1 case study replicated to N=2 model instances per federate. One federation, 7
+  federates (1 shared weather + 6 replicated), index-matched connections, per-instance randomised parameters
+  (seed 42).
+start_time: '2024-01-01T00:00:00'
+end_time: '2024-01-03T00:00:00'
+log_level: INFO
+memory_config:
+  batch_size: 1000
+  attrs: all
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: same_step
+  validate_causality_cycles: true
+  default_startup_sync:
+    enabled: true
+    force_read_all_subscriptions: true
+    require_updated_inputs: true
+    require_finite_numeric: true
+    invalid_numeric_sentinels:
+    - -1.0e+49
+    missing_inputs_policy: warn
+    invalid_inputs_policy: warn
+federations:
+  building:
+    broker_config:
+      core_type: tcp
+      federates: 7
+      log_level: INFO
+    federate_configs:
+      weather_federate:
+        name: weather_federate
+        type: base
+        log_level: ERROR
+        core_name: fed1
+        core_type: tcp
+        timing_configs:
+          real_period: 900
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+          - key: DryBulb
+            type: double
+            units: °C
+          - key: GloHorzRad
+            type: double
+            units: W/m²
+          - key: DifHorzRad
+            type: double
+            units: W/m²
+        model_configs:
+          instantiation:
+            model_name: base_csv_reader
+            n_instances: 1
+            prefix: weather
+            parallel_execution: false
+          parameters:
+            csv_path: model_catalog/physical_models/resources/weather_data_bj.csv
+            skip_rows: 0
+          init_state:
+            DryBulb: 3.0
+            GloHorzRad: 0.0
+            DifHorzRad: 0.0
+          user_defined: {}
+      pid_federate:
+        name: pid_federate
+        type: base
+        log_level: INFO
+        core_name: bldgs_fed2
+        core_type: tcp
+        timing_configs:
+          real_period: 900
+          time_offset: 0.1
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+          - key: T_indoor
+            type: double
+            units: °C
+            targets:
+              '0':
+              - building_federate.0/T_indoor
+              '1':
+              - building_federate.1/T_indoor
+            causality: next_step
+          publishes:
+          - key: modulation
+            type: double
+            units: '-'
+        model_configs:
+          instantiation:
+            model_name: simple_pid_controller
+            n_instances: 2
+            parallel_execution: false
+            prefix: pid
+          parameters:
+            T_setpoint:
+            - 19.1
+            - 19.6
+            Kp:
+            - 0.059
+            - 0.0527
+            Ki:
+            - 1.492e-05
+            - 3.152e-05
+            Kd:
+            - 1.29
+            - 0.407
+          init_state:
+            T_indoor:
+            - 19.95
+            - 19.71
+            modulation: 0.0
+          user_defined: {}
+      heatpump_federate:
+        name: heatpump_federate
+        type: base
+        log_level: INFO
+        core_name: bldgs_fed3
+        core_type: tcp
+        timing_configs:
+          real_period: 900
+          time_offset: 0.2
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+          - key: T_ext
+            type: double
+            units: °C
+            targets:
+            - weather_federate.0/DryBulb
+          - key: modulation
+            type: double
+            units: '-'
+            targets:
+              '0':
+              - pid_federate.0/modulation
+              '1':
+              - pid_federate.1/modulation
+          publishes:
+          - key: Q_heat
+            type: double
+            units: W
+          - key: P_elec
+            type: double
+            units: W
+          - key: COP
+            type: double
+            units: '-'
+        model_configs:
+          instantiation:
+            model_name: simple_heatpump
+            n_instances: 2
+            parallel_execution: false
+            prefix: hp
+          parameters:
+            P_rated:
+            - 11030.0
+            - 3782.0
+            eta_carnot:
+            - 0.434
+            - 0.356
+            T_supply:
+            - 39.4
+            - 45.1
+            COP_min:
+            - 1.5
+            - 1.5
+            COP_max:
+            - 6.0
+            - 6.0
+          init_state:
+            T_ext: 3.0
+            modulation: 0.0
+            Q_heat: 0.0
+            P_elec: 0.0
+            COP: 0.0
+          user_defined:
+            integrator: fixed-step
+      building_federate:
+        name: building_federate
+        type: base
+        log_level: INFO
+        core_name: bldgs_fed4
+        core_type: tcp
+        timing_configs:
+          real_period: 900
+          time_offset: 0.3
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+          - key: T_ext
+            type: double
+            units: °C
+            targets:
+            - weather_federate.0/DryBulb
+          - key: Q_heat
+            type: double
+            units: W
+            targets:
+              '0':
+              - heatpump_federate.0/Q_heat
+              '1':
+              - heatpump_federate.1/Q_heat
+          publishes:
+          - key: T_indoor
+            type: double
+            units: °C
+        model_configs:
+          instantiation:
+            model_name: simple_building
+            n_instances: 2
+            parallel_execution: false
+            prefix: bldg
+          parameters:
+            thermal_capacitance:
+            - 2206739.0
+            - 855024.0
+            thermal_resistance:
+            - 0.005475
+            - 0.005009
+            T_initial:
+            - 19.95
+            - 19.71
+          init_state:
+            T_ext: 3.0
+            Q_heat: 0.0
+            T_indoor:
+            - 19.95
+            - 19.71
+          user_defined:
+            integrator: euler
+      pv_federate:
+        name: pv_federate
+        type: base
+        log_level: INFO
+        core_name: gen_fed2
+        core_type: tcp
+        timing_configs:
+          real_period: 900
+          time_offset: 0.2
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+          - key: T_ext
+            type: double
+            units: °C
+            targets:
+            - weather_federate.0/DryBulb
+          - key: GHI
+            type: double
+            units: W/m²
+            targets:
+            - weather_federate.0/GloHorzRad
+          - key: DHI
+            type: double
+            units: W/m²
+            targets:
+            - weather_federate.0/DifHorzRad
+          publishes:
+          - key: PV_power
+            type: double
+            units: W
+        model_configs:
+          instantiation:
+            model_name: pv_dest
+            n_instances: 2
+            parallel_execution: false
+            prefix: pv
+          parameters:
+            lat:
+            - 39.8
+            - 39.8
+            long:
+            - 116.467
+            - 116.467
+            calc_area:
+            - 100.6
+            - 89.8
+            Tilt_angle:
+            - 0.4861
+            - 0.4122
+            Azimuth_angle:
+            - 1.266
+            - 0.769
+            area_ratio:
+            - 1
+            - 1
+            SVF_hori:
+            - 0.864
+            - 0.865
+            Reflectance:
+            - 0.2
+            - 0.2
+            NOCT:
+            - 45
+            - 45
+            Power_rated_pv:
+            - 410
+            - 410
+            length:
+            - 2.05
+            - 2.05
+            width:
+            - 1.02
+            - 1.02
+            solar_constant:
+            - 1353
+            - 1353
+            std_long:
+            - 120
+            - 120
+          init_state: {}
+          user_defined:
+            integrator: fixed-step
+      rb_controller:
+        name: rb_controller
+        type: base
+        log_level: INFO
+        core_name: gen_fed3
+        core_type: tcp
+        timing_configs:
+          real_period: 900
+          time_offset: 0.3
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+          - key: P_gen
+            type: double
+            units: W
+            targets:
+              '0':
+              - pv_federate.0/PV_power
+              '1':
+              - pv_federate.1/PV_power
+          - key: P_load
+            type: double
+            units: W
+            targets:
+              '0':
+              - heatpump_federate.0/P_elec
+              '1':
+              - heatpump_federate.1/P_elec
+          - key: SOC
+            type: double
+            units: '-'
+            targets:
+              '0':
+              - battery_federate.0/SOC
+              '1':
+              - battery_federate.1/SOC
+            causality: next_step
+          publishes:
+          - key: Battery_power
+            type: double
+            units: W
+        model_configs:
+          instantiation:
+            model_name: rb_bems
+            n_instances: 2
+            parallel_execution: false
+          parameters:
+            SOC_min:
+            - 0.424
+            - 0.393
+            SOC_max:
+            - 0.753
+            - 0.68
+          init_state:
+            Battery_power: 0.0
+          user_defined: {}
+      battery_federate:
+        name: battery_federate
+        type: base
+        log_level: INFO
+        core_name: gen_fed4
+        core_type: tcp
+        timing_configs:
+          real_period: 900
+          time_offset: 0.4
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+          - key: Battery_power
+            type: double
+            units: W
+            targets:
+              '0':
+              - rb_controller.0/Battery_power
+              '1':
+              - rb_controller.1/Battery_power
+          - key: P_load
+            type: double
+            units: W
+            targets:
+              '0':
+              - heatpump_federate.0/P_elec
+              '1':
+              - heatpump_federate.1/P_elec
+          - key: PV_power
+            type: double
+            units: W
+            targets:
+              '0':
+              - pv_federate.0/PV_power
+              '1':
+              - pv_federate.1/PV_power
+          publishes:
+          - key: SOC
+            type: double
+            units: '-'
+          - key: P_net
+            type: double
+            units: W
+          - key: P_clipped
+            type: double
+            units: W
+        model_configs:
+          instantiation:
+            model_name: battery_dest
+            n_instances: 2
+            parallel_execution: false
+          parameters:
+            rated_capacity:
+            - 70800.0
+            - 56200.0
+            maximum_charge_power:
+            - 14160.0
+            - 11240.0
+            maximum_discharge_power:
+            - 14160.0
+            - 11240.0
+            SOC_upper_limit:
+            - 0.95
+            - 0.95
+            SOC_lower_limit:
+            - 0.25
+            - 0.25
+            charge_efficiency:
+            - 0.963
+            - 0.998
+            discharge_efficiency:
+            - 0.95
+            - 0.964
+            self_discharge_rate:
+            - 0
+            - 0
+            SOC:
+            - 0.723
+            - 0.692
+          init_state:
+            SOC:
+            - 0.723
+            - 0.692
+          user_defined:
+            integrator: euler
+        startup_sync:
+          required_inputs:
+          - Battery_power
+          - P_load
+          - PV_power
+          missing_inputs_policy: warn

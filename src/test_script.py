@@ -57,14 +57,16 @@ from core.ScenarioManager import main, ScenarioManager
 
 # RUN Paper casestudies
 #main('cs_s0_baseline')  # S0: baseline, PID control
-main('cs_s2a_dqn_s42') # S2a: DQN RL agent, discrete action space, 1-day horizon
-
-
-
-
-
-
-
+#main('cs_s2a_dqn_s42') # S2a: DQN RL agent, discrete action space, 1-day horizon
+#main ('cs_s1_models') # casestudy s1 extending number of models 1 federation ready to scale up for s2 and s3
+#main('cs_s1_models_N2')
+#main('cs_s1_models_N200')
+#main('cs_s1_models_N30000')
+#main('cs_s1_models_N10000')
+#main('cs_s4b_sac_s42') # S4b: SAC RL agent, continuous action space, 1-day horizon
+#main('cs_s4b_sac_s42_rolling') # S4b: SAC RL agent, continuous action space, 1-day horizon, rolling reset
+#main('cs_s4a_dqn_s42_rolling') # S4a: DQN RL agent, discrete action space, 1-day horizon, rolling reset
+main('cs_s5_fmu')
 
 
 

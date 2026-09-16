@@ -113,6 +113,9 @@ federations:
             - key: "OthEquFCWatt"
               type: "double"
               units: "W"
+            - key: "HeatingSeason"
+              type: "double"
+              units: "-"
         model_configs:
           instantiation:
             model_name: "bui0_input_feeder"
@@ -131,8 +134,12 @@ federations:
             otheq_rad_base_w: 0.0
             otheq_fc_peak_w: 100.0
             otheq_fc_base_w: 0.0
-            setpoint_day_c: 21.0
-            setpoint_night_c: 18.0
+            heating_season_start_month: 10
+            heating_season_end_month: 4
+            heating_setpoint_day_c: 21.0
+            heating_setpoint_night_c: 18.0
+            cooling_season_mode: setback
+            cooling_season_setback_c: 12.0
           init_state: {}
           user_defined: {}
 

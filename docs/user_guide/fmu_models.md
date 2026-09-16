@@ -76,7 +76,12 @@ The repository ships a complete two-federate example wiring a Python schedule fe
 
 - **Scenario:** `src/scenarios/bui0_fmu_test.yaml`
 - **FMU:** `src/models/model_catalog/physical_models/resources/BUI0.fmu` (FMI 2.0)
-- **Feeder model:** `bui0_input_feeder` — generates six schedule signals (`PeopleNumber`, `LightsWatt`, `EEquipWatt`, `OthEquRadWatt`, `OthEquFCWatt`, `ZoneSetPoint`) from an hour-of-day occupancy profile.
+- **Feeder model:** `bui0_input_feeder` — generates six schedule signals (`PeopleNumber`, `LightsWatt`, `EEquipWatt`, `OthEquRadWatt`, `OthEquFCWatt`, `ZoneSetPoint`) from an hour-of-day occupancy profile, plus a `HeatingSeason` flag (1.0/0.0).
+- **Season-aware set-point:** the heating season spans `heating_season_start_month`..`heating_season_end_month` (inclusive, wraps across the new year; default `10`..`4`). Inside it the feeder publishes `heating_setpoint_day_c` / `heating_setpoint_night_c` (21/18 °C). Outside it, `cooling_season_mode` decides:
+  - `setback` (default) — publish `cooling_season_setback_c` (12 °C). Correct for BUI0, whose thermostat is a `ThermostatSetpoint:SingleHeating` with zero cooling capacity: a summer set-point of 26 °C would make the heating coil chase 26 °C.
+  - `cooling` — publish `cooling_setpoint_day_c` / `cooling_setpoint_night_c` (26/28 °C), for zones that really have a cooling thermostat.
+  
+  `setpoint_day_c` / `setpoint_night_c` still work as deprecated aliases of the heating-season pair. Unit tests: `pytest tests/test_bui0_feeder_season.py`.
 - **FMU outputs:** `TBuilding` (zone air temperature), `HeatingLoadTarget`.
 
 Data flow:

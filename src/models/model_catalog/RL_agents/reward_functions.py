@@ -262,7 +262,7 @@ def bui0_setpoint_comfort(obs, action, prev_obs=None, **kwargs) -> float:
     """
     T_TARGET = 21.0
     COMFORT_SIGMA = 1.0       # °C half-width of comfort zone
-    ENERGY_WEIGHT = 1.0e-4    # scale on heating load (W) penalty
+    ENERGY_WEIGHT = 1.0e-6    # scale on heating load (W) penalty
 
     try:
         T_TARGET = float(obs['federation_1.feeder_federate.0.ZoneSetPoint'])  # Use the setpoint as the target temperature
@@ -272,4 +272,5 @@ def bui0_setpoint_comfort(obs, action, prev_obs=None, **kwargs) -> float:
         energy = -ENERGY_WEIGHT * abs(float(load)) if load is not None else 0.0
         return float(comfort + energy)
     except Exception:
+        print("Error in bui0_setpoint_comfort")
         return 0.0

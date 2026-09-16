@@ -134,6 +134,13 @@ class BaseFMUModel(BaseModel):
             )
         self._outputs_from_fmu()
 
+        #Eplus FMU could not run more than 1 year thus they need a intrinsic reset for this problem. They should have a maximu acceptable span and be reinitialized as soon as they get there.
+        #TODO: i leave a non generalized pacth for eplus models must be generalized for only eplus or similar and depending on the actual stepsize
+        if current_time >= 31536000: #1 year in seconds
+            self.state.ts=0
+            self.logger.info(f"FMU model {self.name} reached 1 year of simulation, reinitializing")
+            self.reset()
+
     def finalize(self) -> None:
         self.logger.info(f"Finalizing FMU model {self.name}")
         if self.fmu is not None:
