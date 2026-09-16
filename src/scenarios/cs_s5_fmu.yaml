@@ -54,7 +54,7 @@ reinforcement_learning_config:
         - 24.0
     reward: models.model_catalog.RL_agents.reward_functions.bui0_setpoint_comfort
     reset:
-      mode: none
+      mode: full
   agent:
     model_name: rl_simple_SACsb3
     backend: stable_baselines3
@@ -74,8 +74,8 @@ reinforcement_learning_config:
   run:
     mode: online
     train:
-      episodes: 400
-      episode_length: 144
+      episodes: 2
+      episode_length: 52560
     test:
       episodes: 100
       episode_length: 144

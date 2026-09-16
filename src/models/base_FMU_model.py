@@ -328,10 +328,15 @@ class BaseFMUModel(BaseModel):
         # slave is restarted at its horizon or rewound by a rolling reset.
         # BaseModel._enforce_sim_horizon has already restarted the slave if this
         # step would have run past the declared max_sim_time.
-        current_time = self.local_time()
+        current_time = self.local_time() #TODO: check the local time logic probably in base model should be correct
         self._slave_tick = self.local_ts()
+
+        #TODO: check these two routine probbaly i only need them to store one snapshot for the reset
+        # the logic to take snapshot for the full reset is easy just the first episode start, while for the rolling must be updated at every reset and shifted so no longer store the snapshot of firs episode step but shift by window
+
         self._maybe_snapshot_next_rolling_start()
         self._record_inputs()
+
         self._inputs_to_fmu()
         with self._in_fmu_workdir():
             self._do_step(current_time)
@@ -390,7 +395,7 @@ class BaseFMUModel(BaseModel):
     # Model-local clock: repositioning the slave
     # ------------------------------------------------------------------
 
-    def _reposition_backend(self, target_ts: int) -> None:
+    def _reposition_backend(self, target_ts: int, reason: str = 'reset') -> None:
         """Bring the slave to its own tick *target_ts*.
 
         An FMU co-simulation slave has no seek and (here) no state snapshot, so
@@ -398,10 +403,27 @@ class BaseFMUModel(BaseModel):
         period and step forward. Restarting at the first tick is therefore the
         cheap case; anything later costs a replay.
         """
+        
+
         if self.fmu is None and self.unzipdir is None:
             # Called from BaseModel.__init__ before the FMU is loaded; nothing to do.
             return
 
+        if reason == 'horizon_reached':
+            #TODO: probably here where to do the whole replayshit
+            #dividi per chi ha lo snapshot e chi no e alleggerisci la logica di snapsho che deve solo essere lo step prima e basta
+            if self._can_snapshot and self._restore_snapshot(int(target_ts)):
+                        self._slave_tick = int(target_ts) - 1
+                        self._consume_rolling_snapshot(int(target_ts))
+                        self._input_history = []
+                        return
+            #else: non ci sono snapshot dello stato allora la resetto e la risimulo per un periodo
+            n_steps = max(0, int(target_ts) - 1)
+            if n_steps:
+                self._advance(n_steps)
+                self._input_history = []
+                return
+        
         if self._slave_tick == int(target_ts) - 1:
             # Already standing exactly where it is asked to stand: a rolling reset
             # whose window is the episode length continues rather than rewinds.
@@ -411,28 +433,17 @@ class BaseFMUModel(BaseModel):
             )
             return
 
-        # A saved state puts the slave back instantly and carries its whole
-        # internal state with it, so there is nothing to replay and nothing to
-        # remember about its inputs.
-        if self._can_snapshot and self._restore_snapshot(int(target_ts)):
-            self._slave_tick = int(target_ts) - 1
-            self._consume_rolling_snapshot(int(target_ts))
-            self._input_history = []
-            return
+        
 
         self._teardown()
-        self._start_instance()
+        self._start_instance() #TODO check that starts a ne ppoint depending on the reset situation
 
-        n_steps = max(0, int(target_ts) - 1)
-        if n_steps:
-            self._advance(n_steps)
-        else:
-            # Restarted at the beginning of the run period: everything recorded
-            # after it belongs to a span the slave no longer has.
-            self._input_history = []
+        
+    
 
     def _take_snapshot(self, tick: int) -> None:
         """Save the slave's complete internal state as of model tick *tick*."""
+        #THis method is OK
         if not self._can_snapshot or self.fmu is None:
             return
         try:
@@ -466,6 +477,7 @@ class BaseFMUModel(BaseModel):
         return True
 
     def _free_snapshot(self, tick: int) -> None:
+        #this method is OK
         state = self._state_snapshots.pop(tick, None)
         if state is None or self.fmu is None:
             return
@@ -500,6 +512,7 @@ class BaseFMUModel(BaseModel):
             return
         if self._snapshot_target_ts is None:
             # Same arithmetic as BaseFederate._reset: start points are 1, 1+W, 1+2W.
+            #TODO almost correct check it should not be always from one but slided, or have a multiplier for the sliding window
             self._snapshot_target_ts = (1 + self.rolling_window) if self.rolling_window else None
             if self._snapshot_target_ts is None:
                 return
@@ -520,6 +533,7 @@ class BaseFMUModel(BaseModel):
             self._snapshot_target_ts = tick + self.rolling_window
 
     def _advance(self, n_steps: int) -> None:
+        #TODO: this is a part of the replay solution to disable and probbaly delete it
         """Replay *n_steps* silently from model-local time 0.
 
         The steps are real FMU steps - they cost the same as simulated ones - but

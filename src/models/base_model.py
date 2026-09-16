@@ -262,6 +262,8 @@ class BaseModel(ABC):
         out of run period asks for tick 1 as well. ``_reposition_backend`` does
         whatever the model wraps - nothing for a plain Python model, a restart and
         replay for an FMU slave, a cursor move for a CSV reader.
+
+        --> the only case in which i would like to do a reposition of the fmu is if horizon reached
         """
         target_ts = max(0, int(target_ts))
         horizon = self.horizon_ts()
@@ -272,8 +274,9 @@ class BaseModel(ABC):
                 f"wrapping to tick {wrapped}"
             )
             target_ts = wrapped
+        
 
-        self._reposition_backend(target_ts)
+        self._reposition_backend(target_ts, reason=reason)
 
         at_ts = (self.state.ts or 0) + 1 if at_ts is None else at_ts
         self.ts_shift = at_ts - target_ts
@@ -283,7 +286,7 @@ class BaseModel(ABC):
             f"(shift={self.ts_shift}, epoch={self.epoch_index})"
         )
 
-    def _reposition_backend(self, target_ts: int) -> None:
+    def _reposition_backend(self, target_ts: int, reason: str = 'reset') -> None:
         """Bring whatever the model wraps to its own tick *target_ts*.
 
         No-op by default: a plain Python model is fully described by its state, so
