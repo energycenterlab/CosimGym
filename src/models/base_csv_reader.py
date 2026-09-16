@@ -98,6 +98,24 @@ class BaseCSVReader(BaseModel):
         """Finalize the CSV reader. Subclasses can implement this method to perform any cleanup if necessary."""
         pass
 
+    def _reposition_backend(self, target_ts: int) -> None:
+        """Move the row cursor to the row the model's own tick *target_ts* means.
+
+        Called whenever the model clock is moved - by an episode reset, or by a
+        restart at a simulation horizon - so the data rewinds with the rest of the
+        federation instead of running on past it.
+        """
+        if self._data is None:
+            return
+        row = self.starting_row + max(0, int(target_ts) - 1)
+        if row >= len(self._data):
+            self.logger.warning(
+                f"Reposition to row {row} is past the end of the data "
+                f"({len(self._data)} rows); wrapping to the start."
+            )
+            row = row % len(self._data)
+        self._row_idx = row
+
     def reset(self, mode='full', ts=None, time=None):
         """Reset the row cursor. `full` rewinds to `starting_row`; `rolling` jumps to `ts` (or advances by one row if `ts` is None); `soft` is a no-op."""
         if mode == 'full':

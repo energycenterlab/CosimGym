@@ -72,6 +72,7 @@ SCENARIOS = [
     ("RL rolling-reset DQN",   "bui_hp_DQN_rollingreset"),
     ("RL rolling-reset SAC",   "bui_hp_SAC_rollingreset"),
     ("FMU (EnergyPlus)",       "bui0_fmu_test"),
+    ("FMU horizon restart",    "fmu_horizon_smoketest"),
     ("FMU + RL DQN",           "bui0_setpoint_DQN"),
     ("FMU + RL SAC",           "bui0_setpoint_SAC"),
     ("FMU + RL heating DQN",   "bui0_heatingpower_DQN"),

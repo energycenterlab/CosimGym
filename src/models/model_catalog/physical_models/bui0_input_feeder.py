@@ -73,10 +73,14 @@ class BUI0InputFeeder(BaseModel):
     def step(self) -> None:
         self.logger.debug("state: %s", self.state)
         p = self.state.parameters
-        hour = self.state.time.hour + self.state.time.minute / 60.0
+        # state.time follows the model clock, so it rewinds with every reset and
+        # every horizon restart: the schedule stays in step with the building it
+        # feeds instead of running on past it.
+        now = self.state.time
+        hour = now.hour + now.minute / 60.0
 
         occupied = p['occupied_start_hour'] <= hour < p['occupied_end_hour']
-        heating_season = self._is_heating_season(self.state.time.month)
+        heating_season = self._is_heating_season(now.month)
         setpoint_day, setpoint_night = self._season_setpoints(heating_season)
 
         if occupied:

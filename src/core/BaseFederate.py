@@ -113,9 +113,18 @@ class BaseFederate():
         self.start_time = datetime.fromisoformat(self.config.timing_configs.start_time)
         self.end_time = datetime.fromisoformat(self.config.timing_configs.end_time)
         self.stop_time = self.config.timing_configs.time_stop
+        # Scenario-wide simulation horizon, resolved by ScenarioManager from the
+        # models' catalog entries. When set, every federate restarts all of its
+        # models together at the same tick, so none of them drifts out of step
+        # with the ones that had to restart. None = unbounded.
+        self.max_sim_time = self.config.timing_configs.max_sim_time
+        self.horizon_steps = None
+        self.horizon_count = 0
         self.time_period = self.config.timing_configs.time_period
         self.real_period = self.config.timing_configs.real_period
         self.offset = self.config.timing_configs.time_offset
+        if self.max_sim_time and self.real_period:
+            self.horizon_steps = int(self.max_sim_time // self.real_period)
         # changing state variables for timing
         self.date_time = self.start_time  # keeps track of simulation evolution with datetime format (real wolrd time)
         self.time_granted = 0.0  # time logic for helics it is granted_time + time_period
@@ -337,6 +346,12 @@ class BaseFederate():
         model_configs.start_time = self.config.timing_configs.start_time # add the simulation start time to model configs
         model_configs.end_time = self.config.timing_configs.end_time # add the simulation end time to model configs
         model_configs.real_period = self.config.timing_configs.real_period # add the real period to model configs
+        # Reset policy: models backed by an external runtime (FMU) need to know in
+        # advance whether a rolling reset can ask them to move back in time.
+        model_configs.reset_mode = getattr(self, 'reset_type', None)
+        model_configs.rolling_window = getattr(self, 'rolling_window', None)
+        model_configs.episode_length = getattr(self, 'episode_length', None)
+        model_configs.n_episodes = getattr(self, 'n_episodes', None)
         model_configs.inputs , model_configs.outputs= self.input_output_names() 
         self.logger.debug(f"Updated Model configs: {pp.pformat(model_configs)}")
         
@@ -366,7 +381,39 @@ class BaseFederate():
             entities.append(entity)
 
         self.logger.info(f"Registered entities: {pp.pformat(entities)}")
+        self._report_simulation_horizons(entities)
         return entities
+
+    def _report_simulation_horizons(self, entities):
+        """Log the simulation horizons in play, and warn when they disagree.
+
+        A model that declares ``max_sim_time`` restarts on its own clock, which
+        then runs behind federation time. Anything feeding it has to restart at
+        the same moment or it drifts out of phase - a schedule model still running
+        in February while the building it feeds has restarted in January. Models
+        stay in step by declaring the same horizon, so a mismatch inside one
+        federate is worth saying out loud.
+        """
+        horizons = {
+            entity['id']: getattr(entity['object'], 'max_sim_time', None)
+            for entity in entities
+        }
+        declared = {h for h in horizons.values() if h}
+        if not declared:
+            return
+        for entity_id, horizon in horizons.items():
+            if horizon:
+                self.logger.info(
+                    f"Model '{entity_id}' declares a {horizon}s simulation horizon "
+                    f"and will be restarted every {horizon / self.real_period:.0f} steps"
+                )
+        if len(declared) > 1 or any(h is None for h in horizons.values()):
+            self.logger.warning(
+                f"Federate '{self.name}' mixes models with different simulation horizons "
+                f"({horizons}). Models that restart on different cycles drift out of phase "
+                "with each other: give every time-dependent model in the federation the same "
+                "max_sim_time, or none at all."
+            )
 
     def input_output_names(self):
         ''' this small methods returns the list of inputs and outputs names for the models, it only consider pub/sub not endpoints for now'''
@@ -521,6 +568,7 @@ class BaseFederate():
                 # publish outputs
                 self._publish_outputs()
 
+                self._reset_on_horizon() # restart every model together when the scenario's simulation horizon is reached
                 self._reset() # check if reset is needed at the end of the step to manage the reset of the federate in case of training, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
 
 
@@ -1049,6 +1097,36 @@ class BaseFederate():
         else:
             return
         
+    def _reset_on_horizon(self):
+        """Restart every model in this federate when the simulation horizon is reached.
+
+        Some models cannot be stepped past a fixed span of simulated time - an
+        EnergyPlus FMU stops at the end of its RunPeriod. That limit is not an RL
+        policy: it applies in training, in testing and in a plain co-simulation
+        with no agent at all, and it composes with whatever reset mode is
+        configured rather than replacing it.
+
+        Every federate in the scenario shares the same horizon and counts the same
+        ticks, so they all restart on the same tick without having to coordinate:
+        after the restart the schedule feeder, the weather reader and the building
+        are all back at their first step together.
+        """
+        if not self.horizon_steps or self.ts <= 0:
+            return
+        if self.ts % self.horizon_steps != 0:
+            return
+        if self.stop_time and self.ts >= self.stop_time:
+            return  # last step of the run: restarting now would only cost time
+
+        self.horizon_count += 1
+        self.logger.info(
+            f"Simulation horizon reached at step {self.ts} ({self.max_sim_time}s): "
+            f"restarting every model of federate {self.name} (restart #{self.horizon_count})"
+        )
+        self._publish_init_state()
+        for entity in self.entities:
+            entity['object'].reset(mode='full')
+
     def _track_episodes(self):
         self.episode_count += 1
         self.logger.debug("TRACKING EPISODE COUNT: {}".format(self.episode_count))

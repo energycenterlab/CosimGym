@@ -351,7 +351,7 @@ regime boundaries) held up. Fix: add a joint N×work calibration sweep.
 The `parquet` sink offloads writes to a background `AsyncStorageWriter`; its queue
 **blocks** (never drops) if the writer thread falls behind, so a slow disk becomes
 back-pressure on the sim thread. There is also a tracked native `libstdc++`
-SIGSEGV in the parquet path (`known_issues_from_regression.md`). These runs used
+SIGSEGV in the parquet path (`KNOWN_ISSUES.md`). These runs used
 `sink: none`/`json`, so storage I/O was not on the critical path here — flagged for
 completeness since it's the obvious next bottleneck for write-heavy long runs.
 

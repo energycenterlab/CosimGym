@@ -42,6 +42,10 @@ class State:
     parameters: Dict[str, Any] = field(default_factory=dict)
     inputs: Dict[str, Any] = field(default_factory=dict)
     outputs: Dict[str, Any] = field(default_factory=dict)
+    # Simulated datetime the model is at. It follows the model clock, so a reset
+    # or a horizon restart moves it back along with everything else: every model
+    # in a federation stays at the same simulated moment. Results and logs use the
+    # federate's own monotonic clock, not this one.
     time: Optional[datetime] = None
     ts: Optional[int] = None
 
@@ -104,7 +108,34 @@ class BaseModel(ABC):
         # model_state
         self.state = State()
         self.init_state = State()
-        
+
+        # ---- model-local clock -------------------------------------------------
+        # Some models cannot run for an unlimited span of simulated time: an
+        # EnergyPlus FMU stops at the end of its RunPeriod. Such a model declares
+        # ``max_sim_time`` in its catalog entry and is restarted automatically
+        # whenever that horizon is reached, which makes its own clock a sawtooth
+        # while federation time stays monotonic.
+        #   local_ts(ts) = ts - ts_shift
+        # ``max_sim_time is None`` (the default for every model) leaves all of this
+        # inert: local time is federation time and no restart is ever triggered.
+        # Declared in the catalog entry, because it is a property of the model
+        # itself; a scenario can override it under the model's ``user_defined``
+        # block, which is mostly useful to exercise a restart in a short run.
+        _scenario_limits = (user_config.user_defined or {}) if user_config else {}
+        self.max_sim_time = _scenario_limits.get(
+            'max_sim_time', getattr(catalog_metadata, 'max_sim_time', None))
+        self.sim_start_date = _scenario_limits.get(
+            'sim_start_date', getattr(catalog_metadata, 'sim_start_date', None))
+        # Offset between federation ticks and the model's own ticks. A reset or a
+        # horizon restart moves it; with neither, the two are the same thing.
+        self.ts_shift = 0
+        self.epoch_index = 0        # how many restarts have happened so far
+        # Episode-reset policy of the owning federate, injected at runtime. Only
+        # 'rolling' can move a model backwards in time.
+        self.reset_mode = getattr(user_config, 'reset_mode', None)
+        self.rolling_window = getattr(user_config, 'rolling_window', None)
+        self.n_episodes = getattr(user_config, 'n_episodes', None)
+
         # Instantiate the model:
         self._instantiate()
         self.logger.debug(f"(1) - Model '{self.name}' Instantiated with state: {self.state} and init_state: {self.init_state}")
@@ -195,19 +226,115 @@ class BaseModel(ABC):
         # Initialize current state
         self.state =copy.deepcopy( self.init_state)
       
+    # ------------------------------------------------------------------
+    # Model-local clock
+    # ------------------------------------------------------------------
+
+    def local_ts(self, ts=None) -> int:
+        """The model's own tick for federation tick *ts*.
+
+        The two are identical until something moves the model back in time - an
+        episode reset, or the restart of a model that has reached its simulation
+        horizon. The federate moves every model it owns by the same amount at the
+        same tick, so they all stay at the same simulated moment.
+        """
+        ts = self.state.ts if ts is None else ts
+        ts = 0 if ts is None else ts
+        return max(0, ts - self.ts_shift)
+
+    def local_time(self, ts=None) -> float:
+        """The model's own simulated time in seconds, counted from its first step."""
+        return max(0, self.local_ts(ts) - 1) * self.real_period
+
+    def horizon_ts(self):
+        """The declared simulation horizon expressed in steps, or None if unbounded."""
+        if not self.max_sim_time or not self.real_period:
+            return None
+        return int(self.max_sim_time // self.real_period)
+
+    def reposition(self, target_ts: int, at_ts=None, reason: str = 'reset') -> None:
+        """Make the model behave as if federation tick *at_ts* were tick *target_ts*.
+
+        The single primitive behind every restart: an episode reset asks for tick
+        1, a rolling reset for the episode's start tick, and a model that has run
+        out of run period asks for tick 1 as well. ``_reposition_backend`` does
+        whatever the model wraps - nothing for a plain Python model, a restart and
+        replay for an FMU slave, a cursor move for a CSV reader.
+        """
+        target_ts = max(0, int(target_ts))
+        horizon = self.horizon_ts()
+        if horizon and target_ts > horizon:
+            wrapped = ((target_ts - 1) % horizon) + 1
+            self.logger.info(
+                f"Restart target tick {target_ts} is past the {horizon}-step horizon, "
+                f"wrapping to tick {wrapped}"
+            )
+            target_ts = wrapped
+
+        self._reposition_backend(target_ts)
+
+        at_ts = (self.state.ts or 0) + 1 if at_ts is None else at_ts
+        self.ts_shift = at_ts - target_ts
+        self.epoch_index += 1
+        self.logger.debug(
+            f"Model clock moved ({reason}): tick {at_ts} now counts as tick {target_ts} "
+            f"(shift={self.ts_shift}, epoch={self.epoch_index})"
+        )
+
+    def _reposition_backend(self, target_ts: int) -> None:
+        """Bring whatever the model wraps to its own tick *target_ts*.
+
+        No-op by default: a plain Python model is fully described by its state, so
+        moving its clock needs nothing more. Overridden by models backed by an
+        external runtime that must be restarted (BaseFMUModel) or by a cursor into
+        data (BaseCSVReader).
+        """
+        return
+
+    def _enforce_sim_horizon(self) -> None:
+        """Restart the model when the step about to run would pass its horizon.
+
+        Inert unless the model declares ``max_sim_time``. This is the model's own
+        limit, so it applies whatever the RL reset policy is, and with no RL at
+        all. The federate normally restarts every model together before this can
+        fire; the guard is the backstop that keeps any single model from being
+        stepped past a limit it cannot honour.
+        """
+        horizon = self.horizon_ts()
+        if not horizon:
+            return
+        if self.local_ts() <= horizon:
+            return
+        self.logger.info(
+            f"Model '{self.name}' reached its {self.max_sim_time}s simulation horizon "
+            f"({horizon} steps) at tick {self.state.ts}; restarting "
+            f"(epoch {self.epoch_index + 1})"
+        )
+        self.reposition(1, at_ts=self.state.ts, reason='horizon reached')
+
     def _step(self, ts, inputs):
         """Internal step method to update time state and call user-defined step."""
         self._update_time_state(ts)
+        self._enforce_sim_horizon()
+        self._update_time_state(ts)   # a restart just moved the clock
         self._set_inputs(inputs)
         self.step()
         out = self._get_outputs()  # Update outputs after stepping
         return out
 
     def _update_time_state(self, time_step: int) -> None:
-        """Update time-related state variables."""
+        """Update time-related state variables.
+
+        The datetime follows the *model* clock, so a reset or a horizon restart
+        rewinds it along with everything else: a schedule model and the building
+        it feeds are always at the same simulated moment, episode after episode.
+        With nothing ever restarted, the model clock is the federation clock and
+        this is the plain elapsed time it has always been.
+        """
         self.state.ts = time_step
-        self.state.time = self.start_time + timedelta(seconds=self.state.ts * self.real_period)
-    
+        self.state.time = self.start_time + timedelta(
+            seconds=self.local_ts(time_step) * self.real_period)
+
     def _set_inputs(self, inputs: Dict[str, Any]) -> None:
         """
         Set input values for the model.
@@ -253,11 +380,27 @@ class BaseModel(ABC):
         initial conditions defined in init_state.
         NB. only reset interfaces in stateful models must be overridden to modify internals
         """
+        current_ts = self.state.ts or 0
         self.state = copy.deepcopy(self.init_state)
         if ts is not None:
             self.state.ts = ts
         if time is not None:
             self.state.time = time
+        self._reset_clock(mode=mode, target_ts=ts, current_ts=current_ts)
+
+    def _reset_clock(self, mode: str, target_ts: Optional[int], current_ts: int) -> None:
+        """Realign the model-local clock to the start point this reset asks for.
+
+        `full` restarts the model at local time 0; `rolling` moves it to the
+        absolute start point the federate computed; `none`/`soft` leave the clock
+        alone. Inert for models with no horizon and no reposition backend.
+        """
+        if mode in ('none', 'soft'):
+            return
+        # `full` restarts the model at its first step; `rolling` starts it at the
+        # absolute tick the federate computed for this episode.
+        target = int(target_ts) if (mode == 'rolling' and target_ts is not None) else 1
+        self.reposition(target, at_ts=current_ts + 1, reason=f"{mode} reset")
      
     @abstractmethod
     def initialize(self) -> None:

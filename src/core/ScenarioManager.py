@@ -1463,6 +1463,79 @@ class ScenarioManager:
                 n_steps = int(self.duration_time / federate.timing_configs.real_period)
                 federate.timing_configs.time_stop = n_steps
 
+        self._apply_simulation_horizon()
+
+    def _apply_simulation_horizon(self):
+        """Resolve the scenario's simulation horizon and give it to every federate.
+
+        Some models cannot run for an unlimited span of simulated time - an
+        EnergyPlus FMU stops at the end of its RunPeriod. When one of them is in
+        the scenario, *every* federate has to restart its models at the same tick,
+        or the ones that kept running drift out of step with the ones that
+        restarted. The horizon is therefore a scenario-wide fact: taken from the
+        scenario's `simulation_horizon` when set, otherwise the shortest horizon
+        any model in the scenario declares in its catalog entry.
+        """
+        explicit = getattr(self.config, 'simulation_horizon', None)
+        if explicit is not None:
+            horizon = float(explicit) or None
+            source = 'scenario simulation_horizon'
+        else:
+            horizon, source = self._shortest_declared_horizon()
+
+        if not horizon:
+            return
+
+        for federation in self.config.federations.values():
+            for fed_name, federate in federation.federate_configs.items():
+                period = federate.timing_configs.real_period
+                if period and horizon % period != 0:
+                    self.logger.warning(
+                        f"Simulation horizon {horizon}s is not a whole number of steps for "
+                        f"federate '{fed_name}' (real_period={period}s); it will restart at "
+                        f"{int(horizon // period)} steps, {horizon % period}s early."
+                    )
+                federate.timing_configs.max_sim_time = horizon
+
+        self.logger.info(
+            f"Simulation horizon {horizon}s (from {source}): every federate restarts its "
+            f"models together when it is reached."
+        )
+
+    def _model_catalog(self):
+        """Lazily open the Redis-backed model catalog (loaded by catalog_loader.py)."""
+        if getattr(self, '_catalog', None) is None:
+            from models.model_catalog.RedisCatalog import RedisCatalog
+            self._catalog = RedisCatalog(logger=self.logger)
+        return self._catalog
+
+    def _shortest_declared_horizon(self):
+        """Smallest `max_sim_time` declared by any model used in this scenario."""
+        horizons = {}
+        for federation in self.config.federations.values():
+            for fed_name, federate in federation.federate_configs.items():
+                model_cfg = getattr(federate, 'model_configs', None)
+                if model_cfg is None:
+                    continue
+                # A scenario-level override on the model wins over its catalog entry.
+                declared = (model_cfg.user_defined or {}).get('max_sim_time')
+                if declared is None:
+                    model_name = model_cfg.instantiation.model_name
+                    metadata = self._model_catalog().get_model_metadata(model_name)
+                    declared = getattr(metadata, 'max_sim_time', None) if metadata else None
+                if declared:
+                    horizons[fed_name] = float(declared)
+
+        if not horizons:
+            return None, ''
+        shortest = min(horizons.values())
+        if len(set(horizons.values())) > 1:
+            self.logger.warning(
+                f"Models in this scenario declare different simulation horizons ({horizons}); "
+                f"using the shortest ({shortest}s) so every model restarts together."
+            )
+        return shortest, f"model declarations {horizons}"
+
     def _setup_local_federation(self, federation_name, federation_conf):
         """
         Set up the federation by starting broker and all federates.

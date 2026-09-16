@@ -110,24 +110,40 @@ federations:
 
 ## Cross-federation subscriptions
 
-A subscription's `targets` field uses different formats depending on whether the publisher is in the same or a different federation.
+**HELICS keys are one flat, global namespace — a target never carries a federation
+prefix.** The format is the same whether the publisher sits in your federation or in
+another one:
 
-### Same federation
 ```yaml
 targets:
   '0': [other_federate.0/pub_key]
   '1': [other_federate.1/pub_key]
 ```
+
 Format: `<federate_name>.<instance_id>/<pub_key>`
 
-### Cross-federation
-```yaml
-targets:
-  '0': [physics_federation.spring.0/position]
-```
-Format: `<federation_name>.<federate_name>.<instance_id>/<pub_key>`
-
 The instance ID is zero-based and matches the model instance number defined by `n_instances` in the publisher's `model_configs.instantiation`.
+
+Why there is no prefix: a federate registers each publication with
+`register_global_publication("<federate_name>.<instance_id>/<pub_key>")`
+(`BaseFederate._register_pubs`), and a subscription's target string is handed to
+`helicsInputAddTarget()` **unchanged** (`BaseFederate._register_subs`). Nothing inserts a
+federation name on either side. In a multi-federation scenario the hierarchy broker routes
+these global keys between federations, so the same bare key resolves across the boundary.
+
+> **A federation-qualified target silently receives nothing.** Writing
+> `physics_federation.spring.0/position` does not raise — it simply matches no published
+> key, and the subscription sits at its default value for the whole run. (The
+> federation-qualified form *is* accepted in one unrelated place:
+> `ScenarioManager._resolve_target_federate_node` understands it when building the
+> `auto_offset` dependency graph. That never reaches the HELICS bind.) The dotted
+> `<federation>.<federate>.<instance>.<variable>` form belongs to RL observation/action
+> keys — a different namespace, see
+> [RL Configuration](rl.md) — not to subscription targets.
+
+Working cross-federation example: in `src/scenarios/simple_test_multifederations.yaml`,
+`spring_federate` (in `federation_1`) subscribes to `input_federate.0/force` — a federate
+in `federation_2` — with a bare key.
 
 ---
 

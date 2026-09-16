@@ -1219,6 +1219,10 @@ models:
     description: RLlib PPO agent for HELICS co-simulation (ray 2.55+)
     category: rl_agent
   adelaide_test:
+    # TODO simulation horizon unverified - no source IDF available to check the
+    # RunPeriod. Left unbounded, so a run longer than the FMU's own run period
+    # will fail instead of restarting. Re-register with --idf to fill this in.
+    max_sim_time: null
     class_name: BaseFMUModel
     module_path: models.base_FMU_model
     version: 1.0.0
@@ -1415,6 +1419,10 @@ models:
         tags:
         - fmu
   test_feedthrough_fmi3:
+    # TODO simulation horizon unverified - no source IDF available to check the
+    # RunPeriod. Left unbounded, so a run longer than the FMU's own run period
+    # will fail instead of restarting. Re-register with --idf to fill this in.
+    max_sim_time: null
     class_name: BaseFMUModel
     module_path: models.base_FMU_model
     version: 1.0.0
@@ -1981,6 +1989,10 @@ models:
         - schedule
         - season
   bui0_building_fmu:
+    # Simulation horizon read from BUI0.idf RunPeriod (1 Jan .. 31 Dec): the FMU
+    # cannot be stepped past it and is restarted from 01-01 when it is reached.
+    max_sim_time: 31536000
+    sim_start_date: '01-01'
     class_name: BaseFMUModel
     module_path: models.base_FMU_model
     version: 1.0.0

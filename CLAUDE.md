@@ -1,146 +1,226 @@
 # CLAUDE.md
 
-This file guide Claude Code (claude.ai/code) when working in this repo.
+This file guides Claude Code (claude.ai/code) when working in this repo.
+
+It is deliberately **thin on feature detail**. Feature semantics live in `docs/` and,
+ultimately, in the code. What lives here is what you cannot get from either: the working
+rules, the orientation map, and the dev workflow.
 
 ## What This Project Is
 
-CosimGym = Python orchestration framework. Bridges HELICS co-simulation with Gymnasium RL. Define multi-federate scenarios declaratively in YAML, run as pure physics co-sim or RL training/testing env.
+CosimGym = Python orchestration framework. Bridges HELICS co-simulation with Gymnasium RL.
+Define multi-federate scenarios declaratively in YAML, run as pure physics co-sim or RL
+training/testing env.
+
+## Working Rules (READ FIRST — apply to every session)
+
+Standing agreement for how Claude works in this repo. Overrides default habits. Only the
+user can change it.
+
+### The only reference documents
+
+Besides `docs/` (the user-facing documentation) and the codebase itself, exactly **three**
+reference documents exist:
+
+| File | Role |
+| --- | --- |
+| `CLAUDE.md` (this file) | Project description + the rules. The durable "how things are". |
+| `HANDOFF.md` (repo root) | State of the *last* session, for the *next* session. Rewritten each session. |
+| `docs/KNOWN_ISSUES.md` | The single register of everything currently broken or limited. |
+
+`docs/KNOWN_ISSUES.md` is append-and-prune, never a changelog: **add an entry the moment a
+bug or limitation is found, delete the entry the moment it is fixed or stops mattering.**
+Nothing accumulates there for history — the story of a fix belongs in that feature's
+changes report. Keep its `KNOWN_FAIL` counterpart in `tests/regression_suite.py` in sync
+(an UNEXPECTED-PASS means: drop the `KNOWN_FAIL` entry *and* delete the issue entry). Do
+not open a second bug list anywhere.
+
+Do not create other top-level reference/status/summary/index `.md` files. No
+`SUMMARY.md`, `NOTES.md`, `STATUS.md`, `README_<feature>.md`, no "here's what I found"
+scratch docs in the repo root or `src/`. Use the scratchpad dir for throwaway notes.
+
+### The only three kinds of support document
+
+When work on a feature needs written support, it is one of exactly three types, and each
+has one home:
+
+| # | Type | Where | Filename convention |
+| --- | --- | --- | --- |
+| 1 | **Plan of changes** — written *before* implementing | `docs/changes_reports/` | `<feature>_plan.md` |
+| 2 | **Changes report** — written *after* implementing: what was done, what was modified, **why**, problems hit, alternatives considered and rejected | `docs/changes_reports/` | `<feature>_changes.md` |
+| 3 | **Future / TODO** — future enhancements, deferred work, objective changes | `docs/future_and_TODOs/` | `<topic>_followups.md`, `<topic>_plan.md`, `<topic>_TODO.md` |
+
+(Known bugs are *not* a type-3 document — they go in the single
+`docs/KNOWN_ISSUES.md` register described above. while limitation are a type-3 and a known issue in the type 3 you specify more detailed the problem, in KNOWN_ISSUES.md you only list it)
+
+Rules for these:
+
+- **One document per feature per type.** Revising a plan = edit the existing
+  `<feature>_plan.md`, never `<feature>_plan_v2.md` / `_revised` / `_final`.
+- **Write a support doc only when the user asks for one**, or when the work is large
+  enough that a plan is genuinely needed. Small fixes get a commit message, not a doc.
+- Plan and report for the same feature share the same `<feature>` stem, so they pair up.
+- When a plan is fully implemented, mark it: rename to `<feature>_plan_DONE.md` or put a
+  **STATUS: DONE** line at the top (existing examples of both are in the tree).
+- A type-3 doc whose items are all done gets deleted or marked DONE — do not let
+  `future_and_TODOs/` accumulate stale entries.
+- Nothing of these three types goes anywhere else in the tree, including `docs/` root.
+
+### Documentation upkeep (do not skip)
+
+After any change that touches **code fundamentals** (architecture, execution flow, core
+classes) or **how the user interacts with the framework** (YAML schema keys, CLI
+commands, config defaults, catalog format, file layout of results):
+
+1. Update the affected pages under `docs/` — they are the user-facing contract.
+2. Update `CLAUDE.md` **only if** the change alters something this file states or should
+   state (a new config key, a new subsystem, a changed default). Routine fixes,
+   refactors and bug fixes do **not** earn a CLAUDE.md edit. Keep this file dense.
+3. Add a scenario (and where relevant a combination) to `tests/regression_suite.py` — it
+   is the living feature contract.
+
+### Handoff routine (every session)
+
+Before a session ends — and whenever the user says "handoff" — invoke the `handoff`
+skill and **rewrite** `HANDOFF.md` to describe *this* session only: goal, current
+progress, what worked, what did not work (so it is not retried), next steps, and any
+uncommitted/in-flight state. Replace stale content rather than appending to it; the
+durable parts belong in `CLAUDE.md` or a type-2 changes report, not in a growing
+HANDOFF. Start of session: read `HANDOFF.md` before acting.
+
+### Scope discipline
+
+- Do what was asked. No speculative refactors, no drive-by renames, no "while I was in
+  there" edits to files outside the task.
+- Prefer editing an existing file over creating a new one.
+- Do not create new top-level directories without asking.
+- Before large or long real-hardware/benchmark runs, get an explicit go-ahead.
+- Never commit unless the user asks.
+
+## Where the truth lives
+
+Three sources, in this order of authority. **The code is the only one that cannot be
+stale.**
+
+1. **The code graph** — `graphify-out/`. Start here for any structural question ("what
+   calls X", "what does this change touch", "where does this flow go"). Cheaper and more
+   accurate than grep, and it is regenerated from the AST, so it cannot drift into
+   fiction the way prose can.
+2. **The code** — for exact semantics, defaults, validation rules, error messages. When a
+   doc and the code disagree, the code is right and **the doc is a bug**: fix the doc as
+   part of the task (see *Documentation upkeep*).
+3. **`docs/`** — for intent, rationale and the user-facing contract. Treat it as a map,
+   not as the territory. It can lag the code or omit a case. Never quote a default, a key
+   name or a limit from a doc into an answer or into new code without confirming it in
+   the source.
+
+Corollary: do **not** answer a question about how something behaves purely from `docs/` or
+from this file. Confirm it in the graph or the source first. A confident wrong answer read
+off a stale doc is worse than a slow one.
+
+### Using the graph
+
+```bash
+graphify query "<question>"        # scoped subgraph — first move for codebase questions
+graphify path "<A>" "<B>"          # how two things relate
+graphify explain "<concept>"       # focused concept view
+graphify update .                  # AST-only, no API cost — run after code changes
+```
+
+`graphify-out/wiki/index.md` for broad navigation; `graphify-out/GRAPH_REPORT.md` only for
+whole-architecture review, or when query/path/explain surface too little. The
+`code-review-graph` MCP tools cover the same graph: `semantic_search_nodes`,
+`get_impact_radius`, `detect_changes`, `query_graph` (callers_of / callees_of / imports_of
+/ tests_for). Prefer either over Grep/Glob/Read for exploration; fall back to raw reads
+only for exact lines.
+
+## Orientation
+
+Enough to know where to look. Details are in the linked docs; exact behavior is in the code.
+
+### Execution flow
+
+1. **`ScenarioManager`** (`src/core/ScenarioManager.py`) — reads the YAML scenario, starts
+   HELICS brokers as subprocesses, spawns each federate as its own Python process via
+   `federate_launcher.py`. The whole scenario config goes through Redis so each subprocess
+   can retrieve it.
+2. **`federate_launcher.py`** (`src/core/federate_launcher.py`) — per-federate entry point.
+   Reads config from Redis, instantiates the federate class for its `type`.
+3. **`BaseFederate`** (`src/core/BaseFederate.py`) — HELICS pub/sub lifecycle, time
+   stepping, storage, reset. Instantiates models from the catalog, drives `_step()`.
+   `InterfaceFederate` subclasses it for digital-twin bridging.
+4. **`RLFederate` / `HelicsGymEnv`** (`src/core/RL_Federate.py`) — wraps `BaseFederate` as
+   a Gymnasium `Env`, routing observations/actions through HELICS.
+
+### Config pipeline
+
+Scenario YAML (`src/scenarios/`) → `src/utils/config_reader.py` → typed dataclasses in
+`src/utils/config_dataclasses.py` (`ScenarioConfig`, `FederationConfig`, `FederateConfig`,
+…) → runtime. The dataclasses are the schema of record — read them, not a doc table, when
+you need the exact set of keys, types and defaults. RL config is Pydantic with
+`extra='forbid'`, so a YAML typo raises at parse time.
+
+### Model catalog
+
+`src/models/model_catalog/catalog.yaml` is the static registry: `model_name` → `class_name`
++ `module_path` + I/O spec. `catalog_loader.py` pushes it into Redis at startup;
+`RedisCatalog` resolves it at runtime so `BaseFederate` can import and instantiate the
+class dynamically. New model = subclass `BaseModel` (`initialize` / `step` / `finalize`) +
+a `catalog.yaml` entry. After editing `catalog.yaml`, reload it into Redis or the change is
+not seen. → [Custom Models & Catalog](docs/user_guide/custom_models.md)
+
+### Feature map → documentation
+
+| Feature | Read |
+| --- | --- |
+| Scenario YAML, all top-level keys | [Scenario Configuration](docs/user_guide/scenario_configuration/overview.md) |
+| Timing, `real_period`, offsets, causality | [Synchronization & Causality](docs/user_guide/scenario_configuration/synchronization.md) |
+| Federations, brokers, multi-federation hierarchy | [Federation Configuration](docs/user_guide/scenario_configuration/federation.md) |
+| Federate keys, storage sinks, parallel model execution | [Federate Configuration](docs/user_guide/scenario_configuration/federate.md) |
+| RL config (environment / agent / run / experiment) | [RL Configuration](docs/user_guide/scenario_configuration/rl.md), [RL Integration](docs/user_guide/rl_integration.md) |
+| Digital-twin interfaces, streaming, overrides, BK4 | [Digital-Twin Interfaces](docs/user_guide/digital_twin_interfaces.md) |
+| Distributed SSH federate spawning | [Distributed Deployment](docs/user_guide/distributed_deployment.md) |
+| FMUs, `max_sim_time`, `simulation_horizon`, reset | [FMU Models](docs/user_guide/fmu_models.md) |
+| Results, dashboard, live view | [Dashboard & Analytics](docs/user_guide/dashboard.md) |
+| Ports, `src/.env`, shared-machine conflicts | [Installation → Configuring ports](docs/Installation_Setup.md#configuring-ports) |
+| Currently broken / limited | [Known Issues](docs/KNOWN_ISSUES.md) |
+
+Scenario catalogues: `src/scenarios/scenario_tests.md`, `src/scenarios/paper_casestudies.md`.
 
 ## Setup & Common Commands
 
-**Prerequisites:** Conda, Docker, Docker Compose **v2** (`docker compose` plugin — verify `docker compose version` reports `v2.x`; legacy `docker-compose` v1 rejects Compose Spec file), Python 3.12
-
-> Shared server, no sudo: install Compose v2 plugin into home only (no impact on other users) — drop `docker-compose` v2 binary in `~/.docker/cli-plugins/`, `chmod +x` it. See `docs/Installation_Setup.md`.
+**Prerequisites:** Conda, Docker, Docker Compose **v2** (`docker compose` plugin — verify
+`docker compose version` reports `v2.x`; legacy `docker-compose` v1 rejects the Compose
+Spec file), Python 3.12. Shared server without sudo: install the Compose v2 plugin into
+your home only. Full instructions: [Installation & Setup](docs/Installation_Setup.md).
 
 ```bash
-# Full setup
-docker compose -f src/docker-compose.yaml up -d
+docker compose -f src/docker-compose.yaml up -d   # Redis + MinIO + Mosquitto — required
 conda activate cosim_gym
-# Run simulations (activate env first: conda activate cosim_gym)
-python src/test_script.py           # runs base co-simulation scenarios
-python src/test_script_rl.py        # runs RL training scenarios (sets OMP_NUM_THREADS=1 etc.)
-# Docker management
-docker compose -f src/docker-compose.yaml logs -f redis
+python src/test_script.py        # base co-simulation scenarios
+python src/test_script_rl.py     # RL training scenarios
+./src/dashboard/run_dashboard.sh # Results + Live dashboard
 ```
 
-All sim scripts: run from project root, `cosim_gym` conda env active. Redis must run before any simulation.
+Run every simulation script from the project root with `cosim_gym` active. Redis must be
+up first.
 
 ### Pre-merge regression suite
 
-Before merging a feature branch back to `main`, run the regression suite — `pytest` plus ~32 scenarios covering every feature axis (base, multi-federation, distributed SSH, parallel model exec, interface/streaming/override/BK4 digital-twin, RL, FMU, grid) **and** explicit feature COMBINATIONS (dist+multifed, dist+parallel, multifed+parallel, parallel+grid). Each runs in an isolated subprocess; long scenarios are auto-shortened on a throwaway temp copy (originals untouched). Prints a PASS/FAIL/xfail table; non-zero exit only on an unexpected hard failure:
+`tests/regression_suite.py` is the living feature contract: `pytest` plus ~32 scenarios
+covering every feature axis **and** explicit feature combinations (dist+multifed,
+dist+parallel, multifed+parallel, parallel+grid). Each runs in an isolated subprocess; long
+scenarios are auto-shortened on a throwaway temp copy, originals untouched. It prints a
+PASS/FAIL/xfail table and exits non-zero only on an unexpected hard failure.
 
 ```bash
-conda run -n cosim_gym python tests/regression_suite.py   # docker services up + passwordless ssh to 127.0.0.1
-RUN_CLOUD=1 conda run -n cosim_gym python tests/regression_suite.py   # also run cloud-machine distributed scenarios
+conda run -n cosim_gym python tests/regression_suite.py              # needs docker up + passwordless ssh to 127.0.0.1
+RUN_CLOUD=1 conda run -n cosim_gym python tests/regression_suite.py  # also the cloud-machine distributed scenarios
 ```
 
-`tests/regression_suite.py` is the living contract: **add a scenario (and a combination) there whenever you add a feature.** It has three lists — `SCENARIOS` + `COMBOS` (expected PASS), and `KNOWN_FAIL` (tracked framework/env bugs run as `xfail`, so the gate stays green while they're tracked; a KNOWN_FAIL that starts passing is flagged UNEXPECTED-PASS). Current known bugs are documented in `docs/future_and_TODOs/known_issues_from_regression.md`: parquet-sink native libstdc++ SIGSEGV, zmq auto-port `+1` collision for 2-broker RL scenarios, the non-functional `RL_Simple_Agent` skeleton, and `Adelaide_test`'s missing MinIO object.
+**Add a scenario — and a combination — there whenever you add a feature.** Three lists:
+`SCENARIOS` + `COMBOS` (expected PASS) and `KNOWN_FAIL` (tracked bugs run as `xfail` so the
+gate stays green). A `KNOWN_FAIL` that starts passing is flagged UNEXPECTED-PASS — remove
+it from the dict *and* delete its entry in `docs/KNOWN_ISSUES.md`.
 
-### Ports (shared-machine port conflicts)
-
-All infra default ports live in **one file**: `src/.env` (copy from `src/.env.example`, gitignored). Read by **both** docker-compose (native `${VAR:-default}` substitution) and the Python code (via `src/utils/ports.py` — `redis_port()`, `mqtt_port()`, `minio_endpoint()`, `helics_port_range()`). Change a port once → containers + sim processes follow. Keys: `COSIM_REDIS_PORT` (6379), `COSIM_MQTT_PORT` (11883), `COSIM_MINIO_PORT` (9000), `COSIM_MINIO_CONSOLE_PORT` (9101), `COSIM_HELICS_PORT_MIN`/`MAX` (20000/30000). Legacy `REDIS_PORT`/`MQTT_PORT` env exports still honored; absent `.env` → historical defaults. `ports.py` resolution: explicit env export > `src/.env` > built-in default. Per-scenario `broker_config.port` stays in scenario YAML (co-sim config, not a global default). Tests: `pytest tests/test_ports.py`. **Note:** container-internal ports (catalog-loader's `REDIS_PORT=6379`, service-to-service refs) are NOT `.env`-driven — only *host* port mappings are.
-
-## Architecture
-
-### Execution Flow
-
-1. **`ScenarioManager`** (`src/core/ScenarioManager.py`) reads YAML scenario config, starts HELICS brokers as subprocesses, spawns each federate as separate Python process via `federate_launcher.py`. Full scenario config serialized to Redis so each subprocess retrieves it.
-
-2. **`federate_launcher.py`** (`src/core/federate_launcher.py`) = entry point per federate subprocess. Reads config from Redis, instantiates `BaseFederate` (type `"base"`) or `RLFederate` (type `"rl"`).
-
-3. **`BaseFederate`** (`src/core/BaseFederate.py`) manages HELICS pub/sub lifecycle, time stepping, storage, reset. Instantiates model objects from Model Catalog, drives `_step()` loop.
-
-4. **`RLFederate`** / `HelicsGymEnv` (`src/core/RL_Federate.py`) wraps `BaseFederate` as Gymnasium `Env`, routes observations/actions through HELICS. RL agents also loaded from catalog.
-
-### YAML Scenario Config → Dataclasses → Runtime
-
-Scenario YAML in `src/scenarios/`. Parsed by `src/utils/config_reader.py` into typed dataclasses in `src/utils/config_dataclasses.py`. Key dataclasses: `ScenarioConfig`, `FederationConfig`, `FederateConfig`, `FedTimingConfig`, `FedConnections`, `FedPublication`, `FedSubscription`.
-
-RL scenarios: `ScenarioManager._modify_config_for_online_training()` injects synthetic `rl_federation` at runtime — creates `rl_agent` federate, pub/sub wiring derived from `reinforcement_learning_config` block.
-
-### Model Catalog
-
-`src/models/model_catalog/catalog.yaml` = static registry. Each entry: `model_name` key → `class_name` + `module_path` + I/O spec (inputs, outputs, parameters with bounds). `catalog_loader.py` loads into Redis at startup. Runtime: `RedisCatalog` (`src/models/model_catalog/RedisCatalog.py`) resolves model metadata so `BaseFederate` dynamically imports + instantiates correct class.
-
-New model: create Python class inheriting `BaseModel` (implements `initialize`, `step`, `finalize`), add entry to `catalog.yaml`. Template: `src/models/model_catalog/model_template.yaml`.
-
-Built-in physical models: `src/models/model_catalog/physical_models/`. RL agent classes: `src/models/model_catalog/RL_agents/`.
-
-### Key Timing Concepts
-
-- `real_period` (seconds): real-world time per federate step — only required timing field in YAML.
-- HELICS time = unitless integer ticks; `ScenarioManager` normalizes all federates to minimum `real_period` as tick 1.
-- `time_offset` in YAML shifts federate's first tick — avoids same-step circular deps. `auto_offset` in scenario's `synchronization` block computes automatically via topological sort.
-- `subscription.causality: "same_step" | "next_step"` controls subscription value applied immediately or deferred one tick.
-
-### Storage & Results
-
-Federates buffer timeseries in memory in `self.storage` (partitioned `train`/`test`). End-of-run (or during-run) fate controlled by `memory_config.sink`:
-
-- **`sink: json`** (default, unchanged behavior): nothing written until run ends, then `store_local_file()` dumps each partition to `results/<scenario_name>/<sim_id>/<federation_name>/<federate>_<mode>_storage.json`.
-- **`sink: parquet`**: non-blocking, incremental. Each tick, `update_storage()` hands row snapshot to background `AsyncStorageWriter` (`src/utils/async_storage.py`) via queue — sim thread never blocks on I/O (queue blocks, not drops, if writer thread falls behind — result rows must never silently vanish). Writer batches rows (`memory_config.batch_size`), hands each batch to `ParquetStorageWriter` (`src/utils/parquet_storage.py`) — flattens to long/tidy schema (`time, federation, federate, model_instance, attribute, type, mode, value`), writes via `pyarrow.parquet.ParquetWriter` — one row group per batch, one file per mode — same `results/<scenario_name>/<sim_id>/<federation_name>/<federate>_<mode>_storage.parquet` layout as JSON sink. Parquet file finalized (`close()`) at run end, before `store_local_file()` (no-op for `sink: parquet` — data already on disk). Measured sim-thread cost negligible (~3µs/tick) vs `sink: json` on 3600-tick benchmark.
-- **`sink: none`**: skips local file storage (good for throwaway runs).
-
-`RLFederate` supports only `sink: json` / `sink: none` — `sink: parquet` raises `NotImplementedError` (storage schema differs from `BaseFederate`'s, not wired to async writer yet).
-
-Streamlit dashboard `load_all_records()` (`src/dashboard/dashboard_data.py`) reads **JSON results only**. Parquet results not dashboard-readable yet (schema deliberately matches dashboard's existing columns — future addition low-risk, but not implemented).
-
-### Multi-Federation Scenarios
-
-Scenario with >1 federation: `ScenarioManager` auto-inserts hierarchy broker (`helics_broker --sub_brokers=N`) above per-federation brokers, assigns TCP ports dynamically. Cross-federation pub/sub uses a flat **global** HELICS key namespace (`register_global_publication`/`register_global_input`) routed through the hierarchy broker, so a federate's targets need no federation prefix. The federation brokers dial the hierarchy broker with a bare `host:port` uplink (no `core_type://` scheme — `_ss` is a coreType, not a URI scheme; a `zmq_ss://…` uplink is malformed and hangs the sub-broker). **Composes with distributed deployment**: multi-federation + remote-SSH federates is validated (demo `src/scenarios/distributed_multifederation_test.yaml`); use `zmq_ss`/`tcp_ss` cores for distributed. See `docs/user_guide/distributed_deployment.md`.
-
-### Digital-Twin Interfaces & Live Streaming (opt-in, off by default)
-
-Two MQTT-backed mechanisms (Mosquitto broker, `src/adapters/mqtt_adapter.py`, background thread — never blocks sim) externalize data mid-run. Full reference: `docs/user_guide/digital_twin_interfaces.md`.
-
-- **`streaming: { stream: true }`** on any `base`/`rl` federate (`StreamingConfig`) mirrors inputs/outputs to MQTT each step (`<prefix>/<inputs|outputs>/<entity_id>/<var>`), alongside normal HELICS traffic. Only for external observers/dashboards; changes nothing in co-sim.
-- **`type: interface`** federate (`InterfaceFederate(BaseFederate)`, `InterfaceFederateConfig`, no physics model) relays wired connections to/from external world via `interface_config`:
-  - `adapter`: catalog-resolved transport (`mqtt_adapter`).
-  - `streams`: HELICS subscription → MQTT publish (co-sim → external).
-  - `bridges`: `scope: input` registers normal HELICS global publication (`mode: replace` = external value only; `mode: passthrough` + `source_key` = real source until external value arrives, then follows it). `scope: output`/`param` have no HELICS representation — bridge writes bounds-clipped values into Redis-backed `OverrideRegistry` (`src/core/override_registry.py`); target federate opts in with `override_enabled: true` to substitute in `_publish_outputs()`/`BaseModel.set_parameter()`. Clear external value → computed behavior restored next step.
-- **BK4 pattern (config-only sim-to-real):** model federate and interface federate register identical HELICS key names → swap simulated hardware for real = change *one* federate's block (`type: base` → `type: interface`) — every subscriber untouched. Demo pair: `src/scenarios/m5_bk4_demo_a_full_sim.yaml` / `m5_bk4_demo_b_digital_twin.yaml`.
-- **Live dashboard:** "Live" page of `./src/dashboard/run_dashboard.sh` (`src/dashboard/live_dashboard.py`, combined into single Streamlit app via `st.navigation`) subscribes to `cosim/#`, shows both mechanisms' data as published — separate from "Results" page's post-run `dashboard_app.py` view.
-
-## Config Reference
-
-Scenario YAML top-level keys:
-- `start_time`, `end_time`: ISO 8601 datetimes
-- `log_level`: `ERROR | WARNING | INFO | DEBUG`
-- `memory_config.attrs`: `"all"` or list of variable names to record
-- `memory_config.sink`: `json` (default) | `parquet` | `none` — see Storage & Results above
-- `memory_config.batch_size`: rows per batch for `parquet` sink's background writer (default `100`)
-- `synchronization`: auto-offset + startup-sync policies
-- `reinforcement_learning_config`: 4-axis RL config (below)
-- `deployment` (optional; absent → fully local, identical behavior): distributed SSH federate spawning. `manager_address` (LAN IP remotes use to reach this manager — REQUIRED when any federate sets `host:`) + `machines.<alias>`: `host`, `user` (default current), `ssh_port` (default 22), `workdir` (remote repo root, `src/` rsync'd here), `conda_env` (default `cosim_gym`), `python` (optional explicit interpreter, overrides `conda_env`). Only **federates** go remote; brokers/Redis/MQTT stay on manager. See `docs/user_guide/distributed_deployment.md`.
-- `federations.<name>.broker_config`: `core_type`, `port`, `federates`
-- `federations.<name>.federate_configs.<name>`: `type` (`base`|`rl`), `timing_configs.real_period`, `connections.publishes`, `connections.subscribes`, `model_configs.instantiation.model_name`, `host` (optional, base/interface only — alias from `deployment.machines`; spawns this federate on that remote machine over SSH. Rejected on `type: rl`.)
-- `model_configs.instantiation.parallel_execution` (default `false`) + `max_parallel_workers` (default `min(n_instances, cpu_count)`): step federate's model instances in **persistent worker processes** (`src/core/parallel_executor.py`) instead of default sequential loop. CPU-heavy model `step()`s only (pure-Python/GIL-bound → processes, not threads; workers rebuild shard from config). Workers daemon + escalating `close()` (sentinel→join→terminate→kill) + atexit/SIGINT/SIGTERM → no orphans. Unsupported with `override_enabled` or `type: rl` (raises `NotImplementedError`). Benchmark pair: `src/scenarios/benchmark_parallel_{seq,par}.yaml` with CPU-heavy `heavy_compute_dummy` model. See `docs/user_guide/scenario_configuration/federate.md`.
-
-Subscription target format: `<federate_name>.<instance_id>/<pub_key>` (same federation) or `<federation_name>.<federate_name>.<instance_id>/<pub_key>` (cross-federation).
-
-RL observation/action keys use dot notation: `<federation>.<federate>.<instance>.<variable>`.
-
-### RL Config Schema (`reinforcement_learning_config`)
-
-Four top-level axes under `reinforcement_learning_config`:
-
-- **`environment`** (MDP): `observations` (mapping: key → `ObservationSpec` with causality/history/reset_default/role/bounds), `actions` (mapping: key → `ActionSpec` with space/bounds/bins), `reward` (dotted path to reward fn), `reset` (mode: full|rolling|none, force_defaults)
-- **`agent`** (solver): `model_name` (catalog key), `backend` (stable_baselines3|rllib), `algorithm`, `policy`, `hyperparameters` (all-Optional: learning_rate/gamma/batch_size/net_arch/train_frequency/gradient_steps), `params` (backend-specific escape hatch)
-- **`run`** (schedule): `mode` (online|offline), `train` (episodes/episode_length → `total_steps` property), `eval`, `test` (episodes/episode_length/deterministic/checkpoint)
-- **`experiment`** (infra): `name`, `checkpoint` (dir/best → `best_path` property), `logging`, `offline`
-
-All RL Pydantic models use `extra='forbid'` — YAML typos raise validation errors. Hyperparameters default `None` (omit → backend applies own defaults).
-
-Available RL agents: `rl_simple_SACsb3` (SB3 SAC), `rl_simple_DQN` (custom PyTorch DQN), `rl_simple_rllib` (RLlib PPO standalone module). New agents: subclass `RLAgent`, add catalog entry.
-
-Tests: `pytest tests/test_rl_config.py` (parse-gate + extra='forbid' + validators).
-
-## graphify
-
-Project has knowledge graph at graphify-out/ — god nodes, community structure, cross-file relationships.
-
-Rules:
-- Codebase questions: first run `graphify query "<question>"` when graphify-out/graph.json exists. `graphify path "<A>" "<B>"` for relationships, `graphify explain "<concept>"` for focused concepts. Return scoped subgraph — much smaller than GRAPH_REPORT.md or raw grep.
-- If graphify-out/wiki/index.md exists, use for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain surface too little.
-- After code changes, run `graphify update .` — keeps graph current (AST-only, no API cost).
+Run it before merging any feature branch back to `main`.

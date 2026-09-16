@@ -83,6 +83,15 @@ class ModelMetadata:
     time_step: int = 1.0  # e.g., time step, solver options
     min_time_step: Optional[float] = 0.0
     max_time_step: Optional[float] = float('inf')
+    # Longest span of *model-local* simulated time the model can run before it
+    # must be restarted (an EnergyPlus FMU stops at the end of its RunPeriod).
+    # None => unbounded: no horizon is enforced and the model runs for the whole
+    # scenario. Declare it for any model with an intrinsic limit.
+    max_sim_time: Optional[float] = None
+    # Calendar date that model-local time 0 corresponds to (ISO 'YYYY-MM-DD' or
+    # 'MM-DD'). Only meaningful together with max_sim_time: it is the date the
+    # model restarts from every time its horizon is reached.
+    sim_start_date: Optional[str] = None
     user_defined: Dict[str, Any] = field(default_factory=dict)
 
     def get_defaults(self, interface_type: InterfaceType) -> Dict[str, Any]:
@@ -125,6 +134,8 @@ class ModelMetadata:
             'time_step': self.time_step,
             'min_time_step': self.min_time_step,
             'max_time_step': self.max_time_step,
+            'max_sim_time': self.max_sim_time,
+            'sim_start_date': self.sim_start_date,
             'user_defined': self.user_defined,
         }
 
@@ -185,11 +196,14 @@ class ModelCatalog:
             time_step=data.get('time_step', 1.0),
             min_time_step=data.get('min_time_step', 0.0),
             max_time_step=data.get('max_time_step', float('inf')),
+            max_sim_time=data.get('max_sim_time'),
+            sim_start_date=data.get('sim_start_date'),
             parameters=parse_parameter_specs(data.get('parameters', {})),
             inputs=parse_parameter_specs(data.get('inputs', {})),
             outputs=parse_parameter_specs(data.get('outputs', {})),
             states=parse_parameter_specs(data.get('states', {})),
-            dependencies=data.get('dependencies', [])
+            dependencies=data.get('dependencies', []),
+            user_defined=data.get('user_defined', {}),
         )
     
     def get_model_metadata(self, model_name: str) -> Optional[ModelMetadata]:

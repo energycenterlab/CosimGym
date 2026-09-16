@@ -305,7 +305,7 @@ Part B: D (data-exchange) → E (idle roofline) → F (placement+stress) → G (
         H (broker-remote draft) — anytime, no hardware
 ```
 
-Gates (repo convention `known_issues_from_regression.md` + "ask before massive runs"):
+Gates (repo convention `KNOWN_ISSUES.md` + "ask before massive runs"):
 - Explicit go-ahead before each large/long hardware phase (E, F, G).
 - Smoke-test shortened scenario before any full run.
 - `uptime` / `free -g` immediately before scaling up; abort if co-user load is high.
@@ -377,9 +377,12 @@ AND the locked CSV column list, both, before use):
 
 Wiring rules (deterministic, no cross-federation cycles for `intra_fed`):
 - Publisher key format stays catalog-derived. Subscription target strings MUST use
-  the repo's exact format: `<federate>.<instance>/<pub_key>` (same federation),
-  `<federation>.<federate>.<instance>/<pub_key>` (cross-federation). See CLAUDE.md
-  "Subscription target format".
+  the repo's exact format, `<federate>.<instance>/<pub_key>` — the same bare key
+  whether the publisher is in this federation or another one (HELICS keys are one flat
+  global namespace). See
+  [Cross-federation subscriptions](../user_guide/scenario_configuration/federation.md#cross-federation-subscriptions).
+  *(Corrected 2026-09-16: an earlier version of this plan gave a federation-prefixed
+  cross-federation form, which silently receives no data.)*
 - `intra_fed`: wire within each federation only. `cross_fed`: wire federation f→f+1.
   `cross_machine`: only valid under a distributed placement (gated).
 - `fanout` maps publisher federate(s) → subscriber federate(s) by the pattern above.

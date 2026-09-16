@@ -90,9 +90,35 @@ memory_config:
 - **`parquet`**: non-blocking. A background thread drains a queue of per-tick rows fed by the sim loop and writes them incrementally, batched every `batch_size` ticks, to `results/<scenario>/<sim_id>/<federation>/<federate>_<mode>_storage.parquet` (one file per `train`/`test` mode, same directory layout as `json`). Use this for long runs or large `attrs` sets where buffering everything in memory until the end is wasteful — measured negligible added sim-thread time vs `json`. **Not supported for `type: rl` federates** (raises `NotImplementedError` — RL's storage schema isn't wired to this path). Readable by the Streamlit dashboard, same as `json`.
 - **`none`**: skip local file storage entirely (nothing written to `results/`) — useful for throwaway/smoke-test runs.
 
+> **Check `sink: parquet` before relying on it.** On some machines the parquet sink crashes
+> a federate with a native `SIGSEGV` (an Arrow/HELICS native-library interaction, not a
+> configuration error). It is tracked in [Known Issues](../../KNOWN_ISSUES.md); the
+> workaround is `sink: json`. Verify the sink works on your machine with a short scenario
+> before committing a long run to it.
+
 This `memory_config` is automatically propagated to every federate that does not define its own. To override for a specific federate (e.g. `sink: parquet` for one high-frequency federate while others stay `json`), add a `memory_config` block inside that federate's config.
 
 ---
+
+### `simulation_horizon`
+
+Optional. Longest span of **simulated time** (seconds) the scenario may run before every model is restarted together.
+
+Some models cannot be stepped past a fixed span: an EnergyPlus FMU stops at the end of the RunPeriod it was exported with, normally one year. When such a model is in the scenario the whole federation has to go back to its first step at the same tick — a schedule feeder that kept running while the building it feeds restarted would be months out of phase with it.
+
+```yaml
+simulation_horizon: 31536000    # restart everything after one simulated year
+```
+
+You normally **leave this out**. It is resolved automatically from the models' catalog entries: any model that declares `max_sim_time` (see `docs/user_guide/fmu_models.md`) contributes its limit, and the shortest one wins and is applied to every federate in the scenario. Set it explicitly to override that, or to `0` to disable restarts entirely.
+
+| Value | Effect |
+| ----- | ------ |
+| absent (default) | taken from the models' declared `max_sim_time`; unbounded if none declares one |
+| a number of seconds | that horizon, whatever the models declare |
+| `0` | no restart, even if a model declares a limit (the run will fail when the model is stepped past it) |
+
+The restart is *not* an RL reset mode. It fires in training, in testing and in a plain co-simulation with no agent at all, and it composes with whatever `reset.mode` is configured rather than replacing it.
 
 ### `synchronization`
 - **Required:** no

@@ -131,6 +131,8 @@ class RedisCatalog:
             time_step=data.get("time_step", 1.0),
             min_time_step=data.get("min_time_step", 0.0),
             max_time_step=data.get("max_time_step", float("inf")),
+            max_sim_time=data.get("max_sim_time"),
+            sim_start_date=data.get("sim_start_date"),
             parameters=_specs(data.get("parameters", {})),
             inputs=_specs(data.get("inputs", {})),
             outputs=_specs(data.get("outputs", {})),

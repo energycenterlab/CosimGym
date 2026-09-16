@@ -32,7 +32,7 @@
 # temperatures to MQTT topic "cosim/cs_s5_dt/sensor/T_indoor" on
 # localhost:11883. Without a feeder running, the interface federate will WAIT
 # for the first external value (mode: replace has no HELICS passthrough
-# fallback) — this is expected, per EXPERIMENTS_INSTRUCTIONS.md S5.
+# fallback) — this is expected behavior for S5, not a failure.
 
 version: "1.0.0"
 name: "cs_s5_dt"

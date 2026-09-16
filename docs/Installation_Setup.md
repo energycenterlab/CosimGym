@@ -36,9 +36,12 @@ cd CosimGym
     ```bash
     docker compose -f src/docker-compose.yaml up -d
     ```
-    Brings up Redis (config/catalog distribution, port `6379`), MinIO, and Mosquitto
-    (MQTT broker for the opt-in digital-twin/streaming features, host port `11883` —
-    see [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
+    Brings up Redis (config/catalog distribution, default port `6379`), MinIO, and
+    Mosquitto (MQTT broker for the opt-in digital-twin/streaming features, default host
+    port `11883` — see
+    [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
+    All of these ports are configurable — see [Configuring ports](#configuring-ports)
+    below, which matters on a shared machine where the defaults may be taken.
 
 3.  **Run Simulation**:
     ```bash
@@ -52,6 +55,47 @@ cd CosimGym
     Access at http://localhost:8501. For a **live** view of a running simulation
     (rather than post-run results), see [Dashboard & Analytics → Live View](user_guide/dashboard.md#live-view-during-a-run).
 
+
+## Configuring ports
+
+Every infrastructure port has **one source of truth**: the file `src/.env`. It is read by
+*both* `docker-compose` (native `${VAR:-default}` substitution) and the Python code (via
+`src/utils/ports.py`), so moving a port once makes the containers and the simulation
+processes follow together. This is what you edit when a default port is already taken on a
+shared machine.
+
+```bash
+cp src/.env.example src/.env      # then edit the ports you need to move
+```
+
+`src/.env` is gitignored, so each user on a shared machine picks their own ports without
+commit clashes. If the file is absent, every value falls back to the built-in default and
+behavior is unchanged.
+
+| Key | Default | What it is |
+| --- | --- | --- |
+| `COSIM_REDIS_PORT` | `6379` | Redis — scenario config distribution + model catalog |
+| `COSIM_MQTT_PORT` | `11883` | Mosquitto host port (the container still listens on `1883` internally) |
+| `COSIM_MINIO_PORT` | `9000` | MinIO S3 API — the FMU artifact store |
+| `COSIM_MINIO_CONSOLE_PORT` | `9101` | MinIO web console |
+| `COSIM_MINIO_HOST` | `localhost` | MinIO host, for a MinIO that is not on this machine |
+| `COSIM_HELICS_PORT_MIN` / `_MAX` | `20000` / `30000` | Range `ScenarioManager` draws free HELICS broker ports from |
+
+Resolution order in `src/utils/ports.py` is: an explicit environment export (e.g.
+`export COSIM_REDIS_PORT=6400`) wins over `src/.env`, which wins over the built-in default.
+The legacy `REDIS_PORT` / `MQTT_PORT` / `MINIO_PORT` / `MINIO_HOST` exports are still
+honoured as aliases.
+
+Two things this does **not** cover:
+
+- **Container-internal ports** — the catalog-loader's own `REDIS_PORT=6379` and other
+  service-to-service references inside the compose network are fixed. Only the *host* port
+  mappings are `.env`-driven.
+- **A scenario's own broker port** — `federations.<name>.broker_config.port` is
+  co-simulation configuration and stays in the scenario YAML, not here. See
+  [Federation Configuration](user_guide/scenario_configuration/federation.md).
+
+Regression test: `pytest tests/test_ports.py`.
 
 ##  Dev Container + VS Code
 

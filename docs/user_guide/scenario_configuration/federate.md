@@ -196,7 +196,9 @@ Or use a list (same target applied to all instances):
 targets: [federate_name.0/pub_key]
 ```
 
-Cross-federation target format: `<federation_name>.<federate_name>.<instance_id>/<pub_key>`
+Cross-federation targets use the **same** format — HELICS keys are one flat global
+namespace, so a target never carries a federation prefix. See
+[Cross-federation subscriptions](federation.md#cross-federation-subscriptions).
 
 **RL-controlled subscriptions:** When an RL agent controls a variable, omit `targets` on the corresponding subscription. ScenarioManager wires the RL agent's output to that subscription automatically.
 

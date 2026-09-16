@@ -12,6 +12,7 @@ theme:
 nav:
   - Home: index.md
   - Installation: Installation_Setup.md
+  - Known Issues & Limitations: KNOWN_ISSUES.md
   - Overview: 
     - Introduction: overview/introduction.md
     - Core Concepts: overview/core_concepts.md

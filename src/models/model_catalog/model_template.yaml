@@ -48,7 +48,12 @@ models:
     time_step: 60                       # [REQUIRED] default simulation step size in seconds
     min_time_step: 1                    # [OPTIONAL] minimum allowed step size in seconds
     max_time_step: 3600                 # [OPTIONAL] maximum allowed step size in seconds
-    stop_time: ~                        # [OPTIONAL] fixed simulation end time in seconds (e.g. 31536000 for 1 year, required by EnergyPlus FMUs)
+    max_sim_time: ~                     # [OPTIONAL] longest span of simulated time (s) the model can run before it MUST be
+                                        #            restarted, e.g. 31536000 for an EnergyPlus FMU limited to its one-year
+                                        #            RunPeriod. ~ (absent) means unbounded: the model runs for the whole
+                                        #            scenario and is never restarted. Declare it or the run fails at the limit.
+    sim_start_date: ~                   # [OPTIONAL] calendar date that model-local time 0 means ('MM-DD' or 'YYYY-MM-DD'),
+                                        #            i.e. the date the model restarts FROM. Only used with max_sim_time.
     start_time: ~                       # [OPTIONAL] default simulation start time (ISO 8601 format)
 
   
@@ -140,7 +145,8 @@ models:
 # Time             time_step            int (s)     all
 #                  min_time_step        int (s)     all
 #                  max_time_step        int (s)     all
-#                  stop_time            int (s)     fmu / fixed-horizon
+#                  max_sim_time         int (s)     fmu / fixed-horizon (restart trigger)
+#                  sim_start_date       MM-DD       fmu / fixed-horizon (restart target date)
 #
 # Logging          log_level            int 0-7     all (mainly fmu)
 #

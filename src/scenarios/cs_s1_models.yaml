@@ -14,7 +14,7 @@
 # (`Broker for federation 'generation': port(s) 20001, 20002 already in use`).
 # `tcp` skips the +1 pairing entirely and matches the repo's only other
 # proven-working multi-federation example, simple_test_multifederations.yaml.
-# Worth filing in docs/future_and_TODOs/known_issues_from_regression.md.
+# Worth filing in docs/KNOWN_ISSUES.md.
 #
 # Federate NAME uniqueness — DELIBERATE. HELICS requires federate `name:`
 # values to be unique across the WHOLE broker hierarchy in a multi-federation
@@ -59,9 +59,9 @@
 # name. This matches CLAUDE.md ("a federate's targets need no federation
 # prefix") and every working example in the repo (simple_test_multifederations
 # .yaml, distributed_multifederation_test.yaml); it does NOT match the
-# `<federationName>.<federate>.<instance>/<pubkey>` format quoted in
-# EXPERIMENTS_INSTRUCTIONS.md Appendix A.3, which describes the (different,
-# dot-separated) RL observation/action key convention, not HELICS sub targets.
+# `<federationName>.<federate>.<instance>/<pubkey>` form. That dotted form is
+# the RL observation/action key convention — a different namespace — not a
+# HELICS subscription target.
 # A federation-qualified form (`federation.federate.instance`) IS accepted by
 # ScenarioManager._resolve_target_federate_node, but only for the auto_offset
 # dependency-graph computation — not for the literal HELICS bind, so using it
