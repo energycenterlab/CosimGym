@@ -253,6 +253,7 @@ class ModelConfig(BaseModel):
     reset_mode: Optional[str] = None
     rolling_window: Optional[int] = None
     episode_length: Optional[int] = None
+    reset_period: Optional[int] = None
     n_episodes: Optional[int] = None
 
 

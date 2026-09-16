@@ -1,0 +1,65 @@
+{
+  "winter": {
+    "target_day": 31,
+    "rewind_from_day": 40,
+    "compare_days": 30,
+    "arms": {
+      "replay": {
+        "ticks_compared": 4320,
+        "rmse_K": 1.0818768978104966e-08,
+        "max_abs_K": 9.301049175292064e-08,
+        "rmse_after_1d_K": 1.079077065351294e-08,
+        "max_abs_after_1d_K": 9.301049175292064e-08,
+        "settle_hours_below_0.2K": 0.0,
+        "heating_kwh_truth": 9629.706123333593,
+        "heating_kwh_arm": 9629.70611921545,
+        "heating_err_pct": -4.276499037634507e-08,
+        "replay_ticks": 4320,
+        "history_used": true,
+        "first_replayed_tick": null
+      }
+    }
+  },
+  "summer": {
+    "target_day": 196,
+    "rewind_from_day": 205,
+    "compare_days": 30,
+    "arms": {
+      "replay": {
+        "ticks_compared": 4320,
+        "rmse_K": 1.3193957292052887e-07,
+        "max_abs_K": 3.2186988008220396e-07,
+        "rmse_after_1d_K": 1.3372850884564946e-07,
+        "max_abs_after_1d_K": 3.2186988008220396e-07,
+        "settle_hours_below_0.2K": 0.0,
+        "heating_kwh_truth": 0.08635238984067352,
+        "heating_kwh_arm": 0.08635245066940116,
+        "heating_err_pct": 7.044243679934471e-05,
+        "replay_ticks": 28080,
+        "history_used": true,
+        "first_replayed_tick": null
+      }
+    }
+  },
+  "long_rewind": {
+    "target_day": 31,
+    "rewind_from_day": 150,
+    "compare_days": 15,
+    "arms": {
+      "replay": {
+        "ticks_compared": 2160,
+        "rmse_K": 1.4189320480122731e-08,
+        "max_abs_K": 9.301049175292064e-08,
+        "rmse_after_1d_K": 1.4356334034820982e-08,
+        "max_abs_after_1d_K": 9.301049175292064e-08,
+        "settle_hours_below_0.2K": 0.0,
+        "heating_kwh_truth": 5501.275413009394,
+        "heating_kwh_arm": 5501.275429407256,
+        "heating_err_pct": 2.9807382513690665e-07,
+        "replay_ticks": 4320,
+        "history_used": true,
+        "first_replayed_tick": null
+      }
+    }
+  }
+}

@@ -4,7 +4,8 @@ Context: `BaseModel` now keeps a model-local clock and restarts a model that
 declares `max_sim_time` when it reaches that horizon; `BaseFMUModel` implements
 the restart and the forward replay a rolling reset needs. User guide:
 `docs/user_guide/fmu_models.md` §4. Tests: `tests/test_model_local_clock.py`,
-`tests/test_fmu_horizon_detection.py`.
+`tests/test_fmu_horizon_detection.py`, `tests/test_fmu_state_snapshot.py`.
+Validation harness: `scripts/fmu_warmstart_validation/`.
 
 These are the deliberate limitations left behind, each with the reasoning for
 why it was left rather than solved.
@@ -42,9 +43,13 @@ is a restore. Verified against the FMI 3.0 Feedthrough FMU in
 re-instantiated). The capability is read from the FMU's own modelDescription; the
 catalog can only disable it, never claim it.
 
-**Still open, for FMUs without the capability** (EnergyPlus reports
+**Tried and removed:** a `runperiod_shift` strategy that moved the RunPeriod begin
+date instead of replaying to it. EnergyPlus never saw the new date — see §7 for
+the measurement and the lesson. The cost below therefore stands in full.
+
+**Still open, for every FMU without state save/restore** (EnergyPlus reports
 `canGetAndSetFMUstate=false`, and its real state lives in the EnergyPlus process
-rather than in the 8 declared FMI variables, so it cannot be emulated):
+rather than in the declared FMI variables, so it cannot be emulated):
 
 ```
 restarts     = episodes
@@ -53,12 +58,15 @@ replay steps ≈ rolling_window × episodes × (episodes − 1) / 2
 
 The model logs this estimate at startup and proceeds; it never blocks.
 
-- **A second warm slave.** The only checkpoint available to a non-snapshotting FMU
-  is "another instance held at a known point". That caps replay length at the
-  distance between checkpoints, at the price of a second EnergyPlus process.
+- **A second warm slave — the only idea left.** The only checkpoint available to a
+  non-snapshotting FMU is "another instance held at a known point". Park a second
+  slave at the current episode's start point: a rewind then swaps to it and
+  replays one `rolling_window` instead of the whole elapsed span, which is linear
+  rather than quadratic. Price: one extra EnergyPlus process per model instance,
+  and the teardown cost in §8 paid twice.
 - **Align `rolling_window` with `episode_length`.** When they are equal the next
   episode starts exactly where the last ended, no rewind is needed, and the cost
-  collapses to zero. Worth recommending for EnergyPlus-backed rolling studies.
+  collapses to zero.
 
 ---
 
@@ -77,9 +85,15 @@ steps is a few MB; at 1-min steps, tens of MB), and the history is discarded whe
 the slave restarts at local time 0, since everything after that point belongs to
 a span it no longer has.
 
-**Possible later:** cap the history with a ring buffer sized to the largest
-rewind the reset policy can ask for (`rolling_window × episodes`), or persist it
-alongside the results so a replay can outlive a restart.
+**Still unbounded.** A bounded history was written for the removed
+`runperiod_shift` strategy, which could only ever ask for the spin-up; it went
+with it. A `replay` rewind can ask for any tick since the run period began, so
+there is nothing to size a cap from except the reset policy itself.
+
+**Possible later:** size a ring buffer from the reset policy — the oldest tick a
+rewind can ask for is `reset_period` behind the current one plus the largest
+rewind the policy allows — or persist the history alongside the results so a
+replay can outlive a restart.
 
 ---
 
@@ -126,8 +140,11 @@ FMU but not the schedule model feeding it.
 counter will keep counting through a restart unless it implements the hook or
 derives its position from `state.ts` / `local_ts()`.
 
-**Also unresolved:** the FMU's *calendar* still restarts at its own RunPeriod
-begin date, which need not match the scenario's start date. `sim_start_date`
+**Also unresolved, and now known to be unfixable at runtime:** the FMU's
+*calendar* restarts at its own RunPeriod begin date, which need not match the
+scenario's start date. §7 shows that date cannot be moved from outside the FMU, so
+aligning the two calendars means exporting the FMU with the RunPeriod the scenario
+wants. `sim_start_date`
 records what that date is but nothing uses it to label results — a run whose
 scenario starts in March while the FMU's RunPeriod starts in January will have
 the FMU simulating January while the scenario calendar says March. Only the
@@ -176,3 +193,59 @@ nobody restarted.
 `_reset_on_horizon`. Harmless while RL federates hold only agents (which declare
 no horizon), but it is the same class of hole and should be closed with this work.
 
+---
+
+## 7. An EnergyPlus FMU cannot be restarted anywhere but its run period begin — SETTLED
+
+**Question:** a rolling reset on an EnergyPlus FMU replays every tick from the
+beginning of the run period, so the cost is the distance rewound. Could the slave
+be *started* at the target instead — given a new start date and the state it had?
+
+**Answer: no, and the two obvious routes are both closed.** Checked against
+BUI0.fmu with EnergyPlus 23.1, not reasoned about:
+
+| route | what happens |
+| --- | --- |
+| FMI `startTime` = the target | The wrapper uses it only for the whole-day check and the first-communication-point check. With a non-zero start time the first `doStep` fails: `fmi2DoStep failed with status 3 (error)`. |
+| rewrite the `RunPeriod` begin date in the IDF the FMU carries | Ignored. The wrapper re-preprocesses `resources/` at every instantiation, but takes the run period's begin from the original IDF and its **length from the FMI stop time**. Writing `begin 01-31` produced a slave that ran `01-01 .. 12-01`. |
+| set the state through the interface | There is nothing to set. BUI0 publishes six `To:Schedule` inputs and two `From:Variable` outputs; zone temperature is an output, and EnergyPlus exposes no actuator for zone air or surface node temperatures. Hence `canGetAndSetFMUstate=false`. |
+
+**How it was caught, and the lesson.** A `runperiod_shift` strategy was built on
+the second route, and its unit test and smoke scenario both passed — because they
+asserted on *the IDF the code had written*, not on what EnergyPlus ran. The
+validation harness (`scripts/fmu_warmstart_validation/`) is what exposed it: a
+rewind into July came back 6.1 K off with a heating-energy error of 10⁷ %, and a
+spin-up of 0, 1, 3 or 7 days changed nothing. The slave was simulating January
+while the model believed it had jumped to July. Reading the run directory's IDF
+and the `.eio` `Environment` line settled it in one look. **An FMU test that never
+inspects what the slave actually simulated proves nothing.**
+
+The strategy has been removed. What is left of the work is the harness, this
+entry, and the bug fixes it turned up along the way.
+
+**What is still open:** the rewind cost itself. The only untried idea is the
+checkpoint slave from §2 — a second EnergyPlus instance parked at the current
+episode's start point, so a rewind restores by *swapping to it* and replaying only
+one `rolling_window` instead of the whole elapsed span. That turns the rolling
+total from quadratic to linear at the price of one extra EnergyPlus process per
+model instance. Nothing else about EnergyPlus makes a rewind cheaper.
+
+---
+
+## 8. Every FMU restart pays EnergyPlus finishing its run period
+
+**What happens:** `fmi2Terminate` hands control back to EnergyPlus, which runs out
+the *rest* of its run period before the process exits, and `_teardown()` waits for
+it. Measured on BUI0: **3.75 s** per restart with a full year left, 3.52 s with 30
+days left to run. It scales with the run period still ahead, so it is a flat cost
+paid on every restart, and it dominates a short replay (0.11 s per replayed day on
+BUI0, against 0.55 s to instantiate).
+
+**Possible later:** the FMI stop time already shortens the run period the slave is
+given - that is the one thing the wrapper *does* take from us (§7) - so bounding
+each instance to the span an episode actually needs would cut the teardown
+towards zero. It has to be reconciled with `max_sim_time` and the horizon restart,
+which assume one run period per model, so it is a design question rather than a
+patch. Killing the EnergyPlus process instead of terminating it politely is the
+blunt alternative, and would lose the `.err`/`.eso` files the run writes on the
+way out.

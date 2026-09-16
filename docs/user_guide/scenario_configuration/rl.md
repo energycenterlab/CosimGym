@@ -140,9 +140,18 @@ reset:
   force_defaults: false         # always apply reset_default even when valid values exist
 ```
 
-`mode: rolling` requires `rolling_window`. Because FMUs/distributed federates cannot be cheaply
-`reset()`, rolling treats the run as one long timeline and starts a new logical trajectory
-segment without rebooting the physics.
+`mode: rolling` requires `rolling_window`. Rolling treats the run as one long timeline and
+starts each episode at a start point that slides forward by `rolling_window` ticks:
+
+```
+episode 1 starts at tick 1, episode 2 at 1 + rolling_window, episode 3 at 1 + 2 × rolling_window …
+```
+
+`rolling_window < period` therefore rewinds every model to a tick it has already run, which is
+what a model backed by an external runtime has to work for — an FMU is restarted, a CSV reader
+moves its cursor (see [FMU Models §4](../fmu_models.md#4-simulation-horizon-and-automatic-restart)).
+`rolling_window == period` is the cheap case: each episode continues exactly where the last one
+ended, nothing is rewound, and no physics is rebooted.
 
 ### Key naming convention
 

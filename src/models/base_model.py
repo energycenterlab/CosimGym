@@ -135,6 +135,8 @@ class BaseModel(ABC):
         self.reset_mode = getattr(user_config, 'reset_mode', None)
         self.rolling_window = getattr(user_config, 'rolling_window', None)
         self.n_episodes = getattr(user_config, 'n_episodes', None)
+        self.episode_length = getattr(user_config, 'episode_length', None)
+        self.reset_period = getattr(user_config, 'reset_period', None)
 
         # Instantiate the model:
         self._instantiate()

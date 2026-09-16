@@ -138,7 +138,13 @@ class BaseFederate():
             self.n_episodes = self.config.rl_config.get('n_episodes', None) if self.config.rl_config else None
             self.reset_type = self.config.rl_config.get('reset_type', None) if self.config.rl_config else None
             self.reset_length = self.config.rl_config.get('reset_period', None) if self.config.rl_config else None
-            self.new_starting_point = 0
+            # Tick the current episode starts at. Ticks are 1-based, so the
+            # first episode starts at 1 and each rolling reset slides the
+            # start point forward by exactly rolling_window ticks - starting
+            # from 0 made every episode re-run the last tick of the previous
+            # window, and put every start point one tick before a day
+            # boundary, which an FMU restart cannot land on.
+            self.new_starting_point = 1
             self.rolling_window = self.config.rl_config.get('rolling_window', None) if self.config.rl_config else None
             self.episode_count = 0  
             self.reset_count = 0 
@@ -351,6 +357,11 @@ class BaseFederate():
         model_configs.reset_mode = getattr(self, 'reset_type', None)
         model_configs.rolling_window = getattr(self, 'rolling_window', None)
         model_configs.episode_length = getattr(self, 'episode_length', None)
+        # How many ticks a model runs between resets. Defaults to the episode
+        # length, and a model that saves its state needs it to know whether the
+        # next rolling start point is reachable before the next reset.
+        model_configs.reset_period = (getattr(self, 'reset_length', None)
+                                      or getattr(self, 'episode_length', None))
         model_configs.n_episodes = getattr(self, 'n_episodes', None)
         model_configs.inputs , model_configs.outputs= self.input_output_names() 
         self.logger.debug(f"Updated Model configs: {pp.pformat(model_configs)}")

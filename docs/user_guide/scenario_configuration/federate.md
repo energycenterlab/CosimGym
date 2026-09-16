@@ -230,6 +230,13 @@ model_configs:
     integrator: "fixed-step"
 ```
 
+A few keys here are read by the framework rather than by the model: `max_sim_time` and
+`sim_start_date` override the model's declared simulation horizon, and the `fmu_reset` block
+overrides the catalog entry's restart policy key by key
+(`replay_inputs`, `supports_rollback`) — see
+[FMU Models §4](../fmu_models.md#4-simulation-horizon-and-automatic-restart). Everything else is
+passed through untouched.
+
 ### `instantiation` fields
 
 | Field | Required | Default | Meaning |

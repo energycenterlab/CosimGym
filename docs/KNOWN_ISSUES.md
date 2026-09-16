@@ -86,6 +86,20 @@ uploaded to the local MinIO `fmus` bucket.
 
 The model-local-clock / automatic-restart work has deliberate boundaries: no horizon is ever
 inferred (a model without `max_sim_time` in its catalog entry is treated as unbounded and will
-still fail past its RunPeriod), plus the other items in
-`docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`. Listed here as a limitation; the
+still fail past its RunPeriod); a rolling reset on an EnergyPlus FMU costs a replay
+proportional to the distance rewound, and no shortcut exists (see the follow-ups §7); and
+`parallel_execution` never propagates a reset to its worker processes. Those and the rest are in
+`docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`. Listed here as limitations; the
 reasoning and the possible later fixes stay in that follow-ups document.
+
+## 6. `tests/test_scenario_manager_remote.py` — 2 tests broken  (LOW, test-only)
+
+`TestRemoteFederates::test_verify_and_deploy_called_for_each_machine` and the preflight-failure
+test next to it both die with
+`AttributeError: 'types.SimpleNamespace' object has no attribute 'scenario_name'` at
+`src/core/ScenarioManager.py:870`: the fake config the tests build no longer carries every
+attribute the deploy path reads. Pre-existing on `main`, unrelated to the distributed feature
+itself (the real `distributed_demo` scenario passes).
+
+- **Fix:** add `scenario_name` (and whatever else has been added since) to the test's
+  `SimpleNamespace`, or build the fake config from the real dataclass.

@@ -68,6 +68,8 @@ timing_configs:
 
 FMUs generated from EnergyPlus IDF files (`idf-to-fmu-export-prep`) require a **defined stop time**. `BaseFMUModel` derives it automatically from the scenario `start_time`/`end_time` and passes it to `setupExperiment` (FMI 2.0) / `enterInitializationMode` (FMI 3.0). If the stop time is left undefined, EnergyPlus clamps it to 0 and the second `doStep` fails with `fmi2Error`. When the model declares a simulation horizon (next section) that horizon is used instead, because the slave is restarted at it rather than stepped past it.
 
+An EnergyPlus FMU also always **starts at the begin date of its RunPeriod**, not at the scenario's `start_time`: the calendar lives in the IDF inside the FMU, and the FMI start time does not move it. A scenario starting in March against an FMU whose RunPeriod begins on 1 January has the building simulating January while the scenario calendar says March — every model is at the same *elapsed* simulated time, only the labels disagree. [§4](#4-simulation-horizon-and-automatic-restart) explains how a restart can move that date.
+
 EnergyPlus FMUs also create runtime working directories named `Output_EPExport_<federate>.<n>/`. These are git-ignored — do not commit them.
 
 ## 4. Simulation horizon and automatic restart
@@ -129,20 +131,32 @@ Two mechanisms, picked automatically from what the FMU itself declares in its `m
 | `canGetAndSetFMUstate="true"` | **save / restore state** | instant, exact, any direction |
 | `canGetAndSetFMUstate="false"` | **restart and replay** | a new slave, plus one step per tick replayed |
 
-**Save / restore.** The FMU's state is captured with `fmi2GetFMUstate` (FMI 3: `fmi3GetFMUState`) and put back with the matching setter. The saved blob carries the model's *entire* internal state, so a restore needs no replay and nothing needs to be remembered about the inputs the FMU saw. The state at the first tick is saved once at startup and reused by every full reset and every horizon restart; under `rolling`, the next episode's start point is saved in passing while the current episode runs, so a rewind is a restore rather than a re-simulation. Only one rolling snapshot is kept at a time.
+**Save / restore.** The FMU's state is captured with `fmi2GetFMUstate` (FMI 3: `fmi3GetFMUState`) and put back with the matching setter. The saved blob carries the model's *entire* internal state, so a restore needs no replay and nothing needs to be remembered about the inputs the FMU saw. The state at the first tick is saved once at startup and reused by every full reset and every horizon restart; under `rolling`, the next episode's start point is saved in passing while the current episode runs, so a rewind is a restore rather than a re-simulation. Exactly two states are ever held: the tick the slave was started at, and the start point of the next episode — the latter is freed as soon as a rewind has used it.
+
+The start point of the next episode is saved *while passing through it*, so the slave has to reach it before the reset that asks for it. That means **`rolling_window` must not be longer than the reset period** (which defaults to `episode_length`). If it is, nothing is ever saved, every rewind falls back to a restart, and the model says so at startup.
 
 This is not something a scenario can emulate by saving parameters and variables itself: the FMI interface exposes only the declared I/O variables, while the model's real state (an EnergyPlus building's zone thermal mass, surface temperatures, HVAC and warm-up history) lives inside the simulator and is never published as variables.
 
-**Restart and replay.** EnergyPlus exports report `canGetAndSetFMUstate="false"`, so for them the only way to reach any point is to free the slave, instantiate a fresh one from the cached unzip directory and step it forward to the target. Reaching the first tick is cheap; anything later costs one real FMU step per tick replayed. Since the rolling start point slides forward every episode, the total grows with the **square of the episode count**:
+**Restart and replay.** EnergyPlus exports report `canGetAndSetFMUstate="false"`, so for them the slave has to be freed and a fresh one instantiated from the cached unzip directory. Reaching the first tick is cheap; reaching anything later costs one real FMU step per tick replayed — unless the run period itself is moved (next section). Since the rolling start point slides forward every episode, the replayed total grows with the **square of the episode count**:
 
 ```
 restarts     = episodes
 replay steps ≈ rolling_window × episodes × (episodes − 1) / 2
 ```
 
-100 episodes with `rolling_window: 10` is about 50 000 replayed steps — minutes. The same 100 episodes with `rolling_window: 2880` is about 14 million — days. The model logs this estimate at startup and then proceeds; nothing is blocked, because a long training is often worth waiting for. If the number is not what you expected, reduce `rolling_window`, reduce the episode count, or set `rolling_window` equal to `episode_length` so each episode continues where the last ended and no rewind is needed at all.
+100 episodes with `rolling_window: 10` is about 50 000 replayed steps — minutes. The same 100 episodes with `rolling_window: 2880` is about 14 million — days. The model logs this estimate at startup and then proceeds; nothing is blocked, because a long training is often worth waiting for. If the number is not what you expected, reduce `rolling_window`, reduce the episode count, or set `rolling_window` equal to `episode_length` so each episode continues where the last ended and no rewind is needed at all — the model notices it is already standing on the requested tick, and the slave keeps running with no restart and no discontinuity.
 
 During a replay the FMU is fed the inputs it originally saw at those ticks, recorded as the run went along, so it arrives at the start point in the state it really had. If that history does not cover the requested span the initial inputs are held constant and a warning says the replayed span is approximate. Set `user_defined.fmu_reset.replay_inputs: hold` to skip the recording entirely and always hold.
+
+### An EnergyPlus FMU cannot be restarted anywhere else
+
+A rewind always goes back through the **beginning of the run period**. There is no way to make an EnergyPlus slave start at an arbitrary date:
+
+- The FMI `startTime` does not move its calendar. The wrapper uses that value only to check that the run is a whole number of days; passing a non-zero start time makes the first `doStep` fail with `fmi2Error`.
+- Rewriting the `RunPeriod` begin date in the IDF the FMU carries does not work either. The wrapper re-runs its preprocessor over `resources/` at every instantiation, but it takes the run period's **begin date from the original IDF and its length from the FMI stop time**, so a rewritten begin date is silently ignored. Measured with BUI0 and EnergyPlus 23.1: writing `begin 01-31` produced a slave that ran `01-01 .. 12-01`.
+- There is no state to inject instead. BUI0's whole interface is six schedule inputs and two output variables; zone temperature is an *output*, and EnergyPlus exposes no actuator for zone air or surface node temperatures. That is the same reason it reports `canGetAndSetFMUstate="false"`.
+
+So for an EnergyPlus FMU the cost of a rewind is the distance rewound, and the way to avoid paying it is to not rewind: set `rolling_window` equal to the reset period. `scripts/fmu_warmstart_validation/` holds the harness that establishes this, and the evidence is written up in [the follow-ups](../future_and_TODOs/fmu_horizon_and_reset_followups.md).
 
 ### Letting the register script fill this in
 

@@ -22,8 +22,9 @@ Organization: EC-Lab Politecnico di Torino
 import contextlib
 import logging
 import os
+import re
 import shutil
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -113,6 +114,13 @@ class BaseFMUModel(BaseModel):
         self._state_snapshots = {}
         self._snapshot_target_ts = None
 
+        # Model tick the slave has last stepped, so a reposition can tell whether
+        # it is already where it is being asked to go. A rolling reset with
+        # rolling_window == episode_length asks for the tick the slave is about to
+        # run anyway; restarting for that would be a physical discontinuity bought
+        # for nothing.
+        self._slave_tick = 0
+
         # value-reference maps: var_name → (vref, fmi_type_str)
         self.vars = {}
         self.in_vars = {}
@@ -133,9 +141,10 @@ class BaseFMUModel(BaseModel):
     def initialize(self) -> None:
         self.logger.debug(f"Initializing FMU model {self.name}")
         self._load_fmu()
-        self._start_instance()
         self._resolve_replay_mode()
+        self._start_instance()
         self._warn_rolling_replay_cost()
+        self._warn_rolling_snapshot_gap()
         self._check_horizon_granularity()
         self.logger.info(f"FMU model {self.name} initialized (FMI {self.fmiVersion})")
 
@@ -162,10 +171,10 @@ class BaseFMUModel(BaseModel):
 
         An FMU that cannot save and restore its state has to be restarted and
         re-simulated from the beginning of its run period to reach an earlier
-        start point, and the rolling start point slides forward every episode.
-        The total therefore grows with the square of the episode count. The run
-        still goes ahead - a long training is often worth waiting for - but the
-        number should not be a surprise discovered hours in.
+        start point, and that start point slides forward every episode, so the
+        total grows with the square of the episode count. The run still goes
+        ahead - a long training is often worth waiting for - but the number
+        should not be a surprise discovered hours in.
         """
         if self.reset_mode != 'rolling' or self._can_snapshot:
             return
@@ -173,10 +182,11 @@ class BaseFMUModel(BaseModel):
         episodes = self.n_episodes or 0
         if not window or not episodes:
             self.logger.warning(
-                f"FMU model {self.name}: rolling resets restart and replay this FMU on every "
-                "episode, because it does not support state save/restore."
+                f"FMU model {self.name}: rolling resets restart this FMU on every episode, "
+                "because it does not support state save/restore."
             )
             return
+
         replay_steps = window * episodes * (episodes - 1) // 2
         self.logger.warning(
             f"FMU model {self.name}: rolling resets on an FMU without state save/restore cost "
@@ -184,8 +194,44 @@ class BaseFMUModel(BaseModel):
             f"Estimated total for {episodes} episodes with a {window}-step window: "
             f"{episodes} restarts and ~{replay_steps} replayed steps "
             f"(~{replay_steps * self.real_period / 86400:.1f} days of extra simulated time). "
-            f"This grows with the square of the episode count. The run will proceed."
+            f"This grows with the square of the episode count. The run will proceed. "
+            f"Setting rolling_window equal to the reset period removes the rewind entirely."
         )
+
+    def _warn_rolling_snapshot_gap(self) -> None:
+        """A rolling window wider than the episode outruns the saved start point.
+
+        The next episode's start point is saved *in passing*, so the slave has to
+        step through it during the current episode. It only does that when the
+        episode is at least as long as the window; otherwise the save never
+        happens and every rewind falls back to a restart with no input history to
+        replay, which is far slower and physically approximate.
+        """
+        if self.reset_mode != 'rolling' or not self._can_snapshot:
+            return
+        window = self.rolling_window or 0
+        episode = self.reset_period or self.episode_length or 0
+        if not window or not episode or window <= episode:
+            return
+        self.logger.warning(
+            f"FMU model {self.name}: rolling_window ({window}) is longer than the reset period "
+            f"({episode}), so the slave never reaches the next episode's start point and no "
+            "state can be saved in passing. Every rewind will fall back to a restart with the "
+            "initial inputs held constant, which is slow and physically approximate. Set "
+            "rolling_window <= the reset period."
+        )
+
+    def _fmu_reset_options(self) -> dict:
+        """The model's ``fmu_reset`` block: catalog entry, scenario on top.
+
+        The catalog describes the FMU, the scenario describes this study - the
+        same building is restarted differently in a long RL training and in a
+        validation run - so a scenario's ``user_defined.fmu_reset`` overrides the
+        catalog key by key, exactly as it already overrides ``max_sim_time``.
+        """
+        catalog = (self.metadata.user_defined or {}).get('fmu_reset', {}) if self.metadata else {}
+        scenario = (getattr(self.config, 'user_defined', None) or {}).get('fmu_reset', {})
+        return {**(catalog or {}), **(scenario or {})}
 
     def _resolve_replay_mode(self) -> None:
         """Read the replay policy from the catalog entry.
@@ -194,7 +240,7 @@ class BaseFMUModel(BaseModel):
         rewind lands it in the state it really had. 'hold' freezes the initial
         inputs instead: no memory, but the replayed span is fiction.
         """
-        fmu_reset = (self.metadata.user_defined or {}).get('fmu_reset', {}) if self.metadata else {}
+        fmu_reset = self._fmu_reset_options()
         mode = fmu_reset.get('replay_inputs', 'history')
         if mode not in ('history', 'hold'):
             self.logger.warning(
@@ -203,80 +249,6 @@ class BaseFMUModel(BaseModel):
             )
             mode = 'history'
         self._replay_inputs = mode
-
-    def _check_horizon_granularity(self) -> None:
-        """EnergyPlus refuses a run period that is not a whole number of days.
-
-        The horizon is handed to the FMU as its stop time, and an EnergyPlus
-        export rejects initialization outright with
-        'the delta between the FMU stop time and the FMU start time must be a
-        multiple of 86400', so say which value is wrong before the FMU does.
-        """
-        if not self.max_sim_time:
-            return
-        if float(self.max_sim_time) % 86400 != 0:
-            self.logger.warning(
-                f"FMU model {self.name}: max_sim_time={self.max_sim_time}s is not a whole "
-                f"number of days ({self.max_sim_time / 86400:.3f} days). EnergyPlus-exported "
-                "FMUs require their run period to be a multiple of 86400 s and will fail to "
-                "initialize. Round the horizon to a whole number of days."
-            )
-
-    def _warn_rolling_replay_cost(self) -> None:
-        """Say up front what a rolling run will cost on this FMU.
-
-        An FMU that cannot save and restore its state has to be restarted and
-        re-simulated from the beginning of its run period to reach an earlier
-        start point, and the rolling start point slides forward every episode.
-        The total therefore grows with the square of the episode count. The run
-        still goes ahead - a long training is often worth waiting for - but the
-        number should not be a surprise discovered hours in.
-        """
-        if self.reset_mode != 'rolling' or self._can_snapshot:
-            return
-        window = self.rolling_window or 0
-        episodes = self.n_episodes or 0
-        if not window or not episodes:
-            self.logger.warning(
-                f"FMU model {self.name}: rolling resets restart and replay this FMU on every "
-                "episode, because it does not support state save/restore."
-            )
-            return
-        replay_steps = window * episodes * (episodes - 1) // 2
-        self.logger.warning(
-            f"FMU model {self.name}: rolling resets on an FMU without state save/restore cost "
-            f"a restart plus a replay from the start of the run period on every episode. "
-            f"Estimated total for {episodes} episodes with a {window}-step window: "
-            f"{episodes} restarts and ~{replay_steps} replayed steps "
-            f"(~{replay_steps * self.real_period / 86400:.1f} days of extra simulated time). "
-            f"This grows with the square of the episode count. The run will proceed."
-        )
-
-    def _resolve_replay_mode(self) -> None:
-        """Read the replay policy from the catalog entry.
-
-        'history' replays the inputs the FMU actually saw at those ticks, so a
-        rewind lands it in the state it really had. 'hold' freezes the initial
-        inputs instead: no memory, but the replayed span is fiction.
-        """
-        fmu_reset = (self.metadata.user_defined or {}).get('fmu_reset', {}) if self.metadata else {}
-        mode = fmu_reset.get('replay_inputs', 'history')
-        if mode not in ('history', 'hold'):
-            self.logger.warning(
-                f"Unknown fmu_reset.replay_inputs '{mode}'; using 'history'. "
-                "Valid values: 'history', 'hold'."
-            )
-            mode = 'history'
-        self._replay_inputs = mode
-
-    def _supports_rollback(self) -> bool:
-        """Whether the slave can save and restore its state (FMI get/setFMUstate).
-
-        Read from the catalog entry, which the register script fills in from the
-        FMU's own modelDescription. False means every rewind costs a full replay.
-        """
-        fmu_reset = (self.metadata.user_defined or {}).get('fmu_reset', {}) if self.metadata else {}
-        return bool(fmu_reset.get('supports_rollback', False))
 
     def _load_fmu(self) -> None:
         """Resolve, read and unpack the FMU archive. Runs once per model lifetime.
@@ -300,7 +272,7 @@ class BaseFMUModel(BaseModel):
         cosim = getattr(self.model_description, 'coSimulation', None)
         declared = bool(getattr(cosim, 'canGetAndSetFMUstate', False)) if cosim else False
 
-        fmu_reset = (self.metadata.user_defined or {}).get('fmu_reset', {}) if self.metadata else {}
+        fmu_reset = self._fmu_reset_options()
         if fmu_reset.get('supports_rollback') is False and declared:
             self.logger.info(
                 f"FMU model {self.name} advertises state save/restore but the catalog "
@@ -331,6 +303,7 @@ class BaseFMUModel(BaseModel):
             self._push_initial_state_to_fmu()
             self._exit_initialization_mode()
         self._instance_count += 1
+        self._slave_tick = 0
         # The state at the first tick is what every full reset and every horizon
         # restart goes back to, so save it once and reuse it forever.
         self._take_snapshot(1)
@@ -356,15 +329,33 @@ class BaseFMUModel(BaseModel):
         # BaseModel._enforce_sim_horizon has already restarted the slave if this
         # step would have run past the declared max_sim_time.
         current_time = self.local_time()
+        self._slave_tick = self.local_ts()
         self._maybe_snapshot_next_rolling_start()
         self._record_inputs()
         self._inputs_to_fmu()
         with self._in_fmu_workdir():
+            self._do_step(current_time)
+        self._outputs_from_fmu()
+
+    def _do_step(self, current_time: float) -> None:
+        """One FMU step, telling the slave whether it may discard rollback data.
+
+        ``noSetFMUStatePriorToCurrentPoint`` is a promise to the FMU that the
+        master will never put it back before this point - fmpy defaults it to
+        true. That promise is false for us whenever states are being saved, and
+        an FMU is entitled to free what a rewind needs once it is given.
+        """
+        if self.fmiVersion == '1.0':
             self.fmu.doStep(
                 currentCommunicationPoint=current_time,
                 communicationStepSize=self.real_period,
             )
-        self._outputs_from_fmu()
+            return
+        self.fmu.doStep(
+            currentCommunicationPoint=current_time,
+            communicationStepSize=self.real_period,
+            noSetFMUStatePriorToCurrentPoint=not self._can_snapshot,
+        )
 
     def finalize(self) -> None:
         self.logger.info(f"Finalizing FMU model {self.name}")
@@ -379,9 +370,11 @@ class BaseFMUModel(BaseModel):
         """Reset interfaces and move the slave to the start point this mode asks for.
 
         ``full``    — restart at the FMU's own start date (model-local time 0).
-        ``rolling`` — restart and replay forward to the requested start point: an
-                      FMU cannot be stepped backwards, so reaching an earlier time
-                      means re-simulating from the beginning of its run period.
+        ``rolling`` — move to the episode's start point. An FMU cannot be stepped
+                      backwards, so a rewind means restoring a saved state, or
+                      restarting the slave and replaying to the target from the
+                      beginning of its run period. A start point the slave is
+                      already standing on costs nothing.
         ``none``/``soft`` — interfaces only, the slave keeps running.
 
         The clock bookkeeping lives in BaseModel.reset, which calls back into
@@ -409,10 +402,21 @@ class BaseFMUModel(BaseModel):
             # Called from BaseModel.__init__ before the FMU is loaded; nothing to do.
             return
 
+        if self._slave_tick == int(target_ts) - 1:
+            # Already standing exactly where it is asked to stand: a rolling reset
+            # whose window is the episode length continues rather than rewinds.
+            self.logger.debug(
+                f"FMU model {self.name}: already positioned for tick {target_ts}; "
+                "the slave keeps running"
+            )
+            return
+
         # A saved state puts the slave back instantly and carries its whole
         # internal state with it, so there is nothing to replay and nothing to
         # remember about its inputs.
         if self._can_snapshot and self._restore_snapshot(int(target_ts)):
+            self._slave_tick = int(target_ts) - 1
+            self._consume_rolling_snapshot(int(target_ts))
             self._input_history = []
             return
 
@@ -483,17 +487,37 @@ class BaseFMUModel(BaseModel):
         The start points are known in advance (they slide forward by
         `rolling_window` every episode) and the slave passes through the next one
         while the current episode runs, so one state saved in passing turns the
-        next rewind into a restore. Only one is kept at a time.
+        next rewind into a restore.
+
+        The pending target only moves on when a rewind has consumed it, so at
+        most two states are ever held: the tick the slave was started at, which
+        every full reset and horizon restart goes back to, and the start point of
+        the next episode. The episode is usually longer than the window, so the
+        slave runs well past the pending target before the reset that asks for
+        it - keeping the earliest pending one is what makes that work.
         """
         if not self._can_snapshot or self.reset_mode != 'rolling':
             return
         if self._snapshot_target_ts is None:
-            self._snapshot_target_ts = self.rolling_window or None
+            # Same arithmetic as BaseFederate._reset: start points are 1, 1+W, 1+2W.
+            self._snapshot_target_ts = (1 + self.rolling_window) if self.rolling_window else None
             if self._snapshot_target_ts is None:
                 return
-        if self.local_ts() == self._snapshot_target_ts:
+        if self.local_ts() == self._snapshot_target_ts and \
+                self._snapshot_target_ts not in self._state_snapshots:
             self._take_snapshot(self._snapshot_target_ts)
-            self._snapshot_target_ts += (self.rolling_window or 0) or 1
+
+    def _consume_rolling_snapshot(self, tick: int) -> None:
+        """A rewind has used the saved start point; keep the next one instead.
+
+        Rolling start points slide forward and are never revisited, so the state
+        just restored from is dead weight - unless it is the tick the slave was
+        started at, which every full reset still needs.
+        """
+        if tick != 1:
+            self._free_snapshot(tick)
+        if self.reset_mode == 'rolling' and self.rolling_window:
+            self._snapshot_target_ts = tick + self.rolling_window
 
     def _advance(self, n_steps: int) -> None:
         """Replay *n_steps* silently from model-local time 0.
@@ -518,10 +542,8 @@ class BaseFMUModel(BaseModel):
             for i in range(n_steps):
                 if use_history:
                     self._push_inputs(history[i])
-                self.fmu.doStep(
-                    currentCommunicationPoint=i * self.real_period,
-                    communicationStepSize=self.real_period,
-                )
+                self._do_step(i * self.real_period)
+        self._slave_tick = n_steps
         # The replayed prefix is now the history of the current epoch.
         self._input_history = history[:n_steps] if use_history else []
 

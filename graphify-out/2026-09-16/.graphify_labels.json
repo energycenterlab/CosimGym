@@ -176,21 +176,5 @@
   "174": "TestInputModel",
   "175": "parallel_executor.py",
   "176": ".finalize",
-  "177": ".best_path",
-  "178": "parse_target",
-  "179": "._enrich_dynamic_catalog_metadata",
-  "180": "._resolve_fmu_workdir",
-  "181": "reward_functions.py",
-  "182": "Known Issues & Limitations",
-  "183": "Scaling Study — canonical index (single source of truth)",
-  "184": "catalog entry: spring_mass_damper",
-  "185": "M5 BK4 Demo (b) Digital Twin",
-  "186": "Scenario: bui_hp_test_base (PID-driven heat pump base co-simulation)",
-  "187": "catalog entry: test_input_model",
-  "188": "._register_entities",
-  "189": "catalog-loader service",
-  "190": "Architecture",
-  "191": "Provided Examples List",
-  "192": "generate_electric_load_profile.py",
-  "193": "paper_casestudies.md"
+  "177": ".best_path"
 }

@@ -156,7 +156,7 @@ def test_rolling_start_point_is_saved_in_passing():
     try:
         for ts in range(1, 6):
             m._step(ts, {IN_VAR: float(ts)})
-        assert window in m._state_snapshots
+        assert 1 + window in m._state_snapshots, 'start points are 1, 1+W, 1+2W'
     finally:
         m.finalize()
 
@@ -169,10 +169,10 @@ def test_rolling_reset_rewinds_to_the_saved_start_point():
             m._step(ts, {IN_VAR: float(ts)})
         instances_before = m._instance_count
 
-        m.reset(mode='rolling', ts=window)
+        m.reset(mode='rolling', ts=1 + window)
 
         assert m._instance_count == instances_before, "rewind must not restart the slave"
-        assert m.local_ts(6) == window
+        assert m.local_ts(6) == 1 + window
     finally:
         m.finalize()
 
@@ -210,3 +210,30 @@ def test_freed_slave_drops_its_saved_states(model):
 
 if __name__ == '__main__':
     sys.exit(pytest.main([__file__, '-v']))
+
+
+# ---------------------------------------------------------------------------
+# A rewind that rewinds nothing
+# ---------------------------------------------------------------------------
+
+def test_reposition_to_the_tick_the_slave_is_on_does_nothing():
+    """`rolling_window == reset period` asks for the tick that is coming anyway.
+
+    Restarting for that would cost a restart and put a discontinuity into a run
+    that was supposed to be continuous - and it is the configuration the docs
+    recommend as the free one, so it has to actually be free. Checked with the
+    catalog disabling state save/restore, which is the path that would restart.
+    """
+    m = make_model(supports_rollback=False, reset_mode='rolling', rolling_window=4)
+    try:
+        for ts in range(1, 5):
+            m._step(ts, {IN_VAR: float(ts)})
+        instances_before = m._instance_count
+
+        m.reset(mode='rolling', ts=5)          # tick 5 is the one it is about to run
+
+        assert m._instance_count == instances_before, (
+            'the slave must not be re-instantiated to reach the tick it is already on')
+        assert m.local_ts(5) == 5
+    finally:
+        m.finalize()
