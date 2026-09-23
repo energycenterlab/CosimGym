@@ -38,7 +38,7 @@ from core.ScenarioManager import main, ScenarioManager
 #main ('benchmark_parallel_par')
 #main ('benchmark_scale_distributed')
 #main('benchmark_scale_distributed_debug')
-main('bui0_setpoint_DQN')
+#main('bui0_setpoint_DQN')
 
 # DISTRIBUTED MULTI-FEDERATION demo: two federations exchanging data across the
 # broker hierarchy, with one federation's federate spawned on a remote machine
@@ -57,7 +57,7 @@ main('bui0_setpoint_DQN')
 
 
 # RUN Paper casestudies
-#main('cs_s0_baseline')  # S0: baseline, PID control
+main('cs_s0_baseline')  # S0: baseline, PID control
 #main('cs_s2a_dqn_s42') # S2a: DQN RL agent, discrete action space, 1-day horizon
 #main ('cs_s1_models') # casestudy s1 extending number of models 1 federation ready to scale up for s2 and s3
 #main('cs_s1_models_N2')

@@ -22,7 +22,7 @@ Scenarios blocked by an entry here are listed in `tests/regression_suite.py`'s
 `KNOWN_FAIL` that starts passing is reported as **UNEXPECTED-PASS** — when that happens,
 remove it from `KNOWN_FAIL` *and* delete the entry here.
 
-Last reviewed: 2026-09-16.
+Last reviewed: 2026-09-23.
 
 ---
 
@@ -103,3 +103,31 @@ itself (the real `distributed_demo` scenario passes).
 
 - **Fix:** add `scenario_name` (and whatever else has been added since) to the test's
   `SimpleNamespace`, or build the fake config from the real dataclass.
+
+## 7. `BaseModel.reset` is abstract but unimplemented in 13 catalog models  (HIGH)
+
+`src/models/base_model.py:449` declares `reset()` as `@abstractmethod`, and most catalog
+models never got an implementation. Every federate that instantiates one of them dies at
+`BaseFederate._register_entities` with
+`TypeError: Can't instantiate abstract class <Model> without an implementation for abstract
+method 'reset'`.
+
+Affected models: `exchange_dummy`, `heavy_compute_dummy`, `inputs4spring`,
+`light_compute_dummy`, `pandapipes_grid`, `pandapower_grid`, `pv_dest`, `rb_bems`,
+`simple_building`, `simple_heatpump`, `simple_pid_controller`, `spring_mass_damper`,
+`test_input_model`. Only `battery_dest`, `rc_building`, `weather_csv_reader`,
+`bui0_input_feeder` and the FMU/CSV/RL bases implement it.
+
+- **Blast radius:** 26 of the 32 regression scenarios cannot start — everything except
+  `rc_building_test_base`, `bui0_fmu_test`, `fmu_horizon_smoketest`, `bui0_setpoint_DQN`,
+  `bui0_setpoint_SAC`, `bui0_heatingpower_DQN`. 25 unit tests fail for the same reason
+  plus the related unfinished snapshot API (`BaseFMUModel._state_snapshots` /
+  `_snapshot_target_ts` are referenced by `tests/test_fmu_state_snapshot.py` but no longer
+  exist on the class).
+- **Cause:** the in-flight FMU reset/local-clock refactor (`208f9fb`, whose own message
+  says *"need to refactor!"*). The abstract method landed before the implementations.
+- **Not listed in `KNOWN_FAIL`** on purpose: this is a mid-flight refactor, not a tracked
+  long-lived bug, and hiding 26 scenarios behind `xfail` would hide the refactor's own
+  progress. The gate is expected to be red until the refactor lands.
+- **Fix:** finish the refactor — either give each model a `reset()` or give `BaseModel` a
+  concrete no-op default and keep the abstract contract only where a reset is meaningful.

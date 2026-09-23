@@ -14,14 +14,16 @@ version: '3.9'
 
 services:
   redis:
-    image: redis/redis-stack-server:latest
+    # Redis Open Source 8.x bundles ReJSON (the catalog/config store uses JSON.SET/JSON.GET).
+    # Pinned: redis/redis-stack-server is frozen at core 7.4.7, below the 7.4.11 security floor.
+    image: redis:8.2.10-alpine
     container_name: cosim_redis_setup
     ports:
       - "6379:6379"
     restart: unless-stopped
     volumes:
       - redis_data_setup:/data
-    command: redis-stack-server --save 60 1 --loglevel verbose
+    command: redis-server --save 60 1 --loglevel verbose
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

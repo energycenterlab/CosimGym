@@ -43,6 +43,26 @@ cd CosimGym
     All of these ports are configurable — see [Configuring ports](#configuring-ports)
     below, which matters on a shared machine where the defaults may be taken.
 
+    > **Redis image — `redis:8.2.10-alpine`.** The framework stores the scenario config
+    > and the model catalog as RedisJSON documents, so the Redis server must provide the
+    > `ReJSON` module. Redis Open Source 8.x ships it in the base image; the previously
+    > used `redis/redis-stack-server` is frozen at core `7.4.7` and is therefore below the
+    > `>= 7.4.11` security floor, which is why the pin moved. Plain `redis:7.4.x` is *not*
+    > a valid substitute — it carries no modules and every catalog read would fail.
+    >
+    > *Upgrading an existing checkout:* the old `redis-stack` volume contains empty
+    > `redis/` and `redisinsight/` directories that stop the official image from taking
+    > ownership of `/data`, which shows up as
+    > `MISCONF Redis is configured to save RDB snapshots, but it's currently unable to
+    > persist to disk`. Reset the volume once — nothing in Redis is durable, the catalog
+    > is re-uploaded by `catalog-loader` on every `up`:
+    >
+    > ```bash
+    > docker compose -f src/docker-compose.yaml down
+    > docker volume rm src_redis_data
+    > docker compose -f src/docker-compose.yaml up -d
+    > ```
+
 3.  **Run Simulation**:
     ```bash
     python src/test_script.py

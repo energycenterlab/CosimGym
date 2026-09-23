@@ -95,7 +95,7 @@ teardown: clean
 	@echo "$(YELLOW)Removing Python environment...$(NC)"
 	conda env remove -n cosim_gym --yes || true
 	@echo "$(BLUE)Removing Docker volumes...$(NC)"
-	docker volume rm cosim_gym_redis_data 2>/dev/null || true
+	docker volume rm src_redis_data 2>/dev/null || true
 	@echo "$(GREEN)✓ Full cleanup complete$(NC)"
 
 logs:

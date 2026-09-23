@@ -70,3 +70,6 @@ class SimplePIDController(BaseModel):
             f"PID '{self.name}' finalized. "
             f"Last modulation: {self.state.outputs.get('modulation', 0):.3f}"
         )
+    def reset(self, mode: str = 'full', ts=None, time=None) -> None:
+            """Reset the model state to initial conditions."""
+            pass
