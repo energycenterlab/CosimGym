@@ -38,6 +38,7 @@ from core.ScenarioManager import main, ScenarioManager
 #main ('benchmark_parallel_par')
 #main ('benchmark_scale_distributed')
 #main('benchmark_scale_distributed_debug')
+main('bui0_setpoint_DQN')
 
 # DISTRIBUTED MULTI-FEDERATION demo: two federations exchanging data across the
 # broker hierarchy, with one federation's federate spawned on a remote machine
@@ -65,7 +66,7 @@ from core.ScenarioManager import main, ScenarioManager
 #main('cs_s1_models_N10000')
 #main('cs_s4b_sac_s42') # S4b: SAC RL agent, continuous action space, 1-day horizon
 #main('cs_s4b_sac_s42_rolling') # S4b: SAC RL agent, continuous action space, 1-day horizon, rolling reset
-main('cs_s4a_dqn_s42_rolling') # S4a: DQN RL agent, discrete action space, 1-day horizon, rolling reset
+#main('cs_s4a_dqn_s42_rolling') # S4a: DQN RL agent, discrete action space, 1-day horizon, rolling reset
 #main('cs_s5_fmu')
 
 

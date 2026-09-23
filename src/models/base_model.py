@@ -46,8 +46,10 @@ class State:
     # or a horizon restart moves it back along with everything else: every model
     # in a federation stays at the same simulated moment. Results and logs use the
     # federate's own monotonic clock, not this one.
-    time: Optional[datetime] = None
-    ts: Optional[int] = None
+    time: Optional[datetime] = None # Simulated datetime the model is at
+    ts: Optional[int] = 0 #absolute timestep of the model in the simulation, it is updated by the federate before calling the step method of the model
+    rel_ts: Optional[int] = 0 #relative timestep of the model in the simulation, it is internally managed by the model and it is updated by the model itself in the step method, it is used to manage the internal state of the model and to manage the local clock of the model
+
 
     def __repr__(self) -> str:
         import pprint
@@ -58,12 +60,14 @@ class State:
         outputs_str = f"outputs=\n{pp.pformat(self.outputs)}"
         time_str = f"time={self.time!r}"
         ts_str = f"ts={self.ts!r}"
+        rel_ts_str = f"rel_ts={self.rel_ts!r}"
         return (f"{cls_name}(\n"
                 f"  {param_str},\n"
                 f"  {inputs_str},\n"
                 f"  {outputs_str},\n"
                 f"  {time_str},\n"
-                f"  {ts_str}\n"
+                f"  {ts_str},\n"
+                f"  {rel_ts_str}\n"
                 f")")
 
 
@@ -99,7 +103,7 @@ class BaseModel(ABC):
 
 
         # Mandatory class variables for all models
-        self.ts = None  # time step, will be set in _set_attrs
+        self.ts = 0  # time step, will be set in _set_attrs
         # self.time_stop = None # Maximum simulation time for time-dependent models
         self.start_time = None  # Start time for time-dependent models
         self.real_period = None  # Real time period for time-dependent models
@@ -172,6 +176,7 @@ class BaseModel(ABC):
         # TODO the resolve value (for when we have list of attrs for different model instances must be implemented in the federate to avoid passing huge lists to model base class)
 
         self.init_state.ts = 0
+        self.init_state.rel_ts = 0
         self.init_state.time = datetime.fromisoformat(self.config.start_time)  # Initialize time in state
         # self.time_stop = self.config.time_stop  # Maximum simulation time for time-dependent models
         self.start_time = datetime.fromisoformat(self.config.start_time)  # Start time for time-dependent models
@@ -232,113 +237,150 @@ class BaseModel(ABC):
     # Model-local clock
     # ------------------------------------------------------------------
 
-    def local_ts(self, ts=None) -> int:
-        """The model's own tick for federation tick *ts*.
+    # def local_ts(self, ts=None) -> int:
+    #     """The model's own tick for federation tick *ts*.
 
-        The two are identical until something moves the model back in time - an
-        episode reset, or the restart of a model that has reached its simulation
-        horizon. The federate moves every model it owns by the same amount at the
-        same tick, so they all stay at the same simulated moment.
-        """
-        ts = self.state.ts if ts is None else ts
-        ts = 0 if ts is None else ts
-        return max(0, ts - self.ts_shift)
+    #     The two are identical until something moves the model back in time - an
+    #     episode reset, or the restart of a model that has reached its simulation
+    #     horizon. The federate moves every model it owns by the same amount at the
+    #     same tick, so they all stay at the same simulated moment.
+    #     """
+    #     ts = self.state.ts if ts is None else ts
+    #     ts = 0 if ts is None else ts
+    #     return max(0, ts - self.ts_shift)
 
-    def local_time(self, ts=None) -> float:
-        """The model's own simulated time in seconds, counted from its first step."""
-        return max(0, self.local_ts(ts) - 1) * self.real_period
+    # def local_time(self, ts=None) -> float:
+    #     """The model's own simulated time in seconds, counted from its first step."""
+    #     return max(0, self.local_ts(ts) - 1) * self.real_period
 
-    def horizon_ts(self):
-        """The declared simulation horizon expressed in steps, or None if unbounded."""
-        if not self.max_sim_time or not self.real_period:
-            return None
-        return int(self.max_sim_time // self.real_period)
+    # def horizon_ts(self):
+    #     """ OK
+    #     The declared simulation horizon expressed in steps, or None if unbounded."""
+    #     if not self.max_sim_time or not self.real_period:
+    #         return None
+    #     return int(self.max_sim_time // self.real_period)
 
-    def reposition(self, target_ts: int, at_ts=None, reason: str = 'reset') -> None:
-        """Make the model behave as if federation tick *at_ts* were tick *target_ts*.
+    # def reposition(self, target_ts: int, at_ts=None, reason: str = 'reset') -> None:
+    #     """Make the model behave as if federation tick *at_ts* were tick *target_ts*.
 
-        The single primitive behind every restart: an episode reset asks for tick
-        1, a rolling reset for the episode's start tick, and a model that has run
-        out of run period asks for tick 1 as well. ``_reposition_backend`` does
-        whatever the model wraps - nothing for a plain Python model, a restart and
-        replay for an FMU slave, a cursor move for a CSV reader.
+    #     The single primitive behind every restart: an episode reset asks for tick
+    #     1, a rolling reset for the episode's start tick, and a model that has run
+    #     out of run period asks for tick 1 as well. ``_reposition_backend`` does
+    #     whatever the model wraps - nothing for a plain Python model, a restart and
+    #     replay for an FMU slave, a cursor move for a CSV reader.
 
-        --> the only case in which i would like to do a reposition of the fmu is if horizon reached
-        """
-        target_ts = max(0, int(target_ts))
-        horizon = self.horizon_ts()
-        if horizon and target_ts > horizon:
-            wrapped = ((target_ts - 1) % horizon) + 1
-            self.logger.info(
-                f"Restart target tick {target_ts} is past the {horizon}-step horizon, "
-                f"wrapping to tick {wrapped}"
-            )
-            target_ts = wrapped
+    #     --> the only case in which i would like to do a reposition of the fmu is if horizon reached
+    #     """
+    #     target_ts = max(0, int(target_ts))
+    #     horizon = self.horizon_ts()
+    #     if horizon and target_ts > horizon:
+    #         wrapped = ((target_ts - 1) % horizon) + 1
+    #         self.logger.info(
+    #             f"Restart target tick {target_ts} is past the {horizon}-step horizon, "
+    #             f"wrapping to tick {wrapped}"
+    #         )
+    #         target_ts = wrapped
         
 
-        self._reposition_backend(target_ts, reason=reason)
+    #     self._reposition_backend(target_ts, reason=reason)
 
-        at_ts = (self.state.ts or 0) + 1 if at_ts is None else at_ts
-        self.ts_shift = at_ts - target_ts
-        self.epoch_index += 1
-        self.logger.debug(
-            f"Model clock moved ({reason}): tick {at_ts} now counts as tick {target_ts} "
-            f"(shift={self.ts_shift}, epoch={self.epoch_index})"
-        )
+    #     at_ts = (self.state.ts or 0) + 1 if at_ts is None else at_ts
+    #     self.ts_shift = at_ts - target_ts
+    #     self.epoch_index += 1
+    #     self.logger.debug(
+    #         f"Model clock moved ({reason}): tick {at_ts} now counts as tick {target_ts} "
+    #         f"(shift={self.ts_shift}, epoch={self.epoch_index})"
+    #     )
 
-    def _reposition_backend(self, target_ts: int, reason: str = 'reset') -> None:
-        """Bring whatever the model wraps to its own tick *target_ts*.
+    # def _reposition_backend(self, target_ts: int, reason: str = 'reset') -> None:
+    #     """Bring whatever the model wraps to its own tick *target_ts*.
 
-        No-op by default: a plain Python model is fully described by its state, so
-        moving its clock needs nothing more. Overridden by models backed by an
-        external runtime that must be restarted (BaseFMUModel) or by a cursor into
-        data (BaseCSVReader).
-        """
-        return
+    #     No-op by default: a plain Python model is fully described by its state, so
+    #     moving its clock needs nothing more. Overridden by models backed by an
+    #     external runtime that must be restarted (BaseFMUModel) or by a cursor into
+    #     data (BaseCSVReader).
+    #     """
+    #     return
 
-    def _enforce_sim_horizon(self) -> None:
-        """Restart the model when the step about to run would pass its horizon.
+    # def _enforce_sim_horizon(self) -> None:
+    #     """Restart the model when the step about to run would pass its horizon.
 
-        Inert unless the model declares ``max_sim_time``. This is the model's own
-        limit, so it applies whatever the RL reset policy is, and with no RL at
-        all. The federate normally restarts every model together before this can
-        fire; the guard is the backstop that keeps any single model from being
-        stepped past a limit it cannot honour.
-        """
-        horizon = self.horizon_ts()
-        if not horizon:
-            return
-        if self.local_ts() <= horizon:
-            return
-        self.logger.info(
-            f"Model '{self.name}' reached its {self.max_sim_time}s simulation horizon "
-            f"({horizon} steps) at tick {self.state.ts}; restarting "
-            f"(epoch {self.epoch_index + 1})"
-        )
-        self.reposition(1, at_ts=self.state.ts, reason='horizon reached')
+    #     Inert unless the model declares ``max_sim_time``. This is the model's own
+    #     limit, so it applies whatever the RL reset policy is, and with no RL at
+    #     all. The federate normally restarts every model together before this can
+    #     fire; the guard is the backstop that keeps any single model from being
+    #     stepped past a limit it cannot honour.
+    #     """
+    #     horizon = self.horizon_ts()
+    #     if not horizon:
+    #         return
+    #     if self.local_ts() <= horizon:
+    #         return
+    #     self.logger.info(
+    #         f"Model '{self.name}' reached its {self.max_sim_time}s simulation horizon "
+    #         f"({horizon} steps) at tick {self.state.ts}; restarting "
+    #         f"(epoch {self.epoch_index + 1})"
+    #     )
+    #     self.reposition(1, at_ts=self.state.ts, reason='horizon reached')
 
     def _step(self, ts, inputs):
         """Internal step method to update time state and call user-defined step."""
-        self._update_time_state(ts)
-        self._enforce_sim_horizon()
-        self._update_time_state(ts)   # a restart just moved the clock
+        self.logger.debug(f"Model '{self.name}' stepping at absolute ts={ts} and relative ts={self.state.rel_ts}")
+        #self._update_time_state(ts)
+        #self._enforce_sim_horizon()
+        #self._update_time_state(ts)   # a restart just moved the clock
+        self.local_time(ts, mode='base')
         self._set_inputs(inputs)
         self.step()
         out = self._get_outputs()  # Update outputs after stepping
+        self.state.rel_ts += 1  # Increment relative timestep after step
         return out
 
-    def _update_time_state(self, time_step: int) -> None:
-        """Update time-related state variables.
+    def local_time(self, ts=None, mode='base') -> float:
 
-        The datetime follows the *model* clock, so a reset or a horizon restart
-        rewinds it along with everything else: a schedule model and the building
-        it feeds are always at the same simulated moment, episode after episode.
-        With nothing ever restarted, the model clock is the federation clock and
-        this is the plain elapsed time it has always been.
-        """
-        self.state.ts = time_step
-        self.state.time = self.start_time + timedelta(
-            seconds=self.local_ts(time_step) * self.real_period)
+        #this executed periodically every step
+        if mode == 'base': # when local_time is called in classic step method and not during specific reset
+            #Enforcing the horizon for those models that have a max simtime
+            if self.max_sim_time and self.state.rel_ts*self.real_period >= self.max_sim_time: #ensure that max_sim_time is only for model with a horizon cap
+                self.state.rel_ts = 0
+                self.reset(mode='horizon_limit') #NB this call reset NOT _reset never call _reset in local_time() for recursion problems
+                self.logger.warning(f"Model '{self.name}' exceeded its simulation horizon of {self.max_sim_time} steps.")
+            self.state.ts = ts
+            self.state.time = self.start_time + timedelta(seconds=self.state.ts * self.real_period) #decisione self.state.time  è sempre il tempo assoluto al pari dey tick del federate
+            return
+
+        #this elif blocks are executed only once in a while when reset is explicitally requested for RL application
+        elif mode == 'reset full':
+            self.state.ts = 0
+            self.state.rel_ts = 0
+            self.state.time = self.start_time
+            return
+        
+        elif mode == 'reset rolling':
+            self.state.rel_ts = self.state.ts - self.episode_length + self.rolling_window #new_relative ts
+            self.state.time = self.start_time + timedelta(seconds=self.state.rel_ts * self.real_period)
+            return
+
+        else:
+            self.state.ts = ts
+            self.state.time = self.start_time + timedelta(seconds=self.state.ts * self.real_period)
+            return
+        
+
+
+    # def _update_time_state(self, time_step: int) -> None:
+    #     """ OK
+    #     Update time-related state variables.
+
+    #     The datetime follows the *model* clock, so a reset or a horizon restart
+    #     rewinds it along with everything else: a schedule model and the building
+    #     it feeds are always at the same simulated moment, episode after episode.
+    #     With nothing ever restarted, the model clock is the federation clock and
+    #     this is the plain elapsed time it has always been.
+    #     """
+    #     self.state.ts = time_step
+    #     self.state.time = self.start_time + timedelta(
+    #         seconds=self.local_ts(time_step) * self.real_period)
 
     def _set_inputs(self, inputs: Dict[str, Any]) -> None:
         """
@@ -377,7 +419,7 @@ class BaseModel(ABC):
         self.state.parameters[name] = value
 
 
-    def reset(self, mode='full', ts= None, time=None) -> None:
+    def _reset(self, mode='full', ts= None, time=None) -> None:
         """
         Reset the model to its initial state.
         
@@ -385,28 +427,39 @@ class BaseModel(ABC):
         initial conditions defined in init_state.
         NB. only reset interfaces in stateful models must be overridden to modify internals
         """
-        current_ts = self.state.ts or 0
-        self.state = copy.deepcopy(self.init_state)
-        if ts is not None:
-            self.state.ts = ts
-        if time is not None:
-            self.state.time = time
-        self._reset_clock(mode=mode, target_ts=ts, current_ts=current_ts)
+        if mode in ['full', 'rolling', 'horizon_limit']:
+            self.state = copy.deepcopy(self.init_state)
 
-    def _reset_clock(self, mode: str, target_ts: Optional[int], current_ts: int) -> None:
-        """Realign the model-local clock to the start point this reset asks for.
+        self.local_time(mode=f'reset {mode}')
+        self.reset(mode)
 
-        `full` restarts the model at local time 0; `rolling` moves it to the
-        absolute start point the federate computed; `none`/`soft` leave the clock
-        alone. Inert for models with no horizon and no reposition backend.
+    # def _reset_clock(self, mode: str, target_ts: Optional[int], current_ts: int) -> None:
+    #     """Realign the model-local clock to the start point this reset asks for.
+
+    #     `full` restarts the model at local time 0; `rolling` moves it to the
+    #     absolute start point the federate computed; `none`/`soft` leave the clock
+    #     alone. Inert for models with no horizon and no reposition backend.
+    #     """
+    #     if mode in ('none', 'soft'):
+    #         return
+    #     # `full` restarts the model at its first step; `rolling` starts it at the
+    #     # absolute tick the federate computed for this episode.
+    #     target = int(target_ts) if (mode == 'rolling' and target_ts is not None) else 1
+    #     self.reposition(target, at_ts=current_ts + 1, reason=f"{mode} reset")
+    @abstractmethod
+    def reset(self, mode: str = 'full', ts=None, time=None) -> None:    
         """
-        if mode in ('none', 'soft'):
-            return
-        # `full` restarts the model at its first step; `rolling` starts it at the
-        # absolute tick the federate computed for this episode.
-        target = int(target_ts) if (mode == 'rolling' and target_ts is not None) else 1
-        self.reposition(target, at_ts=current_ts + 1, reason=f"{mode} reset")
-     
+        Reset the model to its initial state.
+        
+        This method can be used to restart the model simulation from the
+        initial conditions defined in init_state. the timing aspects are already generally
+        dealt with in this base classe and also a copy of the initial state is given
+        
+        Raises:
+            NotImplementedError: If not implemented by derived class
+        """
+        pass
+
     @abstractmethod
     def initialize(self) -> None:
         """

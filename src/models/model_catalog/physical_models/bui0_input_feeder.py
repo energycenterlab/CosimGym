@@ -102,3 +102,6 @@ class BUI0InputFeeder(BaseModel):
 
     def finalize(self):
         pass
+
+    def reset(self, mode='full', ts=None, time=None):
+        pass

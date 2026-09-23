@@ -144,8 +144,8 @@ class BaseFederate():
             # from 0 made every episode re-run the last tick of the previous
             # window, and put every start point one tick before a day
             # boundary, which an FMU restart cannot land on.
-            self.new_starting_point = 1
-            self.rolling_window = self.config.rl_config.get('rolling_window', None) if self.config.rl_config else None
+            self.new_starting_point = 1 #deprecated
+            self.rolling_window = self.config.rl_config.get('rolling_window', None) if self.config.rl_config else None #deprecated
             self.episode_count = 0  
             self.reset_count = 0 
 
@@ -579,7 +579,8 @@ class BaseFederate():
                 # publish outputs
                 self._publish_outputs()
 
-                self._reset_on_horizon() # restart every model together when the scenario's simulation horizon is reached
+
+                #self._reset_on_horizon() # NO longer need it is done in the base_model
                 self._reset() # check if reset is needed at the end of the step to manage the reset of the federate in case of training, this is because usually after the reset i want to publish the new initial conditions to let other federates receive them and then request time advance to start the new episode with the new initial conditions
 
 
@@ -1090,7 +1091,7 @@ class BaseFederate():
                 self._publish_init_state()
                 for entity in self.entities:
                     model = entity['object']
-                    model.reset(mode=self.reset_type)
+                    model._reset(mode=self.reset_type)
 
             elif self.reset_type == 'rolling':
                 if self.rolling_window is None:
@@ -1100,7 +1101,7 @@ class BaseFederate():
                 self.new_starting_point += self.rolling_window
                 for entity in self.entities:
                     model = entity['object']
-                    model.reset(mode=self.reset_type, ts= self.new_starting_point)
+                    model._reset(mode=self.reset_type)
                 return
 
             else:
@@ -1108,35 +1109,36 @@ class BaseFederate():
         else:
             return
         
-    def _reset_on_horizon(self):
-        """Restart every model in this federate when the simulation horizon is reached.
+    # def _reset_on_horizon(self):
+    #     #TODO: check if this is still needed
+    #     """Restart every model in this federate when the simulation horizon is reached.
 
-        Some models cannot be stepped past a fixed span of simulated time - an
-        EnergyPlus FMU stops at the end of its RunPeriod. That limit is not an RL
-        policy: it applies in training, in testing and in a plain co-simulation
-        with no agent at all, and it composes with whatever reset mode is
-        configured rather than replacing it.
+    #     Some models cannot be stepped past a fixed span of simulated time - an
+    #     EnergyPlus FMU stops at the end of its RunPeriod. That limit is not an RL
+    #     policy: it applies in training, in testing and in a plain co-simulation
+    #     with no agent at all, and it composes with whatever reset mode is
+    #     configured rather than replacing it.
 
-        Every federate in the scenario shares the same horizon and counts the same
-        ticks, so they all restart on the same tick without having to coordinate:
-        after the restart the schedule feeder, the weather reader and the building
-        are all back at their first step together.
-        """
-        if not self.horizon_steps or self.ts <= 0:
-            return
-        if self.ts % self.horizon_steps != 0:
-            return
-        if self.stop_time and self.ts >= self.stop_time:
-            return  # last step of the run: restarting now would only cost time
+    #     Every federate in the scenario shares the same horizon and counts the same
+    #     ticks, so they all restart on the same tick without having to coordinate:
+    #     after the restart the schedule feeder, the weather reader and the building
+    #     are all back at their first step together.
+    #     """
+    #     if not self.horizon_steps or self.ts <= 0:
+    #         return
+    #     if self.ts % self.horizon_steps != 0:
+    #         return
+    #     if self.stop_time and self.ts >= self.stop_time:
+    #         return  # last step of the run: restarting now would only cost time
 
-        self.horizon_count += 1
-        self.logger.info(
-            f"Simulation horizon reached at step {self.ts} ({self.max_sim_time}s): "
-            f"restarting every model of federate {self.name} (restart #{self.horizon_count})"
-        )
-        self._publish_init_state()
-        for entity in self.entities:
-            entity['object'].reset(mode='full')
+    #     self.horizon_count += 1
+    #     self.logger.info(
+    #         f"Simulation horizon reached at step {self.ts} ({self.max_sim_time}s): "
+    #         f"restarting every model of federate {self.name} (restart #{self.horizon_count})"
+    #     )
+    #     self._publish_init_state()
+    #     for entity in self.entities:
+    #         entity['object'].reset(mode='full')
 
     def _track_episodes(self):
         self.episode_count += 1

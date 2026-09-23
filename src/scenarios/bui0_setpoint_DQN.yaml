@@ -36,6 +36,10 @@ reinforcement_learning_config:
         causality: next_step
         reset_default: 20.0
         bounds: [0.0, 40.0]
+      federation_1.feeder_federate.0.ZoneSetPoint:
+        causality: same_step
+        reset_default: 20.0
+        bounds: [16.0, 24.0]
     actions:
       federation_1.building_federate.0.ZoneSetPoint:
         space: discrete
@@ -66,7 +70,7 @@ reinforcement_learning_config:
   run:
     mode: online
     train:
-      episodes: 100
+      episodes: 1000
       episode_length: 144
     test:
       episodes: 1
@@ -118,6 +122,9 @@ federations:
             - key: "HeatingSeason"
               type: "double"
               units: "-"
+            - key: "ZoneSetPoint"
+              type: "double"
+              units: "degC"
 
         model_configs:
           instantiation:

@@ -16,7 +16,7 @@ FMU_PATH = Path("BUI0.fmu")
 STEP_SIZE = 600.0
 
 # How long to simulate from each requested start date.
-SIMULATION_HOURS = 24
+SIMULATION_HOURS = 9600
 
 # Compare two dates with very different weather conditions.
 TEST_DATES = [
