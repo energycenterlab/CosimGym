@@ -133,14 +133,6 @@ class BaseModel(ABC):
         # the end of the scenario). Set by the federate: here for the first run, by
         # ``_reset`` for the following ones. None = unknown.
         self.span_ticks = getattr(user_config, 'initial_span_ticks', None)
-        # Episode-reset policy of the owning federate, injected at runtime. Only
-        # 'rolling' can move a model backwards in time.
-        self.reset_mode = getattr(user_config, 'reset_mode', None)
-        self.rolling_window = getattr(user_config, 'rolling_window', None)
-        self.n_episodes = getattr(user_config, 'n_episodes', None)
-        self.episode_length = getattr(user_config, 'episode_length', None)
-        self.reset_period = getattr(user_config, 'reset_period', None)
-
         # Instantiate the model:
         self._instantiate()
         self.logger.debug(f"(1) - Model '{self.name}' Instantiated with state: {self.state} and init_state: {self.init_state}")
@@ -184,6 +176,7 @@ class BaseModel(ABC):
         # self.date_time = self.start_time
         self._origin_s = self._origin_seconds()
         self._epoch = self._horizon_epoch(0)
+        self._span_end_rel = self.span_ticks  # relative tick the current run must reach (None = unknown)
 
         # Get defaults from catalog
         default_parameters = self._get_defaults(InterfaceType.PARAMETER)
@@ -285,7 +278,8 @@ class BaseModel(ABC):
         self.state.time = self.start_time + timedelta(seconds=ts * self.real_period)
         if self._horizon_epoch(self.state.rel_ts) != self._epoch:
             self.logger.warning(f"Model '{self.name}' reached its {self.max_sim_time}s simulation horizon: restarting at its origin.")
-            self._reset('horizon', rel_ts_target=self.state.rel_ts)
+            left = None if self._span_end_rel is None else max(1, self._span_end_rel - self.state.rel_ts)
+            self._reset('horizon', rel_ts_target=self.state.rel_ts, span_ticks=left)
         self.state.rel_time = self.start_time + timedelta(seconds=(self.state.rel_ts + 1) * self.real_period)
         self._set_inputs(inputs)
         self.step()
@@ -353,6 +347,7 @@ class BaseModel(ABC):
         self._epoch = self._horizon_epoch(target)
         self.state.rel_time = self.start_time + timedelta(seconds=target * self.real_period)
         self.span_ticks = span_ticks
+        self._span_end_rel = None if span_ticks is None else target + span_ticks
         self.reset(mode)
 
     def reset(self, mode: str = 'full') -> None:

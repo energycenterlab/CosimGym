@@ -231,8 +231,8 @@ model_configs:
 ```
 
 A few keys here are read by the framework rather than by the model: `max_sim_time` and
-`sim_start_date` override the model's declared simulation horizon, and the `fmu_reset` block
-can switch off an FMU's advertised state save/restore (`supports_rollback: false`) — see
+`sim_start_date` override the model's declared simulation horizon, and `fmu_engine` tells
+`BaseFMUModel` which tool exported the FMU (`energyplus` enforces its whole-day rules) — see
 [FMU Models §4](../fmu_models.md#4-simulation-horizon-and-restart). Everything else is
 passed through untouched.
 

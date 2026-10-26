@@ -12,3 +12,5 @@
 | **S4.d – RL integration** | Baseline + RL controller | SAC + rolling reset | yes |
 | **S5 – RL + model swap** | S2.a + model replacement | Test whether models can be exchanged while maintaining the RL/co-simulation workflow. | x |
 | **S6 – RL + model swap + DT capabilities** | S2.b + Digital Twin functionalities | Demonstrate the complete workflow including RL, model replacement, and Digital Twin capabilities. | x |
+
+> The six rolling-reset scenarios `cs_s2_reset_rolling*`, `cs_s4a_dqn_s42_rolling`, `cs_s4b_sac_s42_rolling` are in `to_review_rolling_window/` (rejected by the reset-length divisibility check; see its README).

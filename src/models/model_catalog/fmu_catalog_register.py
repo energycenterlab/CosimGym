@@ -216,11 +216,6 @@ def parse_fmu(fmu_path: str) -> dict:
         elif section_key == 'parameters':
             parameters[v.name] = spec
 
-    # Can the slave save and restore its state? If it can, a rolling reset can
-    # rewind it instantly instead of restarting and replaying from the beginning.
-    cosim = getattr(md, 'coSimulation', None)
-    supports_rollback = bool(getattr(cosim, 'canGetAndSetFMUstate', False)) if cosim else False
-
     horizon = detect_horizon_from_fmu(md)
 
     fmi_version = md.fmiVersion
@@ -247,9 +242,6 @@ def parse_fmu(fmu_path: str) -> dict:
         'sim_start_date': horizon['sim_start_date'] if horizon else None,
         'user_defined': {
             'fmu_source': {},  # filled by caller
-            'fmu_reset': {
-                'supports_rollback': supports_rollback,
-            },
         },
         'parameters': parameters,
         'inputs':      inputs,
@@ -262,7 +254,6 @@ def parse_fmu(fmu_path: str) -> dict:
     )
     if horizon:
         logger.info(f"  DefaultExperiment gives a {horizon['max_sim_time']} s simulation horizon")
-    logger.info(f"  State save/restore (rollback) supported: {supports_rollback}")
     return entry
 
 
@@ -418,6 +409,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument('--sim-start-date', default=None,
                    help="Calendar date model-local time 0 means, as MM-DD or YYYY-MM-DD. "
                         "This is where the model restarts from when it reaches its horizon.")
+    p.add_argument('--engine',         default=None,
+                   help="Tool that exported the FMU, if it needs special handling. 'energyplus' makes "
+                        "resets start at midnight and run whole days (stored as user_defined.fmu_engine).")
     p.add_argument('--no-redis',       action='store_true', help='Update catalog.yaml but skip Redis push')
     p.add_argument('--overwrite',      action='store_true', help='Overwrite existing catalog entry')
     return p
@@ -473,6 +467,9 @@ def main() -> None:
             "(an EnergyPlus export stops at the end of its RunPeriod), re-register it "
             "with --idf or --max-sim-time, or the run will fail when the limit is reached."
         )
+
+    if args.engine:
+        entry['user_defined']['fmu_engine'] = args.engine.lower()
 
     # 4. Resolve FMU source
     if args.local:

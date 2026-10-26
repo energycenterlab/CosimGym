@@ -9,17 +9,22 @@ Organization: EC-Lab Politecnico di Torino
 created: 2026-03-17
 
 """
+import inspect
 import os
 import pandas as pd
-import datetime
-import copy
 from .base_model import BaseModel
 
-#TODO add functionalities to the csv reader resampling, starting dates and circular cosumption of the data on the maxsim_time horizon
+#TODO add functionalities to the csv reader resampling and starting dates
 class BaseCSVReader(BaseModel):
     """
     Base class for CSV readers. This class provides common functionality for reading CSV files and extracting data.
     Subclasses should implement the specific logic for processing the CSV data and defining the model's inputs, outputs, and parameters.
+
+    The row served at each step is derived from the model's clock, not from a cursor:
+    ``starting_row + horizon_pos_s() / real_period`` (modulo the file length), so a reset
+    (RL episode, rolling or full) or the end of the file needs no logic of its own. A file is
+    the model's horizon: unless the catalog or the scenario declares ``max_sim_time``, it is
+    ``len(data) * real_period``.
     """
 
     def __init__(self, name, metadata, config, logger):
@@ -28,12 +33,11 @@ class BaseCSVReader(BaseModel):
 
     def initialize(self):
         """Load the CSV, resample it (currently a no-op — see `_resample_if_required`), and seed the initial output state."""
-        self._data = None
-        self.starting_row = 0
         self._data = self._load_csv_data()
         self._data = self._resample_if_required(self._data)
-        self.starting_row = self._start_point() 
-        self._row_idx = self.starting_row
+        self.starting_row = self._start_point()
+        if not self.max_sim_time:
+            self.max_sim_time = len(self._data) * self.real_period
         self._set_init_state()
     
     def _set_init_state(self):
@@ -50,7 +54,8 @@ class BaseCSVReader(BaseModel):
             raise ValueError("CSV path not specified in parameters")
 
         if not os.path.isabs(csv_path):
-            base_dir = os.path.dirname(os.path.abspath(__file__))
+            # relative to the script of the (sub)class that reads the file
+            base_dir = os.path.dirname(os.path.abspath(inspect.getfile(type(self))))
             csv_path = os.path.join(base_dir, csv_path)
 
         if not os.path.exists(csv_path):
@@ -58,8 +63,8 @@ class BaseCSVReader(BaseModel):
             raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
         skip = int(self.state.parameters.get("skip_rows", 0))
-        df = pd.read_csv(csv_path, skiprows=skip)
-        df = self._check_existing_columns(df)
+        df = pd.read_csv(csv_path)
+        df = self._check_existing_columns(df).iloc[skip:].reset_index(drop=True)
         self.logger.debug(f"CSV data loaded from {csv_path} with columns: {df.columns.tolist()}")
         self.logger.debug(f"CSV data preview:\n{df.head()}")
         
@@ -84,60 +89,11 @@ class BaseCSVReader(BaseModel):
         return 0
     
     def step(self):
-        """Advance the CSV reader by one step. Populates self.state.outputs with values from the current row of self._data."""
-        if self._row_idx >= len(self._data):
-            self.logger.warning("End of CSV data reached. Resetting to the beginning.")
-            self._row_idx = self.starting_row
-            
-        row = self._data.iloc[self._row_idx]
+        """Populate self.state.outputs with the row the model's clock points at (wrapping around the file)."""
+        row = self._data.iloc[(self.starting_row + int(self.horizon_pos_s() // self.real_period)) % len(self._data)]
         for col in self._data.columns:
             self.state.outputs[col] = row[col]
-        self._row_idx += 1
     
     def finalize(self):
         """Finalize the CSV reader. Subclasses can implement this method to perform any cleanup if necessary."""
         pass
-
-    # def _reposition_backend(self, target_ts: int) -> None:
-    #     """Move the row cursor to the row the model's own tick *target_ts* means.
-
-    #     Called whenever the model clock is moved - by an episode reset, or by a
-    #     restart at a simulation horizon - so the data rewinds with the rest of the
-    #     federation instead of running on past it.
-    #     """
-    #     if self._data is None:
-    #         return
-    #     row = self.starting_row + max(0, int(target_ts) - 1)
-    #     if row >= len(self._data):
-    #         self.logger.warning(
-    #             f"Reposition to row {row} is past the end of the data "
-    #             f"({len(self._data)} rows); wrapping to the start."
-    #         )
-    #         row = row % len(self._data)
-    #     self._row_idx = row
-
-    def reset(self, mode='full', ts=None, time=None):
-        """Reset the row cursor. `full` rewinds to `starting_row`; `rolling` jumps to `ts` (or advances by one row if `ts` is None); `soft` is a no-op."""
-        if mode == 'full' or mode == 'horizon':
-            # for now only implement full reset with redundant output setting because the initial condition should be already published from federate
-            self.starting_row = self._start_point()
-            first_row = self._data.iloc[self.starting_row]
-            for col in self._data.columns:
-                self.state.outputs[col] = first_row[col]
-
-        elif mode == 'soft':
-            self.logger.debug("Soft reset: maintaining current state, no changes made.")
-        
-        elif mode == 'rolling':
-            # `ts` is the absolute rolling start point provided by the federate.
-            # Assign directly to avoid cumulative triangular jumps.
-            if self.rolling_window is not None  and self.starting_row + self.rolling_window + self.episode_length < len(self._data - self.starting_row):
-                self.starting_row += self.rolling_window
-            else:
-                self.logger.warning("Rolling reset: rolling window exceeds, or rolling window plus episode length exceeds, the ramining data length, resetting to the beginning.")
-                self.starting_row = self._start_point()
-
-        self._row_idx = self.starting_row
-        self.logger.info(f"CSV Reader '{self.name}' reset in mode '{mode}'. Starting row is now {self._row_idx}.")
-
-    

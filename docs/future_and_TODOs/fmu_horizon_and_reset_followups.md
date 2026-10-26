@@ -56,12 +56,26 @@ RL. Options: reject a horizon-declaring model with `parallel_execution`, or give
 executor a reset entry point that tells every worker to reset. `RL_Federate` has its own
 run loop and does no horizon handling; same class of gap.
 
-## 5. Every FMU restart pays EnergyPlus finishing its run period
+## 5. Restart cost of an EnergyPlus slave
 
-Measured on BUI0 with EnergyPlus 23.1 (before the redesign): freeing the slave
-(`terminate` + `freeInstance`) took ~3.75 s because `fmi2Terminate` hands control back to
-EnergyPlus, which runs out the rest of its run period before exiting; instantiating and
-warming up took ~0.55 s. The teardown cost scales with the run period still ahead, so
-bounding each instance to the span actually needed would reduce it. To be reconciled with
-`max_sim_time` and the whole-day (86400 s) constraint. Killing the process is the blunt
-alternative and would lose the `.err` / `.eso` files written on exit.
+Resolved by bounding each instance to the span it needs (stop time = next restart, rounded up
+to whole days): a 4-day BUI0 run with three rolling resets measured ~0.1 s per teardown and
+~0.5 s per instantiation. Before, `fmi2Terminate` made EnergyPlus run out the rest of its
+full-year RunPeriod (~3.75 s). Each slave still writes its own `fmu_output/restart_<n>/`
+directory, so hundreds of episodes mean hundreds of directories; reusing one directory per
+model instance is an open choice.
+
+## 6. After a rolling reset one tick publishes the initial state
+
+`BaseFederate._reset` (full and rolling) calls `_publish_init_state`, which sends
+`init_state.outputs`. For a clock-driven model that is not the value at the restart instant:
+a CSV reader publishes row 0 (or `starting_row`) instead of the row of the new position, an FMU
+its default `TBuilding`. The correct value is published from the first step after the reset,
+so the agent sees one wrong observation per reset. Possible fix: after `_reset`, let the model
+fill `state.outputs` for the new `rel_ts` before the publish.
+
+## 7. E+ FMU auto-discovery of the engine
+
+`user_defined.fmu_engine: energyplus` is set by hand (`fmu_catalog_register.py --engine`). The
+register script could read `generationTool` from `modelDescription.xml`
+(`idf-to-fmu-export-prep-*` for EnergyPlus) and set it automatically.

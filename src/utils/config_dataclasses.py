@@ -241,15 +241,9 @@ class ModelConfig(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     real_period: Optional[float] = None
-    # Episode-reset policy of the owning federate, in the federate's own ticks.
     # initial_span_ticks: how many ticks the model's first run must cover (until the
     # first reset, or the end of the scenario); later runs get it from _reset().
     initial_span_ticks: Optional[int] = None
-    reset_mode: Optional[str] = None
-    rolling_window: Optional[int] = None
-    episode_length: Optional[int] = None
-    reset_period: Optional[int] = None
-    n_episodes: Optional[int] = None
 
 
 # ==============================================================================

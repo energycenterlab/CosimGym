@@ -155,11 +155,9 @@ if a length is not a whole number of a federate's steps (e.g. agent period 60 s,
 `rolling_window: 10` = 600 s, federate `real_period: 900`): pick lengths whose duration is a multiple of
 every federate's `real_period` (their least common multiple). The check runs only for online training.
 
-> **Under redesign.** How each model type reaches the rolling start point (an FMU, a CSV
-> reader), and what each mode costs, are being reworked — see
-> [Known Issues §5](../../KNOWN_ISSUES.md). The episode reset is
-> independent of a model's own horizon restart
-> ([FMU Models §4](../fmu_models.md#4-simulation-horizon-and-restart)).
+For a federate whose model is an EnergyPlus FMU, `rolling_window` must also be a whole number of
+days (EnergyPlus can only restart at midnight). The episode reset is independent of a model's own
+horizon restart ([FMU Models §4](../fmu_models.md#4-simulation-horizon-and-restart)).
 
 ### Key naming convention
 

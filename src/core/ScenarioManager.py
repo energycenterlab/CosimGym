@@ -44,10 +44,12 @@ pp = pprint.PrettyPrinter(indent=4)
 
 
 
-def reset_in_federate_ticks(values, agent_period, real_period, federate):
+def reset_in_federate_ticks(values, agent_period, real_period, federate, rolling_window_unit=None):
     """Convert RL lengths from agent steps to the ticks of a federate with *real_period*.
 
-    Raises ValueError naming the federate when a length is not a whole number of its steps.
+    Raises ValueError naming the federate when a length is not a whole number of its steps,
+    or when ``rolling_window`` is not a multiple of *rolling_window_unit* seconds (an
+    EnergyPlus FMU can only be restarted at midnight, so its unit is one day).
     """
     out = {}
     for key, steps in values.items():
@@ -57,6 +59,11 @@ def reset_in_federate_ticks(values, agent_period, real_period, federate):
                 f"RL {key}={steps} agent steps ({seconds}s, agent period {agent_period}s) is not a whole "
                 f"number of steps of federate '{federate}' (real_period={real_period}s): choose a {key} "
                 f"whose duration is a multiple of {real_period}s."
+            )
+        if key == 'rolling_window' and rolling_window_unit and seconds % rolling_window_unit:
+            raise ValueError(
+                f"RL rolling_window={steps} agent steps ({seconds}s) must be a multiple of {rolling_window_unit}s "
+                f"for federate '{federate}': its model is an EnergyPlus FMU, which can only restart at midnight."
             )
         out[key] = int(seconds // real_period)
     return out
@@ -1506,9 +1513,25 @@ class ScenarioManager:
             if federation_name == 'rl_federation':
                 continue
             for fed_name, federate in federation.federate_configs.items():
-                ticks = reset_in_federate_ticks(values, agent_period, federate.timing_configs.real_period, f'{federation_name}.{fed_name}')
+                unit = 86400 if self._federate_engine(federate) == 'energyplus' else None
+                ticks = reset_in_federate_ticks(values, agent_period, federate.timing_configs.real_period,
+                                                f'{federation_name}.{fed_name}', rolling_window_unit=unit)
                 federate.rl_config = {'mode': 'train', 'reset_type': reset.mode,
                                       'n_episodes': train.episodes, **ticks}
+
+    def _federate_engine(self, federate):
+        """``user_defined.fmu_engine`` of the federate's model (scenario over catalog), '' if none."""
+        mc = getattr(federate, 'model_configs', None)
+        if mc is None or getattr(mc, 'instantiation', None) is None:
+            return ''
+        name = mc.instantiation.model_name
+        if self.redis_client is None:  # timing setup runs before the main Redis connection
+            self._setup_redis_client()
+        catalog_index = self.redis_client.get_json("catalog:index") or {}
+        category = next((c for c, names in catalog_index.items() if name in names), None)
+        doc = self.redis_client.get_json(f"catalog:{category}:{name}") or {} if category else {}
+        engine = (mc.user_defined or {}).get('fmu_engine', (doc.get('user_defined') or {}).get('fmu_engine'))
+        return str(engine or '').lower()
 
     def _setup_local_federation(self, federation_name, federation_conf):
         """

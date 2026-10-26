@@ -115,6 +115,15 @@ def test_horizon_restarts_model_but_relative_clock_keeps_going():
     assert m.seen[-1][3] == START + timedelta(seconds=25 * PERIOD)  # next "March", not the previous one
 
 
+def test_horizon_restart_keeps_the_remaining_span():
+    m = make_model(max_sim_time=10 * PERIOD, sim_start_date='03-01')
+    m._reset('rolling', rel_ts_target=4, span_ticks=20)      # run must reach rel tick 24
+    seen = []
+    m.reset = lambda mode='full': seen.append((mode, m.span_ticks))
+    run(m, 5, 24)                                            # crosses the window at rel tick 10 and 20
+    assert seen == [('horizon', 14), ('horizon', 4)]
+
+
 def test_horizon_restart_resets_state_to_init():
     m = make_model(max_sim_time=3 * PERIOD)
     m.init_state.outputs['x'] = 1
@@ -253,3 +262,67 @@ def test_reset_lengths_not_whole_for_a_federate_raise():
     from core.ScenarioManager import reset_in_federate_ticks
     with pytest.raises(ValueError, match=r"federate 'weather' \(real_period=900s\)"):
         reset_in_federate_ticks({'rolling_window': 10}, 60, 900, 'weather')
+
+
+# ---------------------------------------------------------------------------
+# BaseCSVReader: the served row comes from the clock
+# ---------------------------------------------------------------------------
+
+class FakeCSV:
+    """BaseCSVReader fed from memory: row i holds the value 100 + i."""
+    @staticmethod
+    def build(n_rows=10, max_sim_time=None):
+        import pandas as pd
+        from models.base_csv_reader import BaseCSVReader
+
+        class Reader(BaseCSVReader):
+            def _load_csv_data(self):
+                return pd.DataFrame({'v': [100.0 + i for i in range(n_rows)]})
+
+        metadata = ModelMetadata(name='r', class_name='Reader', module_path='tests.test_model_reset',
+                                 version='1.0.0', description='r', max_sim_time=max_sim_time)
+        config = SimpleNamespace(user_defined={}, inputs=[], outputs=['v'], parameters={}, init_state={},
+                                 start_time=START.isoformat(), real_period=PERIOD)
+        return Reader('r.0', metadata, config, logging.getLogger('test'))
+
+
+def served(m, first_ts, last_ts):
+    out = []
+    for ts in range(first_ts, last_ts + 1):
+        out.append(m._step(ts, {})['v'])
+    return out
+
+
+def test_csv_reader_serves_rows_in_order_and_wraps_at_the_end_of_the_file():
+    m = FakeCSV.build(n_rows=4)
+    assert m.max_sim_time == 4 * PERIOD                 # derived: the file is the horizon
+    assert served(m, 1, 10) == [100, 101, 102, 103, 100, 101, 102, 103, 100, 101]
+
+
+def test_csv_reader_full_reset_restarts_from_the_first_row():
+    m = FakeCSV.build(n_rows=10)
+    served(m, 1, 3)
+    m._reset('full')
+    assert served(m, 4, 5) == [100, 101]
+
+
+def test_csv_reader_rolling_reset_jumps_to_the_row_of_the_new_start():
+    m = FakeCSV.build(n_rows=10)
+    served(m, 1, 3)
+    m._reset('rolling', rel_ts_target=6)
+    assert served(m, 4, 5) == [106, 107]
+    m._reset('rolling', rel_ts_target=23)               # beyond the file: folded by the horizon
+    assert served(m, 6, 6) == [103]
+
+
+def test_csv_reader_declared_horizon_wins_over_the_file_length():
+    m = FakeCSV.build(n_rows=10, max_sim_time=3 * PERIOD)
+    assert served(m, 1, 7) == [100, 101, 102, 100, 101, 102, 100]
+
+
+def test_energyplus_rolling_window_must_be_whole_days():
+    import pytest
+    from core.ScenarioManager import reset_in_federate_ticks
+    assert reset_in_federate_ticks({'rolling_window': 144}, 600, 600, 'f', rolling_window_unit=86400) == {'rolling_window': 144}
+    with pytest.raises(ValueError, match='EnergyPlus'):
+        reset_in_federate_ticks({'rolling_window': 100}, 600, 600, 'f', rolling_window_unit=86400)

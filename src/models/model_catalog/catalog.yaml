@@ -2015,6 +2015,7 @@ models:
       fmu_source:
         type: local
         path: /media/space/rando/CODE/CosimGym/src/models/model_catalog/physical_models/resources/BUI0.fmu
+      fmu_engine: energyplus
     inputs:
       PeopleNumber:
         type: float

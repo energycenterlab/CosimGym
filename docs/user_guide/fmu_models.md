@@ -66,9 +66,9 @@ timing_configs:
 
 ## 3. EnergyPlus FMUs: defined stop time
 
-FMUs generated from EnergyPlus IDF files (`idf-to-fmu-export-prep`) require a **defined stop time**. `BaseFMUModel` derives it automatically from the scenario `start_time`/`end_time` and passes it to `setupExperiment` (FMI 2.0) / `enterInitializationMode` (FMI 3.0). If the stop time is left undefined, EnergyPlus clamps it to 0 and the second `doStep` fails with `fmi2Error`. When the model declares a simulation horizon (next section) that horizon is used instead, because the slave is restarted at it rather than stepped past it.
+FMUs generated from EnergyPlus IDF files (`idf-to-fmu-export-prep`) require a **defined stop time**. `BaseFMUModel` derives it automatically from the scenario `start_time`/`end_time` and passes it to `setupExperiment` (FMI 2.0) / `enterInitializationMode` (FMI 3.0). If the stop time is left undefined, EnergyPlus clamps it to 0 and the second `doStep` fails with `fmi2Error`. The stop time is the span until the next restart (end of the scenario, or the next RL reset), rounded **up to whole days** and never past the end of the RunPeriod.
 
-An EnergyPlus FMU's calendar lives in the IDF inside the FMU, and the run can be started at any date within the FMU's maximum time (see [§4](#4-simulation-horizon-and-restart)). A scenario whose `start_time` differs from the FMU's RunPeriod begin date has the building simulating a different calendar date than the scenario says; every model is still at the same *elapsed* simulated time. How `BaseFMUModel` chooses the start point is part of the reset redesign ([Known Issues §5](../KNOWN_ISSUES.md)).
+An EnergyPlus FMU's calendar lives in the IDF inside the FMU. The FMU clock counts seconds from 1 January of the scenario's start year; `BaseFMUModel` starts the slave at the model's current position on its horizon window (`horizon_pos_s`, see [§4](#4-simulation-horizon-and-restart)). A scenario whose `start_time` differs from the FMU's RunPeriod begin date has the building simulating a different calendar date than the scenario says; every model is still at the same *elapsed* simulated time.
 
 EnergyPlus FMUs also create runtime working directories named `Output_EPExport_<federate>.<n>/`. These are git-ignored — do not commit them.
 
@@ -86,7 +86,7 @@ Two things are called "reset" or "restart" in CosimGym. They are **independent c
 
 The horizon restart is an edge case. It only matters when a scenario (or a training run) lasts longer than a model's limit, and the normal answer is to **choose models whose limit covers the whole scenario**. It is a safety net, not a feature to design studies around.
 
-> **Under redesign.** The restart/reset mechanics of `BaseModel` and `BaseFMUModel` (how a slave is restarted, what is saved, how a rolling episode start point is reached, how horizon restarts are coordinated between federates) are being reworked — see [Known Issues §5](../KNOWN_ISSUES.md). This page deliberately specifies only what is stable: the catalog fields, the EnergyPlus constraints, and the registration script. For the current mechanics read `src/models/base_model.py` and `src/models/base_FMU_model.py`.
+**Mechanics.** Every restart (RL `full` / `rolling` reset, or horizon) is the same operation: terminate and free the slave, then instantiate a new one whose start time is the model's current position on its horizon window and whose stop time covers the span to the next restart (the federate tells the model that span). Nothing is saved or replayed, so a rolling reset costs one instantiation (~0.5 s for BUI0), independent of where the episode starts. The model's relative clock is not folded back at the horizon (after December comes the next January), only the slave restarts at the window origin; the weekday of the model can therefore differ from a schedule feeder's after a wrap. Each slave writes into its own `fmu_output/restart_<n>/` directory.
 
 ### Declaring the limit
 
@@ -112,12 +112,10 @@ A scenario can override both for one model under that model's `user_defined` blo
 
 ### EnergyPlus FMUs
 
-- An EnergyPlus FMU can be started at **any date within its maximum time** and can be restarted from anywhere inside it.
-- The total duration of an experiment (stop time minus start time) must be a **multiple of 86400 s** (a whole number of days), and the smallest step is **60 s**. Violating the first makes the FMU fail at initialization.
+An EnergyPlus export is recognised by `user_defined.fmu_engine: energyplus` in its catalog entry (`--engine energyplus` in the register script; not auto-detected yet).
 
-### Optional state save/restore
-
-An FMU that declares `canGetAndSetFMUstate="true"` can save and restore its internal state. The catalog can switch that capability off for an FMU that advertises it without honouring it (`user_defined.fmu_reset.supports_rollback: false`); it can never switch it on. How the capability is used by a reset is part of the redesign.
+- It can be started at any **midnight** within its maximum time. A start in the middle of a day is silently rounded down to midnight by EnergyPlus, so `BaseFMUModel` refuses it, and `ScenarioManager` requires `rolling_window` to be a whole number of days for such a federate.
+- The total duration of an instance (stop minus start) must be a **multiple of 86400 s**, and the smallest step is **60 s**. `max_sim_time` must be a whole number of days, and the scenario must start at 00:00.
 
 ### Letting the register script fill this in
 
@@ -132,7 +130,7 @@ python src/models/model_catalog/fmu_catalog_register.py \
 # or stated explicitly
 python src/models/model_catalog/fmu_catalog_register.py \
     --fmu path/to/model.fmu --name my_fmu --local \
-    --max-sim-time 31536000 --sim-start-date 03-01
+    --max-sim-time 31536000 --sim-start-date 03-01 --engine energyplus
 ```
 
 Precedence: `--max-sim-time`/`--sim-start-date` override `--idf`, which overrides the FMU's own `DefaultExperiment`. If none of them yields a horizon the model is registered as unbounded and the script warns.

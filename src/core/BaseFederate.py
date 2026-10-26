@@ -342,17 +342,6 @@ class BaseFederate():
         model_configs.start_time = self.config.timing_configs.start_time # add the simulation start time to model configs
         model_configs.end_time = self.config.timing_configs.end_time # add the simulation end time to model configs
         model_configs.real_period = self.config.timing_configs.real_period # add the real period to model configs
-        # Reset policy: models backed by an external runtime (FMU) need to know in
-        # advance whether a rolling reset can ask them to move back in time.
-        model_configs.reset_mode = getattr(self, 'reset_type', None)
-        model_configs.rolling_window = getattr(self, 'rolling_window', None)
-        model_configs.episode_length = getattr(self, 'episode_length', None)
-        # How many ticks a model runs between resets. Defaults to the episode
-        # length, and a model that saves its state needs it to know whether the
-        # next rolling start point is reachable before the next reset.
-        model_configs.reset_period = (getattr(self, 'reset_length', None)
-                                      or getattr(self, 'episode_length', None))
-        model_configs.n_episodes = getattr(self, 'n_episodes', None)
         model_configs.initial_span_ticks = self._next_span()
         model_configs.inputs , model_configs.outputs= self.input_output_names() 
         self.logger.debug(f"Updated Model configs: {pp.pformat(model_configs)}")

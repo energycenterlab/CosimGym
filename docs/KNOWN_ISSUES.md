@@ -82,30 +82,23 @@ uploaded to the local MinIO `fmus` bucket.
 
 - **Fix:** upload it to the bucket, or fix the `catalog.yaml` reference. Not a scenario-YAML fix.
 
-## 5. FMU / model reset & horizon restart — mid-refactor defects  (HIGH)
+## 5. Model reset & horizon restart — remaining defects  (MEDIUM)
 
-Two independent concepts share the same code: the RL **episode reset** (`full` / `rolling` /
-`none`) and the model's own **horizon restart** (`max_sim_time`, any model with an intrinsic
-limit, RL or not). The refactor of both (`208f9fb`) is unfinished. Defects verified in the
-source on 2026-10-26 (design context: `docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`):
+Two independent concepts share the code: the RL **episode reset** and the model's own
+**horizon restart** (`max_sim_time`). The refactor is nearly done (plan:
+`docs/changes_reports/model_reset_redesign_plan.md`, design context:
+`docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`). What is left:
 
-- `BaseFMUModel` keeps one `self.snapshot` and uses it after `freeInstance` of the slave that
-  produced it; `_start_instance` overwrites it on every restart.
-- The `state.ts > 1` restore branch in `_push_initial_state_to_fmu` is unreachable:
-  `BaseModel._reset` deep-copies `init_state` (ts = 0) before calling `reset()`.
-- `_maybe_snapshot_next_rolling_start`, `_free_snapshot`, `_free_all_snapshots` and
-  `_consume_rolling_snapshot` use `_state_snapshots` / `_snapshot_target_ts`, which no longer
-  exist: rolling + a state-capable FMU raises `AttributeError` on the first step.
-- `_stop_time_seconds()` returns `max_sim_time` as an absolute stop time even when the start
-  time is > 0, which breaks the whole-day (86400 s) experiment duration an EnergyPlus FMU needs.
-- `reset('rolling')` always tears the slave down, including when `rolling_window == episode_length`
-  (nothing needs to move).
+- `parallel_execution` never propagates a reset to its worker processes (F5); `RL_Federate`
+  has its own loop and does no horizon handling.
 - Horizon restart is per model (`BaseModel._step`), so models with different horizons restart
   out of phase (the federate only warns).
-- `parallel_execution` never propagates a reset to its worker processes; `RL_Federate` has its
-  own loop and does no horizon handling.
-- Stale: `tests/test_fmu_state_snapshot.py`, `tests/test_fmu_horizon_detection.py` reference the
-  removed API; dead code and commented blocks remain in `base_FMU_model.py`, `base_csv_reader.py`.
+- After a full/rolling reset the federate publishes `init_state.outputs` for one tick instead of
+  the values at the new restart instant (CSV: row 0; FMU: `TBuilding` at its default)
+  (`fmu_horizon_and_reset_followups.md` §6).
+- The last EnergyPlus slave of a run ends with `Socket communication received error value "-1"`
+  in its `.err` (terminated by `finalize` without its closing handshake); its own `.csv`/`.eso`
+  are not written. Model outputs are unaffected. Pre-existing.
 
 ## 6. `tests/test_scenario_manager_remote.py` — 2 tests broken  (LOW, test-only)
 
