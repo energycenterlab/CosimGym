@@ -140,14 +140,24 @@ reset:
   force_defaults: false         # always apply reset_default even when valid values exist
 ```
 
-`mode: rolling` requires `rolling_window`. Rolling treats the run as one long timeline and
-starts each episode at a start point that slides forward by `rolling_window` ticks, so
-`rolling_window < period` makes consecutive episodes overlap and `rolling_window == period`
-makes each episode continue where the last one ended.
+`mode: rolling` requires `rolling_window`. Rolling treats the run as one long timeline: each
+episode restarts the models from their initial state at a simulated date that slides forward
+by `rolling_window` per episode. `rolling_window < period` makes consecutive episodes overlap;
+`rolling_window == period` makes each one start where the previous ended, but it is still a
+restart from the initial state (to keep the model running without any restart use
+`mode: none`).
+
+**Units.** `period`, `rolling_window` and `run.train.episode_length` count **agent steps**
+(one step = the agent's period, the smallest `real_period` among the controlled models).
+`ScenarioManager` converts them to seconds and then to each federate's own ticks, so every
+federate resets at the same simulated instant whatever its `real_period`. It is an **error**
+if a length is not a whole number of a federate's steps (e.g. agent period 60 s,
+`rolling_window: 10` = 600 s, federate `real_period: 900`): pick lengths whose duration is a multiple of
+every federate's `real_period` (their least common multiple). The check runs only for online training.
 
 > **Under redesign.** How each model type reaches the rolling start point (an FMU, a CSV
-> reader, a plain Python model), the exact start-tick arithmetic, and what each mode costs are
-> being reworked — see [Known Issues §5 and §7](../../KNOWN_ISSUES.md). The episode reset is
+> reader), and what each mode costs, are being reworked — see
+> [Known Issues §5](../../KNOWN_ISSUES.md). The episode reset is
 > independent of a model's own horizon restart
 > ([FMU Models §4](../fmu_models.md#4-simulation-horizon-and-restart)).
 

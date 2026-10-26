@@ -118,7 +118,7 @@ class BaseCSVReader(BaseModel):
 
     def reset(self, mode='full', ts=None, time=None):
         """Reset the row cursor. `full` rewinds to `starting_row`; `rolling` jumps to `ts` (or advances by one row if `ts` is None); `soft` is a no-op."""
-        if mode == 'full' or mode == 'horizon_limit':
+        if mode == 'full' or mode == 'horizon':
             # for now only implement full reset with redundant output setting because the initial condition should be already published from federate
             self.starting_row = self._start_point()
             first_row = self._data.iloc[self.starting_row]

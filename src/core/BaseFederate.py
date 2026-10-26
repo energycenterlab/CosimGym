@@ -113,18 +113,9 @@ class BaseFederate():
         self.start_time = datetime.fromisoformat(self.config.timing_configs.start_time)
         self.end_time = datetime.fromisoformat(self.config.timing_configs.end_time)
         self.stop_time = self.config.timing_configs.time_stop
-        # Scenario-wide simulation horizon, resolved by ScenarioManager from the
-        # models' catalog entries. When set, every federate restarts all of its
-        # models together at the same tick, so none of them drifts out of step
-        # with the ones that had to restart. None = unbounded.
-        self.max_sim_time = self.config.timing_configs.max_sim_time
-        self.horizon_steps = None
-        self.horizon_count = 0
         self.time_period = self.config.timing_configs.time_period
         self.real_period = self.config.timing_configs.real_period
         self.offset = self.config.timing_configs.time_offset
-        if self.max_sim_time and self.real_period:
-            self.horizon_steps = int(self.max_sim_time // self.real_period)
         # changing state variables for timing
         self.date_time = self.start_time  # keeps track of simulation evolution with datetime format (real wolrd time)
         self.time_granted = 0.0  # time logic for helics it is granted_time + time_period
@@ -138,16 +129,15 @@ class BaseFederate():
             self.n_episodes = self.config.rl_config.get('n_episodes', None) if self.config.rl_config else None
             self.reset_type = self.config.rl_config.get('reset_type', None) if self.config.rl_config else None
             self.reset_length = self.config.rl_config.get('reset_period', None) if self.config.rl_config else None
-            # Tick the current episode starts at. Ticks are 1-based, so the
-            # first episode starts at 1 and each rolling reset slides the
-            # start point forward by exactly rolling_window ticks - starting
-            # from 0 made every episode re-run the last tick of the previous
-            # window, and put every start point one tick before a day
-            # boundary, which an FMU restart cannot land on.
-            self.new_starting_point = 1 #deprecated
-            self.rolling_window = self.config.rl_config.get('rolling_window', None) if self.config.rl_config else None #deprecated
+            self.rolling_window = self.config.rl_config.get('rolling_window', None) if self.config.rl_config else None
             self.episode_count = 0  
-            self.reset_count = 0 
+            self.reset_count = 0
+            # Resets that fire during training: one every reset_length ticks while the
+            # mode is still 'train' (the last one lands on the train/test boundary).
+            self.n_resets_train = 0
+            if (self.mode == 'train' and self.reset_type not in (None, 'none') and self.reset_length
+                    and self.episode_length and self.n_episodes):
+                self.n_resets_train = self.n_episodes * self.episode_length // self.reset_length
 
     def initialize(self):
         """
@@ -363,6 +353,7 @@ class BaseFederate():
         model_configs.reset_period = (getattr(self, 'reset_length', None)
                                       or getattr(self, 'episode_length', None))
         model_configs.n_episodes = getattr(self, 'n_episodes', None)
+        model_configs.initial_span_ticks = self._next_span()
         model_configs.inputs , model_configs.outputs= self.input_output_names() 
         self.logger.debug(f"Updated Model configs: {pp.pformat(model_configs)}")
         
@@ -1082,63 +1073,38 @@ class BaseFederate():
                         'wall_time': wall_time,
                     })
 
+    def _next_span(self):
+        """Ticks the models must cover from now on: up to the next reset while more
+        resets follow in training, otherwise up to the end of the scenario."""
+        if getattr(self, 'n_resets_train', 0) > getattr(self, 'reset_count', 0):
+            return self.reset_length
+        return int(self.stop_time - self.ts)
+
     def _reset(self):
-        # check if reset time has been reached
-        if self.mode == 'train' and self.reset_length is not None and self.ts > 0 and self.ts % self.reset_length == 0:
-            self.reset_count += 1
-            if self.reset_type == 'full':
-                self.logger.info(f"Performing full reset of federate {self.name}")
-                self._publish_init_state()
-                for entity in self.entities:
-                    model = entity['object']
-                    model._reset(mode=self.reset_type)
+        """Episode reset of this federate's models (RL training only).
 
-            elif self.reset_type == 'rolling':
-                if self.rolling_window is None:
-                    self.logger.error("Rolling window size must be specified for rolling reset type")
-                    raise AssertionError("Rolling window size must be specified for rolling reset type")
-                self.logger.info(f"Performing rolling reset of federate {self.name}")
-                self.new_starting_point += self.rolling_window
-                for entity in self.entities:
-                    model = entity['object']
-                    model._reset(mode=self.reset_type)
-                return
-
-            else:
-                self.logger.warning(f"Unknown reset type '{self.reset_type}' specified. No reset will be performed.")
-        else:
+        ``full`` rewinds every model to relative tick 0, ``rolling`` moves them to
+        the start of the next window; ``none`` (or no RL) does nothing. The model
+        horizon restart is separate and lives in ``BaseModel._step``.
+        """
+        if (self.mode != 'train' or self.reset_type in (None, 'none') or not self.reset_length
+                or self.ts <= 0 or self.ts % self.reset_length != 0 or self.ts >= self.stop_time):
             return
-        
-    # def _reset_on_horizon(self):
-    #     #TODO: check if this is still needed
-    #     """Restart every model in this federate when the simulation horizon is reached.
-
-    #     Some models cannot be stepped past a fixed span of simulated time - an
-    #     EnergyPlus FMU stops at the end of its RunPeriod. That limit is not an RL
-    #     policy: it applies in training, in testing and in a plain co-simulation
-    #     with no agent at all, and it composes with whatever reset mode is
-    #     configured rather than replacing it.
-
-    #     Every federate in the scenario shares the same horizon and counts the same
-    #     ticks, so they all restart on the same tick without having to coordinate:
-    #     after the restart the schedule feeder, the weather reader and the building
-    #     are all back at their first step together.
-    #     """
-    #     if not self.horizon_steps or self.ts <= 0:
-    #         return
-    #     if self.ts % self.horizon_steps != 0:
-    #         return
-    #     if self.stop_time and self.ts >= self.stop_time:
-    #         return  # last step of the run: restarting now would only cost time
-
-    #     self.horizon_count += 1
-    #     self.logger.info(
-    #         f"Simulation horizon reached at step {self.ts} ({self.max_sim_time}s): "
-    #         f"restarting every model of federate {self.name} (restart #{self.horizon_count})"
-    #     )
-    #     self._publish_init_state()
-    #     for entity in self.entities:
-    #         entity['object'].reset(mode='full')
+        self.reset_count += 1
+        if self.reset_type == 'full':
+            target = 0
+        elif self.reset_type == 'rolling':
+            if self.rolling_window is None:
+                self.logger.error("Rolling window size must be specified for rolling reset type")
+                raise AssertionError("Rolling window size must be specified for rolling reset type")
+            target = self.reset_count * self.rolling_window
+        else:
+            self.logger.warning(f"Unknown reset type '{self.reset_type}' specified. No reset will be performed.")
+            return
+        self.logger.info(f"Performing {self.reset_type} reset #{self.reset_count} of federate {self.name} (relative tick {target})")
+        self._publish_init_state()
+        for entity in self.entities:
+            entity['object']._reset(mode=self.reset_type, rel_ts_target=target, span_ticks=self._next_span())
 
     def _track_episodes(self):
         self.episode_count += 1

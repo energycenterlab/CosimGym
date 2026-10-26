@@ -44,6 +44,24 @@ pp = pprint.PrettyPrinter(indent=4)
 
 
 
+def reset_in_federate_ticks(values, agent_period, real_period, federate):
+    """Convert RL lengths from agent steps to the ticks of a federate with *real_period*.
+
+    Raises ValueError naming the federate when a length is not a whole number of its steps.
+    """
+    out = {}
+    for key, steps in values.items():
+        seconds = steps * agent_period
+        if seconds % real_period:
+            raise ValueError(
+                f"RL {key}={steps} agent steps ({seconds}s, agent period {agent_period}s) is not a whole "
+                f"number of steps of federate '{federate}' (real_period={real_period}s): choose a {key} "
+                f"whose duration is a multiple of {real_period}s."
+            )
+        out[key] = int(seconds // real_period)
+    return out
+
+
 class ScenarioManager:
     """
     Manages HELICS federation lifecycle including broker and federate processes.
@@ -1463,78 +1481,34 @@ class ScenarioManager:
                 n_steps = int(self.duration_time / federate.timing_configs.real_period)
                 federate.timing_configs.time_stop = n_steps
 
-        self._apply_simulation_horizon()
+        self._assign_federate_rl_configs()
 
-    def _apply_simulation_horizon(self):
-        """Resolve the scenario's simulation horizon and give it to every federate.
+    def _assign_federate_rl_configs(self):
+        """Give every physical federate the episode/reset facts in its own ticks.
 
-        Some models cannot run for an unlimited span of simulated time - an
-        EnergyPlus FMU stops at the end of its RunPeriod. When one of them is in
-        the scenario, *every* federate has to restart its models at the same tick,
-        or the ones that kept running drift out of step with the ones that
-        restarted. The horizon is therefore a scenario-wide fact: taken from the
-        scenario's `simulation_horizon` when set, otherwise the shortest horizon
-        any model in the scenario declares in its catalog entry.
+        The YAML counts reset and episode lengths in agent steps (``rl_period``
+        seconds each). A federate with another ``real_period`` must reset at the
+        same simulated instant, so each value is converted to seconds and then to
+        the federate's ticks; it is an error if that is not a whole number. Only
+        online training resets anything, so other scenarios are left alone.
         """
-        explicit = getattr(self.config, 'simulation_horizon', None)
-        if explicit is not None:
-            horizon = float(explicit) or None
-            source = 'scenario simulation_horizon'
-        else:
-            horizon, source = self._shortest_declared_horizon()
-
-        if not horizon:
+        rl_task = self.config.reinforcement_learning_config
+        if not rl_task or rl_task.run.train is None or rl_task.run.mode == 'offline':
             return
-
-        for federation in self.config.federations.values():
+        train, reset = rl_task.run.train, rl_task.environment.reset
+        agent_period = self._get_rl_period(self._get_rl_controlled_models())
+        values = {'episode_length': train.episode_length}
+        if reset.mode != 'none':
+            values['reset_period'] = reset.period or train.episode_length
+        if reset.mode == 'rolling':
+            values['rolling_window'] = reset.rolling_window
+        for federation_name, federation in self.config.federations.items():
+            if federation_name == 'rl_federation':
+                continue
             for fed_name, federate in federation.federate_configs.items():
-                period = federate.timing_configs.real_period
-                if period and horizon % period != 0:
-                    self.logger.warning(
-                        f"Simulation horizon {horizon}s is not a whole number of steps for "
-                        f"federate '{fed_name}' (real_period={period}s); it will restart at "
-                        f"{int(horizon // period)} steps, {horizon % period}s early."
-                    )
-                federate.timing_configs.max_sim_time = horizon
-
-        self.logger.info(
-            f"Simulation horizon {horizon}s (from {source}): every federate restarts its "
-            f"models together when it is reached."
-        )
-
-    def _model_catalog(self):
-        """Lazily open the Redis-backed model catalog (loaded by catalog_loader.py)."""
-        if getattr(self, '_catalog', None) is None:
-            from models.model_catalog.RedisCatalog import RedisCatalog
-            self._catalog = RedisCatalog(logger=self.logger)
-        return self._catalog
-
-    def _shortest_declared_horizon(self):
-        """Smallest `max_sim_time` declared by any model used in this scenario."""
-        horizons = {}
-        for federation in self.config.federations.values():
-            for fed_name, federate in federation.federate_configs.items():
-                model_cfg = getattr(federate, 'model_configs', None)
-                if model_cfg is None:
-                    continue
-                # A scenario-level override on the model wins over its catalog entry.
-                declared = (model_cfg.user_defined or {}).get('max_sim_time')
-                if declared is None:
-                    model_name = model_cfg.instantiation.model_name
-                    metadata = self._model_catalog().get_model_metadata(model_name)
-                    declared = getattr(metadata, 'max_sim_time', None) if metadata else None
-                if declared:
-                    horizons[fed_name] = float(declared)
-
-        if not horizons:
-            return None, ''
-        shortest = min(horizons.values())
-        if len(set(horizons.values())) > 1:
-            self.logger.warning(
-                f"Models in this scenario declare different simulation horizons ({horizons}); "
-                f"using the shortest ({shortest}s) so every model restarts together."
-            )
-        return shortest, f"model declarations {horizons}"
+                ticks = reset_in_federate_ticks(values, agent_period, federate.timing_configs.real_period, f'{federation_name}.{fed_name}')
+                federate.rl_config = {'mode': 'train', 'reset_type': reset.mode,
+                                      'n_episodes': train.episodes, **ticks}
 
     def _setup_local_federation(self, federation_name, federation_conf):
         """

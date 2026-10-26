@@ -100,27 +100,6 @@ This `memory_config` is automatically propagated to every federate that does not
 
 ---
 
-### `simulation_horizon`
-
-Optional. A scenario-wide simulated-time horizon (seconds), meant to restart every model together.
-
-Some models have an intrinsic limit on the span of simulated time they can cover (an EnergyPlus FMU stops at the end of its RunPeriod; a CSV covers only the period of its data). This is a *model* property, independent of RL episode resets, and the normal answer is to choose models whose limit covers the scenario; see [FMU Models §4](../fmu_models.md#4-simulation-horizon-and-restart).
-
-> **Under redesign.** The key is parsed and `ScenarioManager` resolves it (or the shortest `max_sim_time` declared by the models) into every federate's `timing_configs.max_sim_time`, but the federate-wide coordinated restart is no longer performed by the federate: each model currently restarts itself from its *own* `max_sim_time`, and a federate only warns when models in it declare different horizons. Treat the table below as the resolved value, not as a guarantee of a coordinated restart. See [Known Issues §5](../../KNOWN_ISSUES.md).
-```yaml
-simulation_horizon: 31536000    # restart everything after one simulated year
-```
-
-You normally **leave this out**. It is resolved from the models' catalog entries: any model that declares `max_sim_time` (see `docs/user_guide/fmu_models.md`) contributes its limit, and the shortest one wins.
-
-| Value | Effect |
-| ----- | ------ |
-| absent (default) | taken from the models' declared `max_sim_time`; unbounded if none declares one |
-| a number of seconds | that horizon, whatever the models declare |
-| `0` | no scenario-level horizon |
-
-The horizon restart is *not* an RL reset mode: it concerns the model's own limit and applies in training, in testing and in plain co-simulation alike.
-
 ### `synchronization`
 - **Required:** no
 - **Default:** all sub-fields use their defaults (auto_offset enabled, startup_sync enabled)

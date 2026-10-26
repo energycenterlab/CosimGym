@@ -180,7 +180,7 @@ not seen. → [Custom Models & Catalog](docs/user_guide/custom_models.md)
 | RL config (environment / agent / run / experiment) | [RL Configuration](docs/user_guide/scenario_configuration/rl.md), [RL Integration](docs/user_guide/rl_integration.md) |
 | Digital-twin interfaces, streaming, overrides, BK4 | [Digital-Twin Interfaces](docs/user_guide/digital_twin_interfaces.md) |
 | Distributed SSH federate spawning | [Distributed Deployment](docs/user_guide/distributed_deployment.md) |
-| FMUs, `max_sim_time`, `simulation_horizon`, reset | [FMU Models](docs/user_guide/fmu_models.md) |
+| FMUs, `max_sim_time`, reset | [FMU Models](docs/user_guide/fmu_models.md) |
 | Results, dashboard, live view | [Dashboard & Analytics](docs/user_guide/dashboard.md) |
 | Ports, `src/.env`, shared-machine conflicts | [Installation → Configuring ports](docs/Installation_Setup.md#configuring-ports) |
 | Currently broken / limited | [Known Issues](docs/KNOWN_ISSUES.md) |

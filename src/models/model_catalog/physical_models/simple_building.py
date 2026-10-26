@@ -84,6 +84,3 @@ class SimpleBuilding(BaseModel):
             f"Final indoor temperature: {self.state.outputs['T_indoor']:.2f} °C"
         )
         
-    def reset(self, mode: str = 'full', ts=None, time=None) -> None:
-        """Reset the model state to initial conditions."""
-        pass

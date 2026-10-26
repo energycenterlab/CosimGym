@@ -254,9 +254,8 @@ class RCBuilding(BaseModel):
         if "P_elec_mw" in out:
             out["P_elec_mw"] = p_elec / 1e6
 
-    def reset(self, mode="full", ts=None, time=None) -> None:
-        """Reset interfaces and the internal thermal-mass state."""
-        super().reset(mode=mode, ts=ts, time=time)
+    def reset(self, mode="full") -> None:
+        """Reset the internal thermal-mass state."""
         self.t_m_prev = self.state.parameters["t_m_initial"]
 
     def finalize(self):

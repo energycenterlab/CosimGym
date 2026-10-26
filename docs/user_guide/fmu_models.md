@@ -86,7 +86,7 @@ Two things are called "reset" or "restart" in CosimGym. They are **independent c
 
 The horizon restart is an edge case. It only matters when a scenario (or a training run) lasts longer than a model's limit, and the normal answer is to **choose models whose limit covers the whole scenario**. It is a safety net, not a feature to design studies around.
 
-> **Under redesign.** The restart/reset mechanics of `BaseModel` and `BaseFMUModel` (how a slave is restarted, what is saved, how a rolling episode start point is reached, how horizon restarts are coordinated between federates) are being reworked — see [Known Issues §5 and §7](../KNOWN_ISSUES.md). This page deliberately specifies only what is stable: the catalog fields, the EnergyPlus constraints, and the registration script. For the current mechanics read `src/models/base_model.py` and `src/models/base_FMU_model.py`.
+> **Under redesign.** The restart/reset mechanics of `BaseModel` and `BaseFMUModel` (how a slave is restarted, what is saved, how a rolling episode start point is reached, how horizon restarts are coordinated between federates) are being reworked — see [Known Issues §5](../KNOWN_ISSUES.md). This page deliberately specifies only what is stable: the catalog fields, the EnergyPlus constraints, and the registration script. For the current mechanics read `src/models/base_model.py` and `src/models/base_FMU_model.py`.
 
 ### Declaring the limit
 

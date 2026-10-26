@@ -36,8 +36,7 @@ class battery_dest(BaseModel):
         self.state.outputs['P_net'] = self._model.P_net
         self.state.outputs['P_clipped'] = self._model.P_clipped
 
-    def reset(self, mode='full', ts=None, time=None):
-        super().reset(mode=mode, ts=ts, time=time)
+    def reset(self, mode='full'):
         if not hasattr(self, "_model") or self._model is None:
             return
 

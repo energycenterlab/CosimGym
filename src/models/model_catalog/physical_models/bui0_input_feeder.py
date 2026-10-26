@@ -73,10 +73,10 @@ class BUI0InputFeeder(BaseModel):
     def step(self) -> None:
         self.logger.debug("state: %s", self.state)
         p = self.state.parameters
-        # state.time follows the model clock, so it rewinds with every reset and
-        # every horizon restart: the schedule stays in step with the building it
-        # feeds instead of running on past it.
-        now = self.state.time
+        # rel_time is the simulated moment the model represents: it moves with
+        # every reset and horizon restart, so the schedule stays in step with the
+        # building it feeds instead of running on past it.
+        now = self.state.rel_time
         hour = now.hour + now.minute / 60.0
 
         occupied = p['occupied_start_hour'] <= hour < p['occupied_end_hour']
@@ -103,5 +103,4 @@ class BUI0InputFeeder(BaseModel):
     def finalize(self):
         pass
 
-    def reset(self, mode='full', ts=None, time=None):
-        pass
+

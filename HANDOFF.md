@@ -8,17 +8,14 @@ Rules that govern this file and all support documents live in `CLAUDE.md` →
 
 ## Goal (this session)
 
-Realign the documentation with the author's correct premises about model reset/restart
-and EnergyPlus, **before** any planning or implementation. Docs only; no `.py` touched,
-nothing committed.
+1. Realign docs with the author's correct premises on reset/restart and EnergyPlus (done).
+2. Plan objective 1 — model reset refactor (done, approved). **Execution plan:**
+   `docs/changes_reports/model_reset_redesign_plan.md` — phases F0..F6, one session each,
+   each with its own file list and done-criteria. **F0, F1, F2 DONE. Next session: F3, F4 or F5 (independent), then F6.**
 
-Two objectives follow, to be handled **separately, FMU first**:
-
-1. **Refactor the reset functions** — generic in `BaseModel`, then specific in
-   `BaseFMUModel`. EnergyPlus FMUs are an exception in how they restart, and others may be.
-2. **A new model that runs EnergyPlus through its Python API** (no IDF→FMU export).
-
-The next request starts with **planning objective 1**. No plan exists yet.
+Execution setup chosen by the author: Sonnet executes, Opus as advisor (advisor at start and
+before closing each phase). Each phase ends with: plan doc `STATUS` updated, `graphify
+update .`, HANDOFF rewritten, commit proposed (commit only on explicit ok).
 
 ## Ground truth (stated by the author — do not contradict it)
 
@@ -35,92 +32,45 @@ The next request starts with **planning objective 1**. No plan exists yet.
   anywhere. Constraints: total experiment duration is a multiple of **86400 s**; minimum
   step **60 s**.
 
-## Current Progress — done, uncommitted (docs only)
+## Current Progress — F1, F2 DONE (uncommitted)
 
-Redis 8.2.10 upgrade is committed (`d6fe250`); only the FMU/reset docs below are modified.
+Docs realignment committed (`116a6b4`). Everything else is **uncommitted** (author commits).
 
-- `docs/user_guide/fmu_models.md`: §3 EnergyPlus-start paragraph corrected; §4 rewritten
-  as "Simulation horizon and restart" (the two concepts, `max_sim_time` / `sim_start_date`,
-  EnergyPlus constraints, optional state save/restore, register script). Replay, input
-  history, `replay_inputs`, quadratic cost, "two states held" and "cannot be restarted
-  anywhere else" removed. Mechanics flagged *under redesign*. Anchor is now
-  `#4-simulation-horizon-and-restart`.
-- `docs/user_guide/scenario_configuration/general.md` (`simulation_horizon`),
-  `federate.md` (`fmu_reset` keys), `rl.md` (`reset.mode: rolling`): off-topic content left
-  alone; on-topic false/removed-code claims replaced or marked under redesign.
-- `docs/KNOWN_ISSUES.md`: §5 rewritten as the list of verified mid-refactor defects (below);
-  §7 kept untouched (its fix is a planning decision); `Last reviewed` 2026-10-26.
-- `docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`: rewritten; kept only items
-  valid under the correct premise (no horizon inference, no truncation flag for the agent,
-  horizon coherence across federates, `parallel_execution` reset propagation, teardown cost).
-  Replay / run-period shift / checkpoint slave / "SETTLED" entries deleted.
-- `docs/changes_reports/fmu_horizon_and_reset_changes.md`: dated CORRECTION block at top,
-  §6 conclusions marked superseded, wrong inline claims fixed. Kept as history.
+F1 (clock + base reset): `BaseModel` has the abs/rel clocks (`rel_ts/rel_time`, never folded at the horizon; backend reads `horizon_pos_s()`; `_epoch` triggers `reset('horizon')`), one `_reset(mode, rel_ts_target, span_ticks)`, concrete no-op `reset(mode)`; `BaseFederate._reset` (none silent, publish on full+rolling, rolling target `reset_count·W`); `pass` resets removed; KNOWN_ISSUES §7 deleted; `tests/test_model_reset.py`.
 
-## Code state observed (verified in source, 2026-10-26; also in KNOWN_ISSUES §5)
+F2 (units + span + horizon cleanup), details in the plan doc under "Fatto in F2":
+- `ScenarioManager.reset_in_federate_ticks` + `_assign_federate_rl_configs()`; launcher just passes `rl_config` (or `{}`).
+- `BaseFederate._next_span()`, `n_resets_train`, `initial_span_ticks` in model config → `BaseModel.span_ticks`; no reset on the last tick.
+- Removed `simulation_horizon` (key, method, fields, docs, CLAUDE.md), `_apply_simulation_horizon`, `_shortest_declared_horizon`, `_model_catalog`, `_reset_on_horizon`.
+- Docs: `rl.md` (units in agent steps, divisibility error, W==P is a restart), `general.md` section removed, `custom_models.md`, KNOWN_ISSUES §5 pruned.
+- Verified: pytest 310 pass / 11 fail (same 11 as the baseline: 9 `test_fmu_state_snapshot.py` → F4 deletes, 2 KNOWN_ISSUES §6); 5 scenarios pass; mixed-period run (weather 900 s) resets in lockstep.
+- **Open question for the author:** six YAMLs are now rejected by the divisibility check — `cs_s2_reset_rolling{,_s42,_s43,_s44}`, `cs_s4a_dqn_s42_rolling`, `cs_s4b_sac_s42_rolling` (`rolling_window: 10` × 60 s = 600 s vs weather `real_period: 900`; e.g. window 15 fixes it). They are not in the regression suite. YAMLs untouched, waiting for the author's decision.
 
-- Snapshot used after `freeInstance` (`reset('full')` reassigns `self.snapshot =
-  self.initial_snapshot`, then tears the slave down); `_start_instance` overwrites
-  `self.snapshot` every time.
-- Restore branch `state.ts > 1` in `_push_initial_state_to_fmu` unreachable
-  (`BaseModel._reset` zeroes `ts` via `init_state` deepcopy first).
-- `_state_snapshots` / `_snapshot_target_ts` missing → `AttributeError` for rolling +
-  state-capable FMU; `tests/test_fmu_state_snapshot.py` fails.
-- `base_model.py:360`: `rel_ts = ts - episode_length + rolling_window` right only for the
-  first reset or `rolling_window == episode_length`.
-- `_stop_time_seconds()` returns `max_sim_time` as an absolute stop even when start > 0 —
-  breaks the 86400 s duration; the first `doStep` must also sit at `startTime`.
-- `reset('rolling')` always tears down, even when `rolling_window == episode_length`.
-- Horizon restart is per model (`BaseModel.local_time`); `BaseFederate._reset_on_horizon`
-  commented out; `ScenarioManager._apply_simulation_horizon` still fills
-  `timing_configs.max_sim_time`, which nothing acts on; `BaseFederate._report_simulation_horizons`
-  only warns on mismatch.
-- `BaseModel.reset` abstract in 13 catalog models without it (KNOWN_ISSUES §7) — the gate is
-  red (6/32 scenarios start, 25 failed tests) until decided.
-- `BaseCSVReader.reset` handles `full`/`horizon_limit`/`rolling`/`soft`; its
-  `_reposition_backend` is commented out.
+## Environment note (this machine)
 
-## Left untouched on purpose (stale, belongs to the redesign)
+`src/docker-compose.yaml` fixed and verified (2026-10-26): Redis now `redis:8.10.1-alpine` (allowed patched versions: 8.10.1, 8.8.2, 8.6.6, 8.4.6, 8.2.9, 7.4.11, 7.2.16, 6.2.24), MinIO/mc from `cgr.dev/chainguard/*` (Docker Hub images gone; MinIO runs as `user: root`, no curl healthcheck, `minio-init` retries). The stack is up (`cosim_redis`, `cosim_minio`, `cosim_mosquitto`, catalog loaded, bucket `fmus` created) and left running. Run scenarios with `export PATH=/media/space/rando/Environments/cosim_gym/bin:$PATH` (see env-gotchas memory), not `conda run`.
 
-- Docstrings and commented-out blocks in `base_FMU_model.py`, `base_model.py`,
-  `base_csv_reader.py`, `BaseFederate.py`.
-- `tests/test_fmu_state_snapshot.py`, `tests/test_model_local_clock.py`,
-  `tests/test_fmu_horizon_detection.py` (reference the removed API).
-- `scripts/fmu_warmstart_validation/` and its `results*.json` (built on the wrong premise).
-- `tests/regression_suite.py`; scenario YAMLs (`fmu_horizon_smoketest` is still valid).
-- `docs/paper` does not exist in this repo; the paper lives in a separate repo — not checked
-  for the false EnergyPlus claim. Memory files contain nothing on this topic.
+## Code state still broken / pending (KNOWN_ISSUES §5)
+
+FMU snapshot defects, unreachable restore branch, missing `_state_snapshots`, `_stop_time_seconds`, rolling always teardown (all F4); parallel doesn't propagate resets (F5); CSV cursor (F3).
+
+## Left untouched on purpose
+
+`tests/test_fmu_state_snapshot.py`, `tests/test_fmu_horizon_detection.py` (F4); `scripts/fmu_warmstart_validation/` and its results (built on the wrong premise); `tests/regression_suite.py`; scenario YAMLs; `docs/paper` does not exist (paper lives in a separate repo).
 
 ## What Worked
 
-Grepping docs/scenarios/catalog/memory for FMU-specific terms (not just "rolling", which is
-mostly RL), then checking each doc claim against source before keeping it. The doc/code
-mismatch list was longer than the doc/doc one.
+Splicing `base_model.py` by line range with a script after asserting anchors; baseline pytest via a throwaway `git worktree` of HEAD to diff failures; advisor on the wrap formula (caught that "origin + k·W mod max" shifts episode 2 when `start_time ≠ origin`); the author then replaced the wrap by a non-folding clock + `horizon_pos_s` (cleaner, no negative `rel_ts`).
 
 ## What Didn't Work / Watch Out
 
-- Do not reuse the old followups' reasoning (replay is the only way, run-period shifting is
-  ignored by EnergyPlus, checkpoint slave). It rested on a wrong premise. The older
-  experiments (`startTime != 0` → `status 3`, rewritten `RunPeriod` ignored) were interpreted
-  under that premise — treat them as unverified, not as findings.
-- Do not infer "state carries over across a restart" for EnergyPlus; the author only said any
-  start date works. A restart at date X is a fresh start at X.
-- Do not fix §7 or the FMU defects as drive-bys; they belong to the plan.
-- Check `.eio` `Environment` line (what the slave actually simulated), never only what the
-  framework wrote.
+- Do not reuse the old replay / run-period-shift / checkpoint-slave reasoning (wrong premise); older FMU experiments are unverified.
+- Do not infer "state carries over across a restart" for EnergyPlus; a restart at date X is a fresh start at X.
+- Check `.eio` `Environment` line, not what the framework wrote.
+- `cmd1 && VAR=x && ( ... ) &` backgrounds the whole chain; `$VAR` is empty in the foreground.
 
 ## Next Steps
 
-1. Plan objective 1 (reset refactor): `docs/changes_reports/<feature>_plan.md` (e.g.
-   `model_reset_redesign_plan.md`). Decide `BaseModel.reset` default vs abstract (§7),
-   clock/`rel_ts` semantics, who owns rolling start-tick arithmetic, per-model vs
-   federation-wide horizon restart, parallel/CSV/FMU specialisation, and an EnergyPlus
-   start-date/duration strategy honouring 86400 s / 60 s.
-2. Optional, non-blocking: confirm the EnergyPlus start-anywhere behaviour on BUI0 through
-   the `.eio` `Environment` line.
-3. Then plan objective 2 (EnergyPlus Python API model). Notes: `pyenergyplus_lbnl 26.1.0`
-   is in `cosim_gym` (import not verified), EnergyPlus 23.1 at `/opt/energyplus`; the
-   version mismatch with existing IDFs must be decided; `run_energyplus` is blocking and
-   callback-driven, so master stepping needs a thread handshake.
-4. Update the stale tests and `regression_suite.py` as part of implementing (not before).
-5. Nothing is committed without an explicit ask.
+1. F3 (CSV: row from `rel_ts`, derived `max_sim_time`, `WeatherCSVReader(BaseCSVReader)`), F4 (FMU, biggest), F5 (parallel reset forwarding) — any order, per `docs/changes_reports/model_reset_redesign_plan.md`; then F6 (closure, regression scenarios, docs, changes report, `weekday` note in `fmu_models.md`). Ask the author about the six rejected `cs_*` YAMLs when convenient.
+2. Objective 2 (EnergyPlus Python API model) only after objective 1: `pyenergyplus_lbnl 26.1.0` in `cosim_gym` (import not verified), EnergyPlus 23.1 at `/opt/energyplus`, `run_energyplus` blocking/callback-driven.
+3. Nothing is committed without an explicit ask. Execution: Sonnet + Opus advisor; each phase ends with plan STATUS, `graphify update .`, HANDOFF rewrite.

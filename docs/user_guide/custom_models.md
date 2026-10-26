@@ -4,7 +4,7 @@ CosimGym treats simulated environments as plug-and-play modules. To achieve this
 
 ## 1. Extending `BaseModel`
 
-Every physical subsystem, controller, or data feed must extend `BaseModel`, defined in `src/models/base_model.py`. You implement three lifecycle methods. You do **not** override `__init__` — the base class builds the model's `state` from the catalog metadata and your scenario config for you.
+Every physical subsystem, controller, or data feed must extend `BaseModel`, defined in `src/models/base_model.py`. You implement three lifecycle methods (plus an optional `reset` hook). You do **not** override `__init__` — the base class builds the model's `state` from the catalog metadata and your scenario config for you.
 
 All data lives on `self.state` (a `State` dataclass):
 
@@ -13,8 +13,10 @@ All data lives on `self.state` (a `State` dataclass):
 | `self.state.parameters` | Static parameters (from catalog defaults, overridden by the scenario `parameters` block) |
 | `self.state.inputs` | Latest values received from subscriptions (filled by the federate before each `step()`) |
 | `self.state.outputs` | Values your model produces — published to HELICS after `step()` |
-| `self.state.time` | Current simulation `datetime` (maintained by the base class) |
-| `self.state.ts` | Current integer time step |
+| `self.state.time` | Federation clock as a `datetime` (maintained by the base class; monotonic, never moved by a reset) |
+| `self.state.ts` | Federation clock as an integer time step |
+| `self.state.rel_time` | Simulated `datetime` the model *represents*: equals `state.time` until a reset or horizon restart moves it (RL rolling/full reset, `max_sim_time`). Use it for anything calendar-dependent (schedules, seasons) |
+| `self.state.rel_ts` | Integer step counted on that same relative clock |
 
 ### `initialize(self)`
 Called once before the simulation clock starts. Use it to set up internal arrays, matrices, or solver state. Parameters are already available in `self.state.parameters`.
@@ -28,6 +30,9 @@ Called every HELICS time step. The base class has already updated the time state
 
 ### `finalize(self)`
 Called once at simulation end for cleanup (close files, free resources).
+
+### `reset(self, mode)` — optional
+On an RL episode reset (`full` / `rolling`) or a horizon restart (`horizon`), the base class already puts `self.state` back to a copy of the model's initial state and moves the relative clock. A model that keeps state *outside* `self.state` (a solver, an external runtime, a data cursor) overrides `reset(self, mode='full')` to restore it; every other model does nothing — the default is a no-op.
 
 ### Minimal example
 

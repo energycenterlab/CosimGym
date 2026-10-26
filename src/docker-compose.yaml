@@ -1,8 +1,9 @@
 services:
   redis:
     # Redis Open Source 8.x bundles ReJSON (the catalog/config store uses JSON.SET/JSON.GET).
-    # Pinned: redis/redis-stack-server is frozen at core 7.4.7, below the 7.4.11 security floor.
-    image: redis:8.2.10-alpine
+    # Pinned to a patched release (allowed: 8.10.1, 8.8.2, 8.6.6, 8.4.6, 8.2.9, 7.4.11, 7.2.16, 6.2.24);
+    # redis/redis-stack-server is frozen at core 7.4.7, below the floor.
+    image: redis:8.10.1-alpine
     container_name: cosim_redis
     ports:
       # Host port from src/.env (COSIM_REDIS_PORT); container side stays 6379.
@@ -47,7 +48,9 @@ services:
     restart: unless-stopped
 
   minio:
-    image: minio/minio:latest
+    # minio/minio and minio/mc are no longer published on Docker Hub; Chainguard's public images are.
+    image: cgr.dev/chainguard/minio:latest
+    user: root   # the image defaults to nonroot, which cannot write the fresh named volume
     container_name: cosim_minio
     ports:
       # Host ports from src/.env (COSIM_MINIO_PORT / COSIM_MINIO_CONSOLE_PORT);
@@ -60,22 +63,16 @@ services:
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     restart: unless-stopped
 
   minio-init:
-    image: minio/mc:latest
+    image: cgr.dev/chainguard/minio-client:latest-dev
     container_name: cosim_minio_init
     depends_on:
-      minio:
-        condition: service_healthy
+      - minio
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 cosimgym cosimgym123 &&
+      until mc alias set local http://minio:9000 cosimgym cosimgym123; do sleep 1; done &&
       mc mb --ignore-existing local/fmus &&
       echo 'MinIO bucket ready.'
       "

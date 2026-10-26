@@ -36,14 +36,14 @@ cd CosimGym
     ```bash
     docker compose -f src/docker-compose.yaml up -d
     ```
-    Brings up Redis (config/catalog distribution, default port `6379`), MinIO, and
+    Brings up Redis (config/catalog distribution, default port `6379`), MinIO (Chainguard's `cgr.dev/chainguard/minio` images — `minio/minio` and `minio/mc` are no longer on Docker Hub), and
     Mosquitto (MQTT broker for the opt-in digital-twin/streaming features, default host
     port `11883` — see
     [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
     All of these ports are configurable — see [Configuring ports](#configuring-ports)
     below, which matters on a shared machine where the defaults may be taken.
 
-    > **Redis image — `redis:8.2.10-alpine`.** The framework stores the scenario config
+    > **Redis image — `redis:8.10.1-alpine`** (pin to a patched release: 8.10.1, 8.8.2, 8.6.6, 8.4.6, 8.2.9, 7.4.11, 7.2.16 or 6.2.24; 7.x has no RedisJSON in the base image, so stay on 8.x). The framework stores the scenario config
     > and the model catalog as RedisJSON documents, so the Redis server must provide the
     > `ReJSON` module. Redis Open Source 8.x ships it in the base image; the previously
     > used `redis/redis-stack-server` is frozen at core `7.4.7` and is therefore below the

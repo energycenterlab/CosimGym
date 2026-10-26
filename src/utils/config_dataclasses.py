@@ -64,12 +64,6 @@ class FedTimingConfig(BaseModel):
     time_period: Optional[int] = None
     time_delta: Optional[float] = None
     time_stop: Optional[float] = None
-    # Longest span of simulated time (seconds) any model in this scenario can run
-    # before every model must be restarted together. Resolved by ScenarioManager
-    # from the models' catalog entries (or the scenario's `simulation_horizon`)
-    # and propagated to every federate, so they all restart on the same tick.
-    # None = unbounded: nothing is ever restarted.
-    max_sim_time: Optional[float] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     timeout: Optional[int] = 30
@@ -247,9 +241,10 @@ class ModelConfig(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     real_period: Optional[float] = None
-    # Episode-reset policy of the owning federate. A model only needs it to know
-    # whether it may be asked to move *backwards* in time (rolling), which is the
-    # one case a model backed by an external runtime has to prepare for.
+    # Episode-reset policy of the owning federate, in the federate's own ticks.
+    # initial_span_ticks: how many ticks the model's first run must cover (until the
+    # first reset, or the end of the scenario); later runs get it from _reset().
+    initial_span_ticks: Optional[int] = None
     reset_mode: Optional[str] = None
     rolling_window: Optional[int] = None
     episode_length: Optional[int] = None
@@ -766,11 +761,6 @@ class ScenarioConfig(BaseModel):
     multi_computer: bool = False
     multi_computer_config: Optional[MultiComputerConfig] = None
     deployment: Optional[DeploymentConfig] = None
-    # Longest span of simulated time (seconds) the scenario may run before every
-    # model is restarted together. Normally left unset: ScenarioManager reads it
-    # from the models' catalog entries (an EnergyPlus FMU cannot run past its
-    # RunPeriod). Set it here to override, or to 0 to disable restarts entirely.
-    simulation_horizon: Optional[float] = None
 
     @model_validator(mode='after')
     def _validate_deployment(self) -> 'ScenarioConfig':

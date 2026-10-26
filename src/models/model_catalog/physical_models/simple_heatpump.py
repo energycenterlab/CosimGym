@@ -106,6 +106,3 @@ class SimpleHeatPump(BaseModel):
             f"HeatPump '{self.name}' finalized. "
             f"Last COP: {self.state.outputs.get('COP', 0):.2f}"
         )
-    def reset(self, mode: str = 'full', ts=None, time=None) -> None:
-        """Reset the model state to initial conditions."""
-        pass

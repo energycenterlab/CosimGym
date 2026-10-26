@@ -8,7 +8,7 @@ Context. Two independent concepts live in `BaseModel` / `BaseFMUModel`:
   whose limit covers the scenario.
 - **RL episode reset** — `full` / `rolling` / `none`, only in RL runs.
 
-The mechanics of both are being redesigned (see `docs/KNOWN_ISSUES.md` §5 and §7;
+The mechanics of both are being redesigned (see `docs/KNOWN_ISSUES.md` §5;
 user-facing page: `docs/user_guide/fmu_models.md` §4). This file keeps only the
 deferred items that stay valid whatever the redesign decides. The earlier analysis of
 restart-by-replay, run-period shifting and checkpoint slaves rested on a wrong premise

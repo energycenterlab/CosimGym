@@ -10,6 +10,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# graphify caches
+graphify-out/cache/
+
 # Distribution / packaging
 .Python
 build/

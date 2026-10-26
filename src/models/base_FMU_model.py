@@ -344,7 +344,7 @@ class BaseFMUModel(BaseModel):
 
         self._inputs_to_fmu()
         with self._in_fmu_workdir():
-            self._do_step(self.state.rel_ts * self.real_period)
+            self._do_step(self.horizon_pos_s())
         self._outputs_from_fmu()
 
     def _do_step(self, current_time: float) -> None:
@@ -413,7 +413,7 @@ class BaseFMUModel(BaseModel):
             self._start_instance()
             return
 
-        elif mode == 'horizon_limit':
+        elif mode == 'horizon':
             self._take_snapshot()
             self._teardown()
             self._start_instance()
@@ -864,7 +864,7 @@ class BaseFMUModel(BaseModel):
 
         # TODO check if the stoptime and the rel_ts*real_period are in the correct format      
         if self.fmiVersion == '2.0':
-            self.fmu.setupExperiment(startTime=self.state.rel_ts*self.real_period, stopTime=self._stop_time_seconds())
+            self.fmu.setupExperiment(startTime=self.horizon_pos_s(), stopTime=self._stop_time_seconds())
         # FMI 1.0 has no setupExperiment; initialization happens in _exit_initialization_mode
         # FMI 3.0 folds setupExperiment into enterInitializationMode(startTime, stopTime)
 
@@ -874,9 +874,9 @@ class BaseFMUModel(BaseModel):
         if self.fmiVersion == '2.0':
             self.fmu.enterInitializationMode()
         elif self.fmiVersion == '3.0':
-            self.fmu.enterInitializationMode(startTime=self.state.rel_ts*self.real_period, stopTime=self._stop_time_seconds())
+            self.fmu.enterInitializationMode(startTime=self.horizon_pos_s(), stopTime=self._stop_time_seconds())
         elif self.fmiVersion == '1.0':
-            self.fmu.initialize(tStart=self.state.rel_ts*self.real_period, stopTime=self._stop_time_seconds())
+            self.fmu.initialize(tStart=self.horizon_pos_s(), stopTime=self._stop_time_seconds())
 
     def _push_initial_state_to_fmu(self) -> None:
         #TODO biosgna assolutamente controllare se lo state e gli snapshot sovrascrivo 

@@ -67,7 +67,7 @@ def make_feeder(**param_overrides):
 
 
 def step_at(feeder, when: datetime):
-    feeder.state.time = when
+    feeder.state.rel_time = when
     feeder.step()
     return feeder.state.outputs
 

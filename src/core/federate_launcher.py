@@ -132,22 +132,9 @@ def main():
             config_dict['rl_task'] = rl_task  # validated to ReinforcementLearningConfig by Pydantic
             config = RLFederateConfig.model_validate(config_dict)
         else:
-            # Base and interface federates only need episode/reset facts to reset in lockstep
-            # with the RL agent. Flatten into the small rl_config dict BaseFederate consumes.
-            run = rl_task.get('run', {}) if rl_task else {}
-            train = run.get('train') or {}
-            reset = (rl_task.get('environment', {}) or {}).get('reset', {}) if rl_task else {}
-            reset = reset or {}
-            mode = 'train' if (train and run.get('mode', 'online') != 'offline') else 'test'
-            rl_4_fed = {
-                'reset_period':   reset.get('period') or train.get('episode_length'),
-                'reset_type':     reset.get('mode', 'full'),
-                'episode_length': train.get('episode_length'),
-                'n_episodes':     train.get('episodes'),
-                'rolling_window': reset.get('rolling_window'),
-                'mode': mode,
-            }
-            config_dict['rl_config'] = rl_4_fed
+            # Base and interface federates get their episode/reset facts (already in their
+            # own ticks) from ScenarioManager; BaseFederate needs the dict to exist.
+            config_dict['rl_config'] = config_dict.get('rl_config') or {}
             if args.type == 'interface':
                 config = InterfaceFederateConfig.model_validate(config_dict)
             else:
