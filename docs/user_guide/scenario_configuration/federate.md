@@ -232,9 +232,8 @@ model_configs:
 
 A few keys here are read by the framework rather than by the model: `max_sim_time` and
 `sim_start_date` override the model's declared simulation horizon, and the `fmu_reset` block
-overrides the catalog entry's restart policy key by key
-(`replay_inputs`, `supports_rollback`) — see
-[FMU Models §4](../fmu_models.md#4-simulation-horizon-and-automatic-restart). Everything else is
+can switch off an FMU's advertised state save/restore (`supports_rollback: false`) — see
+[FMU Models §4](../fmu_models.md#4-simulation-horizon-and-restart). Everything else is
 passed through untouched.
 
 ### `instantiation` fields

@@ -8,120 +8,119 @@ Rules that govern this file and all support documents live in `CLAUDE.md` →
 
 ## Goal (this session)
 
-Security requirement from outside the project: **never run a Redis server older than
-7.4.11**. Answer whether CosimGym can satisfy it, then do the upgrade and prove the
-framework still works.
+Realign the documentation with the author's correct premises about model reset/restart
+and EnergyPlus, **before** any planning or implementation. Docs only; no `.py` touched,
+nothing committed.
 
-## Current Progress — done, uncommitted
+Two objectives follow, to be handled **separately, FMU first**:
 
-### The analysis
+1. **Refactor the reset functions** — generic in `BaseModel`, then specific in
+   `BaseFMUModel`. EnergyPlus FMUs are an exception in how they restart, and others may be.
+2. **A new model that runs EnergyPlus through its Python API** (no IDF→FMU export).
 
-- The stack ran `redis/redis-stack-server:latest`, which resolves to `7.4.0-v8`
-  (pushed 2025-11-03) and reports **`redis_version:7.4.7`** — below the floor. Redis Stack
-  has no newer core line and is not moving, so the floor cannot be met by staying on it.
-- The framework's whole config/catalog pipeline is **RedisJSON** (`client.json().set/get`
-  in `src/utils/redis_client.py`, `RedisCatalog.py`, `catalog_loader.py`,
-  `fmu_catalog_register.py`). So plain `redis:7.4.11` is a dead end — the official 7.4
-  image carries no modules.
-- **Redis Open Source 8.x bundles ReJSON in the base image**, so it is both above the floor
-  and module-complete. That is the upgrade path taken.
-- Full Redis surface the repo actually uses: `JSON.SET` / `JSON.GET` (legacy `.`-paths),
-  `SET`, `GET`, `DEL`, `EXISTS`, `EXPIRE`, `PING`. No streams, no `FT.*` / `TS.*` / Bloom,
-  no Lua, no RedisGears. The `publish` / `subscribe` calls in `src/` are HELICS and MQTT,
-  not Redis pub/sub. `redis-py` in `cosim_gym` is already 8.0.0.
+The next request starts with **planning objective 1**. No plan exists yet.
 
-### Shipped
+## Ground truth (stated by the author — do not contradict it)
 
-- `src/docker-compose.yaml` and `docker-compose.setup.yml`: image
-  `redis/redis-stack-server:latest` → **`redis:8.2.10-alpine`**, command
-  `redis-stack-server …` → `redis-server …`, plus a comment recording why the pin exists.
-- `Makefile`: `teardown` removed a volume named `cosim_gym_redis_data`, which has never
-  existed — the compose project is `src`, so the volume is `src_redis_data`. Fixed, because
-  the upgrade needs a working volume-reset path.
-- `docs/Installation_Setup.md`: note on the image pin, why `redis:7.4.x` is not a
-  substitute, and the one-time volume reset for existing checkouts.
-- `docs/KNOWN_ISSUES.md`: new §7 (see *What Didn't Work* below), `Last reviewed` bumped.
-- `graphify-out/` regenerated.
+- `BaseFMUModel` wraps **any** FMU, from any engine, modelling anything. EnergyPlus FMUs
+  are only the most used; do not generalise EnergyPlus facts to all FMUs.
+- Two **independent** concepts:
+  - **RL episode reset** (`full` / `rolling` / `none`) — only matters in RL runs; resets
+    the model between episodes.
+  - **Model horizon restart** — any model with an intrinsic limit (a CSV covering one year,
+    an EnergyPlus run period of a few months) must be restarted when it reaches it, in plain
+    co-sim as well as RL. An **edge case**: avoid it by choosing models whose limit covers
+    the scenario.
+- **EnergyPlus FMU**: can be started at any date within its max time, restarted from
+  anywhere. Constraints: total experiment duration is a multiple of **86400 s**; minimum
+  step **60 s**.
 
-### Verified on Redis 8.2.10
+## Current Progress — done, uncommitted (docs only)
 
-- `MODULE LIST` → `ReJSON 80209` (+ search, timeseries, bf, vectorset).
-- Legacy JSON path semantics identical to Stack: `JSON.GET k .`, `JSON.GET k .inputs`,
-  missing path → `ERR Path does not exist`, missing key → nil. `RedisClient.set_json` /
-  `get_json` / `get_json_path` / `delete` all behave as before.
-- `RedisCatalog.get_model_metadata` / `get_inputs_outputs` / `query` / `search_models`
-  return full metadata for both a Python model and the BUI0 FMU entry.
-- `catalog-loader` exits 0, 28 catalog keys uploaded; full `down` → `up -d` cycle clean.
-- Persistence works: `rdb_last_bgsave_status:ok`, `/data/dump.rdb` written and owned by
-  uid 999.
-- Non-loopback reachability (the distributed-SSH path) unchanged: `protected-mode no`,
-  `bind * -::*` on both images; a client on the host LAN IP pings and reads JSON.
-- **Scenarios PASS** through `regression_suite.run_scenario`: `rc_building_test_base`,
-  `bui0_fmu_test`, `fmu_horizon_smoketest`, `bui0_setpoint_DQN`, `bui0_setpoint_SAC`,
-  `bui0_heatingpower_DQN`. Those are *every* scenario that can currently start — see below.
-- An RDB written by redis-stack 7.4.7 was also confirmed to load into 8.2.10 with its
-  ReJSON keys intact, so no data format barrier exists even where a volume does hold data.
+Redis 8.2.10 upgrade is committed (`d6fe250`); only the FMU/reset docs below are modified.
+
+- `docs/user_guide/fmu_models.md`: §3 EnergyPlus-start paragraph corrected; §4 rewritten
+  as "Simulation horizon and restart" (the two concepts, `max_sim_time` / `sim_start_date`,
+  EnergyPlus constraints, optional state save/restore, register script). Replay, input
+  history, `replay_inputs`, quadratic cost, "two states held" and "cannot be restarted
+  anywhere else" removed. Mechanics flagged *under redesign*. Anchor is now
+  `#4-simulation-horizon-and-restart`.
+- `docs/user_guide/scenario_configuration/general.md` (`simulation_horizon`),
+  `federate.md` (`fmu_reset` keys), `rl.md` (`reset.mode: rolling`): off-topic content left
+  alone; on-topic false/removed-code claims replaced or marked under redesign.
+- `docs/KNOWN_ISSUES.md`: §5 rewritten as the list of verified mid-refactor defects (below);
+  §7 kept untouched (its fix is a planning decision); `Last reviewed` 2026-10-26.
+- `docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`: rewritten; kept only items
+  valid under the correct premise (no horizon inference, no truncation flag for the agent,
+  horizon coherence across federates, `parallel_execution` reset propagation, teardown cost).
+  Replay / run-period shift / checkpoint slave / "SETTLED" entries deleted.
+- `docs/changes_reports/fmu_horizon_and_reset_changes.md`: dated CORRECTION block at top,
+  §6 conclusions marked superseded, wrong inline claims fixed. Kept as history.
+
+## Code state observed (verified in source, 2026-10-26; also in KNOWN_ISSUES §5)
+
+- Snapshot used after `freeInstance` (`reset('full')` reassigns `self.snapshot =
+  self.initial_snapshot`, then tears the slave down); `_start_instance` overwrites
+  `self.snapshot` every time.
+- Restore branch `state.ts > 1` in `_push_initial_state_to_fmu` unreachable
+  (`BaseModel._reset` zeroes `ts` via `init_state` deepcopy first).
+- `_state_snapshots` / `_snapshot_target_ts` missing → `AttributeError` for rolling +
+  state-capable FMU; `tests/test_fmu_state_snapshot.py` fails.
+- `base_model.py:360`: `rel_ts = ts - episode_length + rolling_window` right only for the
+  first reset or `rolling_window == episode_length`.
+- `_stop_time_seconds()` returns `max_sim_time` as an absolute stop even when start > 0 —
+  breaks the 86400 s duration; the first `doStep` must also sit at `startTime`.
+- `reset('rolling')` always tears down, even when `rolling_window == episode_length`.
+- Horizon restart is per model (`BaseModel.local_time`); `BaseFederate._reset_on_horizon`
+  commented out; `ScenarioManager._apply_simulation_horizon` still fills
+  `timing_configs.max_sim_time`, which nothing acts on; `BaseFederate._report_simulation_horizons`
+  only warns on mismatch.
+- `BaseModel.reset` abstract in 13 catalog models without it (KNOWN_ISSUES §7) — the gate is
+  red (6/32 scenarios start, 25 failed tests) until decided.
+- `BaseCSVReader.reset` handles `full`/`horizon_limit`/`rolling`/`soft`; its
+  `_reposition_backend` is commented out.
+
+## Left untouched on purpose (stale, belongs to the redesign)
+
+- Docstrings and commented-out blocks in `base_FMU_model.py`, `base_model.py`,
+  `base_csv_reader.py`, `BaseFederate.py`.
+- `tests/test_fmu_state_snapshot.py`, `tests/test_model_local_clock.py`,
+  `tests/test_fmu_horizon_detection.py` (reference the removed API).
+- `scripts/fmu_warmstart_validation/` and its `results*.json` (built on the wrong premise).
+- `tests/regression_suite.py`; scenario YAMLs (`fmu_horizon_smoketest` is still valid).
+- `docs/paper` does not exist in this repo; the paper lives in a separate repo — not checked
+  for the false EnergyPlus claim. Memory files contain nothing on this topic.
 
 ## What Worked
 
-Probing the images instead of trusting tag names: running `redis-stack-server:7.4.0-v8`
-and reading `INFO server` is what revealed the core is 7.4.7 (not 7.4.0, and not 7.4.11).
-Everything downstream of that — the module list, the legacy-path semantics, the RDB
-round-trip, the `/data` ownership — was settled the same way, by running the container,
-before touching a single line of the repo.
+Grepping docs/scenarios/catalog/memory for FMU-specific terms (not just "rolling", which is
+mostly RL), then checking each doc claim against source before keeping it. The doc/code
+mismatch list was longer than the doc/doc one.
 
 ## What Didn't Work / Watch Out
 
-- **The old volume breaks the official image.** `src_redis_data` carried empty `redis/`
-  and `redisinsight/` directories left by Redis Stack. The official entrypoint sees an
-  unknown file in `/data`, prints `Notice: Unknown file './redis' found in data dir.
-  Permissions will not be modified.` and **skips its chown**, so the server (uid 999)
-  cannot write and every write fails with
-  `MISCONF Redis is configured to save RDB snapshots, but it's currently unable to persist
-  to disk`. Removing the two empty dirs (or the whole volume) fixes it permanently. This is
-  documented in `docs/Installation_Setup.md`; a fresh checkout never hits it.
-- **`main` is broken independently of Redis, and badly.** Commit `208f9fb` made
-  `BaseModel.reset` an `@abstractmethod` without implementing it in 13 catalog models, so
-  26 of 32 regression scenarios cannot even instantiate their models
-  (`TypeError: Can't instantiate abstract class … 'reset'`), and `pytest tests/` is
-  **25 failed, 292 passed, 2 skipped** — FMU snapshot API (`_state_snapshots`,
-  `_snapshot_target_ts`) gone from the class while the tests still reference it, plus the
-  two pre-existing remote tests. Logged as `docs/KNOWN_ISSUES.md` §7. **Not touched** — it
-  is the user's in-flight refactor, and that commit's own message says *"need to
-  refactor!"*. It is also why the pre-merge gate could not be run as a whole.
-- Consequently: **the six passing scenarios are the entire testable surface right now.**
-  They do cover base co-sim + CSV models, the FMU/MinIO path, and three RL runs, which
-  between them exercise every Redis code path in the framework — but multifed, distributed
-  and parallel could not be re-verified because their models don't instantiate.
-- Do not "fix" the abstract-`reset` breakage as a drive-by. It changes the shape of the
-  refactor in progress.
-
-## In-flight, uncommitted state
-
-Branch `main`, HEAD `208f9fb`, nothing committed this session. Modified:
-
-- `src/docker-compose.yaml`, `docker-compose.setup.yml` — the image/command change
-- `Makefile` — volume name
-- `docs/Installation_Setup.md`, `docs/KNOWN_ISSUES.md`
-- `graphify-out/` regenerated (`graphify update .`)
-
-The running stack is already on 8.2.10 and healthy; `src_redis_data` has been reset once
-and now persists correctly.
+- Do not reuse the old followups' reasoning (replay is the only way, run-period shifting is
+  ignored by EnergyPlus, checkpoint slave). It rested on a wrong premise. The older
+  experiments (`startTime != 0` → `status 3`, rewritten `RunPeriod` ignored) were interpreted
+  under that premise — treat them as unverified, not as findings.
+- Do not infer "state carries over across a restart" for EnergyPlus; the author only said any
+  start date works. A restart at date X is a fresh start at X.
+- Do not fix §7 or the FMU defects as drive-bys; they belong to the plan.
+- Check `.eio` `Environment` line (what the slave actually simulated), never only what the
+  framework wrote.
 
 ## Next Steps
 
-1. **Finish the `reset` refactor** (`docs/KNOWN_ISSUES.md` §7) — either implement `reset()`
-   per model or give `BaseModel` a concrete no-op default and keep the abstract contract
-   only where a reset means something. Until then the gate cannot go green.
-2. **Re-run the full gate on Redis 8** once §7 is closed:
-   `conda run -n cosim_gym python tests/regression_suite.py`. The axes still unverified on
-   8.2.10 are multifed, distributed-SSH and parallel model execution.
-3. Optional hardening now that the security conversation is open: Redis is still
-   LAN-exposed and unauthenticated. Adding `requirepass` touches `RedisClient`, both
-   compose files and the launcher URL format (`redis://:pass@host`) — sized up in
-   `docs/future_and_TODOs/distributed_ssh_spawning_alternatives.md`.
-4. Licensing footnote for the paper: Redis Stack was RSALv2/SSPL; Redis 8 is tri-licensed
-   AGPLv3 / RSALv2 / SSPL. CosimGym talks to it over a socket as a separate process, so
-   there is no copyleft reach into the framework — but the compose file is distributed, so
-   the software section should say which server it pulls.
+1. Plan objective 1 (reset refactor): `docs/changes_reports/<feature>_plan.md` (e.g.
+   `model_reset_redesign_plan.md`). Decide `BaseModel.reset` default vs abstract (§7),
+   clock/`rel_ts` semantics, who owns rolling start-tick arithmetic, per-model vs
+   federation-wide horizon restart, parallel/CSV/FMU specialisation, and an EnergyPlus
+   start-date/duration strategy honouring 86400 s / 60 s.
+2. Optional, non-blocking: confirm the EnergyPlus start-anywhere behaviour on BUI0 through
+   the `.eio` `Environment` line.
+3. Then plan objective 2 (EnergyPlus Python API model). Notes: `pyenergyplus_lbnl 26.1.0`
+   is in `cosim_gym` (import not verified), EnergyPlus 23.1 at `/opt/energyplus`; the
+   version mismatch with existing IDFs must be decided; `run_energyplus` is blocking and
+   callback-driven, so master stepping needs a thread handshake.
+4. Update the stale tests and `regression_suite.py` as part of implementing (not before).
 5. Nothing is committed without an explicit ask.

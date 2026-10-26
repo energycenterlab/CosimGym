@@ -141,17 +141,15 @@ reset:
 ```
 
 `mode: rolling` requires `rolling_window`. Rolling treats the run as one long timeline and
-starts each episode at a start point that slides forward by `rolling_window` ticks:
+starts each episode at a start point that slides forward by `rolling_window` ticks, so
+`rolling_window < period` makes consecutive episodes overlap and `rolling_window == period`
+makes each episode continue where the last one ended.
 
-```
-episode 1 starts at tick 1, episode 2 at 1 + rolling_window, episode 3 at 1 + 2 × rolling_window …
-```
-
-`rolling_window < period` therefore rewinds every model to a tick it has already run, which is
-what a model backed by an external runtime has to work for — an FMU is restarted, a CSV reader
-moves its cursor (see [FMU Models §4](../fmu_models.md#4-simulation-horizon-and-automatic-restart)).
-`rolling_window == period` is the cheap case: each episode continues exactly where the last one
-ended, nothing is rewound, and no physics is rebooted.
+> **Under redesign.** How each model type reaches the rolling start point (an FMU, a CSV
+> reader, a plain Python model), the exact start-tick arithmetic, and what each mode costs are
+> being reworked — see [Known Issues §5 and §7](../../KNOWN_ISSUES.md). The episode reset is
+> independent of a model's own horizon restart
+> ([FMU Models §4](../fmu_models.md#4-simulation-horizon-and-restart)).
 
 ### Key naming convention
 

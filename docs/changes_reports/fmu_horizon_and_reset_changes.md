@@ -1,5 +1,34 @@
 # FMU restart & reset — what changed
 
+> **CORRECTION — 2026-10-26. Read before the rest of this report.**
+>
+> This is a historical record of the first implementation round, and parts of it are
+> superseded:
+>
+> 1. **False premise about EnergyPlus.** The report (§2, §3, §6 and the soft spots) treats an
+>    EnergyPlus FMU as impossible to start or restart anywhere but the beginning of its run
+>    period, and builds everything on replay from there. The correct behaviour: an EnergyPlus
+>    FMU can be started at any date within its maximum time and restarted from anywhere; the
+>    only constraints are that the total experiment duration is a multiple of 86400 s and the
+>    smallest step is 60 s. The experiments in §6 that seemed to show otherwise
+>    (`startTime != 0` failing, a rewritten `RunPeriod` ignored, a "6.1 K" error) rest on that
+>    wrong assumption and must not be relied on; they are kept as a record of what was tried,
+>    not as a finding. Re-verify any EnergyPlus restart behaviour against a run's `.eio`
+>    `Environment` line before trusting a claim here.
+> 2. **Two concepts were mixed.** The model's intrinsic horizon restart (any model with a
+>    limit, RL or not) and the RL episode reset are independent; see
+>    `docs/user_guide/fmu_models.md` §4.
+> 3. **Mechanisms no longer in the code.** `local_ts` / `ts_shift` / `reposition` /
+>    `_reposition_backend`, `BaseFederate._reset_on_horizon`, the replay with recorded input
+>    history and the two-snapshot scheme described below were removed or replaced by the
+>    commits after `fdf7575` (now `rel_ts` and `BaseModel.local_time(mode=…)`), and the
+>    refactor is unfinished — defects in `docs/KNOWN_ISSUES.md` §5 and §7. The test and
+>    regression counts quoted in §5 (38/38 scenarios, 313 tests) describe the state before that
+>    refactor, not today.
+> 4. Measurements that stand independent of the premise: the teardown cost (§6 "Measured
+>    cost", follow-ups §5), the `noSetFMUStatePriorToCurrentPoint` fix (bug 1) and the
+>    whole-day constraint.
+
 Change note for the work adding automatic restart of models that cannot run for
 the whole scenario (an EnergyPlus FMU stops at the end of its RunPeriod), and
 making `reset.mode: rolling` work with FMUs at all.
@@ -50,7 +79,7 @@ but does not honour it).
 | `canGetAndSetFMUstate` | Mechanism | Cost |
 | ---------------------- | --------- | ---- |
 | **true** (Feedthrough_FMI3, most Modelica exports) | save / restore state | instant, exact, either direction |
-| **false** (BUI0 and every EnergyPlus export) | free slave → instantiate → replay forward | one real FMU step per tick replayed |
+| **false** (BUI0 and every EnergyPlus export) | free slave → instantiate → replay forward *(superseded: replay is not needed — an EnergyPlus FMU can restart at any date in its range)* | one real FMU step per tick replayed |
 
 **Save/restore** captures the FMU's entire internal state as one opaque blob. The
 state at tick 1 is saved at startup and reused by every full reset and every
@@ -101,7 +130,7 @@ replay steps ≈ rolling_window × episodes × (episodes − 1) / 2
 episodes with `rolling_window: 2880` → ~14 million, days. It is **quadratic in
 episode count**. The model logs the estimate at startup and proceeds — nothing is
 blocked. Setting `rolling_window` equal to the reset period removes the rewind
-entirely — and is the only thing that does, as §6 establishes.
+entirely (the original "only thing that does" claim rested on the wrong premise).
 
 ## 4. Horizon restart: a federation-wide reset, not a mode
 
@@ -133,17 +162,17 @@ date while the schedule feeding it kept advancing, so episode 2 fed Jan-3
 schedules into a building simulating Jan-1 — but any model that relied on
 `state.time` advancing monotonically across episodes will now see it repeat.
 
-## 6. Second round: a cheaper restart, attempted and rejected
+## 6. Second round: a cheaper restart, attempted and rejected *(conclusions superseded — see the correction at the top)*
 
 The replay is exact but its cost is the distance travelled, and under `rolling`
 that distance grows every episode. The question that opened this round was
 whether an EnergyPlus slave could simply be *started* at the tick it has to
 reach, with its state set to what it had.
 
-### Three routes, all closed
+### Three routes tried (the "closed" verdict is wrong — the premise was incorrect)
 
 Checked against `BUI0.fmu` with EnergyPlus 23.1 — the first two in the binary and
-the run directory, not in the FMI specification:
+the run directory, not in the FMI specification. These observations were interpreted under the false assumption that the start date cannot be chosen; do not read them as established facts:
 
 | route | result |
 | --- | --- |
@@ -168,14 +197,13 @@ and a spin-up of 0, 1, 3 or 7 days changed nothing — a state error decays and
 responds to a spin-up, a calendar error does neither. Reading the run directory's
 IDF and the `.eio` `Environment` line settled it: `01/01/2007, 12/01/2007`.
 
-**The lesson, worth keeping:** an FMU test that inspects only what the framework
+**The lesson, worth keeping (it stands):** an FMU test that inspects only what the framework
 wrote proves nothing. The assertion has to reach what the slave actually
 simulated — the run directory's processed IDF, its `.eio`, or the outputs
 compared against a continuous run.
 
 The strategy, its scenario and its tests are gone. What survives is the harness,
-the seven bugs below, and the entry in the follow-ups (§7) that records the
-three closed routes so nobody spends another session on them.
+the seven bugs below, and (the follow-ups entry that recorded the "closed routes" has been removed as wrong).
 
 ### What the harness does say about `replay`
 
@@ -189,10 +217,7 @@ through:
 | summer (day 205 → 196) | 28 080 ticks | 0.0000 K | 0.0000 K | +0.0001 % |
 | long rewind (day 150 → 31) | 4 320 ticks | 0.0000 K | 0.0000 K | +0.0000 % |
 
-A replayed rewind reproduces a continuous run **exactly**, at any distance and in
-any season, as long as the recorded input history covers the span. That is the
-property the whole rolling-reset feature rests on, and it is now measured rather
-than assumed.
+A replayed rewind reproduced a continuous run exactly in these three cases. That shows replay is *correct*; it does not show replay is *necessary*, which is what the report went on to assume.
 
 ### Measured cost, on BUI0 (600 s step, 144 ticks/day)
 
@@ -204,9 +229,7 @@ than assumed.
 
 So a rewind of *D* days costs about `4.3 + 0.11·D` seconds, and the teardown is
 the floor: `fmi2Terminate` hands control back to EnergyPlus, which runs out the
-rest of its run period before exiting. The way to avoid the cost is not to rewind
-— `rolling_window` equal to the reset period — or the checkpoint slave sketched in
-the follow-ups.
+rest of its run period before exiting. The cost is paid on every slave restart, whatever triggers it.
 
 ### Six bugs found on the way
 
@@ -264,7 +287,7 @@ call sites, which is what made the rollback-promise fix a one-line change.
 ## Soft spots and possible problems
 
 **1. `parallel_execution` does not see any reset.** *(tracked as future work —
-`docs/future_and_TODOs/fmu_horizon_and_reset_followups.md` §6)* `parallel_executor.py` has no
+`docs/future_and_TODOs/fmu_horizon_and_reset_followups.md` §4)* `parallel_executor.py` has no
 reset path at all: workers rebuild models from config and step their own copies,
 so a reset in the main process — episode *or* horizon — never reaches them. RL is
 already rejected with `parallel_execution`, so episode resets cannot co-occur, but
@@ -308,6 +331,4 @@ begin date, which need not match the scenario's start date. `sim_start_date`
 records it but nothing uses it to label results, so a scenario starting in March
 with a January RunPeriod has the FMU simulating January while the scenario
 calendar says March. Only the labels disagree — every model is at the same
-*elapsed* simulated time, and §6 establishes that an EnergyPlus FMU's begin date
-cannot be moved at runtime, so the only way to align the two calendars is to
-export the FMU with the RunPeriod the scenario wants.
+*elapsed* simulated time, (the claim in the original text that the begin date cannot be moved at runtime was wrong; see the correction at the top).

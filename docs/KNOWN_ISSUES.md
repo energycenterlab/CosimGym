@@ -22,7 +22,7 @@ Scenarios blocked by an entry here are listed in `tests/regression_suite.py`'s
 `KNOWN_FAIL` that starts passing is reported as **UNEXPECTED-PASS** — when that happens,
 remove it from `KNOWN_FAIL` *and* delete the entry here.
 
-Last reviewed: 2026-09-23.
+Last reviewed: 2026-10-26.
 
 ---
 
@@ -82,15 +82,35 @@ uploaded to the local MinIO `fmus` bucket.
 
 - **Fix:** upload it to the bucket, or fix the `catalog.yaml` reference. Not a scenario-YAML fix.
 
-## 5. FMU horizon & reset — declared limitations  (LOW)
+## 5. FMU / model reset & horizon restart — mid-refactor defects  (HIGH)
 
-The model-local-clock / automatic-restart work has deliberate boundaries: no horizon is ever
-inferred (a model without `max_sim_time` in its catalog entry is treated as unbounded and will
-still fail past its RunPeriod); a rolling reset on an EnergyPlus FMU costs a replay
-proportional to the distance rewound, and no shortcut exists (see the follow-ups §7); and
-`parallel_execution` never propagates a reset to its worker processes. Those and the rest are in
-`docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`. Listed here as limitations; the
-reasoning and the possible later fixes stay in that follow-ups document.
+Two independent concepts share the same code: the RL **episode reset** (`full` / `rolling` /
+`none`) and the model's own **horizon restart** (`max_sim_time`, any model with an intrinsic
+limit, RL or not). The refactor of both (`208f9fb`) is unfinished. Defects verified in the
+source on 2026-10-26 (design context: `docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`):
+
+- `BaseFMUModel` keeps one `self.snapshot` and uses it after `freeInstance` of the slave that
+  produced it; `_start_instance` overwrites it on every restart.
+- The `state.ts > 1` restore branch in `_push_initial_state_to_fmu` is unreachable:
+  `BaseModel._reset` deep-copies `init_state` (ts = 0) before calling `reset()`.
+- `_maybe_snapshot_next_rolling_start`, `_free_snapshot`, `_free_all_snapshots` and
+  `_consume_rolling_snapshot` use `_state_snapshots` / `_snapshot_target_ts`, which no longer
+  exist: rolling + a state-capable FMU raises `AttributeError` on the first step.
+- Rolling start point `rel_ts = ts - episode_length + rolling_window`
+  (`base_model.py:360`) is correct only for the first reset or `rolling_window == episode_length`.
+- `_stop_time_seconds()` returns `max_sim_time` as an absolute stop time even when the start
+  time is > 0, which breaks the whole-day (86400 s) experiment duration an EnergyPlus FMU needs.
+- `reset('rolling')` always tears the slave down, including when `rolling_window == episode_length`
+  (nothing needs to move).
+- Horizon restart is now per model (`BaseModel.local_time`); `BaseFederate._reset_on_horizon`
+  is commented out, so models with different horizons restart out of phase (the federate only
+  warns). `ScenarioManager._apply_simulation_horizon` still writes the resolved
+  `simulation_horizon` into `timing_configs.max_sim_time`, which nothing acts on.
+- `parallel_execution` never propagates a reset to its worker processes; `RL_Federate` has its
+  own loop and does no horizon handling.
+- Stale: `tests/test_fmu_state_snapshot.py`, `tests/test_model_local_clock.py`,
+  `tests/test_fmu_horizon_detection.py` reference the removed API; dead code and commented
+  blocks remain in `base_model.py`, `base_FMU_model.py`, `base_csv_reader.py`.
 
 ## 6. `tests/test_scenario_manager_remote.py` — 2 tests broken  (LOW, test-only)
 
