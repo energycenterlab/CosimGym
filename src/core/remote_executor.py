@@ -15,6 +15,7 @@ import logging
 import os
 import shlex
 import subprocess
+import sys
 from typing import List, Optional, Tuple
 
 from utils.config_dataclasses import MachineConfig
@@ -60,9 +61,12 @@ class RemoteExecutor:
         return os.path.join(self.control_dir, f'cm-{self.alias}')
 
     def _python_cmd(self) -> List[str]:
-        """Interpreter invocation on the remote machine: explicit path wins, else conda run."""
+        """Interpreter invocation on the remote machine: explicit path wins; a loopback "remote"
+        is this machine, so it reuses the manager's own interpreter; else conda run."""
         if self.machine_conf.python:
             return [self.machine_conf.python]
+        if self.machine_conf.host in ('localhost', '127.0.0.1', '::1'):
+            return [sys.executable]
         return ['conda', 'run', '--no-capture-output', '-n', self.machine_conf.conda_env, 'python']
 
     # ------------------------------------------------------------------

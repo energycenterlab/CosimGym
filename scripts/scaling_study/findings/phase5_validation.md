@@ -1,5 +1,8 @@
 # Scaling Study — Phase 5 (framework validation + bounded max-stable scan)
 
+> **STATUS (2026-11-19): earlier exploratory attempt — not validated, do not cite.** See
+> `findings/README.md` and `docs/future_and_TODOs/scaling_study_plan.md`.
+
 Manager = ipazia (112c), shared with co-users `bottaccioli`/`montaldo`. Harness
 used as-is (`gen_scenario.py`, `run_bench.py`, `cost_model.py`,
 `make_report.py`) — no harness code changes made in this phase. Both

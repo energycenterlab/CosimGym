@@ -36,7 +36,6 @@ deployment:
       ssh_port: 22
       workdir: "/tmp/cosimgym_remote_test"   # remote repo root; code rsync'd here each run
       conda_env: "cosim_gym"
-      python: "/media/space/rando/Environments/cosim_gym/bin/python"
       #   ^ explicit interpreter: bypasses conda entirely, reliable on the
       #     non-interactive ssh PATH. Drop / edit for real machines.
 

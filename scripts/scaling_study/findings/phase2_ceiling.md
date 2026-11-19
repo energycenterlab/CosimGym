@@ -1,5 +1,8 @@
 # Scaling Study — Phase 2 (federate sweep + zmq_ss ceiling investigation)
 
+> **STATUS (2026-11-19): earlier exploratory attempt — not validated, do not cite.** See
+> `findings/README.md` and `docs/future_and_TODOs/scaling_study_plan.md`.
+
 Marquee question: `src/scenarios/generate_scale_benchmark.py`'s module docstring
 claims a hard ~33-federate `zmq_ss` ceiling on this LAN (33 OK, 49 flaky, 65
 FAIL, all dying `[-101] lost comms` after a ~52s timeout; plain `zmq` scales to

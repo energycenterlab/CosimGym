@@ -1,5 +1,11 @@
 # What We Measured, In Plain Language
 
+> **STATUS (2026-11-19): earlier exploratory attempts — not validated.** These runs predate the
+> scaling study that will be done as future work for the framework paper. Numbers here are
+> partly inconsistent across files (run counts, fit quality, memory per federate, means vs
+> medians) and must not be cited; keep them only as a record of what was tried. The plan for
+> the real study: `docs/future_and_TODOs/scaling_study_plan.md`.
+
 A guided tour of the Phase-D data-exchange campaign: what each experiment asked,
 what we ran, what came out, and which file holds what. **No distributed-computing
 or networking background assumed** — §0 defines every term used later.

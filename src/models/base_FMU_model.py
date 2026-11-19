@@ -352,6 +352,9 @@ class BaseFMUModel(BaseModel):
                     f"Model '{self.metadata.name}': fmu_source.type is 'local' "
                     "but fmu_source.path is empty. Set it in the catalog entry."
                 )
+            if not os.path.isabs(path):
+                # repo-relative (e.g. src/models/...): portable across machines and remote workdirs
+                path = str(Path(__file__).resolve().parents[2] / path)
             if not os.path.exists(path):
                 raise FileNotFoundError(f"FMU not found at local path: {path}")
             return path

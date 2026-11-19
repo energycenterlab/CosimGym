@@ -1,7 +1,7 @@
 # Distributed SSH Federate Spawning — Implementation Plan
 
 > Handoff doc for implementer agent (Sonnet). Caveman prose, full technical content. Code blocks normal.
-> Rationale + alternatives for every choice: see `distributed_ssh_spawning_alternatives.md` (same folder).
+> Rationale + alternatives for every choice: see `distributed_ssh_spawning_changes.md` (same folder).
 > Status: **COMPLETE — T1–T7 implemented, live localhost-as-remote E2E PASSED (2026-07-15).**
 > **Update 2026-07-21:** multi-federation + distributed now validated too. Fixed a hierarchy-broker
 > uplink bug (sub-broker `--broker_address` was built as `{core_type}://host:port` → `zmq_ss://…`,
@@ -228,10 +228,6 @@ Files: `docs/user_guide/distributed_deployment.md`, update `CLAUDE.md` Config Re
 - Run `pytest tests/` + demo scenario before declaring any task done.
 - genrate or update handoff file after each task so that session ends or compact requires you have the right instructions for next session.
 
-## Future Enhancements (document, do NOT build now)
+## Future Enhancements
 
-1. **MinIO/S3 live results sink**: federates upload parquet batches to MinIO (already in `src/docker-compose.yaml`, creds there) during run → no rsync-back, dashboard reads central store, survives remote-disk loss. Natural extension of `AsyncStorageWriter`: add `sink: minio` writing via `pyarrow.fs.S3FileSystem` or `minio` client; schema already long/tidy. Entry point: `src/utils/async_storage.py` + `memory_config.sink`.
-2. **Remote brokers**: place federation brokers next to their federates (cuts cross-machine per-tick traffic for co-located federations). Needs remote port allocation (run port-picker via `RemoteExecutor.run`) + broker log streaming over ssh.
-3. **asyncssh backend**: if machine count grows large (>10), swap RemoteExecutor internals for asyncssh persistent connections; interface stays.
-4. **Docker provisioning**: replace conda-env assumption with image pull for reproducibility.
-5. **RL federate remote**: lift v1 `ValueError` — needs GPU-aware placement + checkpoint path collection.
+Moved to `docs/future_and_TODOs/distributed_deployment_followups.md`.

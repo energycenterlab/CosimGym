@@ -32,7 +32,10 @@ created: 2026-07-01
 import importlib
 from datetime import datetime
 
+# isort: off — numpy must load libstdc++ before helics, see docs/KNOWN_ISSUES.md #7
+import numpy as np  # noqa: F401
 import helics as h
+# isort: on
 
 from core.BaseFederate import BaseFederate
 from core.override_registry import OverrideRegistry, parse_target

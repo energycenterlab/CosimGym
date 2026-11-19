@@ -12,6 +12,7 @@ theme:
 nav:
   - Home: index.md
   - Installation: Installation_Setup.md
+  - Developer Command Reference: developer_guide.md
   - Known Issues & Limitations: KNOWN_ISSUES.md
   - Overview: 
     - Introduction: overview/introduction.md
@@ -33,6 +34,8 @@ nav:
     - Reinforcement Learning Integration: user_guide/rl_integration.md
     - Digital-Twin Interfaces & Live Streaming: user_guide/digital_twin_interfaces.md
     - Dashboard & Analytics: user_guide/dashboard.md
+    - Distributed Deployment: user_guide/distributed_deployment.md
+    - Multi-Machine Walkthrough: user_guide/multi_machine_test_walkthrough.md
     - Troubleshooting: user_guide/troubleshooting.md
   - Examples: 
     - Examples List: examples/examples_list.md

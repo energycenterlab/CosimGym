@@ -112,7 +112,7 @@ itself (the real `distributed_demo` scenario passes).
 - **Fix:** add `scenario_name` (and whatever else has been added since) to the test's
   `SimpleNamespace`, or build the fake config from the real dataclass.
 
-## 7. Loading `helics` before `libstdc++` → SIGSEGV in torch / ray  (MEDIUM, latent, environment)
+## 7. Loading `helics` before `libstdc++` → SIGSEGV in torch / ray  (LOW, mitigated, environment)
 
 If `helics` is the first module in a process to load a C++ library, a later `import torch`
 or `import ray` segfaults (exit 139). Repro: `python -c "import helics, torch"` (or
@@ -128,14 +128,11 @@ or `import ray` segfaults (exit 139). Repro: `python -c "import helics, torch"` 
   torch crashes during operator registration, ray while dlopen-ing `_raylet`.
 - **Not version-specific:** helics 3.5.3 crashes the same way; torch 2.5.1 avoids the
   segfault only by failing with `GLIBCXX_3.4.29 not found` instead. Pinning torch does not fix it.
-- **Exposure today: none found.** `src/core/RL_Federate.py` imports `numpy` (line 13)
-  before `helics` (line 16), and `ScenarioManager` imports pandas first. This is
-  order-dependent: an import sorter (isort/ruff puts `helics` before `numpy`) or a new
-  script that imports `helics` first would bring the crash back.
-- **Workaround:** import `numpy` (or anything C++) before `helics` in any entry point that
-  later uses torch/ray.
-- **Fix (to decide):** make the ordering explicit in the federate entry point, or report it
-  upstream (pyhelics wheel should not export libstdc++ symbols).
+- **Mitigated in the framework (2026-11-19):** `BaseFederate.py`, `RL_Federate.py` and
+  `InterfaceFederate.py` import `numpy` right before `helics`, inside `# isort: off/on` so an
+  import sorter cannot undo it. Any *new* entry point that imports `helics` before numpy and
+  later loads torch/ray will still crash — follow the same pattern.
+- **Root fix (upstream):** the pyhelics wheel should not export its static libstdc++ symbols.
 
 ## 8. `synchronization.default_subscription_causality` is ignored  (MEDIUM)
 
@@ -149,7 +146,7 @@ to the scenario default.
 
 ## 9. RL scenario residual bugs (from code reading, not re-run)  (MEDIUM)
 
-Detail in `docs/future_and_TODOs/scenario_yaml_fixes_needed.md`.
+Detail in `docs/future_and_TODOs/scenario_yaml_TODO.md`.
 
 - **A — `simple_DQN_test` crashes at the first episode boundary:** no `experiment.checkpoint`
   block → `save_model(None)` → `TypeError`. Masked in `tests/regression_suite.py`, whose
@@ -176,11 +173,26 @@ federates and with distributed `zmq_ss` at ≳1 kB exchanged per tick. Cause not
 
 - **Workaround:** stay under ~256 local federates / ~1 kB per tick distributed; after a stall
   `pkill -f federate_launcher` and kill leftover `helics_broker`s.
-- Detail: `scripts/scaling_study/findings/bottlenecks.md` B12.
+- Detail: `scripts/scaling_study/findings/bottlenecks.md` B12 (observed in the exploratory scaling runs; to be re-confirmed).
 
 ## 12. `parallel_execution` workers are not sized against the machine  (LOW)
 
 Each federate spawns its own `W` workers, so `N·W` can exceed the core count many times
 over (1760 processes on 112 cores measured) and parallel runs lose their speed-up. Nothing
 warns. **Workaround:** keep `N·W ≲ cores`, or use `mode: seq` at large N.
-Detail: `scripts/scaling_study/findings/bottlenecks.md` B13.
+Detail: `scripts/scaling_study/findings/bottlenecks.md` B13 (observed in the exploratory scaling runs; to be re-confirmed).
+
+## 13. New machine: distributed runs fail until SSH and remote interpreters are set up  (MEDIUM, setup)
+
+Every distributed scenario — including the localhost-as-remote ones in the regression suite
+(`distributed_demo`, `distributed_multifederation_test`, `combo_dist_parallel`) — needs
+passwordless SSH from the manager to each machine, **including `127.0.0.1`**. On a fresh machine
+this is not set up and the run aborts with `Host key verification failed` or a password refusal
+(`BatchMode=yes`). Seen on `eclab-cloud1`, 2026-11-19.
+
+- **Fix per machine:** follow [Distributed Deployment → Adding a machine](user_guide/distributed_deployment.md#adding-a-machine-checklist).
+- Loopback "remotes" now reuse the manager's interpreter, and local FMU paths in `catalog.yaml`
+  are repo-relative, so neither needs editing per machine any more.
+- Still machine-specific: the `python:` paths of the real cloud machines in
+  `distributed_demo_multi`, `benchmark_scale_distributed*`, `cs_s4c_shard_*` (only run with
+  `RUN_CLOUD=1`; check them when the remote machines change).

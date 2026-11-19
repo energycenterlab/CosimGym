@@ -20,7 +20,7 @@ Only federates move. Brokers stay on the manager machine (the machine you launch
 
 Keeping brokers local means local TCP port allocation stays valid and there is no remote port
 discovery or broker-log streaming to manage. Remote broker placement is future work — see
-`docs/future_and_TODOs/phaseH_remote_brokers_design.md`.
+`docs/future_and_TODOs/remote_brokers_plan.md`.
 
 ### Multiple federations + distributed (supported)
 
@@ -36,6 +36,50 @@ Validated end-to-end (2 federations, one federate remote, cross-federation data 
 localhost-as-remote and a real remote machine. Runnable demo:
 `src/scenarios/distributed_multifederation_test.yaml`. The pre-merge regression suite
 (`tests/regression_suite.py`) exercises this path on every run.
+
+## Adding a machine (checklist)
+
+Do this **every time the setup changes**: a new manager machine (e.g. after moving to a new
+computer), or a new remote. Each step ends with a check that must pass; the checks are the same
+ones the run's preflight performs, so if they pass here the run will not abort on them. Details
+and the reasons behind each step are in the sections below.
+
+Placeholders: `<USER>@<HOST>` = the account and address the federates will run as on the
+target; for the localhost-as-remote case use `127.0.0.1` with your own user.
+
+**Case A — new manager machine** (needed for the regression suite's distributed scenarios):
+
+```bash
+# A1. Accept this machine's own host key (once)
+ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts
+# A2. Have a key and authorize it for yourself
+ls ~/.ssh/id_*.pub || ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+# CHECK — must print ok, with no password prompt
+ssh -o BatchMode=yes 127.0.0.1 'echo ok'
+```
+
+Nothing else: a loopback "remote" (`host: 127.0.0.1` / `localhost`) without a `python:` key
+automatically uses the manager's own interpreter, and code is rsync'd for you.
+
+**Case B — new remote machine** (run everything on the manager unless stated):
+
+| # | Step | Command | Check |
+|---|---|---|---|
+| B1 | Authorize the manager's key on the remote | `ssh-copy-id <USER>@<HOST>` | `ssh -o BatchMode=yes <USER>@<HOST> 'echo ok'` prints `ok` |
+| B2 | Create the env on the remote (on the remote) | `conda env create -f environment.yml` | — |
+| B3 | Find the remote interpreter | `ssh <USER>@<HOST> 'conda run -n cosim_gym which python'` | prints a path; put it in `python:` (step B6) — `conda` is often not on the non-interactive SSH PATH |
+| B4 | Env sanity | `ssh <USER>@<HOST> '<PY> -c "import helics, redis, pydantic"'` | no error |
+| B5 | Remote reaches the manager's Redis | `ssh <USER>@<HOST> '<PY> -c "import socket; socket.create_connection((\"<MANAGER_IP>\", 6379), 5)"'` | no error; else open the firewall (see *Network reachability* below and the [walkthrough](multi_machine_test_walkthrough.md) A2) |
+| B6 | Declare it in the scenario | `deployment.machines.<alias>: {host, user, workdir, python: <PY>}` + `host: <alias>` on federates | the scenario parses; preflight passes on the first run |
+
+Also open the HELICS broker port range (`20000–30000`, or use `core_type: zmq_ss` so only the
+manager needs inbound rules — [walkthrough](multi_machine_test_walkthrough.md) A0), and the MQTT
+port if the remote runs streaming or interface federates.
+
+Record each machine (alias, host, user, workdir, python path) in the walkthrough's
+[fill-in table](multi_machine_test_walkthrough.md#fill-in-table-record-your-setup) so the next move
+to a new machine is a copy, not a rediscovery.
 
 ## One-time setup on each remote machine
 
@@ -97,7 +141,9 @@ deployment:
       workdir: /home/rando/cosimgym_rt   # remote repo root; src/ is rsync'd here each run
       conda_env: cosim_gym        # optional — default "cosim_gym"
       python: null                # optional explicit interpreter path; if set, overrides
-                                  #   conda_env (bypasses `conda run` entirely)
+                                  #   conda_env (bypasses `conda run` entirely). Unset on a
+                                  #   loopback host (127.0.0.1/localhost/::1) → the manager's
+                                  #   own interpreter is used
 
 federations:
   power_grid:

@@ -60,6 +60,10 @@ class TestPythonCmd:
         ex = _executor(conda_env='my_env')
         assert ex._python_cmd() == ['conda', 'run', '--no-capture-output', '-n', 'my_env', 'python']
 
+    def test_loopback_host_uses_manager_interpreter(self):
+        ex = _executor(host='127.0.0.1')
+        assert ex._python_cmd() == [sys.executable]
+
     def test_explicit_python_overrides_conda(self):
         ex = _executor(python='/usr/bin/python3.12', conda_env='ignored_env')
         assert ex._python_cmd() == ['/usr/bin/python3.12']

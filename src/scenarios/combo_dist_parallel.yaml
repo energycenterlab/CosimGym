@@ -27,7 +27,6 @@ deployment:
       ssh_port: 22
       workdir: "/tmp/cosimgym_remote_test"
       conda_env: "cosim_gym"
-      python: "/media/space/rando/Environments/cosim_gym/bin/python"
 
 federations:
   federation_1:

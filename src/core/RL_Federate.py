@@ -10,10 +10,12 @@ created: 2026-03-17
 
 """
 import os
-import numpy as np
 import importlib
 import gymnasium as gym
+# isort: off — numpy must load libstdc++ before helics, see docs/KNOWN_ISSUES.md #7
+import numpy as np  # noqa: F401
 import helics as h
+# isort: on
 from datetime import timedelta
 from typing import Any, Tuple, Optional, Dict
 from core.BaseFederate import BaseFederate

@@ -17,8 +17,10 @@ import sys
 import time
 import pprint
 from pathlib import Path
+# isort: off — numpy must load libstdc++ before helics, see docs/KNOWN_ISSUES.md #7
+import numpy as np  # noqa: F401
 import helics as h
-import numpy as np
+# isort: on
 from abc import ABC, abstractmethod
 sys.path.append('src/')
 from datetime import datetime, timedelta

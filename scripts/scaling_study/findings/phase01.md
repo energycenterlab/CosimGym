@@ -1,5 +1,8 @@
 # Scaling Study — Phase 0 (calibrate primitives) + Phase 1 (crossover)
 
+> **STATUS (2026-11-19): earlier exploratory attempt — not validated, do not cite.** See
+> `findings/README.md` and `docs/future_and_TODOs/scaling_study_plan.md`.
+
 Local-only (`placement: local`), manager machine (112 cores), conda env
 `cosim_gym`. Harness used as-is (`run_bench.py`, `cost_model.py`,
 `make_report.py`) — no harness code changes; no bugs found (see caveat below,

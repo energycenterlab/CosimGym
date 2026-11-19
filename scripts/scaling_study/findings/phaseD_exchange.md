@@ -1,5 +1,8 @@
 # Phase D — Data-exchange characterisation (the `comms` term)
 
+> **STATUS (2026-11-19): earlier exploratory attempt — not validated, do not cite.** See
+> `findings/README.md` and `docs/future_and_TODOs/scaling_study_plan.md`.
+
 Closes gap #1 of `findings/README.md`: every Part-A sweep ran with **zero data
 exchange**, so the cost framework `T_tick = compute + sync + comms` had no fitted
 `comms` term at all. This phase measures it.

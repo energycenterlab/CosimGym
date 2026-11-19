@@ -60,7 +60,7 @@ addresses — entirely for local placement:
   > run. helics_broker accepts a bare 'host:port' for every core_type (same form
   > the federates already use for their broker_address)."
 
-  This was a real, fixed bug — see `docs/future_and_TODOs/distributed_ssh_spawning_plan_DONE.md`
+  This was a real, fixed bug — see `docs/changes_reports/distributed_ssh_spawning_plan_DONE.md`
   changelog: *"Fixed a hierarchy-broker uplink bug (sub-broker `--broker_address`
   was built as `{core_type}://host:port` → `zmq_ss://…`, a malformed URI that hung
   the sub-broker; now bare `host:port`)."* Any remote-broker uplink string

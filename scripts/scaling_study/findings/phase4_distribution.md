@@ -1,5 +1,8 @@
 # Scaling Study — Phase 4 (distribution roofline)
 
+> **STATUS (2026-11-19): earlier exploratory attempt — not validated, do not cite.** See
+> `findings/README.md` and `docs/future_and_TODOs/scaling_study_plan.md`.
+
 Question: on this hardware (manager 112c + cloud1 32c + cloud5 32c), does
 distributing federates ever pay off, and how close does it get to the
 naive roofline ceiling `total_cores/local_cores = 176/112 = 1.571x`

@@ -1,5 +1,11 @@
 # CosimGym Scaling — Bottleneck Catalog (what limits scale, and WHY)
 
+> **STATUS (2026-11-19): earlier exploratory attempts — not validated.** These runs predate the
+> scaling study that will be done as future work for the framework paper. Numbers here are
+> partly inconsistent across files (run counts, fit quality, memory per federate, means vs
+> medians) and must not be cited; keep them only as a record of what was tried. The plan for
+> the real study: `docs/future_and_TODOs/scaling_study_plan.md`.
+
 Every performance limiter found across Phases 0–5, each with its **mechanism**
 (the physical/architectural reason it appears), the **evidence** (phase + numbers),
 **when it dominates**, and **how to push it back**. Companion to
@@ -93,7 +99,7 @@ A CosimGym run is always in one of four **regimes** — the whole story reduces 
 - **Mechanism.** The manager (ipazia) is a shared box with no resource isolation.
   Other users' processes compete for the same cores/memory bus, so a CosimGym run's
   per-tick time depends on *strangers' load* at that moment.
-- **Evidence (Phase 4).** Load avg ~67 from co-users (`bottaccioli`,`montaldo`)
+- **Evidence (Phase 4).** Load avg ~67 from other users on the shared host
   during runs made "local" so slow that distribution beat even the *idealized*
   1.571× roofline (ratio 0.548 at N=88) — for the wrong reason (dodging
   contention, not a compute crossover).

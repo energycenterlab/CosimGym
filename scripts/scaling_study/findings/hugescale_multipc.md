@@ -1,5 +1,8 @@
 # Huge-scale multi-PC probe — N=176 federates × M up to 10 000 instances
 
+> **STATUS (2026-11-19): earlier exploratory attempt — not validated, do not cite.** See
+> `findings/README.md` and `docs/future_and_TODOs/scaling_study_plan.md`.
+
 **Run date:** 2026-07-28 (12:59–13:16). **Written up:** 2026-08-21.
 **Raw data:** [`large_test_Pietro_remote.csv`](large_test_Pietro_remote.csv) ·
 **matrix:** [`../matrices/test_matrix_hugescale_multipc.yaml`](../matrices/test_matrix_hugescale_multipc.yaml)

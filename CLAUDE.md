@@ -203,6 +203,8 @@ conda run -n cosim_gym python src/test_script_rl.py   # RL training scenarios
 ./src/dashboard/run_dashboard.sh                      # Results + Live dashboard
 ```
 
+All day-to-day commands in one page: [Developer Command Reference](docs/developer_guide.md).
+
 Run every simulation script from the project root in the `cosim_gym` env. Use `conda run`
 (or the PATH method in `scripts/scaling_study/RUNBOOK.md` for long jobs): `conda activate`
 does not persist across separate shell calls and silently fails from scripts. Redis must be

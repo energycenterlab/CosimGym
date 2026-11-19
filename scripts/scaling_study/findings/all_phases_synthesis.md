@@ -1,5 +1,11 @@
 # Scaling Study — Synthesis (Phases 0–5)
 
+> **STATUS (2026-11-19): earlier exploratory attempts — not validated.** These runs predate the
+> scaling study that will be done as future work for the framework paper. Numbers here are
+> partly inconsistent across files (run counts, fit quality, memory per federate, means vs
+> medians) and must not be cited; keep them only as a record of what was tried. The plan for
+> the real study: `docs/future_and_TODOs/scaling_study_plan.md`.
+
 > **Canonical index is `README.md`** (trusted primitives, status, gaps, Phase 1b).
 > This file is the narrative roll-up of Phases 0–5; if it disagrees with README,
 > README wins. Not updated for Phase 1b (instance-count crossover) — see README.

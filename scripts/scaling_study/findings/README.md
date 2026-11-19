@@ -1,5 +1,11 @@
 # Scaling Study — canonical index (single source of truth)
 
+> **STATUS (2026-11-19): earlier exploratory attempts — not validated.** These runs predate the
+> scaling study that will be done as future work for the framework paper. Numbers here are
+> partly inconsistent across files (run counts, fit quality, memory per federate, means vs
+> medians) and must not be cited; keep them only as a record of what was tried. The plan for
+> the real study: `docs/future_and_TODOs/scaling_study_plan.md`.
+
 This file is **the** map of the CosimGym scaling study. Every result lives in a
 per-phase leaf under this directory; this index says what's done, what's trusted,
 and what's still open. If another doc disagrees with this one, this one wins —

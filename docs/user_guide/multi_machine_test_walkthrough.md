@@ -11,7 +11,7 @@ Demo scenario: **`src/scenarios/distributed_demo_multi.yaml`** (already in the r
 ## Topology
 
 ```
-        ┌──────────────── MANAGER (this machine, 130.192.177.14) ────────────────┐
+        ┌──────────────── MANAGER (this machine, <MANAGER_IP>) ──────────────────┐
         │  Redis + Mosquitto (docker)   HELICS broker(s)                          │
         │  rb_controller · battery_federate · load_federate  (local subprocesses) │
         └───────────▲───────────────────────▲────────────────────────────────────┘
@@ -34,7 +34,7 @@ Demo scenario: **`src/scenarios/distributed_demo_multi.yaml`** (already in the r
 
 ## The 3 real-network gotchas (vs the localhost test)
 
-1. **`manager_address` = real LAN IP** (`130.192.177.14`), not `127.0.0.1`. Remotes dial this for Redis + broker.
+1. **`manager_address` = real LAN IP** (`<MANAGER_IP>`), not `127.0.0.1`. Remotes dial this for Redis + broker.
 2. **Firewall / reachability** — remotes must reach the manager's Redis (`6379`) + the HELICS broker
    ports, auto-assigned anywhere in `20000–30000` (zmq also uses `port+1`) → open the range (see A2).
 3. **Per-machine env** — the `cosim_gym` conda env (model deps + CSV data) must exist on *each* remote.
@@ -44,7 +44,7 @@ Demo scenario: **`src/scenarios/distributed_demo_multi.yaml`** (already in the r
 
 ## Prerequisites checklist
 
-- [ ] Manager LAN IP known (`hostname -I` → here `130.192.177.14`).
+- [ ] Manager LAN IP known (`hostname -I` → here `<MANAGER_IP>`).
 - [ ] Two remote machines on the same LAN, reachable by ssh.
 - [ ] An ssh keypair on the manager (`~/.ssh/id_ed25519`).
 - [ ] `environment.yml` from this repo (to build the env on each remote).
@@ -89,7 +89,7 @@ broker bug, not a NAT problem.
 
 ### A1. Confirm LAN IP
 ```bash
-hostname -I            # pick the LAN-reachable address, e.g. 130.192.177.14
+hostname -I            # pick the LAN-reachable address, e.g. <MANAGER_IP>
 ```
 
 ### A2. Firewall — what actually needs opening depends on `core_type`
@@ -202,8 +202,8 @@ that user. `deploy()` does `mkdir -p` + rsync there.
 
 ### B4. CRITICAL — test the remote can reach the manager (run ON each remote)
 ```bash
-python -c "import socket; socket.create_connection(('130.192.177.14',6379),5); print('REDIS_REACHABLE')"
-nc -zv 130.192.177.14 23404      # broker port
+python -c "import socket; socket.create_connection(('<MANAGER_IP>',6379),5); print('REDIS_REACHABLE')"
+nc -zv <MANAGER_IP> 23404      # broker port
 ```
 > ⚠️ **Testing Redis alone is NOT enough and will mislead you.** Redis runs in **Docker**, and
 > Docker installs its own iptables DNAT rules that **bypass the host firewall**. So `6379` can be
@@ -224,7 +224,7 @@ for P in 6379 23404 23405; do
   python3 -c "
 import socket
 try:
-    socket.create_connection(('130.192.177.14',$P),5); print('port $P: OPEN')
+    socket.create_connection(('<MANAGER_IP>',$P),5); print('port $P: OPEN')
 except Exception as e: print('port $P: BLOCKED ->', type(e).__name__)
 "
 done
@@ -253,7 +253,7 @@ Edit `src/scenarios/distributed_demo_multi.yaml`, replace every `<<...>>`:
 
 ```yaml
 deployment:
-  manager_address: "130.192.177.14"      # confirm your LAN IP
+  manager_address: "<MANAGER_IP>"      # confirm your LAN IP
   machines:
     machine_a:
       host: "<<MACHINE_A_IP>>"
@@ -347,4 +347,4 @@ ps -eo args | grep -F federate_launcher.py | grep -Fv grep | grep -Fv 'bash -c'
 | `cosim_gym` env present? |  |  |
 | reaches manager (B4 pass)? |  |  |
 
-Manager LAN IP: `130.192.177.14`   ·   Manager has sudo/firewall access: ______
+Manager LAN IP: `<MANAGER_IP>`   ·   Manager has sudo/firewall access: ______

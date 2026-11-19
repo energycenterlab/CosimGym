@@ -1,5 +1,8 @@
 # Scaling Study -- Phase 3 (federation sharding, the F axis)
 
+> **STATUS (2026-11-19): earlier exploratory attempt — not validated, do not cite.** See
+> `findings/README.md` and `docs/future_and_TODOs/scaling_study_plan.md`.
+
 Question: what does sharding N federates across F federations COST
 (hierarchy-broker overhead), and does multifed let total federate count
 scale beyond a single federation? Phase 2 already showed a single federation

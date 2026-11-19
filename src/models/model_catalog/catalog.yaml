@@ -1443,7 +1443,7 @@ models:
     user_defined:
       fmu_source:
         type: local
-        path: /media/space/rando/CODE/CosimGym/src/models/model_catalog/physical_models/resources/Feedthrough_FMI3.fmu
+        path: src/models/model_catalog/physical_models/resources/Feedthrough_FMI3.fmu
     parameters:
       Float64_fixed_parameter:
         type: float
@@ -2014,7 +2014,7 @@ models:
     user_defined:
       fmu_source:
         type: local
-        path: /media/space/rando/CODE/CosimGym/src/models/model_catalog/physical_models/resources/BUI0.fmu
+        path: src/models/model_catalog/physical_models/resources/BUI0.fmu
       fmu_engine: energyplus
     inputs:
       PeopleNumber:

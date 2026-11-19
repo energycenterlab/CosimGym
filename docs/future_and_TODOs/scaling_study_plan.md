@@ -1,5 +1,9 @@
 # Scaling Study & Optimal-Configuration Framework — Final Comprehensive Plan
 
+> **STATUS (2026-11-19): future work for the framework paper.** The phases recorded as
+> executed below (0–5, D, HS) were exploratory attempts; their numbers in `scripts/scaling_study/findings/`
+> are not validated and partly inconsistent. Treat this as the plan to redo the study properly.
+
 Status: **Part A (Phases 0–5 + 1b) EXECUTED (2026-07-24 → 07-27).**
 **Phase D (data exchange) EXECUTED 2026-07-28** — local + cross-machine; see
 `scripts/scaling_study/findings/phaseD_exchange.md`. **Phases E/F/G still open.**
@@ -235,7 +239,7 @@ the natural scale-out for a district sharded one-federation-per-machine.
 - `ScenarioManager` must spawn + monitor brokers over SSH (today it only spawns
   remote *federates*).
 Design sketch only — deliver as a short design note, not code.
-Design note: [`phaseH_remote_brokers_design.md`](phaseH_remote_brokers_design.md).
+Design note: [`remote_brokers_plan.md`](remote_brokers_plan.md).
 
 ---
 

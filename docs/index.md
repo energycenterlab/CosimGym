@@ -9,10 +9,10 @@
 <img src="images/cosimgym_with_text_transparent.svg" alt="Cosim-GYM logo" width="10000">
 </div>
 
-**CosimGym** is a Flexible, Modular and Customizable framework that use a fully declarative approach to easily set-up complex co-simulation scenarios embedding different models. It is meant to be a gym for dimulating real world cyberphisical systems composed by multiple independent simulators enabling the usage of these scenarios in Control and Optimization application such as beign a test-bed for ReinforcementLearning-based applications.  It bridges the following gaps:
+**CosimGym** is a Flexible, Modular and Customizable framework that use a fully declarative approach to easily set-up complex co-simulation scenarios embedding different models. It is meant to be a gym for simulating real world cyber-physical systems composed by multiple independent simulators enabling the usage of these scenarios in Control and Optimization application such as being a test-bed for ReinforcementLearning-based applications.  It bridges the following gaps:
 
 - Declarative co-simulation set up and custom model integration via standardized approach
-- **Bridging complex co-simulation environments and REinforcement Learning applications**
+- **Bridging complex co-simulation environments and Reinforcement Learning applications**
 - Digital Twin enabler with generalized interfaces for realtime MQTT-based communication (sensor and adapter linking and realtime execution visualization)
 
 
@@ -34,7 +34,7 @@ With this framework you can setup co-simulation scenario by plugging your own mo
 
 - 📜 **Declarative YAML Scenarios**: Define complete simulation architectures, timing windows, multi-federation setups, and RL hyperparameters purely through YAML configuration files—*no hardcoded orchestration required*.
 - ⚙️ **Automated Orchestration**: The `ScenarioManager` handles the heavy lifting: starting HELICS brokers, spawning individual federate processes, distributing configurations via **Redis**, managing time synchronization, and ensuring graceful shutdowns.
-- 🌐 **Distributed Execution**: The framework can execute and distribute simualtors across different machines enabling the horizontal scaling of simulated systems and reduing possible computational bottlenecks
+- 🌐 **Distributed Execution**: The framework can execute and distribute simulators across different machines enabling the horizontal scaling of simulated systems and reducing possible computational bottlenecks
 - 🧩 **Plug-and-Play Models**: Rely on a standardized `BaseModel` interface and a centralized Model Catalog to easily drop in custom physics models, data readers, FMUs, or arbitrary RL algorithms.
 - 🤖 **Gymnasium Compatibility**: The built-in `HelicsGymEnv` wrapper automatically binds HELICS pub/sub variables to standard Observation and Action spaces, making it out-of-the-box compatible with popular RL libraries (e.g. stablebaseline3, RLlib).
 - 🔄 **Flexible Workflows**: Run standard physics-only co-simulations, conduct live online RL training (with built-in agents like **DQN** or **SAC**), or evaluate pre-trained policies within a single unified framework.
