@@ -1,4 +1,23 @@
+# graphify = docs graph only (docs/, *.md). Code is indexed by code-review-graph.
 logs/
 src/logs/
 results/
-docs/
+graphify-out/
+.code-review-graph/
+*.py
+*.ipynb
+*.sh
+*.yaml
+*.yml
+*.json
+*.toml
+*.csv
+*.parquet
+*.html
+*.idf
+*.fmu
+*.png
+*.svg
+*.jpg
+*.jpeg
+*.gif

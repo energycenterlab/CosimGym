@@ -71,8 +71,8 @@ def redis_port() -> int:
 
 
 def mqtt_port() -> int:
-    """Host Mosquitto/MQTT port. Env: COSIM_MQTT_PORT (or legacy MQTT_PORT). Default 11883."""
-    return _int("COSIM_MQTT_PORT", 11883, "MQTT_PORT")
+    """Host Mosquitto/MQTT port. Env: COSIM_MQTT_PORT (or legacy MQTT_PORT). Default 11884 (11883 is taken by another project on the shared server)."""
+    return _int("COSIM_MQTT_PORT", 11884, "MQTT_PORT")
 
 
 def minio_port() -> int:

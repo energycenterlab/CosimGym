@@ -163,7 +163,7 @@ A CosimGym run is always in one of four **regimes** — the whole story reduces 
   which is why Phase 3 could work around it by switching core type.)
 - **Evidence (Phase 3, fixed+verified).** Fixed by striding federation ports by 10;
   F=2 local zmq now passes. Same class as the "zmq auto-port +1" known issue in
-  `CLAUDE.md`.
+  `docs/KNOWN_ISSUES.md` §2.
 - **Status.** Fixed in `gen_scenario.py`.
 
 ## B10 — Per-federation port BLOCK must be sized from N  *(FIXED — B9's fix was incomplete)*
@@ -346,7 +346,7 @@ oversubscribed one (B13). This bounds how much you can trust `recommend()`'s abs
 (read it as an optimistic floor); the *structure* (crossover law, sync curve,
 regime boundaries) held up. Fix: add a joint N×work calibration sweep.
 
-## Known I/O bottleneck not exercised this campaign (from `CLAUDE.md`)
+## Known I/O bottleneck not exercised this campaign
 
 The `parquet` sink offloads writes to a background `AsyncStorageWriter`; its queue
 **blocks** (never drops) if the writer thread falls behind, so a slow disk becomes

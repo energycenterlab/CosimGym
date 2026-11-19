@@ -249,10 +249,10 @@ Existing, reuse as-is (`scripts/scaling_study/`, contract in `CONTRACT.md`):
 - `make_report.py` — crossover / sync / roofline / ceiling / predicted-vs-measured plots.
 - perf-log instrumentation (`COSIM_PERF_LOG=1`) in `BaseFederate` + `ScenarioManager`.
 
-Extensions Part B needs:
-1. `gen_scenario.py` — **cross-wiring** (data-exchange graphs by the Phase-D taxonomy).
-2. `cost_model.py` — **`comms` fitted term** + **placement optimizer** (graph-partition).
-3. New `matrices/phaseD_*.yaml`, `phaseF_*.yaml`.
+Extensions Part B needs (cross-wiring, the `comms` fitted term and `matrices/phaseD_*.yaml` are DONE — Phase D, §3):
+1. `cost_model.py` — **placement optimizer** (graph-partition).
+2. New `matrices/phaseF_*.yaml`.
+3. (was: cross-wiring, comms term, phaseD matrices — done)
 4. New plots: throughput-vs-coupling, placement map.
 
 ### 4.1 Harness file map (this plan ↔ `scripts/scaling_study/`)
@@ -267,7 +267,7 @@ Executed numbers are canonical in the findings README, NOT here.
 | §4 D2 bench | [`run_bench.py`](../../scripts/scaling_study/run_bench.py) | matrix → isolated run → append `bench.csv` (⚠ appends — delete CSV before rerun) |
 | §4 D5 plots | [`make_report.py`](../../scripts/scaling_study/make_report.py), [`plot_crossover_clean.py`](../../scripts/scaling_study/plot_crossover_clean.py), [`plot_instance_crossover.py`](../../scripts/scaling_study/plot_instance_crossover.py) | report + fig 01 + figs 07/08/09 |
 | §4 CSV schema | [`CONTRACT.md`](../../scripts/scaling_study/CONTRACT.md) | locked interface/CSV schema |
-| §3 run specs | [`matrices/`](../../scripts/scaling_study/matrices/) | matrices (`phase1b_*` exist; `phaseD_*`/`phaseF_*` = Part-B TODO) |
+| §3 run specs | [`matrices/`](../../scripts/scaling_study/matrices/) | matrices (`phase1b_*`, `phaseD_*` exist; `phaseF_*` = Part-B TODO) |
 | §5 machine set | [`machines.example.json`](../../scripts/scaling_study/machines.example.json) | Config A/B machine defs |
 | §1 Part A results | [`findings/`](../../scripts/scaling_study/findings/) | executed output (see below) |
 
@@ -336,8 +336,8 @@ exact interfaces to extend (no inventing schemas), and the "done" bar per phase.
 3. `scripts/scaling_study/gen_scenario.py` — current generator (self-contained
    federations, **no subscriptions**). Phase D extends this file, does not replace it.
 4. This §8. Then the relevant Part-B phase in §3.
-5. Repo root `CLAUDE.md` (env, ports, "ask before massive runs") + graphify rule
-   (`graphify query "<q>"` before reading source).
+5. Repo root `CLAUDE.md` (env, ports, "ask before massive runs") + graph rule
+   (code-review-graph for source; graphify is docs-only).
 
 ### 8.1 Environment preamble (every run)
 ```bash

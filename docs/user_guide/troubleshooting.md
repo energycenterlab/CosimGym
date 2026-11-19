@@ -31,7 +31,7 @@ python src/models/model_catalog/catalog_loader.py
 
 ## Port already in use / broker fails to bind
 
-A previous run may have left brokers behind, or another process holds the port. Kill leftover brokers and retry; if you set `broker_config.port` explicitly, pick a free one (default base is `23404`).
+A previous run may have left brokers behind, or another process holds the port. Kill leftover brokers and retry; if you set `broker_config.port` explicitly, pick a free one. Unset ports are drawn from `COSIM_HELICS_PORT_MIN..MAX` (default 20000–30000), so a fixed port inside that range can also collide with an auto-assigned one.
 
 ```bash
 pkill -f helics_broker      # clear stale brokers from a crashed run
@@ -71,4 +71,4 @@ pkill -f helics_broker
 
 ## MQTT / digital-twin features silently produce no data
 
-`streaming.stream: true` or an interface federate's `interface_config` needs Mosquitto running (`docker compose -f src/docker-compose.yaml up -d`; check with `docker compose -f src/docker-compose.yaml logs -f mosquitto`). Confirm the host port: the compose file maps Mosquitto to `11883` (not the default `1883`, which may already be used by a system-wide broker). `MqttAdapter` defaults to `localhost:11883`; override via `MQTT_HOST`/`MQTT_PORT` env vars or `interface_config.adapter.params`. See [Digital-Twin Interfaces & Live Streaming](digital_twin_interfaces.md).
+`streaming.stream: true` or an interface federate's `interface_config` needs Mosquitto running (`docker compose -f src/docker-compose.yaml up -d`; check with `docker compose -f src/docker-compose.yaml logs -f mosquitto`). Confirm the host port: the compose file maps Mosquitto to `COSIM_MQTT_PORT` (default `11884`; not `1883`, which may already be used by a system-wide broker). Streaming and `MqttAdapter` both read the same `COSIM_MQTT_PORT` (env var or `src/.env`); an explicit `port` in `interface_config.adapter.params` overrides it for that federate only. See [Digital-Twin Interfaces & Live Streaming](digital_twin_interfaces.md).

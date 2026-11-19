@@ -29,7 +29,7 @@ Simple models
  buildings rc instances --- DH network pandapipes
  more articolated scenario
 ### tested features
-- parquet based storage
+- json storage (no `sink` key → default `json`)
 - no dashboard adaptation
 - zmq brokers
 - 1 federate multiple modle instances (building_federate) 

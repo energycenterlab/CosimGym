@@ -43,9 +43,9 @@ or refuse such a configuration at parse time.
 Restart is currently per model: each model restarts from its own `max_sim_time`. A
 schedule model and the building it feeds stay in phase only if they declare the same
 horizon (or none); `BaseFederate._report_simulation_horizons` warns about a mismatch
-inside one federate but not across federates. `sim_start_date` is stored in the catalog
-and read by no code — results are not labelled with it, so a scenario calendar and a
-model's own calendar can differ in labels only.
+inside one federate but not across federates. `sim_start_date` sets each model's origin (`BaseModel._origin_seconds`), but results are
+not labelled with it, so a scenario calendar and a model's own calendar can differ in
+labels only.
 
 ## 4. `parallel_execution` does not propagate resets to worker processes
 
@@ -56,14 +56,11 @@ RL. Options: reject a horizon-declaring model with `parallel_execution`, or give
 executor a reset entry point that tells every worker to reset. `RL_Federate` has its own
 run loop and does no horizon handling; same class of gap.
 
-## 5. Restart cost of an EnergyPlus slave
+## 5. One `fmu_output/restart_<n>/` directory per EnergyPlus restart
 
-Resolved by bounding each instance to the span it needs (stop time = next restart, rounded up
-to whole days): a 4-day BUI0 run with three rolling resets measured ~0.1 s per teardown and
-~0.5 s per instantiation. Before, `fmi2Terminate` made EnergyPlus run out the rest of its
-full-year RunPeriod (~3.75 s). Each slave still writes its own `fmu_output/restart_<n>/`
-directory, so hundreds of episodes mean hundreds of directories; reusing one directory per
-model instance is an open choice.
+Each slave writes its own `fmu_output/restart_<n>/` directory, so hundreds of episodes mean
+hundreds of directories; reusing one directory per model instance is an open choice. (The
+restart *cost* is solved: instances are bounded to the span they need, ~0.1 s per teardown.)
 
 ## 6. After a rolling reset one tick publishes the initial state
 

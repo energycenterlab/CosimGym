@@ -24,7 +24,12 @@ dependencies:
     # RL and Environment
     - gymnasium>=0.28.0
     - stable-baselines3>=2.0.0
-    
+    - ray[rllib]>=2.40.0  # RL_Simple_RLlib uses the new RLModule API stack
+
+    # Power / district-heating grids (PandapowerGrid, PandapipesGrid)
+    - pandapower>=2.14.0
+    - pandapipes>=0.10.0
+
     # Simulation and Control
     - fmpy>=0.3.0
     - helics>=3.5.0
@@ -39,12 +44,16 @@ dependencies:
     - requests>=2.31.0
     - python-dotenv>=1.0.0
     - minio>=7.0.0
-    
+    - ijson>=3.2.0  # dashboard streaming JSON reader
+
     # Utilities and Configuration
     - pydantic>=2.0.0
     - pyyaml-env-tag>=1.0.0
     - lxml>=4.9.0
-    
+
+    # Testing (pytest + tests/regression_suite.py)
+    - pytest>=8.0.0
+
     # Documentation
     - mkdocs>=1.5.0
     - mkdocs-material>=9.0.0

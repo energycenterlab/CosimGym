@@ -1,6 +1,6 @@
 # Scenario Configuration
 
-A CosimGym simulation is fully described by a single YAML file. No Python scripting is required. The file is validated against Pydantic v2 models at load time, so errors are caught before anything starts.
+A CosimGym simulation is fully described by a single YAML file. No Python scripting is required. The file is validated against Pydantic v2 models at load time. The RL and interface blocks reject unknown keys; elsewhere a misspelled key is silently ignored, so check spelling against these pages.
 
 ---
 
@@ -21,7 +21,7 @@ config = read_scenario_config("my_scenario")   # resolves to src/scenarios/my_sc
 name: "my_scenario"                  # required — unique identifier
 start_time: "2024-01-01T00:00:00"   # required — ISO 8601
 end_time:   "2024-01-02T00:00:00"   # required — ISO 8601
-log_level: INFO                      # optional — ERROR|WARNING|INFO|DEBUG (default: INFO)
+log_level: INFO                      # optional — CRITICAL|ERROR|WARNING|INFO|DEBUG|NOTSET (default: INFO)
 
 memory_config:                       # required — controls result storage
   batch_size: 100
@@ -30,6 +30,8 @@ memory_config:                       # required — controls result storage
 synchronization:                     # optional — time-offset and startup sync settings
   auto_offset:
     enabled: true
+
+deployment: ...                      # optional — machines for remote federates (see Distributed Deployment)
 
 reinforcement_learning_config:       # optional — include only for RL scenarios
   environment: ...                    # the MDP (observations/actions/reward/reset)

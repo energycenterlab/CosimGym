@@ -1,6 +1,6 @@
 # CosimGym Models Reference
 
-Three physical models available in the catalog. All follow the same integration pattern:
+Four physical models documented here (more are in `catalog.yaml`) in the catalog. All follow the same integration pattern:
 - **Parameters** → fixed at initialization from scenario YAML (`model_configs.parameters`)
 - **Inputs** → received each step via HELICS subscriptions (scenario `subscribes`)
 - **Outputs** → published each step via HELICS publications (scenario `publishes`)
@@ -304,21 +304,6 @@ Index `N` = 0-based row in the component DataFrame.
 
 ---
 
-## Common Integration Notes
-
-### Wiring pattern
-
-The sub `key` name becomes the model input key. It does **not** need to match the publisher's key name — it maps via `targets`:
-
-```yaml
-subscribes:
-  - key: "load.0.p_mw"          # name the model receives in state.inputs
-    type: "double"
-    units: "MW"
-    targets:
-      '0': [other_federate.0/signal_float]   # actual pub topic to subscribe to
-```
-
 ## 4. `heavy_compute_dummy` — CPU-Heavy Benchmark Model
 
 Self-contained dummy model whose `step()` burns CPU in a pure-Python float busy-loop scaled by `iterations`. No external inputs. Purpose: benchmark **parallel vs sequential** model-instance execution (see `parallel_execution` in `docs/user_guide/scenario_configuration/federate.md`). Pure-Python arithmetic is GIL-bound on purpose — demonstrates why persistent worker **processes** (not threads) are needed.
@@ -343,6 +328,21 @@ None (self-contained — usable with no weather/grid federates).
 Deterministic per instance (seeded by instance index) → sequential and parallel runs produce identical outputs, so the two benchmark scenarios can be compared for correctness as well as speed.
 
 ---
+
+## Common Integration Notes
+
+### Wiring pattern
+
+The sub `key` name becomes the model input key. It does **not** need to match the publisher's key name — it maps via `targets`:
+
+```yaml
+subscribes:
+  - key: "load.0.p_mw"          # name the model receives in state.inputs
+    type: "double"
+    units: "MW"
+    targets:
+      '0': [other_federate.0/signal_float]   # actual pub topic to subscribe to
+```
 
 ### Only declare what you need
 

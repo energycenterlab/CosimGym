@@ -41,6 +41,9 @@ import streamlit as st
 
 import paho.mqtt.client as mqtt
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # src/, for utils.ports
+from utils.ports import mqtt_port
+
 MAX_HISTORY_PER_TOPIC = 500
 DEFAULT_TOPIC_FILTER = "cosim/#"
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -192,7 +195,7 @@ def render_live_dashboard() -> None:
         st.divider()
         st.header("Broker")
         host = st.text_input("MQTT host", value="localhost")
-        port = st.number_input("MQTT port", value=11883, min_value=1, max_value=65535, step=1)
+        port = st.number_input("MQTT port", value=mqtt_port(), min_value=1, max_value=65535, step=1)
         topic_filter = st.text_input("Topic filter", value=DEFAULT_TOPIC_FILTER)
         refresh_secs = st.slider("Refresh interval (s)", min_value=1, max_value=10, value=2)
         sim_id_filter = st.text_input("Filter by sim_id (optional)", value="")

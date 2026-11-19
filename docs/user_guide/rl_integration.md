@@ -76,4 +76,4 @@ environment:
     rolling_window: 96     # required when mode == rolling
 ```
 
-With **`mode: rolling`**, instead of killing physics states the agent treats the scenario as an arbitrarily long continuous timeline. A "reset" merely starts a new logical trajectory segment without forcing the physical simulators to reboot over the network. `mode: full` forces the configured `reset_default` values; `mode: none` never resets. 
+With **`mode: rolling`** the agent treats the scenario as one long timeline: each reset moves every model to the start of the *next* window (`reset_count × rolling_window` ticks), so episodes cover new data. `mode: full` rewinds every model to tick 0 (same initial state each episode); `mode: none` never resets. Both `full` and `rolling` go through each model's own reset, so an FMU slave is re-instantiated in either case (see [FMU Models](fmu_models.md)). 

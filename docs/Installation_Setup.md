@@ -38,7 +38,7 @@ cd CosimGym
     ```
     Brings up Redis (config/catalog distribution, default port `6379`), MinIO (Chainguard's `cgr.dev/chainguard/minio` images — `minio/minio` and `minio/mc` are no longer on Docker Hub), and
     Mosquitto (MQTT broker for the opt-in digital-twin/streaming features, default host
-    port `11883` — see
+    port `11884` — see
     [Digital-Twin Interfaces & Live Streaming](user_guide/digital_twin_interfaces.md)).
     All of these ports are configurable — see [Configuring ports](#configuring-ports)
     below, which matters on a shared machine where the defaults may be taken.
@@ -95,7 +95,7 @@ behavior is unchanged.
 | Key | Default | What it is |
 | --- | --- | --- |
 | `COSIM_REDIS_PORT` | `6379` | Redis — scenario config distribution + model catalog |
-| `COSIM_MQTT_PORT` | `11883` | Mosquitto host port (the container still listens on `1883` internally) |
+| `COSIM_MQTT_PORT` | `11884` | Mosquitto host port (the container still listens on `1883` internally) |
 | `COSIM_MINIO_PORT` | `9000` | MinIO S3 API — the FMU artifact store |
 | `COSIM_MINIO_CONSOLE_PORT` | `9101` | MinIO web console |
 | `COSIM_MINIO_HOST` | `localhost` | MinIO host, for a MinIO that is not on this machine |
@@ -316,12 +316,12 @@ Expanded reference for the "Docker" quick-start option above: everything runs in
 For Ubuntu servers, make sure Docker Compose is available in one of these forms:
 
 ```bash
-docker compose version
-# or (legacy binary)
-docker-compose --version
+docker compose version   # must report v2.x
 ```
 
-If `docker compose` is not available on your server, use `docker-compose` in all commands below.
+If `docker compose` is not available, install the v2 plugin (no sudo needed — see the
+*No-sudo / shared-server install* note under Prerequisites above). The legacy `docker-compose`
+v1 binary rejects `src/docker-compose.yaml`.
 
 ### Quick Setup
 
@@ -367,11 +367,7 @@ usually one of these happened:
 Use one of these exact forms:
 
 ```bash
-# Compose plugin (preferred)
 docker compose -f docker-compose.setup.yml up -d
-
-# Legacy binary
-docker-compose -f docker-compose.setup.yml up -d
 ```
 
 Important:

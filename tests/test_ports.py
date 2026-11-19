@@ -28,7 +28,7 @@ class TestDefaults:
 
     def test_mqtt_default(self, monkeypatch):
         _clear(monkeypatch, 'COSIM_MQTT_PORT', 'MQTT_PORT')
-        assert ports.mqtt_port() == 11883
+        assert ports.mqtt_port() == 11884
 
     def test_minio_defaults(self, monkeypatch):
         _clear(monkeypatch, 'COSIM_MINIO_PORT', 'MINIO_PORT',

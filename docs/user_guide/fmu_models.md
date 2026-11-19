@@ -166,8 +166,8 @@ main('bui0_fmu_test')
 
 ```bash
 docker compose -f src/docker-compose.yaml up -d
-python src/models/model_catalog/catalog_loader.py
 conda activate cosim_gym
+python src/models/model_catalog/catalog_loader.py
 python src/test_script.py
 ```
 

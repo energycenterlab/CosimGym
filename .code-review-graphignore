@@ -1,0 +1,6 @@
+# Scenario YAMLs are data (many are generated, 8k+ nodes each): grep them instead
+src/scenarios/*.yaml
+graphify-out/
+results/
+logs/
+src/logs/

@@ -22,7 +22,7 @@ Scenarios blocked by an entry here are listed in `tests/regression_suite.py`'s
 `KNOWN_FAIL` that starts passing is reported as **UNEXPECTED-PASS** — when that happens,
 remove it from `KNOWN_FAIL` *and* delete the entry here.
 
-Last reviewed: 2026-10-26.
+Last reviewed: 2026-11-19.
 
 ---
 
@@ -105,9 +105,82 @@ Two independent concepts share the code: the RL **episode reset** and the model'
 `TestRemoteFederates::test_verify_and_deploy_called_for_each_machine` and the preflight-failure
 test next to it both die with
 `AttributeError: 'types.SimpleNamespace' object has no attribute 'scenario_name'` at
-`src/core/ScenarioManager.py:870`: the fake config the tests build no longer carries every
+`src/core/ScenarioManager.py:895` (`self.logger_system.scenario_name`): the fake config the tests build no longer carries every
 attribute the deploy path reads. Pre-existing on `main`, unrelated to the distributed feature
 itself (the real `distributed_demo` scenario passes).
 
 - **Fix:** add `scenario_name` (and whatever else has been added since) to the test's
   `SimpleNamespace`, or build the fake config from the real dataclass.
+
+## 7. Loading `helics` before `libstdc++` → SIGSEGV in torch / ray  (MEDIUM, latent, environment)
+
+If `helics` is the first module in a process to load a C++ library, a later `import torch`
+or `import ray` segfaults (exit 139). Repro: `python -c "import helics, torch"` (or
+`"import helics, ray"`). Any import that loads the env's `libstdc++.so` *before* helics
+(numpy, pandas, torch, …) avoids it: `python -c "import numpy, helics, torch, ray"` works.
+
+- **Cause:** the PyPI helics wheel's `libhelics.so` is built on CentOS 7 with GCC's
+  *static* libstdc++ and **exports** those C++-runtime symbols (old-ABI `std::string`
+  internals, locale facet ids such as `std::__cxx11::numpunct<char>::id`, `std::piecewise_construct`).
+  cffi loads it into the global symbol scope, so when the real `libstdc++.so.6` is loaded
+  afterwards, ~120 of its own symbols (and a few of `libc10`/`libtorch_cpu`'s) bind to
+  helics' copies (`LD_DEBUG=bindings`). The process then runs two half-merged C++ runtimes;
+  torch crashes during operator registration, ray while dlopen-ing `_raylet`.
+- **Not version-specific:** helics 3.5.3 crashes the same way; torch 2.5.1 avoids the
+  segfault only by failing with `GLIBCXX_3.4.29 not found` instead. Pinning torch does not fix it.
+- **Exposure today: none found.** `src/core/RL_Federate.py` imports `numpy` (line 13)
+  before `helics` (line 16), and `ScenarioManager` imports pandas first. This is
+  order-dependent: an import sorter (isort/ruff puts `helics` before `numpy`) or a new
+  script that imports `helics` first would bring the crash back.
+- **Workaround:** import `numpy` (or anything C++) before `helics` in any entry point that
+  later uses torch/ray.
+- **Fix (to decide):** make the ordering explicit in the federate entry point, or report it
+  upstream (pyhelics wheel should not export libstdc++ symbols).
+
+## 8. `synchronization.default_subscription_causality` is ignored  (MEDIUM)
+
+Setting `default_subscription_causality: next_step` has no effect: `FedSubscription.causality`
+already defaults to `"same_step"` (`src/utils/config_dataclasses.py:184`), so
+`_normalize_subscription_causality` (`src/core/ScenarioManager.py:1261`) never falls back
+to the scenario default.
+
+- **Workaround:** set `causality:` on each subscription.
+- **Fix:** detail and plan in `docs/future_and_TODOs/synchronization_causality_plan.md` §3.
+
+## 9. RL scenario residual bugs (from code reading, not re-run)  (MEDIUM)
+
+Detail in `docs/future_and_TODOs/scenario_yaml_fixes_needed.md`.
+
+- **A — `simple_DQN_test` crashes at the first episode boundary:** no `experiment.checkpoint`
+  block → `save_model(None)` → `TypeError`. Masked in `tests/regression_suite.py`, whose
+  `_shorten` forces a checkpoint name, so the suite PASS does not cover the real file.
+- **B — `bui0_setpoint_SAC` reward is always 0:** the reward reads
+  `feeder_federate.0.ZoneSetPoint`, which the SAC scenario does not observe, and the bare
+  `except Exception: return 0.0` in `reward_functions.py` hides the `KeyError`
+  (`bui0_setpoint_DQN` was fixed in YAML).
+- **D — `simple_rllib_test`:** spring federate sets `core_type: zmq` against a `tcp` broker;
+  harmless override warning every run.
+
+## 10. RL configuration keys parsed but not implemented  (LOW)
+
+`role: extra` observations still reach SB3/RLlib (`KeyError`; use `role: state`), `run.eval`,
+`experiment.logging`, `history` (frame stacking) and `run.mode: offline|mixed` parse but do
+nothing. Table in `docs/user_guide/scenario_configuration/rl.md` → Known Limitations.
+
+## 11. Teardown stall at large scale / heavy `_ss` exchange  (HIGH for scaling runs)
+
+The simulation reaches its last tick but the run never returns: one side force-disconnects,
+the other blocks in HELICS forever, and the stranded brokers/federates keep their ports, so
+every following run fails with "port already in use". Seen with local plain zmq at ≥256
+federates and with distributed `zmq_ss` at ≳1 kB exchanged per tick. Cause not diagnosed.
+
+- **Workaround:** stay under ~256 local federates / ~1 kB per tick distributed; after a stall
+  `pkill -f federate_launcher` and kill leftover `helics_broker`s.
+- Detail: `scripts/scaling_study/findings/bottlenecks.md` B12.
+
+## 12. `parallel_execution` workers are not sized against the machine  (LOW)
+
+Each federate spawns its own `W` workers, so `N·W` can exceed the core count many times
+over (1760 processes on 112 cores measured) and parallel runs lose their speed-up. Nothing
+warns. **Workaround:** keep `N·W ≲ cores`, or use `mode: seq` at large N.
+Detail: `scripts/scaling_study/findings/bottlenecks.md` B13.

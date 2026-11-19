@@ -95,16 +95,18 @@ HANDOFF. Start of session: read `HANDOFF.md` before acting.
 - Prefer editing an existing file over creating a new one.
 - Do not create new top-level directories without asking.
 - Before large or long real-hardware/benchmark runs, get an explicit go-ahead.
-- Never commit unless the user asks.
+- Never commit unless the user asks (a session prompt saying to commit freely, or a project
+  `allow` rule for `Bash(git commit:*)` in `.claude/settings.local.json`, counts as asking).
 
 ## Where the truth lives
 
 Three sources, in this order of authority. **The code is the only one that cannot be
 stale.**
 
-1. **The code graph** — `graphify-out/`. Start here for any structural question ("what
-   calls X", "what does this change touch", "where does this flow go"). Cheaper and more
-   accurate than grep, and it is regenerated from the AST, so it cannot drift into
+1. **The code graph** — `code-review-graph` (MCP, `.code-review-graph/`, not in git). Start
+   here for any structural question ("what calls X", "what does this change touch", "where
+   does this flow go"). Cheaper and more accurate than grep, built from the AST, and kept
+   current automatically (global Edit/Write hook + git hooks), so it cannot drift into
    fiction the way prose can.
 2. **The code** — for exact semantics, defaults, validation rules, error messages. When a
    doc and the code disagree, the code is right and **the doc is a bug**: fix the doc as
@@ -118,21 +120,21 @@ Corollary: do **not** answer a question about how something behaves purely from 
 from this file. Confirm it in the graph or the source first. A confident wrong answer read
 off a stale doc is worse than a slow one.
 
-### Using the graph
+### Using the graphs
 
-```bash
-graphify query "<question>"        # scoped subgraph — first move for codebase questions
-graphify path "<A>" "<B>"          # how two things relate
-graphify explain "<concept>"       # focused concept view
-graphify update .                  # AST-only, no API cost — run after code changes
-```
+Two graphs, two jobs. Do not cross them.
 
-`graphify-out/wiki/index.md` for broad navigation; `graphify-out/GRAPH_REPORT.md` only for
-whole-architecture review, or when query/path/explain surface too little. The
-`code-review-graph` MCP tools cover the same graph: `semantic_search_nodes`,
-`get_impact_radius`, `detect_changes`, `query_graph` (callers_of / callees_of / imports_of
-/ tests_for). Prefer either over Grep/Glob/Read for exploration; fall back to raw reads
-only for exact lines.
+| Graph | Covers | Use for |
+| --- | --- | --- |
+| **code-review-graph** (MCP tools) | source code only (`.code-review-graphignore` drops scenario YAMLs) | `semantic_search_nodes_tool`, `query_graph_tool` (callers_of / callees_of / imports_of / tests_for), `get_impact_radius_tool`, `detect_changes_tool` + `get_review_context_tool` for review. Skills: `explore-codebase`, `debug-issue`, `refactor-safely`, `review-changes`. |
+| **graphify** (`graphify-out/`) | docs only: `docs/`, `*.md` (`.graphifyignore` drops code and images) | `graphify query/path/explain "<...>"` for questions about docs, rationale, design history. |
+
+- Prefer the code graph over Grep/Glob/Read for code exploration; fall back to raw reads
+  for exact lines. Source wins over the graph when they disagree.
+- graphify queries are free. **Building or `/graphify --update` runs LLM semantic
+  extraction and costs tokens: never run it unless the user asks.** If `docs/` changed a
+  lot in a session, say so in HANDOFF instead.
+- Never run `graphify update .` / `/graphify .` against code: that is code-review-graph's job.
 
 ## Orientation
 
@@ -154,7 +156,7 @@ Enough to know where to look. Details are in the linked docs; exact behavior is 
 
 ### Config pipeline
 
-Scenario YAML (`src/scenarios/`) → `src/utils/config_reader.py` → typed dataclasses in
+Scenario YAML (`src/scenarios/`) → `src/utils/config_reader.py` → typed Pydantic models in
 `src/utils/config_dataclasses.py` (`ScenarioConfig`, `FederationConfig`, `FederateConfig`,
 …) → runtime. The dataclasses are the schema of record — read them, not a doc table, when
 you need the exact set of keys, types and defaults. RL config is Pydantic with
@@ -196,13 +198,14 @@ your home only. Full instructions: [Installation & Setup](docs/Installation_Setu
 
 ```bash
 docker compose -f src/docker-compose.yaml up -d   # Redis + MinIO + Mosquitto — required
-conda activate cosim_gym
-python src/test_script.py        # base co-simulation scenarios
-python src/test_script_rl.py     # RL training scenarios
-./src/dashboard/run_dashboard.sh # Results + Live dashboard
+conda run -n cosim_gym python src/test_script.py      # base co-simulation scenarios
+conda run -n cosim_gym python src/test_script_rl.py   # RL training scenarios
+./src/dashboard/run_dashboard.sh                      # Results + Live dashboard
 ```
 
-Run every simulation script from the project root with `cosim_gym` active. Redis must be
+Run every simulation script from the project root in the `cosim_gym` env. Use `conda run`
+(or the PATH method in `scripts/scaling_study/RUNBOOK.md` for long jobs): `conda activate`
+does not persist across separate shell calls and silently fails from scripts. Redis must be
 up first.
 
 ### Pre-merge regression suite

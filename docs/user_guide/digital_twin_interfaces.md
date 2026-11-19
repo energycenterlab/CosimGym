@@ -6,7 +6,7 @@ a run. This page covers two opt-in, MQTT-backed mechanisms that externalize simu
 
 Both mechanisms share one transport foundation: a background-thread MQTT client
 (`src/adapters/mqtt_adapter.py`) talking to a Mosquitto broker (`docker-compose.yaml`, port
-`11883` on the host). Publishing only enqueues onto a bounded, drop-oldest queue — the sim thread
+`COSIM_MQTT_PORT` on the host, default `11884`). Publishing only enqueues onto a bounded, drop-oldest queue — the sim thread
 never blocks on network I/O. Everything here is **off by default**; a scenario with no
 `streaming`/`interface_config` block behaves exactly as it did before this feature existed.
 
@@ -44,7 +44,7 @@ federate_configs:
     interface_config:
       adapter:
         name: mqtt_adapter
-        params: { host: localhost, port: 11883, qos: 0, client_id: cosim_dt }
+        params: { host: localhost, qos: 0, client_id: cosim_dt }   # port: omit → COSIM_MQTT_PORT
       streams:          # co-sim -> external: subscribe in HELICS, publish to MQTT
         - helics_key: plant.spring_federate.0/position
           topic: cosim/${sim_id}/spring/position

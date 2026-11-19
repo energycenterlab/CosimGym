@@ -13,7 +13,7 @@ When you run a simulation in CosimGym, here is what happens under the hood:
 3. **Broker Startup:**
    For every Federation declared, the manager launches a decoupled `helics_broker` subprocess. It also links multiple brokers automatically if there's a multi-federation architecture.
 4. **Federate Launching:**
-   The manager then triggers `federate_launcher.py` logic which spawns multiple async processes.
+   The manager then spawns one process per federate, each running `federate_launcher.py` (the per-federate entry point).
    - Standard physics endpoints instantiate as standard `BaseFederate` objects.
    - If Reinforcement Learning is configured, a final `RL_Federate` process is created, which boots up a tailored Gymnasium env driving the configured agent backend (Stable-Baselines3, custom PyTorch, or Ray RLlib).
    - A federate configured `type: interface` instantiates an `InterfaceFederate` instead: no physics model, just a transport adapter (MQTT by default) bridging its HELICS connections to/from the external world — see [Digital-Twin Interfaces & Live Streaming](../user_guide/digital_twin_interfaces.md).

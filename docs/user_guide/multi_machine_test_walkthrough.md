@@ -35,8 +35,8 @@ Demo scenario: **`src/scenarios/distributed_demo_multi.yaml`** (already in the r
 ## The 3 real-network gotchas (vs the localhost test)
 
 1. **`manager_address` = real LAN IP** (`130.192.177.14`), not `127.0.0.1`. Remotes dial this for Redis + broker.
-2. **Firewall / reachability** — remotes must reach the manager's Redis (`6379`) + HELICS broker
-   port (`23404`, plus `23405` for ZMQ's paired socket). ZMQ may use extra ports → open the range to be safe.
+2. **Firewall / reachability** — remotes must reach the manager's Redis (`6379`) + the HELICS broker
+   ports, auto-assigned anywhere in `20000–30000` (zmq also uses `port+1`) → open the range (see A2).
 3. **Per-machine env** — the `cosim_gym` conda env (model deps + CSV data) must exist on *each* remote.
    `rsync` copies `src/` (code + CSV resources), but **not** the conda env.
 
@@ -95,7 +95,7 @@ hostname -I            # pick the LAN-reachable address, e.g. 130.192.177.14
 ### A2. Firewall — what actually needs opening depends on `core_type`
 
 > ✅ **Use `core_type: "zmq_ss"` and this step is small: only the MANAGER needs inbound rules.**
-> This is the recommended setup for distributed runs — see A0 below for why.
+> This is the recommended setup for distributed runs — see A0 above for why.
 
 **With `zmq_ss` / `tcp_ss` (single socket — recommended):** federate cores make only **outbound**
 connections and bind **no inbound listener** (measured). So:
@@ -170,7 +170,7 @@ Redis binds `0.0.0.0:6379` by default → LAN-reachable.
 
 > **Port conflict?** All infra ports are configurable in one place — copy `src/.env.example` to
 > `src/.env` and change `COSIM_REDIS_PORT` etc. Both docker-compose and the Python code read it.
-> See the "Ports" section in `CLAUDE.md`.
+> See [Installation → Configuring ports](../Installation_Setup.md#configuring-ports).
 
 ---
 
@@ -181,7 +181,7 @@ Redis binds `0.0.0.0:6379` by default → LAN-reachable.
 # on the remote machine:
 git clone <your CosimGym repo> ~/CosimGym      # or scp just environment.yml
 cd ~/CosimGym
-conda env create -f environment.yml            # cosim_gym: helics 3.6.1, redis, pydantic, model deps
+conda env create -f environment.yml            # cosim_gym: helics>=3.5, redis, pydantic, model deps
 conda activate cosim_gym
 python -c "import helics,redis,pydantic; print('env OK')"
 which helics_broker || echo "no broker CLI here (fine — brokers run on the manager only)"

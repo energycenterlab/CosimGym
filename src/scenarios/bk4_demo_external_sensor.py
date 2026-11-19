@@ -10,16 +10,21 @@ bridges into the co-simulation in place of the `inputs4spring` physics model use
 real sensor/actuator process talking plain MQTT.
 
 Usage:
-    python src/scenarios/bk4_demo_external_sensor.py [--host localhost] [--port 11883] [--duration 20]
+    python src/scenarios/bk4_demo_external_sensor.py [--host localhost] [--port $COSIM_MQTT_PORT] [--duration 20]
 """
 import argparse
 import json
 import math
 import random
+import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 import paho.mqtt.client as mqtt
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # src/, for utils.ports
+from utils.ports import mqtt_port
 
 FORCE_TOPIC = "cosim/bk4_demo/sensor/force"
 DISTURBANCE_TOPIC = "cosim/bk4_demo/sensor/disturbance"
@@ -28,7 +33,7 @@ DISTURBANCE_TOPIC = "cosim/bk4_demo/sensor/disturbance"
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="localhost")
-    parser.add_argument("--port", type=int, default=11883)
+    parser.add_argument("--port", type=int, default=mqtt_port())
     parser.add_argument("--duration", type=int, default=20, help="seconds to run")
     parser.add_argument("--period", type=float, default=1.0, help="seconds between publishes")
     args = parser.parse_args()

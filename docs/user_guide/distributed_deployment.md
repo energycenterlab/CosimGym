@@ -19,8 +19,8 @@ Only federates move. Brokers stay on the manager machine (the machine you launch
   co-simulation logic is identical to an all-local run.
 
 Keeping brokers local means local TCP port allocation stays valid and there is no remote port
-discovery or broker-log streaming to manage. Remote broker placement is future work — see the
-plan doc `docs/future_and_TODOs/distributed_ssh_spawning_plan.md`.
+discovery or broker-log streaming to manage. Remote broker placement is future work — see
+`docs/future_and_TODOs/phaseH_remote_brokers_design.md`.
 
 ### Multiple federations + distributed (supported)
 
@@ -65,12 +65,13 @@ demo below):
 
 3. **Network reachability from the remote to the manager**:
    - Redis on `manager_address:6379` (docker-compose binds `0.0.0.0:6379`, so it's LAN-reachable;
-     open the port on the manager's firewall).
+     on a ufw host Docker's own iptables rules already bypass ufw, so no extra rule is needed —
+     see the [multi-machine walkthrough](multi_machine_test_walkthrough.md)).
    - The HELICS broker port range (auto-assigned in `20000–30000`).
-   - Mosquitto on `manager_address:11883` only if you use streaming / interface federates.
+   - Mosquitto on `manager_address:$COSIM_MQTT_PORT` (default `11884`) only if you use streaming / interface federates.
 
-   > Ports here are the defaults. If you moved any via `src/.env` (see the "Ports" section in
-   > `CLAUDE.md` / `src/.env.example`), the preflight Redis check and firewall rules follow that
+   > Ports here are the defaults. If you moved any via `src/.env` (see [Installation → Configuring ports](../Installation_Setup.md#configuring-ports)
+   > / `src/.env.example`), the preflight Redis check and firewall rules follow that
    > value automatically — `RemoteExecutor` reads the port from `src/utils/ports.py`, not a literal.
 
    Preflight actively checks Redis reachability from the remote and aborts with a remediation hint
@@ -170,7 +171,7 @@ python src/verify_distributed_demo.py          # runs both, compares every times
 
 This mechanism assumes a **LAN-trusted** deployment. CosimGym's Redis and Mosquitto run
 **unauthenticated** and are exposed on all interfaces so remote federates can reach them. Do **not**
-expose ports 6379 / 11883 (or the broker range) on an untrusted network. Restrict them to the
+expose ports 6379 / 11884 (or the broker range) on an untrusted network. Restrict them to the
 simulation LAN via firewall rules or a private subnet. SSH itself is key-authenticated; the trust
 boundary is the manager↔remote network, not SSH.
 

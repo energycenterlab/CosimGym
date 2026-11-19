@@ -116,7 +116,6 @@ federations:
             params:
               client_id: input_federate_dt
               host: localhost
-              port: 11883
           bridges:
             - helics_key: "input_federate.0/force"
               topic: "cosim/bk4_demo/sensor/force"

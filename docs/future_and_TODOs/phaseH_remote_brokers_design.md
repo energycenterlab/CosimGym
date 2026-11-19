@@ -60,7 +60,7 @@ addresses — entirely for local placement:
   > run. helics_broker accepts a bare 'host:port' for every core_type (same form
   > the federates already use for their broker_address)."
 
-  This was a real, fixed bug — see `docs/future_and_TODOs/distributed_ssh_spawning_plan.md`
+  This was a real, fixed bug — see `docs/future_and_TODOs/distributed_ssh_spawning_plan_DONE.md`
   changelog: *"Fixed a hierarchy-broker uplink bug (sub-broker `--broker_address`
   was built as `{core_type}://host:port` → `zmq_ss://…`, a malformed URI that hung
   the sub-broker; now bare `host:port`)."* Any remote-broker uplink string
@@ -416,6 +416,10 @@ cross-federation traffic) benefits a lot; a federation whose federates barely
 talk to each other but constantly reach across federation boundaries could get
 *worse* by adding a hierarchy hop for traffic that used to be manager-local.
 
+> **Update 2026-11-19:** Phase D has since run (2026-07-28) and the `comms` term is fitted
+> (`scripts/scaling_study/findings/phaseD_exchange.md`), so the gap described below is closed
+> in principle; the crossover for remote brokers has not been computed from it yet.
+
 **Do not invent numbers here.** The only two facts already measured that bound
 this argument, both from `scripts/scaling_study/findings/README.md`:
 
@@ -463,8 +467,8 @@ operational cost of one more SSH-managed process.
    item 5 (file + rsync-after instead of live drain-thread), but no design for
    closing that gap (e.g. a lightweight remote tail-and-forward) is attempted
    here.
-6. **Quantified crossover point** — explicitly blocked on Phase D's `comms(...)`
-   fit (§8); this note states the shape of the tradeoff, not the numbers.
+6. **Quantified crossover point** — was blocked on Phase D's `comms(...)`
+   fit (§8), which now exists; still to be computed; this note states the shape of the tradeoff, not the numbers.
 7. **Manager-crash orphan prevention** — identical unsolved gap as remote
    federates today (`atexit`/signal-handler cleanup defeated by `kill -9`);
    whether a remote broker's higher blast-radius (its failure kills an entire

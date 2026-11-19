@@ -8,8 +8,8 @@
 | **S3 – Distributed execution** | S2 + distributed deployment | Evaluate execution of the scaled scenario across multiple machines/nodes. | x |
 | **S4.a – RL integration** | Baseline + RL controller | DQN + full reset | yes |
 | **S4.b – RL integration** | Baseline + RL controller | SAC + full reset | yes |
-| **S4.c – RL integration** | Baseline + RL controller | DQN + rolling reset | yes |
-| **S4.d – RL integration** | Baseline + RL controller | SAC + rolling reset | yes |
+| **S4.c – RL integration** | Baseline + RL controller | DQN + rolling reset | moved to `to_review_rolling_window/` (see note) |
+| **S4.d – RL integration** | Baseline + RL controller | SAC + rolling reset | moved to `to_review_rolling_window/` (see note) |
 | **S5 – RL + model swap** | S2.a + model replacement | Test whether models can be exchanged while maintaining the RL/co-simulation workflow. | x |
 | **S6 – RL + model swap + DT capabilities** | S2.b + Digital Twin functionalities | Demonstrate the complete workflow including RL, model replacement, and Digital Twin capabilities. | x |
 

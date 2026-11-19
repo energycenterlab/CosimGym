@@ -143,7 +143,6 @@ federations:
             params:
               client_id: dt_bridge_inbound
               host: localhost
-              port: 11883
           bridges:
             - helics_key: "dt_bridge_inbound/force"
               topic: "cosim/m3_smoke/sensor/force"

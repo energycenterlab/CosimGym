@@ -70,7 +70,7 @@ the wide fit.
 - Target strings use the **flat global** HELICS namespace `<federate_name>.<instance_id>/<pub_key>`
   for BOTH intra- and cross-federation edges. CosimGym registers every publication
   with `register_global_publication` as `<federate>.<instance>/<key>` (no federation
-  prefix; see CLAUDE.md "Multi-Federation Scenarios" and `simple_test_multifederations.yaml`).
+  prefix; see `docs/user_guide/scenario_configuration/federation.md` (multi-federation) and `simple_test_multifederations.yaml`).
 - **Bipartite by construction.** Every wiring splits federates into a disjoint
   publisher side `P` and subscriber side `S`; a federate is never both. This is not
   cosmetic: `ScenarioManager._validate_causality_cycles()` **raises RuntimeError** on any

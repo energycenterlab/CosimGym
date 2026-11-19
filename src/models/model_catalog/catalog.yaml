@@ -2915,11 +2915,10 @@ models:
         required: false
       port:
         type: int
-        default_value: 11883
+        default_value: null
         description: >
-          Mosquitto broker port. Defaults to 11883 (this repo's docker-compose
-          maps the broker there since host 1883 may be occupied by a
-          system-wide mosquitto service on shared servers).
+          Mosquitto broker port. null = COSIM_MQTT_PORT (src/.env, default
+          11884), the host port docker-compose maps the broker to.
         unit: "-"
         required: false
       qos:

@@ -195,3 +195,19 @@ Desktop.ini
 
 # EnergyPlus FMU export working directories (runtime-generated, name varies by FMU instance)
 Output_EPExport_*/
+# Added by code-review-graph
+.code-review-graph/
+# >>> code-review-graph install files >>>
+# Added by `code-review-graph install --gitignore`. `uninstall` removes this block.
+/.mcp.json
+# <<< code-review-graph install files <<<
+
+# graphify: cache is per-machine, rebuilt locally
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.graphify_uncached.txt
+graphify-out/20*/
+graphify-out/.graphify_build_state.json
+graphify-out/*.pending.json
+graphify-out/*.sig

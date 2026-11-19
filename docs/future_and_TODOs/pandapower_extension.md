@@ -1,6 +1,6 @@
 # `pandapower_grid` — Proposed Future Enhancements (Roadmap, Not Implemented)
 
-**None of the items below are implemented in `src/models/model_catalog/physical_models/pandapower_grid.py`.** This is a proposal/roadmap document for the `pandapower_grid` model, numbered "7" as a holdover from a larger internal design doc whose earlier sections (1-6, covering the base model) no longer exist in this repository. Treat every item here as a future-work idea, not a description of current behavior.
+**None of the items below are implemented (except §7.4, marked DONE) in `src/models/model_catalog/physical_models/pandapower_grid.py`.** This is a proposal/roadmap document for the `pandapower_grid` model, numbered "7" as a holdover from a larger internal design doc whose earlier sections (1-6, covering the base model) no longer exist in this repository. Treat every item here as a future-work idea, not a description of current behavior.
 
 ## 7. Enhancements & Additional Features
 
@@ -35,7 +35,7 @@ When `solver_mode: "opf"`, add parameters:
 - `gen_cost_coefficients`: list of `[cp0_eur, cp1_eur_per_mw, cp2_eur_per_mw2]` per generator
 - Passed to `pp.create_poly_cost()` during `initialize()`.
 
-### 7.4 DC approximation fast-path
+### 7.4 DC approximation fast-path — DONE (`solver_mode: dc_pf` → `pp.rundcpp`, also `dc_opf`; `pandapower_grid.py:147-151`)
 
 When `solver_mode: "dc_pf"`, use `pp.rundcpp()` (10-100× faster). Outputs voltage angles and line MW flows (no Q, no losses). Useful for RL training where speed matters more than accuracy.
 

@@ -10,8 +10,8 @@ Each entry in `federate_configs` is a `FederateConfig`. The `type` field is the 
 federate_configs:
   spring_federate:
     type: "base"              # required — "base" | "rl" | "interface"
-    log_level: DEBUG          # optional — overrides scenario-level log_level
-    core_type: "zmq"          # optional — default "zmq"
+    log_level: DEBUG          # optional — default INFO (NOT inherited from the scenario log_level)
+    core_type: "zmq"          # ignored — the scenario-wide protocol from broker_config.core_type wins
     core_name: "fed1"         # optional — HELICS core identifier
 
     timing_configs:
@@ -62,11 +62,12 @@ federate_configs:
 | Field | Required | Default | Type | Meaning |
 |---|---|---|---|---|
 | `type` | yes | — | `"base"` \| `"rl"` \| `"interface"` | Federate class discriminator |
-| `log_level` | no | scenario `log_level` | LogLevel | Federate-level log verbosity |
-| `core_type` | no | `"zmq"` | string | HELICS transport: `"zmq"` \| `"tcp"` \| `"ipc"` |
+| `log_level` | no | `INFO` | LogLevel | Federate-level log verbosity. Not inherited from the scenario `log_level`. |
+| `core_type` | no | scenario protocol | string | Overwritten by the scenario-wide protocol (see [federation `broker_config.core_type`](federation.md#broker_config)); a differing value only logs a warning. |
 | `core_name` | no | `null` | string | HELICS core name (advanced) |
 | `broker_address` | no | set at runtime | string | Explicit broker address (set by ScenarioManager) |
 | `startup_sync` | no | scenario default | StartupSyncConfig | Per-federate startup sync override |
+| `host` | no | `null` | string | Alias into the top-level `deployment.machines`: spawn this federate on that machine over SSH. `null` = local. Not allowed on `type: rl`. See [Distributed Deployment](../distributed_deployment.md). |
 | `streaming` | no | `{stream: false}` | StreamingConfig | Opt-in outbound MQTT mirror of this federate's I/O. All types. See [Digital-Twin Interfaces](../digital_twin_interfaces.md). |
 | `override_enabled` | no | `false` | bool | `base`/`rl` federates only: opt in to accepting output/param overrides from an interface federate's `bridges`. |
 
@@ -331,7 +332,7 @@ federate_configs:
     interface_config:
       adapter:
         name: mqtt_adapter                # catalog key (interface_adapter category)
-        params: { host: localhost, port: 11883, qos: 0, client_id: cosim_dt }
+        params: { host: localhost, qos: 0, client_id: cosim_dt }   # port: omit → COSIM_MQTT_PORT
 
       streams:                            # co-sim -> external (HELICS subscribe, MQTT publish)
         - helics_key: plant.spring_federate.0/position

@@ -335,4 +335,4 @@ components in `RL_agents/components/` (`ReplayBuffer`, `CheckpointManager`, `loa
 | `history` (frame-stacking) | Parsed, not yet implemented. |
 | `run.mode: offline / mixed` | Schema + seam ready; `_offline_learning()` not implemented. |
 
-See `handoffs/rl-refactor/SUMMARY.md` for the full future-work list and implementation seams.
+These limitations are also listed in [Known Issues](../../KNOWN_ISSUES.md).

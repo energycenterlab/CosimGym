@@ -33,11 +33,11 @@ All fields are optional. ScenarioManager auto-fills anything not specified.
 
 ```yaml
 broker_config:
-  core_type: "zmq"       # transport: "zmq" (default) | "tcp" | "ipc"
-  port: 23404            # TCP port for the broker (auto-assigned if omitted)
+  core_type: "zmq"       # transport: "tcp" (default) | "zmq" | "ipc" | "tcp_ss" | "zmq_ss"
+  port: 23404            # broker port (auto-assigned from COSIM_HELICS_PORT_MIN..MAX if omitted)
   federates: 2           # expected federate count (auto-counted if omitted)
   log_level: INFO        # broker log verbosity
-  host: "localhost"      # broker host (single-machine default)
+  host: ~                # advertised broker address (default 127.0.0.1, or deployment.manager_address with remote federates)
   address: ~             # explicit broker address string (advanced)
   broker_address: ~      # parent broker address for hierarchy (advanced, set by ScenarioManager)
   sub_brokers: ~         # number of sub-brokers (multi-federation, set by ScenarioManager)
@@ -45,15 +45,15 @@ broker_config:
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
-| `core_type` | string | auto | `"zmq"` for single-machine; `"tcp"` for multi-machine or multi-federation |
-| `port` | int | auto | ScenarioManager assigns ports sequentially starting from a base port |
+| `core_type` | string | `"tcp"` | **One protocol per scenario:** the first explicit value found in any federation is applied to every broker and federate core; federations that set different values raise `ValueError`. Prefer the single-socket `"zmq_ss"` / `"tcp_ss"` for distributed runs (ScenarioManager warns otherwise). |
+| `port` | int | auto | Free ports drawn from the HELICS range (`COSIM_HELICS_PORT_MIN..MAX`, default 20000–30000) |
 | `federates` | int | auto | If set, validated against the count of `federate_configs` entries |
 | `log_level` | LogLevel | `INFO` | Broker-level log verbosity |
-| `host` | string | `"localhost"` | Relevant for TCP core type |
+| `host` | string | `127.0.0.1` | Advertised broker address; becomes `deployment.manager_address` when the scenario has remote federates |
 | `broker_address` | string | set at runtime | Address of parent/hierarchy broker (multi-federation) |
 | `sub_brokers` | int | set at runtime | Number of sub-brokers under a hierarchy broker |
 
-> **Tip:** You can leave `broker_config` entirely empty (or omit it). ScenarioManager will assign a `core_type` and `port` automatically based on the scenario topology.
+> **Tip:** You can leave `broker_config` entirely empty (or omit it). ScenarioManager then uses `core_type: "tcp"` and auto-assigns the port.
 
 ---
 
@@ -84,7 +84,7 @@ For full `FederateConfig` options, see [Federate](federate.md).
 
 When `federations:` contains more than one entry, ScenarioManager automatically:
 
-1. Switches all federations to `core_type: "tcp"`
+1. Applies the single scenario-wide `core_type` to every federation (see `broker_config` above)
 2. Assigns unique ports to each federation broker
 3. Starts a **hierarchy broker** (`helics_broker --sub_brokers=N`) that sits above all per-federation brokers
 4. Sets each federation broker's `broker_address` to connect to the hierarchy broker

@@ -151,7 +151,6 @@ federations:
             params:
               client_id: dt_bridge_override
               host: localhost
-              port: 11883
           bridges:
             - helics_key: "spring_federate.0/velocity"
               topic: "cosim/m4_smoke/override/velocity"

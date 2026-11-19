@@ -22,11 +22,11 @@
 >    `_reposition_backend`, `BaseFederate._reset_on_horizon`, the replay with recorded input
 >    history and the two-snapshot scheme described below were removed or replaced by the
 >    commits after `fdf7575` (now `rel_ts` and `BaseModel.local_time(mode=…)`), and the
->    refactor is unfinished — defects in `docs/KNOWN_ISSUES.md` §5 and §7. The test and
+>    refactor is unfinished — defects in `docs/KNOWN_ISSUES.md` §5 (the old §7 was removed in F1). The test and
 >    regression counts quoted in §5 (38/38 scenarios, 313 tests) describe the state before that
 >    refactor, not today.
 > 4. Measurements that stand independent of the premise: the teardown cost (§6 "Measured
->    cost", follow-ups §5), the `noSetFMUStatePriorToCurrentPoint` fix (bug 1) and the
+>    cost", since reduced to ~0.1 s per teardown — follow-ups §5), the `noSetFMUStatePriorToCurrentPoint` fix (bug 1) and the
 >    whole-day constraint.
 
 Change note for the work adding automatic restart of models that cannot run for
@@ -35,8 +35,9 @@ making `reset.mode: rolling` work with FMUs at all.
 
 Reference docs: `docs/user_guide/fmu_models.md` §4 (user-facing),
 `docs/future_and_TODOs/fmu_horizon_and_reset_followups.md` (open items).
-Tests: `tests/test_model_local_clock.py`, `tests/test_fmu_state_snapshot.py`,
-`tests/test_fmu_horizon_detection.py`, scenario `fmu_horizon_smoketest`.
+Tests: `tests/test_fmu_horizon_detection.py`, scenario `fmu_horizon_smoketest` (the original
+`test_model_local_clock.py` / `test_fmu_state_snapshot.py` were deleted in the reset refactor;
+their successors are `tests/test_model_reset.py` and `tests/test_fmu_reset.py`).
 Validation harness: `scripts/fmu_warmstart_validation/`.
 
 ---

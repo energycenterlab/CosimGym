@@ -78,7 +78,7 @@ Obiettivo: un reset generico in `BaseModel`, specializzato in `BaseFMUModel` (ca
 
 Regole comuni a ogni fase:
 - **Inizio**: leggi `HANDOFF.md` + `docs/changes_reports/model_reset_redesign_plan.md` (sezione della fase), poi solo i file elencati per la fase. Advisor (Opus) all'inizio e prima di chiudere.
-- **Fine**: repo in stato coerente (pytest della fase verde, nessun import rotto), segna `STATUS: DONE` sulla fase nel plan doc, `graphify update .`, riscrivi `HANDOFF.md` (skill handoff) con fase completata + prossima fase. Proponi commit di fase; commit solo su ok esplicito.
+- **Fine**: repo in stato coerente (pytest della fase verde, nessun import rotto), segna `STATUS: DONE` sulla fase nel plan doc, riscrivi `HANDOFF.md` (skill handoff) con fase completata + prossima fase. Proponi commit di fase; commit solo su ok esplicito.
 - Una fase non anticipa lavoro della successiva. Se una fase sfora, si chiude a metà con HANDOFF preciso (file toccati, cosa manca).
 
 | Fase | Contenuto | File | Fatto quando |
@@ -121,7 +121,7 @@ Regole comuni a ogni fase:
 - Catalogo: `fmu_engine: energyplus` solo su `bui0_building_fmu` (`generationTool` = `idf-to-fmu-export-prep-linux`); `base_fmu_model`, `adelaide_test`, `test_feedthrough_fmi3` non taggati. `fmu_catalog_register.py --engine`, tolto `supports_rollback`.
 - Test: `tests/test_fmu_state_snapshot.py` cancellato (`git rm`, 11 test), nuovo `tests/test_fmu_reset.py` (8, con slave finto) + 2 in `test_model_reset.py`. `pytest` completo: 310 passati, 2 falliti (i soli noti, KNOWN_ISSUES §6), 2 skip. Prova negativa: `rolling_window: 100` su BUI0 → `ValueError` di ScenarioManager (nominava EnergyPlus); `fmu_feedthrough_test` con sink json (FMI3 generico, stop finito) passa.
 - Scenari: `bui0_fmu_test`, `fmu_horizon_smoketest`, `bui0_setpoint_DQN`, `rc_building_test_base`, `bui_hp_DQN_rollingreset` passano. Smoke E+ rolling (copia temporanea: window 2 giorni, period 1 giorno, 3 episodi + test, INFO): `.eio` `Environment` = 01/01, 01/03, 01/05, 01/07 (giorni 0, 2, 4, 6), ogni slave copre 24 h; run di 4 giorni in 12 s, teardown ~0.1 s (followups §5 risolto).
-- Rimasto, vedi KNOWN_ISSUES §5: l'ultimo slave E+ finisce con errore socket `-1` in `.err` (già così prima); un tick pubblica `init_state` dopo il reset (ora anche per FMU); `fmu_output/restart_<n>/` si moltiplica con gli episodi (da decidere con l'autore).
+- Rimasto, vedi KNOWN_ISSUES §5: l'ultimo slave E+ finisce con errore socket `-1` in `.err` (già così prima); un tick pubblica `init_state` dopo il reset (ora anche per FMU); `fmu_output/restart_<n>/` si moltiplica con gli episodi (da decidere con l'autore; dettagli in `fmu_horizon_and_reset_followups.md` §5).
 - Scenari `cs_*` rifiutati (F2) spostati in `src/scenarios/to_review_rolling_window/` con README.
 
 Dipendenze: F1 → F2 → (F3, F4, F5 indipendenti fra loro) → F6.

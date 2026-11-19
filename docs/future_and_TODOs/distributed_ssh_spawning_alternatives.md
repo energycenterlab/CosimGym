@@ -1,6 +1,6 @@
 # Distributed SSH Spawning — Design Choices: Pros, Cons, Alternatives
 
-> Companion to `distributed_ssh_spawning_plan.md`. Rationale record: why each choice won, what else considered, when to revisit. Caveman prose, full technical content.
+> Companion to `distributed_ssh_spawning_plan_DONE.md`. Rationale record: why each choice won, what else considered, when to revisit. Caveman prose, full technical content.
 
 ## 1. Remote Process Spawn Mechanism
 

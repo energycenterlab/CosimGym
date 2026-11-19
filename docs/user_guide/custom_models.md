@@ -133,7 +133,7 @@ models:
     parameters:
       client_id: { type: str, default_value: cosim_dt }
       host: { type: str, default_value: localhost }
-      port: { type: int, default_value: 11883 }
+      port: { type: int, default_value: null }   # null → COSIM_MQTT_PORT
       qos: { type: int, default_value: 0 }
 ```
 

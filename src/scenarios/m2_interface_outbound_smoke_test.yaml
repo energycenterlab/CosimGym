@@ -139,7 +139,6 @@ federations:
             params:
               client_id: dt_bridge_relay
               host: localhost
-              port: 11883
           streams:
             - helics_key: "spring_federate.0/position"
               topic: "cosim/m2_smoke/relay/position"

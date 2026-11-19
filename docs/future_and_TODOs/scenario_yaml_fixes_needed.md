@@ -6,7 +6,7 @@
 
 ## Validation done before merge
 
-Ran from project root, `cosim_gym` env (`/media/space/rando/Environments/cosim_gym`):
+Ran from project root, `cosim_gym` env (on the old machine, 2026-06-30):
 
 | Scenario | Backend | Result |
 | --- | --- | --- |
@@ -46,7 +46,9 @@ At the first episode boundary the DQN agent dies. The driver still prints "Compl
 
 ---
 
-## Bug B ⚠️ — `bui0_setpoint_DQN.yaml` / `bui0_setpoint_SAC.yaml` silent zero reward
+## Bug B ⚠️ — `bui0_setpoint_SAC.yaml` silent zero reward (DQN half fixed)
+
+**Status (2026-11-19):** `bui0_setpoint_DQN.yaml` now observes `feeder_federate.0.ZoneSetPoint` (the YAML alternative below) and is fixed. `bui0_setpoint_SAC.yaml` still observes only `TBuilding`, and the bare `except Exception` is still in `reward_functions.py`, so SAC still gets reward 0.
 
 **Symptom:** scenarios run to completion but reward is `0.0` every step → agents learn nothing. These are the flagship "Example 1" demos.
 
@@ -68,21 +70,6 @@ Confirmed from runtime config dump:
 
 ---
 
-## Bug C 🟡 nit — `reset.mode: none` warning spam
-
-**Affected YAML:** `bui0_setpoint_DQN.yaml`, `bui0_setpoint_SAC.yaml`, `bui0_heatingpower_DQN.yaml` (all use `environment.reset.mode: none`, correct for the EnergyPlus FMU which cannot re-init mid-run).
-
-**Symptom:** `BaseFederate._reset` only handles `full`/`rolling`; `none` falls to the catch-all →
-`WARNING: Unknown reset type 'none' specified.` every reset cycle (~episodes × base-federates). Behavior correct, log misleading.
-
-**Fix (code, not YAML)** in `src/core/BaseFederate.py` `_reset`, before the `else`:
-```python
-elif self.reset_type in (None, 'none'):
-    return
-```
-
----
-
 ## Bug D 🟡 nit — `simple_rllib_test.yaml` core_type mismatch
 
 **Symptom (live):**
@@ -96,20 +83,9 @@ Runs fine (auto-override), but spurious warning every run. Copy-paste artifact.
 
 ---
 
-## Bug E 🟡 nit — `Adelaide_test.yaml` raw YAML syntax error
-
-**Status:** pre-existing on `main`, **not** caused by the refactor (`git diff main...rl-config-refactor` shows no change to it).
-
-**Symptom:** `YAMLError ... line 54, column 7` — file does not even parse.
-
-**Fix:** repair the indentation at line 54, or delete the file if obsolete.
-
----
-
 ## Also worth fixing (not scenario YAML)
 
 - **Federate-death not surfaced:** a federate subprocess crashing (bug A) leaves the manager printing "Completed" with exit code 0. Propagate non-zero federate exit to the driver.
-- **Orphan cleanup on abnormal kill:** federates are spawned `preexec_fn=os.setsid` (own session); killing the parent (`Ctrl-C`, SIGKILL) leaves federates + brokers orphaned and still running (RL agents keep training, holding ports). Track child PIDs and tear down their sessions on shutdown/interrupt.
 
 ## Suggested smoke-test config
 

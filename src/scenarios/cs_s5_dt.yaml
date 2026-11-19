@@ -30,7 +30,7 @@
 # Feeder (not written by this task — pattern only): mirror
 # src/scenarios/bk4_demo_external_sensor.py, publishing plausible zone
 # temperatures to MQTT topic "cosim/cs_s5_dt/sensor/T_indoor" on
-# localhost:11883. Without a feeder running, the interface federate will WAIT
+# localhost:$COSIM_MQTT_PORT (default 11884). Without a feeder running, the interface federate will WAIT
 # for the first external value (mode: replace has no HELICS passthrough
 # fallback) — this is expected behavior for S5, not a failure.
 
@@ -269,7 +269,6 @@ federations:
             params:
               client_id: cs_s5_dt_building_twin
               host: localhost
-              port: 11883
           bridges:
             - helics_key: "building_federate.0/T_indoor"
               topic: "cosim/cs_s5_dt/sensor/T_indoor"

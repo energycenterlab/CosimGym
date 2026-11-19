@@ -76,7 +76,7 @@ federations:
 Rules:
 - `host:` absent → local spawn, code path identical to today.
 - `host:` references unknown alias → validation error at parse time.
-- `host:` on `type: rl` federate → raise `NotImplementedError` in v1 (RL agent trains on manager; consistent with existing `parallel_execution`+rl restriction style). `parallel_execution: true` + remote host = ALLOWED (workers spawn on remote machine, use its CPUs — that is the whole point).
+- `host:` on `type: rl` federate → raise `ValueError` in v1 (as implemented; plan said `NotImplementedError`) (RL agent trains on manager; consistent with existing `parallel_execution`+rl restriction style). `parallel_execution: true` + remote host = ALLOWED (workers spawn on remote machine, use its CPUs — that is the whole point).
 - No hardcoded IPs/paths/users anywhere in code. Everything from `deployment` block.
 
 ### Spawn mechanics
@@ -224,7 +224,7 @@ Files: `docs/user_guide/distributed_deployment.md`, update `CLAUDE.md` Config Re
 - Modular: all ssh/rsync knowledge inside `RemoteExecutor`. `ScenarioManager` only knows "spawn here or there".
 - No hardcoded hosts/paths/users/ports. All from `DeploymentConfig`.
 - Match existing code style (logging patterns, error messages, docstrings w/ Args/Returns).
-- Use graphify to navigate (`graphify query "..."`) before reading raw files; run `graphify update .` after code changes.
+- Use code-review-graph to navigate source (graphify is docs-only; never `graphify update .` on code).
 - Run `pytest tests/` + demo scenario before declaring any task done.
 - genrate or update handoff file after each task so that session ends or compact requires you have the right instructions for next session.
 
@@ -234,4 +234,4 @@ Files: `docs/user_guide/distributed_deployment.md`, update `CLAUDE.md` Config Re
 2. **Remote brokers**: place federation brokers next to their federates (cuts cross-machine per-tick traffic for co-located federations). Needs remote port allocation (run port-picker via `RemoteExecutor.run`) + broker log streaming over ssh.
 3. **asyncssh backend**: if machine count grows large (>10), swap RemoteExecutor internals for asyncssh persistent connections; interface stays.
 4. **Docker provisioning**: replace conda-env assumption with image pull for reproducibility.
-5. **RL federate remote**: lift v1 `NotImplementedError` — needs GPU-aware placement + checkpoint path collection.
+5. **RL federate remote**: lift v1 `ValueError` — needs GPU-aware placement + checkpoint path collection.

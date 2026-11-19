@@ -2,7 +2,7 @@
 
 Every command below is copy-pasteable and was actually used to produce the results
 in `findings/`. Run **all of them from the repository root**
-(`/media/space/rando/CODE/CosimGym`), never from inside `scripts/`.
+(e.g. `~/projects/CosimGym`), never from inside `scripts/`.
 
 Background on what each experiment *means*: `EXPERIMENTS.md`.
 Schemas (knob names, CSV columns): `CONTRACT.md`.
@@ -12,12 +12,13 @@ Schemas (knob names, CSV columns): `CONTRACT.md`.
 ## 0. One-time setup per shell session
 
 ```bash
-cd /media/space/rando/CODE/CosimGym
+cd ~/projects/CosimGym                       # your clone
 
 # Put the conda env's binaries on PATH. This matters for more than python:
 # helics_broker lives here too, and scenarios fail instantly without it.
-export PATH=/media/space/rando/Environments/cosim_gym/bin:$PATH
-PY=/media/space/rando/Environments/cosim_gym/bin/python
+ENV_BIN="$(conda info --base)/envs/cosim_gym/bin"   # eclab-cloud1: /opt/conda/envs/cosim_gym/bin
+export PATH=$ENV_BIN:$PATH
+PY=$ENV_BIN/python
 
 # Redis / MQTT / MinIO must be up. Redis is mandatory: every federate reads its
 # config from it. Safe to re-run if already running.

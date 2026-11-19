@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 import paho.mqtt.client as mqtt
 
 from adapters.base_adapter import InterfaceAdapter
+from utils.ports import mqtt_port
 
 
 class MqttAdapter(InterfaceAdapter):
@@ -33,21 +34,19 @@ class MqttAdapter(InterfaceAdapter):
         self,
         client_id: str = "cosim_dt",
         host: str = "localhost",
-        port: int = 1883,
+        port: Optional[int] = None,
         qos: int = 0,
         outbound_maxsize: int = 1000,
         logger: Optional[logging.Logger] = None,
     ) -> None:
         """Construct the paho client and internal queues; does not connect yet (see `connect()`).
 
-        Note: `port` defaults to the standard Mosquitto port 1883. The catalog's
-        `mqtt_adapter` entry overrides this to 11883 via `params.port` — that
-        catalog default only applies when instantiated through the model catalog,
-        not when constructing this class directly.
+        `port=None` resolves to `utils.ports.mqtt_port()` (COSIM_MQTT_PORT / src/.env,
+        default 11884), the same port docker-compose maps Mosquitto to.
         """
         self.client_id = client_id
         self.host = host
-        self.port = port
+        self.port = port if port is not None else mqtt_port()
         self.qos = qos
         self.logger = logger or logging.getLogger(__name__)
 

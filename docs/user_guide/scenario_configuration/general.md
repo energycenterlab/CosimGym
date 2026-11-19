@@ -57,7 +57,7 @@ These bound the simulation clock. The total number of HELICS ticks is derived fr
 - **Default:** `INFO`
 - **Accepted values:** `CRITICAL` | `ERROR` | `WARNING` | `INFO` | `DEBUG` | `NOTSET`
 
-Scenario-level log level applied to all federates and the ScenarioManager process. Individual federates can override this with their own `log_level` field.
+Log level of the ScenarioManager process, the hierarchy broker and the framework-created RL federation. It is **not** inherited by your federates or federation brokers: each has its own `log_level` (default `INFO`).
 
 ---
 
@@ -170,7 +170,7 @@ reinforcement_learning_config:
 - **Required:** no
 - **Default:** `multi_computer: false`
 
-Distributes federates across multiple machines via SSH. Not fully implemented in the current release.
+Legacy key, not implemented — leave it `false` (with more than one federation it disables the hierarchy broker and only logs an error). For running federates on other machines use the top-level `deployment` block plus a per-federate `host` — see [Distributed Deployment](../distributed_deployment.md).
 
 ```yaml
 multi_computer: true
