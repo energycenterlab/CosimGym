@@ -3111,3 +3111,21 @@ models:
         required: false
         tags:
         - benchmark
+
+  eplus_model:
+    class_name: EnergyPlusModel
+    module_path: models.base_eplus_model
+    version: 1.0.0
+    description: Any EnergyPlus IDF through the EnergyPlus Python API. The building and its interface are declared in the
+      scenario (user_defined.eplus / user_defined.eplus_io), see docs/user_guide/eplus_models.md. max_sim_time and
+      sim_start_date default to the IDF RunPeriod.
+    author: ''
+    domain: building
+    category: physical_model
+    tags:
+    - eplus
+    - building
+    dependencies: []
+    parameters: {}
+    inputs: {}
+    outputs: {}

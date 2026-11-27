@@ -1,0 +1,70 @@
+# EnergyPlus API, EC_IdealLoads: exercises what bui0_eplus_test does not (see docs/user_guide/eplus_models.md):
+#  - key patterns: 'TZ NWP1*' expands (runtime, listing cached) to the *_TZ_NWP1OUT / *_TZ_NWP1IN names;
+#  - the {schedule: ...} shorthand (no IDF edit) and, via an actuator read-back, proof the default reaches EnergyPlus;
+#  - inputs with a `default` and NO connection are kept and driven (Heat/Cool never subscribe);
+#  - no max_sim_time anywhere: the horizon is the IDF RunPeriod.
+version: 1.0.0
+name: eplus_ec_pattern_test
+scenario_description: EC_IdealLoads through the EnergyPlus Python API with key patterns, schedule shorthand, defaults.
+start_time: '2025-01-01T00:00:00'
+end_time: '2025-01-02T00:00:00'
+log_level: INFO
+memory_config:
+  batch_size: 1000
+  attrs:
+  - T_TZ_NWP1OUT
+  - Occ_rb
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: next_step
+federations:
+  federation_1:
+    federate_configs:
+      building_federate:
+        name: building_federate
+        type: base
+        log_level: INFO
+        timing_configs:
+          real_period: 900
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+          - key: T_TZ_NWP1OUT
+            type: double
+            units: degC
+          - key: Occ_rb
+            type: double
+            units: '-'
+        model_configs:
+          instantiation:
+            model_name: eplus_model
+            n_instances: 1
+            prefix: ec
+            parallel_execution: false
+          parameters: {}
+          init_state: {}
+          user_defined:
+            eplus:
+              idf: src/models/model_catalog/physical_models/resources/EC_IdealLoads.idf
+              epw: src/models/model_catalog/physical_models/resources/USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw
+            eplus_io:
+              inputs:
+                Heat:
+                  actuator: {component_type: Zone Temperature Control, control_type: Heating Setpoint, key: TZ NWP1*}
+                  default: 20
+                Cool:
+                  actuator: {component_type: Zone Temperature Control, control_type: Cooling Setpoint, key: TZ NWP1*}
+                  default: 26
+                Occ: {schedule: OCC_OFF_SCH, default: 0.5}
+              outputs:
+                T:
+                  variable: {name: Zone Mean Air Temperature, key: TZ NWP1*}
+                Occ_rb:
+                  actuator: {component_type: Schedule:Compact, control_type: Schedule Value, key: OCC_OFF_SCH}

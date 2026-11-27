@@ -329,6 +329,11 @@ Deterministic per instance (seeded by instance index) → sequential and paralle
 
 ---
 
+## 5. `EnergyPlusModel` (catalog `eplus_model`) — any EnergyPlus IDF
+
+Generic wrapper around the EnergyPlus Python API, one catalog entry, the IDF and its I/O are given in the scenario; I/O, versions, horizon and reset
+are described in [EnergyPlus Models](user_guide/eplus_models.md).
+
 ## Common Integration Notes
 
 ### Wiring pattern

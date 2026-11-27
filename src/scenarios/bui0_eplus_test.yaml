@@ -1,0 +1,173 @@
+# EnergyPlus through the Python API (EnergyPlusModel) instead of the FMU: same wiring as bui0_fmu_test.
+# The IDF is run by one eplus_worker subprocess per instance (see docs/user_guide/eplus_models.md).
+version: 1.0.0
+name: bui0_eplus_test
+scenario_description: BUI0 IDF co-simulated through the EnergyPlus Python API (EnergyPlusModel);
+  same wiring as bui0_fmu_test.
+start_time: '2024-01-01T00:00:00'
+end_time: '2024-01-02T00:00:00'
+log_level: INFO
+memory_config:
+  batch_size: 1000
+  attrs:
+  - PeopleNumber
+  - LightsWatt
+  - EEquipWatt
+  - OthEquRadWatt
+  - OthEquFCWatt
+  - ZoneSetPoint
+  - TBuilding
+  - HeatingLoadTarget
+  - HeatingSeason
+synchronization:
+  auto_offset:
+    enabled: true
+    offset_step: 0.1
+    override_existing_offsets: false
+  default_subscription_causality: next_step
+federations:
+  federation_1:
+    federate_configs:
+      feeder_federate:
+        name: feeder_federate
+        type: base
+        log_level: INFO
+        timing_configs:
+          real_period: 600
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes: []
+          publishes:
+          - key: PeopleNumber
+            type: double
+            units: '-'
+          - key: LightsWatt
+            type: double
+            units: W
+          - key: EEquipWatt
+            type: double
+            units: W
+          - key: OthEquRadWatt
+            type: double
+            units: W
+          - key: OthEquFCWatt
+            type: double
+            units: W
+          - key: ZoneSetPoint
+            type: double
+            units: degC
+          - key: HeatingSeason
+            type: double
+            units: '-'
+        model_configs:
+          instantiation:
+            model_name: bui0_input_feeder
+            n_instances: 1
+            prefix: feed
+            parallel_execution: false
+          parameters:
+            occupied_start_hour: 8.0
+            occupied_end_hour: 18.0
+            people_occupied: 4.0
+            lights_peak_w: 400.0
+            lights_base_w: 40.0
+            eequip_peak_w: 500.0
+            eequip_base_w: 50.0
+            otheq_rad_peak_w: 100.0
+            otheq_rad_base_w: 0.0
+            otheq_fc_peak_w: 100.0
+            otheq_fc_base_w: 0.0
+            heating_season_start_month: 10
+            heating_season_end_month: 4
+            heating_setpoint_day_c: 21.0
+            heating_setpoint_night_c: 18.0
+            cooling_season_mode: setback
+            cooling_season_setback_c: 12.0
+          init_state:
+            PeopleNumber: 0.0
+            LightsWatt: 40.0
+            EEquipWatt: 50.0
+            OthEquRadWatt: 0.0
+            OthEquFCWatt: 0.0
+            ZoneSetPoint: 18.0
+          user_defined: {}
+      building_federate:
+        name: building_federate
+        type: base
+        log_level: INFO
+        timing_configs:
+          real_period: 600
+        flags:
+          terminate_on_error: true
+          wait_for_current_time_update: false
+        connections:
+          endpoints: []
+          subscribes:
+          - key: PeopleNumber
+            type: double
+            units: '-'
+            targets:
+              '0':
+              - feeder_federate.0/PeopleNumber
+          - key: LightsWatt
+            type: double
+            units: W
+            targets:
+              '0':
+              - feeder_federate.0/LightsWatt
+          - key: EEquipWatt
+            type: double
+            units: W
+            targets:
+              '0':
+              - feeder_federate.0/EEquipWatt
+          - key: OthEquRadWatt
+            type: double
+            units: W
+            targets:
+              '0':
+              - feeder_federate.0/OthEquRadWatt
+          - key: OthEquFCWatt
+            type: double
+            units: W
+            targets:
+              '0':
+              - feeder_federate.0/OthEquFCWatt
+          - key: ZoneSetPoint
+            type: double
+            units: degC
+            targets:
+              '0':
+              - feeder_federate.0/ZoneSetPoint
+          publishes:
+          - key: TBuilding
+            type: double
+            units: degC
+          - key: HeatingLoadTarget
+            type: double
+            units: W
+        model_configs:
+          instantiation:
+            model_name: eplus_model
+            n_instances: 1
+            prefix: bui
+            parallel_execution: false
+          parameters: {}
+          init_state:
+            PeopleNumber: 0.0
+            LightsWatt: 0.0
+            EEquipWatt: 0.0
+            OthEquRadWatt: 0.0
+            OthEquFCWatt: 0.0
+            ZoneSetPoint: 20.0
+            TBuilding: 0.0
+            HeatingLoadTarget: 0.0
+          user_defined:
+            eplus:
+              idf: src/models/model_catalog/physical_models/resources/BUI0.idf
+              epw: src/models/model_catalog/physical_models/resources/USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw
+            eplus_io:
+              from_external_interface: true

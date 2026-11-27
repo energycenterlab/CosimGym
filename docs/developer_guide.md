@@ -41,6 +41,12 @@ EnergyPlus FMU scenarios (`bui0_*`, `fmu_*`, and their regression-suite entries)
 `energyplus` executable (23.1.0) on `PATH`, otherwise they hang until timeout →
 [Installation → pre-requisites](Installation_Setup.md#pre-requisites), [Known Issues §14](KNOWN_ISSUES.md).
 
+EnergyPlus **Python-API** models (`bui0_eplus_*`, `eplus_horizon_smoketest`, `eplus_ec_pattern_test`) need an install with `pyenergyplus`
+under `~/.cosimgym/energyplus/<any>/` or listed in `COSIMGYM_ENERGYPLUS_DIRS` (`:`-separated); upgraded IDFs are cached in
+`COSIMGYM_EPLUS_CACHE` (default `~/.cosimgym/eplus_cache`). `helics_broker` must be on `PATH` (`export PATH=/opt/conda/envs/cosim_gym/bin:$PATH`
+when running outside `conda run`). List what an IDF exposes / preview key patterns: `python src/models/model_catalog/eplus_discover.py --idf B.idf --epw W.epw [--io io.yaml]`
+→ [EnergyPlus Models](user_guide/eplus_models.md).
+
 ## 2. Services (Docker)
 
 `src/docker-compose.yaml` starts: **Redis** (config + model catalog store — required),

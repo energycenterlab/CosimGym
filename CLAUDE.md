@@ -175,7 +175,7 @@ you need the exact set of keys, types and defaults. RL config is Pydantic with
 + `module_path` + I/O spec. `catalog_loader.py` pushes it into Redis at startup;
 `RedisCatalog` resolves it at runtime so `BaseFederate` can import and instantiate the
 class dynamically. New model = subclass `BaseModel` (`initialize` / `step` / `finalize`) +
-a `catalog.yaml` entry. After editing `catalog.yaml`, reload it into Redis or the change is
+a `catalog.yaml` entry. Any EnergyPlus IDF = `EnergyPlusModel` (`base_eplus_model.py`, one worker subprocess per instance, `eplus_discover.py` lists what an IDF exposes; I/O is declared per scenario in `user_defined.eplus_io`). After editing `catalog.yaml`, reload it into Redis or the change is
 not seen. → [Custom Models & Catalog](docs/user_guide/custom_models.md)
 
 ### Feature map → documentation
@@ -190,6 +190,7 @@ not seen. → [Custom Models & Catalog](docs/user_guide/custom_models.md)
 | Digital-twin interfaces, streaming, overrides, BK4 | [Digital-Twin Interfaces](docs/user_guide/digital_twin_interfaces.md) |
 | Distributed SSH federate spawning | [Distributed Deployment](docs/user_guide/distributed_deployment.md) |
 | FMUs, `max_sim_time`, reset | [FMU Models](docs/user_guide/fmu_models.md) |
+| EnergyPlus IDFs via the Python API | [EnergyPlus Models](docs/user_guide/eplus_models.md) |
 | Results, dashboard, live view | [Dashboard & Analytics](docs/user_guide/dashboard.md) |
 | Ports, `src/.env`, shared-machine conflicts | [Installation → Configuring ports](docs/Installation_Setup.md#configuring-ports) |
 | Currently broken / limited | [Known Issues](docs/KNOWN_ISSUES.md) |

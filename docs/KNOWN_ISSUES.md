@@ -169,3 +169,18 @@ for it. If it is missing (as on a fresh `eclab-cloud1`) the FMU federate idles i
 suite's 240 s timeout, with no error message and no child process. Fix: install EnergyPlus 23.1.0 and
 put it on `PATH` (verified without root: unpack the NREL Linux tarball in `~/opt` and prefix `PATH`).
 The hostname/IPv6 theory recorded earlier was wrong (a shim giving `127.0.0.1` did not help).
+
+## 15. EnergyPlus model (Python API): unsupported or unverified cases  (MEDIUM)
+
+`EnergyPlusModel` (see [EnergyPlus Models](user_guide/eplus_models.md)):
+
+- **EnergyPlus 26.x IDFs cannot run here** (Ubuntu 20.04 / glibc 2.31): the four `2_zones_*` IDFs fail at start with a clear
+  "no EnergyPlus >= 26.1" error. Detail: `docs/future_and_TODOs/eplus_model_followups.md`.
+- Only `.idf` with a single, first `RunPeriod`; `.imf` (EPMacro) and `.epJSON` are rejected. A blank RunPeriod year is assumed to be 2001 (non-leap).
+- IDFs with a blank "Day of Week for Start Day": after a restart on another date the weekday of day 1 is not controlled (warned).
+- Restarting at another time costs a full start-up (sizing + warmup, ~41 s on `EC_IdealLoads`) and the thermal history is only recovered with `burn_in_days`.
+- Unverified with a real run: PythonPlugin (level 3), `ExternalInterface:To:Variable` (EMS global), meters absent from the IDF listing.
+- `real_period` that is not a whole multiple of the IDF zone timestep is refused.
+- Inputs only exist if the IDF exposes an actuator / schedule / EMS global for them; the model does not write EMS code (a name that cannot be resolved fails at start-up, after sizing).
+- Key patterns (`*`) need one extra EnergyPlus run per IDF (cached); meters and globals are not expanded.
+- BaseModel logs a "not defined in catalog, Not initialized" warning per `eplus_io` name (cosmetic).

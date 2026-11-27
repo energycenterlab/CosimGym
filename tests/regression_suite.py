@@ -78,6 +78,9 @@ SCENARIOS = [
     ("FMU + RL rolling DQN",   "bui0_setpoint_DQN_rolling"),
     ("FMU + RL SAC",           "bui0_setpoint_SAC"),
     ("FMU + RL heating DQN",   "bui0_heatingpower_DQN"),
+    ("EnergyPlus API",         "bui0_eplus_test"),
+    ("EnergyPlus API horizon", "eplus_horizon_smoketest"),
+    ("EnergyPlus API patterns", "eplus_ec_pattern_test"),
 ]
 
 # --- feature COMBINATIONS (expected PASS) ------------------------------------
@@ -87,6 +90,7 @@ COMBOS = [
     ("MULTIFED + PARALLEL",    "combo_multifed_parallel"),
     ("PARALLEL + GRID",        "multi_building_grid_test"),
     ("PARALLEL + RL rolling",  "combo_parallel_rl_rollingreset"),
+    ("EPLUS multi + PARALLEL", "bui0_eplus_multi_test"),
 ]
 
 # --- tracked framework/env bugs: run, expect FAIL (xfail) --------------------
@@ -111,11 +115,11 @@ RUN_ONE = ("import sys; sys.path.insert(0, 'src'); "
 
 def _shorten(d, name):
     """Trim a scenario for a fast functional check, on a copy. Returns the dict."""
-    is_fmu = "fmu" in name.lower() or "fmu" in yaml.dump(d).lower()
+    is_fmu = "fmu" in name.lower() or "eplus" in name.lower() or "fmu" in yaml.dump(d).lower()
     # broker ports -> auto-assign (isolates concurrent/back-to-back runs)
     for fed in (d.get("federations") or {}).values():
         (fed.get("broker_config") or {}).pop("port", None)
-    # span > 6h -> 1h, but NOT for FMU (EnergyPlus needs whole-day multiples)
+    # span > 6h -> 1h, but NOT for FMU / EnergyPlus-API models (whole-day multiples)
     try:
         st = datetime.fromisoformat(str(d.get("start_time")))
         en = datetime.fromisoformat(str(d.get("end_time")))
