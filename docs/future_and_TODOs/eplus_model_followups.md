@@ -4,7 +4,7 @@ Feature: `eplus_model` (plan: `docs/changes_reports/eplus_model_plan.md`).
 
 ## EnergyPlus 26.x IDFs (deferred, user decision 2026-11-27)
 
-The four `2_zones_*` IDFs are version 26.1 and cannot run on `eclab-cloud1` (Ubuntu 20.04, glibc 2.31):
+The four `2_zones_*` IDFs (version 26.1, kept out of the repo: untracked, local only) cannot run on `eclab-cloud1` (Ubuntu 20.04, glibc 2.31):
 the 26.x Linux builds are Ubuntu 24.04 only (26.2 also AlmaLinux 9.6). They also need the missing
 `ran2026_rr_rack_workloads_energyplus_year.csv`. Waiting on a newer host or a container worker
 (Docker 28 is available here; the registry/worker protocol in the plan allows a non-native worker).

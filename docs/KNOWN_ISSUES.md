@@ -174,7 +174,7 @@ The hostname/IPv6 theory recorded earlier was wrong (a shim giving `127.0.0.1` d
 
 `EnergyPlusModel` (see [EnergyPlus Models](user_guide/eplus_models.md)):
 
-- **EnergyPlus 26.x IDFs cannot run here** (Ubuntu 20.04 / glibc 2.31): the four `2_zones_*` IDFs fail at start with a clear
+- **EnergyPlus 26.x IDFs cannot run here** (Ubuntu 20.04 / glibc 2.31): 26.x IDFs (e.g. the four `2_zones_*`, kept out of the repo) fail at start with a clear
   "no EnergyPlus >= 26.1" error. Detail: `docs/future_and_TODOs/eplus_model_followups.md`.
 - Only `.idf` with a single, first `RunPeriod`; `.imf` (EPMacro) and `.epJSON` are rejected. A blank RunPeriod year is assumed to be 2001 (non-leap).
 - IDFs with a blank "Day of Week for Start Day": after a restart on another date the weekday of day 1 is not controlled (warned).
