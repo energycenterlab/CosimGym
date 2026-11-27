@@ -1,0 +1,2108 @@
+!-Generator IDFEditor 1.55
+!-Option SortedOrder
+
+!-NOTE: All comments with '!-' are ignored by the IDFEditor and are generated automatically.
+!-      Use '!' comments if they need to be retained when using the IDFEditor.
+
+
+!-   ===========  ALL OBJECTS IN CLASS: VERSION ===========
+
+! 1ZoneDataCenterCRAC_wApproachTemp.idf
+! Basic file description:  This file demonstrates a simple data center model with air-cooled IT equipment (ITE)
+!                          served by a CRAC system.
+!
+! Highlights:              The air-cooled ITE illustrates the user of various schedules and curves to vary server power use.
+!                          The CRAC system has been setup to represent a Lieber DSE 125 with pumped
+!                          refrigerant economizer DX cooling coil system.
+!
+!                          file adapted from example file "1ZoneEvapCooler.idf" which is adapted from
+!                          1zoneuncontrolled
+!
+! Simulation Location/Run: Denver Centennial Golden CO USA WMO=724666, 2 design days, 1 run period,
+!
+!
+! Design Days:             Denver Centennial  Golden CO USA Annual Heating 99%, MaxDB=-15.5°C
+!                          Denver Centennial  Golden CO USA Annual Cooling (DB=>MWB) 1%, MaxDB=32°C MWB=15.5°C
+!
+!
+! Run Period (Weather File): Full Annual Simulation, DENVER_STAPLETON_CO_USA_WMO_724690
+!
+! Run Control:             No zone or system sizing, weather file simulation
+!
+! Building:                Fictional 1 zone building with resistive walls based on 1ZoneUncontrolled example.
+!                          No windows.  Data Center server ITE object for internal gains.  No internal mass.  The building is oriented due north.
+!
+! Floor Area:              232.25 m2
+! Number of Stories:       1
+Version,
+    26.1;                    !- Version Identifier
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SIMULATIONCONTROL ===========
+
+SimulationControl,
+    No,                      !- Do Zone Sizing Calculation
+    No,                      !- Do System Sizing Calculation
+    No,                      !- Do Plant Sizing Calculation
+    No,                      !- Run Simulation for Sizing Periods
+    Yes,                     !- Run Simulation for Weather File Run Periods
+    No,                      !- Do HVAC Sizing Simulation for Sizing Periods
+    1;                       !- Maximum Number of HVAC Sizing Simulation Passes
+
+
+!-   ===========  ALL OBJECTS IN CLASS: BUILDING ===========
+
+Building,
+    Bldg,                    !- Name
+    0.0,                     !- North Axis {deg}
+    Suburbs,                 !- Terrain
+    0.05,                    !- Loads Convergence Tolerance Value {W}
+    0.05,                    !- Temperature Convergence Tolerance Value {deltaC}
+    MinimalShadowing,        !- Solar Distribution
+    30,                      !- Maximum Number of Warmup Days
+    6;                       !- Minimum Number of Warmup Days
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SURFACECONVECTIONALGORITHM:INSIDE ===========
+
+SurfaceConvectionAlgorithm:Inside,
+    TARP;                    !- Algorithm
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SURFACECONVECTIONALGORITHM:OUTSIDE ===========
+
+SurfaceConvectionAlgorithm:Outside,
+    DOE-2;                   !- Algorithm
+
+
+!-   ===========  ALL OBJECTS IN CLASS: HEATBALANCEALGORITHM ===========
+
+HeatBalanceAlgorithm,
+    ConductionTransferFunction;  !- Algorithm
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONEAIRMASSFLOWCONSERVATION ===========
+
+ZoneAirMassFlowConservation,
+    None,                    !- Adjust Zone Mixing and Return For Air Mass Flow Balance
+    None,                    !- Infiltration Balancing Method
+    MixingSourceZonesOnly;   !- Infiltration Balancing Zones
+
+
+!-   ===========  ALL OBJECTS IN CLASS: TIMESTEP ===========
+
+Timestep,
+    12;                      !- Number of Timesteps per Hour
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SITE:LOCATION ===========
+
+Site:Location,
+    San Francisco Intl Ap CA USA,  !- Name
+    37.62,                   !- Latitude {deg}
+    -122.4,                  !- Longitude {deg}
+    -8,                      !- Time Zone {hr}
+    2;                       !- Elevation {m}
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SIZINGPERIOD:DESIGNDAY ===========
+
+!  WMO=724666 Time Zone=NAM        (GMT-07:00) Mountain Time (US & Canada)
+!  Data Source=ASHRAE 2009 Annual Design Conditions
+! Using Design Conditions from "Climate Design Data 2009 ASHRAE Handbook"
+! Denver Centennial CO USA Extreme Annual Wind Speeds, 1%=11.1m/s, 2.5%=9.5m/s, 5%=8.4m/s
+! Denver Centennial CO USA Extreme Annual Temperatures, Max Drybulb=-22.9°C Min Drybulb=36.1°C
+! Denver Centennial CO USA Annual Heating Design Conditions Wind Speed=3m/s Wind Dir=340
+! Coldest Month=December
+! Denver Centennial CO USA Annual Heating 99.6%, MaxDB=-18.8°C
+SizingPeriod:DesignDay,
+    San Francisco Intl Ap Ann Htg 99.6% Condns DB,  !- Name
+    1,                       !- Month
+    21,                      !- Day of Month
+    WinterDesignDay,         !- Day Type
+    3.8,                     !- Maximum Dry-Bulb Temperature {C}
+    0.0,                     !- Daily Dry-Bulb Temperature Range {deltaC}
+    DefaultMultipliers,      !- Dry-Bulb Temperature Range Modifier Type
+    ,                        !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,                 !- Humidity Condition Type
+    3.8,                     !- Wetbulb or DewPoint at Maximum Dry-Bulb {C}
+    ,                        !- Humidity Condition Day Schedule Name
+    ,                        !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+    ,                        !- Enthalpy at Maximum Dry-Bulb {J/kg}
+    ,                        !- Daily Wet-Bulb Temperature Range {deltaC}
+    101301,                  !- Barometric Pressure {Pa}
+    2.2,                     !- Wind Speed {m/s}
+    150,                     !- Wind Direction {deg}
+    No,                      !- Rain Indicator
+    No,                      !- Snow Indicator
+    No,                      !- Daylight Saving Time Indicator
+    ASHRAEClearSky,          !- Solar Model Indicator
+    ,                        !- Beam Solar Day Schedule Name
+    ,                        !- Diffuse Solar Day Schedule Name
+    ,                        !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub) {dimensionless}
+    ,                        !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud) {dimensionless}
+    0.00;                    !- Sky Clearness
+
+! Denver Centennial Annual Cooling Design Conditions Wind Speed=4.9m/s Wind Dir=0
+! Hottest Month=July
+! Denver Centennial CO USA Annual Cooling (DB=>MWB) 1%, MaxDB=32°C MWB=15.5°C
+SizingPeriod:DesignDay,
+    Denver Centennial Ann Clg 1% Condns DB=>MWB,  !- Name
+    7,                       !- Month
+    21,                      !- Day of Month
+    SummerDesignDay,         !- Day Type
+    25.7,                    !- Maximum Dry-Bulb Temperature {C}
+    8.5,                     !- Daily Dry-Bulb Temperature Range {deltaC}
+    DefaultMultipliers,      !- Dry-Bulb Temperature Range Modifier Type
+    ,                        !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,                 !- Humidity Condition Type
+    16.7,                    !- Wetbulb or DewPoint at Maximum Dry-Bulb {C}
+    ,                        !- Humidity Condition Day Schedule Name
+    ,                        !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+    ,                        !- Enthalpy at Maximum Dry-Bulb {J/kg}
+    ,                        !- Daily Wet-Bulb Temperature Range {deltaC}
+    101301,                  !- Barometric Pressure {Pa}
+    5.9,                     !- Wind Speed {m/s}
+    310,                     !- Wind Direction {deg}
+    No,                      !- Rain Indicator
+    No,                      !- Snow Indicator
+    No,                      !- Daylight Saving Time Indicator
+    ASHRAEClearSky,          !- Solar Model Indicator
+    ,                        !- Beam Solar Day Schedule Name
+    ,                        !- Diffuse Solar Day Schedule Name
+    0.365,                   !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub) {dimensionless}
+    2.435,                   !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud) {dimensionless}
+    1.00;                    !- Sky Clearness
+
+
+!-   ===========  ALL OBJECTS IN CLASS: RUNPERIOD ===========
+
+RunPeriod,
+    Jan,                     !- Name
+    1,                       !- Begin Month
+    1,                       !- Begin Day of Month
+    ,                        !- Begin Year
+    1,                       !- End Month
+    31,                      !- End Day of Month
+    ,                        !- End Year
+    Tuesday,                 !- Day of Week for Start Day
+    Yes,                     !- Use Weather File Holidays and Special Days
+    Yes,                     !- Use Weather File Daylight Saving Period
+    No,                      !- Apply Weekend Holiday Rule
+    Yes,                     !- Use Weather File Rain Indicators
+    Yes;                     !- Use Weather File Snow Indicators
+
+RunPeriod,
+    Jul,                     !- Name
+    7,                       !- Begin Month
+    1,                       !- Begin Day of Month
+    ,                        !- Begin Year
+    7,                       !- End Month
+    31,                      !- End Day of Month
+    ,                        !- End Year
+    Tuesday,                 !- Day of Week for Start Day
+    Yes,                     !- Use Weather File Holidays and Special Days
+    Yes,                     !- Use Weather File Daylight Saving Period
+    No,                      !- Apply Weekend Holiday Rule
+    Yes,                     !- Use Weather File Rain Indicators
+    Yes;                     !- Use Weather File Snow Indicators
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SITE:GROUNDTEMPERATURE:BUILDINGSURFACE ===========
+
+Site:GroundTemperature:BuildingSurface,
+    18.89,                   !- January Ground Temperature {C}
+    18.92,                   !- February Ground Temperature {C}
+    19.02,                   !- March Ground Temperature {C}
+    19.12,                   !- April Ground Temperature {C}
+    19.21,                   !- May Ground Temperature {C}
+    19.23,                   !- June Ground Temperature {C}
+    19.07,                   !- July Ground Temperature {C}
+    19.32,                   !- August Ground Temperature {C}
+    19.09,                   !- September Ground Temperature {C}
+    19.21,                   !- October Ground Temperature {C}
+    19.13,                   !- November Ground Temperature {C}
+    18.96;                   !- December Ground Temperature {C}
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SCHEDULETYPELIMITS ===========
+
+ScheduleTypeLimits,
+    Fraction,                !- Name
+    0.0,                     !- Lower Limit Value
+    1.0,                     !- Upper Limit Value
+    CONTINUOUS;              !- Numeric Type
+
+ScheduleTypeLimits,
+    Any Number;              !- Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SCHEDULE:COMPACT ===========
+
+Schedule:Compact,
+    System Availability Schedule,  !- Name
+    Any Number,              !- Schedule Type Limits Name
+    THROUGH: 12/31,          !- Field 1
+    FOR: AllDays,            !- Field 2
+    UNTIL: 24:00,            !- Field 3
+    1;                       !- Field 4
+
+Schedule:Compact,
+    Zone Control Type Sched, !- Name
+    Any Number,              !- Schedule Type Limits Name
+    Through: 12/31,          !- Field 1
+    For: AllDays,            !- Field 2
+    Until: 24:00,            !- Field 3
+    2;                       !- Field 4
+
+Schedule:Compact,
+    cold zone cooling Setpoint Schedule,  !- Name
+    Any Number,              !- Schedule Type Limits Name
+    Through: 12/31,          !- Field 1
+    For: AllDays,            !- Field 2
+    Until: 24:00,            !- Field 3
+    21;                      !- Field 4
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SCHEDULE:CONSTANT ===========
+
+Schedule:Constant,
+    Data Center Operation Schedule,  !- Name
+    Any Number,              !- Schedule Type Limits Name
+    1;                       !- Hourly Value
+
+Schedule:Constant,
+    Rack_1 Cpu,              !- Name
+    Any Number,              !- Schedule Type Limits Name
+    0.8;                     !- Hourly Value
+
+Schedule:Constant,
+    Rack_2 Cpu,              !- Name
+    Any Number,              !- Schedule Type Limits Name
+    0.8;                     !- Hourly Value
+
+Schedule:Constant,
+    Rack_3 Cpu,              !- Name
+    Any Number,              !- Schedule Type Limits Name
+    0.8;                     !- Hourly Value
+
+Schedule:Constant,
+    Rack_4 Cpu,              !- Name
+    Any Number,              !- Schedule Type Limits Name
+    0.8;                     !- Hourly Value
+
+Schedule:Constant,
+    Rack_5 Cpu,              !- Name
+    Any Number,              !- Schedule Type Limits Name
+    0.8;                     !- Hourly Value
+
+Schedule:Constant,
+    Always on,               !- Name
+    Fraction,                !- Schedule Type Limits Name
+    1;                       !- Hourly Value
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SCHEDULE:FILE ===========
+
+Schedule:File,
+    Rack-1-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    1,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-2-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    2,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-3-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    3,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-4-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    4,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-5-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    5,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-6-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    6,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-7-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    7,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-8-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    8,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-9-file,             !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    9,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+Schedule:File,
+    Rack-10-file,            !- Name
+    any number,              !- Schedule Type Limits Name
+    ran2026_rr_rack_workloads_energyplus_year.csv,  !- File Name
+    10,                      !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760,                    !- Number of Hours of Data
+    Comma,                   !- Column Separator
+    No,                      !- Interpolate to Timestep
+    5,                       !- Minutes per Item
+    No;                      !- Adjust Schedule for Daylight Savings
+
+
+!-   ===========  ALL OBJECTS IN CLASS: MATERIAL ===========
+
+Material,
+    C5 - 4 IN HW CONCRETE,   !- Name
+    MediumRough,             !- Roughness
+    0.1014984,               !- Thickness {m}
+    1.729577,                !- Conductivity {W/m-K}
+    2242.585,                !- Density {kg/m3}
+    836.8000,                !- Specific Heat {J/kg-K}
+    0.9000000,               !- Thermal Absorptance
+    0.6500000,               !- Solar Absorptance
+    0.6500000;               !- Visible Absorptance
+
+
+!-   ===========  ALL OBJECTS IN CLASS: MATERIAL:NOMASS ===========
+
+Material:NoMass,
+    R13LAYER,                !- Name
+    Rough,                   !- Roughness
+    2.290965,                !- Thermal Resistance {m2-K/W}
+    0.9000000,               !- Thermal Absorptance
+    0.7500000,               !- Solar Absorptance
+    0.7500000;               !- Visible Absorptance
+
+Material:NoMass,
+    R31LAYER,                !- Name
+    Rough,                   !- Roughness
+    5.456,                   !- Thermal Resistance {m2-K/W}
+    0.9000000,               !- Thermal Absorptance
+    0.7500000,               !- Solar Absorptance
+    0.7500000;               !- Visible Absorptance
+
+
+!-   ===========  ALL OBJECTS IN CLASS: CONSTRUCTION ===========
+
+Construction,
+    R13WALL,                 !- Name
+    R13LAYER;                !- Outside Layer
+
+Construction,
+    FLOOR,                   !- Name
+    C5 - 4 IN HW CONCRETE;   !- Outside Layer
+
+Construction,
+    ROOF31,                  !- Name
+    R31LAYER;                !- Outside Layer
+
+
+!-   ===========  ALL OBJECTS IN CLASS: CONSTRUCTION:AIRBOUNDARY ===========
+
+Construction:AirBoundary,
+    Datacenter Air boundry,  !- Name
+    None,                    !- Air Exchange Method
+    0,                       !- Simple Mixing Air Changes per Hour {1/hr}
+    System Availability Schedule;  !- Simple Mixing Schedule Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: GLOBALGEOMETRYRULES ===========
+
+GlobalGeometryRules,
+    UpperLeftCorner,         !- Starting Vertex Position
+    CounterClockWise,        !- Vertex Entry Direction
+    World;                   !- Coordinate System
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONE ===========
+
+Zone,
+    Hot zone,                !- Name
+    0,                       !- Direction of Relative North {deg}
+    0,                       !- X Origin {m}
+    0,                       !- Y Origin {m}
+    0,                       !- Z Origin {m}
+    1,                       !- Type
+    1,                       !- Multiplier
+    autocalculate,           !- Ceiling Height {m}
+    autocalculate,           !- Volume {m3}
+    autocalculate;           !- Floor Area {m2}
+
+Zone,
+    cold zone,               !- Name
+    0,                       !- Direction of Relative North {deg}
+    0,                       !- X Origin {m}
+    0,                       !- Y Origin {m}
+    0,                       !- Z Origin {m}
+    1,                       !- Type
+    1,                       !- Multiplier
+    autocalculate,           !- Ceiling Height {m}
+    autocalculate,           !- Volume {m3}
+    autocalculate,           !- Floor Area {m2}
+    ,                        !- Zone Inside Convection Algorithm
+    ,                        !- Zone Outside Convection Algorithm
+    Yes;                     !- Part of Total Floor Area
+
+Zone,
+    Top Plenum,              !- Name
+    0,                       !- Direction of Relative North {deg}
+    0,                       !- X Origin {m}
+    0,                       !- Y Origin {m}
+    0,                       !- Z Origin {m}
+    1,                       !- Type
+    1,                       !- Multiplier
+    autocalculate,           !- Ceiling Height {m}
+    autocalculate,           !- Volume {m3}
+    autocalculate,           !- Floor Area {m2}
+    ,                        !- Zone Inside Convection Algorithm
+    ,                        !- Zone Outside Convection Algorithm
+    Yes;                     !- Part of Total Floor Area
+
+
+!-   ===========  ALL OBJECTS IN CLASS: BUILDINGSURFACE:DETAILED ===========
+
+BuildingSurface:Detailed,
+    HZ:Wall001,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    Hot zone,                !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,                       !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    0,                       !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    2.5,                     !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    2.5,                     !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    HZ:Wall002,              !- Name
+    Wall,                    !- Surface Type
+    Datacenter Air boundry,  !- Construction Name
+    Hot zone,                !- Zone Name
+    ,                        !- Space Name
+    Surface,                 !- Outside Boundary Condition
+    CZ:wall004,              !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    2.5,                     !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    2.5,                     !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    2.5,                     !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    HZ:Wall003,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    Hot zone,                !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    2.5,                     !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    0,                       !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    0,                       !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    HZ:Wall004,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    Hot zone,                !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,                       !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    0,                       !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    0,                       !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    0,                       !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    HZ:Flr001,               !- Name
+    Floor,                   !- Surface Type
+    FLOOR,                   !- Construction Name
+    Hot zone,                !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    0.0,                     !- Vertex 1 Z-coordinate {m}
+    0.000000,                !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    0.0,                     !- Vertex 2 Z-coordinate {m}
+    0.000000,                !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    0.0,                     !- Vertex 3 Z-coordinate {m}
+    2.5,                     !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    0.0;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    HZ:Roof001,              !- Name
+    Roof,                    !- Surface Type
+    ROOF31,                  !- Construction Name
+    Hot zone,                !- Zone Name
+    ,                        !- Space Name
+    Surface,                 !- Outside Boundary Condition
+    PL:Floor Hot,            !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0.000000,                !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    2.5,                     !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    2.5,                     !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    0,                       !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    CZ:wall001,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    cold zone,               !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    2.5,                     !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    4,                       !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    CZ:wall002,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    cold zone,               !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    4,                       !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    4,                       !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    4,                       !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    CZ:wall003,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    cold zone,               !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    4,                       !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    4,                       !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    2.5,                     !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    2.5,                     !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    CZ:wall004,              !- Name
+    Wall,                    !- Surface Type
+    Datacenter Air boundry,  !- Construction Name
+    cold zone,               !- Zone Name
+    ,                        !- Space Name
+    Surface,                 !- Outside Boundary Condition
+    HZ:Wall002,              !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    2.5,                     !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    2.5,                     !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    2.5,                     !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    CZ:Floor,                !- Name
+    Floor,                   !- Surface Type
+    FLOOR,                   !- Construction Name
+    cold zone,               !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    0,                       !- Vertex 1 Z-coordinate {m}
+    2.5,                     !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    0,                       !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    0,                       !- Vertex 3 Z-coordinate {m}
+    4,                       !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    0;                       !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    CZ:Roof,                 !- Name
+    Roof,                    !- Surface Type
+    ROOF31,                  !- Construction Name
+    cold zone,               !- Zone Name
+    ,                        !- Space Name
+    Surface,                 !- Outside Boundary Condition
+    PL:Floor cold,           !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    4,                       !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    2.5,                     !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    PL:Wall001,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    Top Plenum,              !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,                       !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    4.2,                     !- Vertex 1 Z-coordinate {m}
+    0,                       !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    4,                       !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    4.2;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    PL:Wall002,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    Top Plenum,              !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    4,                       !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    4.2,                     !- Vertex 1 Z-coordinate {m}
+    4,                       !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    0,                       !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    0,                       !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    4.2;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    PL:Wall003,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    Top Plenum,              !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,                       !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    4.2,                     !- Vertex 1 Z-coordinate {m}
+    0,                       !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    0,                       !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    0,                       !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    4.2;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    PL:Wall004,              !- Name
+    Wall,                    !- Surface Type
+    R13WALL,                 !- Construction Name
+    Top Plenum,              !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    4,                       !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    4.2,                     !- Vertex 1 Z-coordinate {m}
+    4,                       !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    4,                       !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    4.2;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    PL:Floor Hot,            !- Name
+    Floor,                   !- Surface Type
+    ROOF31,                  !- Construction Name
+    Top Plenum,              !- Zone Name
+    ,                        !- Space Name
+    Surface,                 !- Outside Boundary Condition
+    HZ:Roof001,              !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,                       !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    2.5,                     !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    2.5,                     !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    0,                       !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    PL:Floor cold,           !- Name
+    Floor,                   !- Surface Type
+    ROOF31,                  !- Construction Name
+    Top Plenum,              !- Zone Name
+    ,                        !- Space Name
+    Surface,                 !- Outside Boundary Condition
+    CZ:Roof,                 !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    2.5,                     !- Vertex 1 X-coordinate {m}
+    9.14,                    !- Vertex 1 Y-coordinate {m}
+    3.6,                     !- Vertex 1 Z-coordinate {m}
+    4,                       !- Vertex 2 X-coordinate {m}
+    9.14,                    !- Vertex 2 Y-coordinate {m}
+    3.6,                     !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    0,                       !- Vertex 3 Y-coordinate {m}
+    3.6,                     !- Vertex 3 Z-coordinate {m}
+    2.5,                     !- Vertex 4 X-coordinate {m}
+    0,                       !- Vertex 4 Y-coordinate {m}
+    3.6;                     !- Vertex 4 Z-coordinate {m}
+
+BuildingSurface:Detailed,
+    PL:Roof,                 !- Name
+    Roof,                    !- Surface Type
+    ROOF31,                  !- Construction Name
+    Top Plenum,              !- Zone Name
+    ,                        !- Space Name
+    Adiabatic,               !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    autocalculate,           !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,                       !- Vertex 1 X-coordinate {m}
+    0,                       !- Vertex 1 Y-coordinate {m}
+    4.2,                     !- Vertex 1 Z-coordinate {m}
+    4,                       !- Vertex 2 X-coordinate {m}
+    0,                       !- Vertex 2 Y-coordinate {m}
+    4.2,                     !- Vertex 2 Z-coordinate {m}
+    4,                       !- Vertex 3 X-coordinate {m}
+    9.14,                    !- Vertex 3 Y-coordinate {m}
+    4.2,                     !- Vertex 3 Z-coordinate {m}
+    0,                       !- Vertex 4 X-coordinate {m}
+    9.14,                    !- Vertex 4 Y-coordinate {m}
+    4.2;                     !- Vertex 4 Z-coordinate {m}
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ELECTRICEQUIPMENT ===========
+
+ElectricEquipment,
+    RACK_1,                  !- Name
+    Hot zone,                !- Zone or ZoneList or Space or SpaceList Name
+    Rack-1-file,             !- Schedule Name
+    EquipmentLevel,          !- Design Level Calculation Method
+    7840,                    !- Design Level {W}
+    ,                        !- Watts per Floor Area {W/m2}
+    ,                        !- Watts per Person {W/person}
+    0,                       !- Fraction Latent
+    0,                       !- Fraction Radiant
+    0,                       !- Fraction Lost
+    General;                 !- End-Use Subcategory
+
+ElectricEquipment,
+    RACK_2,                  !- Name
+    Hot zone,                !- Zone or ZoneList or Space or SpaceList Name
+    Rack-2-file,             !- Schedule Name
+    EquipmentLevel,          !- Design Level Calculation Method
+    7840,                    !- Design Level {W}
+    ,                        !- Watts per Floor Area {W/m2}
+    ,                        !- Watts per Person {W/person}
+    0,                       !- Fraction Latent
+    0,                       !- Fraction Radiant
+    0,                       !- Fraction Lost
+    General;                 !- End-Use Subcategory
+
+ElectricEquipment,
+    RACK_3,                  !- Name
+    Hot zone,                !- Zone or ZoneList or Space or SpaceList Name
+    Rack-3-file,             !- Schedule Name
+    EquipmentLevel,          !- Design Level Calculation Method
+    7840,                    !- Design Level {W}
+    ,                        !- Watts per Floor Area {W/m2}
+    ,                        !- Watts per Person {W/person}
+    0,                       !- Fraction Latent
+    0,                       !- Fraction Radiant
+    0,                       !- Fraction Lost
+    General;                 !- End-Use Subcategory
+
+ElectricEquipment,
+    RACK_4,                  !- Name
+    Hot zone,                !- Zone or ZoneList or Space or SpaceList Name
+    Rack-4-file,             !- Schedule Name
+    EquipmentLevel,          !- Design Level Calculation Method
+    7840,                    !- Design Level {W}
+    ,                        !- Watts per Floor Area {W/m2}
+    ,                        !- Watts per Person {W/person}
+    0,                       !- Fraction Latent
+    0,                       !- Fraction Radiant
+    0,                       !- Fraction Lost
+    General;                 !- End-Use Subcategory
+
+ElectricEquipment,
+    RACK_5,                  !- Name
+    Hot zone,                !- Zone or ZoneList or Space or SpaceList Name
+    Rack-5-file,             !- Schedule Name
+    EquipmentLevel,          !- Design Level Calculation Method
+    7840,                    !- Design Level {W}
+    ,                        !- Watts per Floor Area {W/m2}
+    ,                        !- Watts per Person {W/person}
+    0,                       !- Fraction Latent
+    0,                       !- Fraction Radiant
+    0,                       !- Fraction Lost
+    General;                 !- End-Use Subcategory
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONEMIXING ===========
+
+ZoneMixing,
+    Cold to Hot Mixing,      !- Name
+    Hot zone,                !- Zone or Space Name
+    System Availability Schedule,  !- Schedule Name
+    Flow/Zone,               !- Design Flow Rate Calculation Method
+    0,                       !- Design Flow Rate {m3/s}
+    ,                        !- Flow Rate per Floor Area {m3/s-m2}
+    ,                        !- Flow Rate per Person {m3/s-person}
+    ,                        !- Air Changes per Hour {1/hr}
+    cold zone;               !- Source Zone or Space Name
+
+ZoneMixing,
+    Hot to Cold Mixing,      !- Name
+    cold zone,               !- Zone or Space Name
+    System Availability Schedule,  !- Schedule Name
+    Flow/Zone,               !- Design Flow Rate Calculation Method
+    0,                       !- Design Flow Rate {m3/s}
+    ,                        !- Flow Rate per Floor Area {m3/s-m2}
+    ,                        !- Flow Rate per Person {m3/s-person}
+    ,                        !- Air Changes per Hour {1/hr}
+    Hot zone;                !- Source Zone or Space Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONECROSSMIXING ===========
+
+ZoneCrossMixing,
+    Hot Cold Cross Mixing,   !- Name
+    Hot zone,                !- Zone or Space Name
+    System Availability Schedule,  !- Schedule Name
+    Flow/Zone,               !- Design Flow Rate Calculation Method
+    0,                       !- Design Flow Rate {m3/s}
+    ,                        !- Flow Rate per Floor Area {m3/s-m2}
+    ,                        !- Flow Rate per Person {m3/s-person}
+    ,                        !- Air Changes per Hour {1/hr}
+    cold zone;               !- Source Zone or Space Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONECONTROL:THERMOSTAT ===========
+
+ZoneControl:Thermostat,
+    Cold Zone Thermostat,    !- Name
+    cold zone,               !- Zone or ZoneList Name
+    Zone Control Type Sched, !- Control Type Schedule Name
+    ThermostatSetpoint:SingleCooling,  !- Control 1 Object Type
+    cold zone cooling ;      !- Control 1 Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: THERMOSTATSETPOINT:SINGLECOOLING ===========
+
+ThermostatSetpoint:SingleCooling,
+    cold zone cooling ,      !- Name
+    cold zone cooling Setpoint Schedule;  !- Setpoint Temperature Schedule Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONEHVAC:BASEBOARD:CONVECTIVE:ELECTRIC ===========
+
+ZoneHVAC:Baseboard:Convective:Electric,
+    Hot Dummy Baseboard,     !- Name
+    System Availability Schedule,  !- Availability Schedule Name
+    HeatingDesignCapacity,   !- Heating Design Capacity Method
+    0,                       !- Heating Design Capacity {W}
+    ,                        !- Heating Design Capacity Per Floor Area {W/m2}
+    1,                       !- Fraction of Autosized Heating Design Capacity
+    1;                       !- Efficiency
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AIRTERMINAL:SINGLEDUCT:VAV:NOREHEAT ===========
+
+AirTerminal:SingleDuct:VAV:NoReheat,
+    Cold Zone VAV Air,       !- Name
+    System Availability Schedule,  !- Availability Schedule Name
+    Cold Zone Intel Node,    !- Air Outlet Node Name
+    Cold  Zone ATU Inlet Node,  !- Air Inlet Node Name
+    2.5,                     !- Maximum Air Flow Rate {m3/s}
+    Constant,                !- Zone Minimum Air Flow Input Method
+    0.2,                     !- Constant Minimum Air Flow Fraction
+    autosize;                !- Fixed Minimum Air Flow Rate {m3/s}
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONEHVAC:AIRDISTRIBUTIONUNIT ===========
+
+ZoneHVAC:AirDistributionUnit,
+    Cold Zone AUT,           !- Name
+    Cold Zone Intel Node,    !- Air Distribution Unit Outlet Node Name
+    AirTerminal:SingleDuct:VAV:NoReheat,  !- Air Terminal Object Type
+    Cold Zone VAV Air;       !- Air Terminal Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONEHVAC:EQUIPMENTLIST ===========
+
+ZoneHVAC:EquipmentList,
+    hot Equipment,           !- Name
+    SequentialLoad,          !- Load Distribution Scheme
+    ZoneHVAC:Baseboard:Convective:Electric,  !- Zone Equipment 1 Object Type
+    Hot Dummy Baseboard,     !- Zone Equipment 1 Name
+    1,                       !- Zone Equipment 1 Cooling Sequence
+    1,                       !- Zone Equipment 1 Heating or No-Load Sequence
+    ,                        !- Zone Equipment 1 Sequential Cooling Fraction Schedule Name
+    ;                        !- Zone Equipment 1 Sequential Heating Fraction Schedule Name
+
+ZoneHVAC:EquipmentList,
+    Cold equipment,          !- Name
+    SequentialLoad,          !- Load Distribution Scheme
+    ZoneHVAC:AirDistributionUnit,  !- Zone Equipment 1 Object Type
+    Cold Zone AUT,           !- Zone Equipment 1 Name
+    1,                       !- Zone Equipment 1 Cooling Sequence
+    1,                       !- Zone Equipment 1 Heating or No-Load Sequence
+    ,                        !- Zone Equipment 1 Sequential Cooling Fraction Schedule Name
+    ;                        !- Zone Equipment 1 Sequential Heating Fraction Schedule Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ZONEHVAC:EQUIPMENTCONNECTIONS ===========
+
+ZoneHVAC:EquipmentConnections,
+    Hot zone,                !- Zone Name
+    hot Equipment,           !- Zone Conditioning Equipment List Name
+    ,                        !- Zone Air Inlet Node or NodeList Name
+    ,                        !- Zone Air Exhaust Node or NodeList Name
+    Hot Zone Node,           !- Zone Air Node Name
+    Hot Zone Outlet Node,    !- Zone Return Air Node or NodeList Name
+    ,                        !- Zone Return Air Node 1 Flow Rate Fraction Schedule Name
+    Cold Zone Intel Node;    !- Zone Return Air Node 1 Flow Rate Basis Node or NodeList Name
+
+ZoneHVAC:EquipmentConnections,
+    cold zone,               !- Zone Name
+    Cold equipment,          !- Zone Conditioning Equipment List Name
+    Cold Zone Intel Node,    !- Zone Air Inlet Node or NodeList Name
+    ,                        !- Zone Air Exhaust Node or NodeList Name
+    Cold Zone Node;          !- Zone Air Node Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: FAN:CONSTANTVOLUME ===========
+
+Fan:ConstantVolume,
+    EC Plug Fan 1,           !- Name
+    System Availability Schedule,  !- Availability Schedule Name
+    0.7,                     !- Fan Total Efficiency
+    486,                     !- Pressure Rise {Pa}
+    2.5,                     !- Maximum Flow Rate {m3/s}
+    0.9,                     !- Motor Efficiency
+    1,                       !- Motor In Airstream Fraction
+    Main Cooling Coil 1 Outlet Node,  !- Air Inlet Node Name
+    Supply Outlet Node,      !- Air Outlet Node Name
+    General;                 !- End-Use Subcategory
+
+
+!-   ===========  ALL OBJECTS IN CLASS: COIL:COOLING:DX:SINGLESPEED ===========
+
+Coil:Cooling:DX:SingleSpeed,
+    Main Cooling Coil 1,     !- Name
+    System Availability Schedule,  !- Availability Schedule Name
+    60000,                   !- Gross Rated Total Cooling Capacity {W}
+    0.83,                    !- Gross Rated Sensible Heat Ratio
+    4.5669,                  !- Gross Rated Cooling COP {W/W}
+    4.5,                     !- Rated Air Flow Rate {m3/s}
+    ,                        !- 2017 Rated Evaporator Fan Power Per Volume Flow Rate {W/(m3/s)}
+    934.4,                   !- 2023 Rated Evaporator Fan Power Per Volume Flow Rate {W/(m3/s)}
+    Supply Inlet Node,       !- Air Inlet Node Name
+    Main Cooling Coil 1 Outlet Node,  !- Air Outlet Node Name
+    Cool Cap Mod func of Temperature,  !- Total Cooling Capacity Function of Temperature Curve Name
+    HPACCoolCapFFF,          !- Total Cooling Capacity Function of Flow Fraction Curve Name
+    Liebert Econophase EIR Func T,  !- Energy Input Ratio Function of Temperature Curve Name
+    HPACCOOLEIRFFF,          !- Energy Input Ratio Function of Flow Fraction Curve Name
+    HPACCOOLPLFFPLR,         !- Part Load Fraction Correlation Curve Name
+    ,                        !- Minimum Outdoor Dry-Bulb Temperature for Compressor Operation {C}
+    ,                        !- Nominal Time for Condensate Removal to Begin {s}
+    ,                        !- Ratio of Initial Moisture Evaporation Rate and Steady State Latent Capacity {dimensionless}
+    ,                        !- Maximum Cycling Rate {cycles/hr}
+    ,                        !- Latent Capacity Time Constant {s}
+    ,                        !- Condenser Air Inlet Node Name
+    ,                        !- Condenser Type
+    ,                        !- Evaporative Condenser Effectiveness {dimensionless}
+    ,                        !- Evaporative Condenser Air Flow Rate {m3/s}
+    ,                        !- Evaporative Condenser Pump Rated Power Consumption {W}
+    ,                        !- Crankcase Heater Capacity {W}
+    ,                        !- Crankcase Heater Capacity Function of Temperature Curve Name
+    ,                        !- Maximum Outdoor Dry-Bulb Temperature for Crankcase Heater Operation {C}
+    ,                        !- Supply Water Storage Tank Name
+    ,                        !- Condensate Collection Water Storage Tank Name
+    ,                        !- Basin Heater Capacity {W/K}
+    ,                        !- Basin Heater Setpoint Temperature {C}
+    ,                        !- Basin Heater Operating Schedule Name
+    ,                        !- Sensible Heat Ratio Function of Temperature Curve Name
+    ,                        !- Sensible Heat Ratio Function of Flow Fraction Curve Name
+    Yes;                     !- Report ASHRAE Standard 127 Performance Ratings
+
+
+!-   ===========  ALL OBJECTS IN CLASS: COILSYSTEM:COOLING:DX ===========
+
+CoilSystem:Cooling:DX,
+    DX Cooling Coil System 1,!- Name
+    System Availability Schedule,  !- Availability Schedule Name
+    Supply Inlet Node,       !- DX Cooling Coil System Inlet Node Name
+    Main Cooling Coil 1 Outlet Node,  !- DX Cooling Coil System Outlet Node Name
+    Main Cooling Coil 1 Outlet Node,  !- DX Cooling Coil System Sensor Node Name
+    Coil:Cooling:DX:SingleSpeed,  !- Cooling Coil Object Type
+    Main Cooling Coil 1;     !- Cooling Coil Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AIRLOOPHVAC ===========
+
+AirLoopHVAC,
+    CRAC system,             !- Name
+    ,                        !- Controller List Name
+    CRAC 1 Availability List,!- Availability Manager List Name
+    2.5,                     !- Design Supply Air Flow Rate {m3/s}
+    Air Loop Branches,       !- Branch List Name
+    ,                        !- Connector List Name
+    Supply Inlet Node,       !- Supply Side Inlet Node Name
+    Zone Equipment Outlet Node,  !- Demand Side Outlet Node Name
+    Zone Equipment Inlet Node,  !- Demand Side Inlet Node Names
+    Supply Outlet Node;      !- Supply Side Outlet Node Names
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AIRLOOPHVAC:ZONESPLITTER ===========
+
+AirLoopHVAC:ZoneSplitter,
+    Zone Supply Air Splitter,!- Name
+    Zone Equipment Inlet Node,  !- Inlet Node Name
+    Cold  Zone ATU Inlet Node;  !- Outlet 1 Node Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AIRLOOPHVAC:SUPPLYPATH ===========
+
+AirLoopHVAC:SupplyPath,
+    Zone Supply Air Path,    !- Name
+    Zone Equipment Inlet Node,  !- Supply Air Path Inlet Node Name
+    AirLoopHVAC:ZoneSplitter,!- Component 1 Object Type
+    Zone Supply Air Splitter;!- Component 1 Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AIRLOOPHVAC:RETURNPLENUM ===========
+
+AirLoopHVAC:ReturnPlenum,
+    Top Return Plenum,       !- Name
+    Top Plenum,              !- Zone Name
+    Top Plenum Zone Node,    !- Zone Node Name
+    Zone Equipment Outlet Node,  !- Outlet Node Name
+    ,                        !- Induced Air Outlet Node or NodeList Name
+    Hot Zone Outlet Node;    !- Inlet 1 Node Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AIRLOOPHVAC:RETURNPATH ===========
+
+AirLoopHVAC:ReturnPath,
+    Zone Return Air Path,    !- Name
+    Zone Equipment Outlet Node,  !- Return Air Path Outlet Node Name
+    AirLoopHVAC:ReturnPlenum,!- Component 1 Object Type
+    Top Return Plenum;       !- Component 1 Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: BRANCH ===========
+
+Branch,
+    Air Loop Main Branch,    !- Name
+    ,                        !- Pressure Drop Curve Name
+    CoilSystem:Cooling:DX,   !- Component 1 Object Type
+    DX Cooling Coil System 1,!- Component 1 Name
+    Supply Inlet Node,       !- Component 1 Inlet Node Name
+    Main Cooling Coil 1 Outlet Node,  !- Component 1 Outlet Node Name
+    Fan:ConstantVolume,      !- Component 2 Object Type
+    EC Plug Fan 1,           !- Component 2 Name
+    Main Cooling Coil 1 Outlet Node,  !- Component 2 Inlet Node Name
+    Supply Outlet Node;      !- Component 2 Outlet Node Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: BRANCHLIST ===========
+
+BranchList,
+    Air Loop Branches,       !- Name
+    Air Loop Main Branch;    !- Branch 1 Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ENERGYMANAGEMENTSYSTEM:SENSOR ===========
+
+! custom EMS output variables
+! SCOP
+EnergyManagementSystem:Sensor,
+    Qdot_DXCoil_Sens,        !- Name
+    Main Cooling Coil 1,     !- Output:Variable or Output:Meter Index Key Name
+    Cooling Coil Sensible Cooling Rate;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    Power_DX_Coil_Elec,      !- Name
+    Main Cooling Coil 1,     !- Output:Variable or Output:Meter Index Key Name
+    Cooling Coil Electricity Rate;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    Power_SupplyFan_Elec,    !- Name
+    EC Plug Fan 1,           !- Output:Variable or Output:Meter Index Key Name
+    Fan Electricity Rate;    !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    DeltaT_SupplyFan,        !- Name
+    EC Plug Fan 1,           !- Output:Variable or Output:Meter Index Key Name
+    Fan Rise in Air Temperature;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    Mdot_SupplyFan,          !- Name
+    Supply Outlet Node,      !- Output:Variable or Output:Meter Index Key Name
+    System Node Mass Flow Rate;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    Tout_SupplyFan,          !- Name
+    Supply Outlet Node,      !- Output:Variable or Output:Meter Index Key Name
+    System Node Temperature; !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    Wout_SupplyFan,          !- Name
+    Supply Outlet Node,      !- Output:Variable or Output:Meter Index Key Name
+    System Node Humidity Ratio;  !- Output:Variable or Output:Meter Name
+
+!PUE
+! this is a very simple file with only one air loop and model is entirely a simple data center
+EnergyManagementSystem:Sensor,
+    IT_Equip_power,          !- Name
+    Whole Building,          !- Output:Variable or Output:Meter Index Key Name
+    Facility Total Building Electricity Demand Rate;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    whole_building_power,    !- Name
+    Whole Building,          !- Output:Variable or Output:Meter Index Key Name
+    Facility Total Electricity Demand Rate;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    ColdAisle_Temperature,   !- Name
+    Cold Zone,               !- Output:Variable or Output:Meter Index Key Name
+    Zone Mean Air Temperature;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    HotAisle1_Temperature,   !- Name
+    Hot Zone,                !- Output:Variable or Output:Meter Index Key Name
+    Zone Mean Air Temperature;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    W_Cold,                  !- Name
+    Cold Zone,               !- Output:Variable or Output:Meter Index Key Name
+    Zone Air Humidity Ratio; !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    W_Hot,                   !- Name
+    Hot Zone,                !- Output:Variable or Output:Meter Index Key Name
+    Zone Air Humidity Ratio; !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    Pb,                      !- Name
+    Environment,             !- Output:Variable or Output:Meter Index Key Name
+    Site Outdoor Air Barometric Pressure;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    Mdot_CRAC_to_Cold,       !- Name
+    Cold Zone Intel Node,    !- Output:Variable or Output:Meter Index Key Name
+    System Node Mass Flow Rate;  !- Output:Variable or Output:Meter Name
+
+EnergyManagementSystem:Sensor,
+    P_IT_HotZone,            !- Name
+    Hot Zone,                !- Output:Variable or Output:Meter Index Key Name
+    Zone Electric Equipment Electricity Rate;  !- Output:Variable or Output:Meter Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ENERGYMANAGEMENTSYSTEM:ACTUATOR ===========
+
+EnergyManagementSystem:Actuator,
+    act_Mix_ColdToHot,       !- Name
+    Cold to Hot Mixing,      !- Actuated Component Unique Name
+    ZoneMixing,              !- Actuated Component Type
+    Air Exchange Flow Rate;  !- Actuated Component Control Type
+
+EnergyManagementSystem:Actuator,
+    act_XMix_Dynamic,        !- Name
+    Hot Cold Cross Mixing,   !- Actuated Component Unique Name
+    ZoneCrossMixing,         !- Actuated Component Type
+    Air Exchange Flow Rate;  !- Actuated Component Control Type
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ENERGYMANAGEMENTSYSTEM:PROGRAMCALLINGMANAGER ===========
+
+EnergyManagementSystem:ProgramCallingManager,
+    Calculate Sensible Coefficient of Performance,  !- Name
+    EndOfZoneTimestepBeforeZoneReporting,  !- EnergyPlus Model Calling Point
+    CalcSCOP,                !- Program Name 1
+    CalcPUE;                 !- Program Name 2
+
+EnergyManagementSystem:ProgramCallingManager,
+    Dynamic CrossMixing Manager,  !- Name
+    BeginZoneTimestepAfterInitHeatBalance,  !- EnergyPlus Model Calling Point
+    DynamicCrossMixing;      !- Program Name 1
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ENERGYMANAGEMENTSYSTEM:PROGRAM ===========
+
+EnergyManagementSystem:Program,
+    CalcSCOP,                !- Name
+    set cpair = @CpAirFnW Wout_SupplyFan,  !- Program Line 1
+    set FanSensHeat = (Mdot_SupplyFan * cpair ) * DeltaT_SupplyFan,  !- Program Line 2
+    set numerator = Qdot_DXCoil_Sens - FanSensHeat,  !- A4
+    set denominator = Power_DX_Coil_Elec + Power_SupplyFan_Elec,  !- A5
+    IF denominator > 0.0,    !- A6
+    SET SCOP = numerator / denominator,  !- A7
+    ELSE,                    !- A8
+    SET SCOP = 0.0,          !- A9
+    ENDIF,                   !- A10
+    SET QdotNetSens = numerator,  !- A11
+    SET PowerCRAC = denominator;  !- A12
+
+EnergyManagementSystem:Program,
+    CalcPUE,                 !- Name
+    IF IT_Equip_power > 0.0, !- Program Line 1
+    set PUE = whole_building_power / IT_Equip_power,  !- Program Line 2
+    ELSE,                    !- A4
+    set PUE = 0.0,           !- A5
+    ENDIF;                   !- A6
+
+EnergyManagementSystem:Program,
+    DynamicCrossMixing,      !- Name
+    SET dT_srv = 12.0,       !- Program Line 1
+    SET f_leak = 0.10,       !- Program Line 2
+    SET a_relax = 0.30,      !- A4
+    SET Tavg = (ColdAisle_Temperature + HotAisle1_Temperature) / 2.0,  !- A5
+    SET Wavg = (W_Cold + W_Hot) / 2.0,  !- A6
+    SET rho = @RhoAirFnPbTdbW Pb Tavg Wavg,  !- A7
+    SET cp = @CpAirFnW Wavg, !- A8
+    SET m_srv = P_IT_HotZone / (cp * dT_srv),  !- A9
+    SET m_prev = @TrendValue tr_mcrac 1,  !- A10
+    SET m_crac_f = (a_relax * Mdot_CRAC_to_Cold) + ((1.0 - a_relax) * m_prev),  !- A11
+    SET m_crac = m_crac_f,   !- A12
+    SET m_rec = m_srv - m_crac,  !- A13
+    SET m_rec = @Max m_rec 0.0,  !- A14
+    SET m_rec = m_rec + (f_leak * m_srv),  !- A15
+    SET V_srv = m_srv / rho, !- A16
+    SET V_crac = m_crac / rho,  !- A17
+    SET V_rec = m_rec / rho, !- A18
+    SET V_c2h = V_crac,      !- A19
+    SET V_xmix_raw = V_rec,  !- A20
+    SET V_xmix_min = 0.30,   !- A21
+    SET V_xmix = @Max V_xmix_raw V_xmix_min,  !- A22
+    SET act_Mix_ColdToHot = V_c2h,  !- A23
+    SET act_XMix_Dynamic = V_xmix;  !- A24
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ENERGYMANAGEMENTSYSTEM:GLOBALVARIABLE ===========
+
+EnergyManagementSystem:GlobalVariable,
+    SCOP,                    !- Erl Variable 1 Name
+    QdotNetSens,             !- Erl Variable 2 Name
+    PowerCRAC;               !- Erl Variable 3 Name
+
+EnergyManagementSystem:GlobalVariable,
+    PUE;                     !- Erl Variable 1 Name
+
+EnergyManagementSystem:GlobalVariable,
+    m_crac_f,                !- Erl Variable 1 Name
+    V_srv,                   !- Erl Variable 2 Name
+    V_crac,                  !- Erl Variable 3 Name
+    V_rec,                   !- A4
+    V_c2h,                   !- A5
+    V_xmix;                  !- A6
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ENERGYMANAGEMENTSYSTEM:OUTPUTVARIABLE ===========
+
+EnergyManagementSystem:OutputVariable,
+    CRAC total system Power, !- Name
+    PowerCRAC,               !- EMS Variable Name
+    Averaged,                !- Type of Data in Variable
+    SystemTimeStep,          !- Update Frequency
+    ,                        !- EMS Program or Subroutine Name
+    W;                       !- Units
+
+EnergyManagementSystem:OutputVariable,
+    CRAC Net Sensible Capacity,  !- Name
+    QdotNetSens,             !- EMS Variable Name
+    Averaged,                !- Type of Data in Variable
+    SystemTimeStep,          !- Update Frequency
+    ,                        !- EMS Program or Subroutine Name
+    W;                       !- Units
+
+EnergyManagementSystem:OutputVariable,
+    CRAC SCOP,               !- Name
+    SCOP,                    !- EMS Variable Name
+    Averaged,                !- Type of Data in Variable
+    SystemTimeStep;          !- Update Frequency
+
+EnergyManagementSystem:OutputVariable,
+    PUE,                     !- Name
+    PUE,                     !- EMS Variable Name
+    Averaged,                !- Type of Data in Variable
+    SystemTimeStep;          !- Update Frequency
+
+EnergyManagementSystem:OutputVariable,
+    Dynamic CrossMixing Volume Flow Rate,  !- Name
+    V_xmix,                  !- EMS Variable Name
+    Averaged,                !- Type of Data in Variable
+    ZoneTimestep,            !- Update Frequency
+    ,                        !- EMS Program or Subroutine Name
+    m3/s;                    !- Units
+
+
+!-   ===========  ALL OBJECTS IN CLASS: ENERGYMANAGEMENTSYSTEM:TRENDVARIABLE ===========
+
+EnergyManagementSystem:TrendVariable,
+    tr_mcrac,                !- Name
+    m_crac_f,                !- EMS Variable Name
+    2;                       !- Number of Timesteps to be Logged
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AVAILABILITYMANAGER:SCHEDULED ===========
+
+AvailabilityManager:Scheduled,
+    CRAC 1 Avail,            !- Name
+    System Availability Schedule;  !- Schedule Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: AVAILABILITYMANAGERASSIGNMENTLIST ===========
+
+AvailabilityManagerAssignmentList,
+    CRAC 1 Availability List,!- Name
+    AvailabilityManager:Scheduled,  !- Availability Manager 1 Object Type
+    CRAC 1 Avail;            !- Availability Manager 1 Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SETPOINTMANAGER:MIXEDAIR ===========
+
+SetpointManager:MixedAir,
+    Coil Exit Temp Manager 1,!- Name
+    Temperature,             !- Control Variable
+    Supply Outlet Node,      !- Reference Setpoint Node Name
+    Main Cooling Coil 1 Outlet Node,  !- Fan Inlet Node Name
+    Supply Outlet Node,      !- Fan Outlet Node Name
+    Main Cooling Coil 1 Outlet Node;  !- Setpoint Node or NodeList Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: SETPOINTMANAGER:SYSTEMNODERESET:TEMPERATURE ===========
+
+SetpointManager:SystemNodeReset:Temperature,
+    Supply Temperature Reset,!- Name
+    Temperature,             !- Control Variable
+    18,                      !- Setpoint at Low Reference Temperature {C}
+    13,                      !- Setpoint at High Reference Temperature {C}
+    21,                      !- Low Reference Temperature {C}
+    25,                      !- High Reference Temperature {C}
+    Zone Equipment Outlet Node,  !- Reference Node Name
+    Supply Outlet Node;      !- Setpoint Node or NodeList Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: CURVE:QUADRATIC ===========
+
+Curve:Quadratic,
+    HPACCoolCapFFF,          !- Name
+    0.8,                     !- Coefficient1 Constant
+    0.2,                     !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.5,                     !- Minimum Value of x
+    1.5;                     !- Maximum Value of x
+
+Curve:Quadratic,
+    HPACCOOLEIRFFF,          !- Name
+    1.156,                   !- Coefficient1 Constant
+    -0.1816,                 !- Coefficient2 x
+    0.0256,                  !- Coefficient3 x**2
+    0.5,                     !- Minimum Value of x
+    1.5;                     !- Maximum Value of x
+
+Curve:Quadratic,
+    HPACCOOLPLFFPLR,         !- Name
+    0.85,                    !- Coefficient1 Constant
+    0.15,                    !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.0,                     !- Minimum Value of x
+    1.0;                     !- Maximum Value of x
+
+Curve:Quadratic,
+    ECM FanPower fFlow,      !- Name
+    0.0,                     !- Coefficient1 Constant
+    1.0,                     !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.0,                     !- Minimum Value of x
+    99.0;                    !- Maximum Value of x
+
+Curve:Quadratic,
+    UPS Efficiency fPLR,     !- Name
+    1.0,                     !- Coefficient1 Constant
+    0.0,                     !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.0,                     !- Minimum Value of x
+    99.0;                    !- Maximum Value of x
+
+
+!-   ===========  ALL OBJECTS IN CLASS: CURVE:BIQUADRATIC ===========
+
+Curve:Biquadratic,
+    Liebert Econophase quadratic fit,  !- Name
+    0.1416159,               !- Coefficient1 Constant
+    0.0,                     !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.013828452,             !- Coefficient4 y
+    0.00023872,              !- Coefficient5 y**2
+    0.0,                     !- Coefficient6 x*y
+    12.77778,                !- Minimum Value of x
+    23.88889,                !- Maximum Value of x
+    -10,                     !- Minimum Value of y
+    46.11111,                !- Maximum Value of y
+    0.04,                    !- Minimum Curve Output
+    1.4,                     !- Maximum Curve Output
+    Temperature,             !- Input Unit Type for X
+    Temperature,             !- Input Unit Type for Y
+    Dimensionless;           !- Output Unit Type
+
+Curve:Biquadratic,
+    Data Center Servers Power fLoadTemp,  !- Name
+    -1.0,                    !- Coefficient1 Constant
+    1.0,                     !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.06667,                 !- Coefficient4 y
+    0.0,                     !- Coefficient5 y**2
+    0.0,                     !- Coefficient6 x*y
+    0.0,                     !- Minimum Value of x
+    1.5,                     !- Maximum Value of x
+    -10,                     !- Minimum Value of y
+    99.0,                    !- Maximum Value of y
+    0.0,                     !- Minimum Curve Output
+    99.0,                    !- Maximum Curve Output
+    Dimensionless,           !- Input Unit Type for X
+    Temperature,             !- Input Unit Type for Y
+    Dimensionless;           !- Output Unit Type
+
+Curve:Biquadratic,
+    Data Center Servers Airflow fLoadTemp,  !- Name
+    -1.4,                    !- Coefficient1 Constant
+    0.9,                     !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.1,                     !- Coefficient4 y
+    0.0,                     !- Coefficient5 y**2
+    0.0,                     !- Coefficient6 x*y
+    0.0,                     !- Minimum Value of x
+    1.5,                     !- Maximum Value of x
+    -10,                     !- Minimum Value of y
+    99.0,                    !- Maximum Value of y
+    0.0,                     !- Minimum Curve Output
+    99.0,                    !- Maximum Curve Output
+    Dimensionless,           !- Input Unit Type for X
+    Temperature,             !- Input Unit Type for Y
+    Dimensionless;           !- Output Unit Type
+
+Curve:Biquadratic,
+    Data Center Recirculation fLoadTemp,  !- Name
+    1.0,                     !- Coefficient1 Constant
+    0.0,                     !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.0,                     !- Coefficient4 y
+    0.0,                     !- Coefficient5 y**2
+    0.0,                     !- Coefficient6 x*y
+    0.0,                     !- Minimum Value of x
+    1.5,                     !- Maximum Value of x
+    -10,                     !- Minimum Value of y
+    99.0,                    !- Maximum Value of y
+    0.0,                     !- Minimum Curve Output
+    99.0,                    !- Maximum Curve Output
+    Dimensionless,           !- Input Unit Type for X
+    Temperature,             !- Input Unit Type for Y
+    Dimensionless;           !- Output Unit Type
+
+
+!-   ===========  ALL OBJECTS IN CLASS: TABLE:INDEPENDENTVARIABLE ===========
+
+Table:IndependentVariable,
+    Cool Cap Mod func of Temperature_IndependentVariable1,  !- Name
+    Linear,                  !- Interpolation Method
+    Constant,                !- Extrapolation Method
+    13.0,                    !- Minimum Value
+    23.89,                   !- Maximum Value
+    ,                        !- Normalization Reference Value
+    Temperature,             !- Unit Type
+    ,                        !- External File Name
+    ,                        !- External File Column Number
+    ,                        !- External File Starting Row Number
+    13.00000,                !- Value 1
+    17.00000,                !- Value 2
+    19.44440,                !- N8
+    21.00000,                !- N9
+    23.90000;                !- N10
+
+Table:IndependentVariable,
+    Cool Cap Mod func of Temperature_IndependentVariable2,  !- Name
+    Linear,                  !- Interpolation Method
+    Constant,                !- Extrapolation Method
+    -10.0,                   !- Minimum Value
+    46.0,                    !- Maximum Value
+    ,                        !- Normalization Reference Value
+    Temperature,             !- Unit Type
+    ,                        !- External File Name
+    ,                        !- External File Column Number
+    ,                        !- External File Starting Row Number
+    -10.00000,               !- Value 1
+    15.00000,                !- Value 2
+    18.00000,                !- N8
+    24.00000,                !- N9
+    30.00000,                !- N10
+    35.00000,                !- N11
+    38.00000,                !- N12
+    46.00000;                !- N13
+
+Table:IndependentVariable,
+    Liebert Econophase EIR Func T_IndependentVariable1,  !- Name
+    Linear,                  !- Interpolation Method
+    Constant,                !- Extrapolation Method
+    12.7,                    !- Minimum Value
+    23.8,                    !- Maximum Value
+    ,                        !- Normalization Reference Value
+    Temperature,             !- Unit Type
+    ,                        !- External File Name
+    ,                        !- External File Column Number
+    ,                        !- External File Starting Row Number
+    12.70000,                !- Value 1
+    23.80000;                !- Value 2
+
+Table:IndependentVariable,
+    Liebert Econophase EIR Func T_IndependentVariable2,  !- Name
+    Linear,                  !- Interpolation Method
+    Constant,                !- Extrapolation Method
+    -50,                     !- Minimum Value
+    50,                      !- Maximum Value
+    ,                        !- Normalization Reference Value
+    Temperature,             !- Unit Type
+    ,                        !- External File Name
+    ,                        !- External File Column Number
+    ,                        !- External File Starting Row Number
+    -50.00000,               !- Value 1
+    -4.00000,                !- Value 2
+    -1.22220,                !- N8
+    1.55550,                 !- N9
+    4.33330,                 !- N10
+    7.11110,                 !- N11
+    9.88880,                 !- N12
+    12.66670,                !- N13
+    15.44440,                !- N14
+    18.22200,                !- N15
+    21.00000,                !- N16
+    23.77778,                !- N17
+    26.55556,                !- N18
+    29.33333,                !- N19
+    32.11111,                !- N20
+    34.88889,                !- N21
+    50.00000;                !- N22
+
+
+!-   ===========  ALL OBJECTS IN CLASS: TABLE:INDEPENDENTVARIABLELIST ===========
+
+Table:IndependentVariableList,
+    Cool Cap Mod func of Temperature_IndependentVariableList,  !- Name
+    Cool Cap Mod func of Temperature_IndependentVariable1,  !- Independent Variable 1 Name
+    Cool Cap Mod func of Temperature_IndependentVariable2;  !- Independent Variable 2 Name
+
+Table:IndependentVariableList,
+    Liebert Econophase EIR Func T_IndependentVariableList,  !- Name
+    Liebert Econophase EIR Func T_IndependentVariable1,  !- Independent Variable 1 Name
+    Liebert Econophase EIR Func T_IndependentVariable2;  !- Independent Variable 2 Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: TABLE:LOOKUP ===========
+
+Table:Lookup,
+    Cool Cap Mod func of Temperature,  !- Name
+    Cool Cap Mod func of Temperature_IndependentVariableList,  !- Independent Variable List Name
+    ,                        !- Normalization Method
+    ,                        !- Normalization Divisor
+    ,                        !- Minimum Output
+    ,                        !- Maximum Output
+    Dimensionless,           !- Output Unit Type
+    ,                        !- External File Name
+    ,                        !- External File Column Number
+    ,                        !- External File Starting Row Number
+    1.00,                    !- Output Value 1
+    1.00,                    !- Output Value 2
+    1.00,                    !- N8
+    0.924738271,             !- N9
+    0.883909339,             !- N10
+    0.835522309,             !- N11
+    0.800222635,             !- N12
+    0.683109499,             !- N13
+    1.00,                    !- N14
+    1.00,                    !- N15
+    1.00,                    !- N16
+    1.00,                    !- N17
+    0.976933863,             !- N18
+    0.937696593,             !- N19
+    0.907886775,             !- N20
+    0.805413255,             !- N21
+    1.00,                    !- N22
+    1.00,                    !- N23
+    1.00,                    !- N24
+    1.00,                    !- N25
+    1.00,                    !- N26
+    1.00,                    !- N27
+    0.9718,                  !- N28
+    0.8782,                  !- N29
+    1.00,                    !- N30
+    1.00,                    !- N31
+    1.00,                    !- N32
+    1.00,                    !- N33
+    1.00,                    !- N34
+    1.0385,                  !- N35
+    1.0142,                  !- N36
+    0.9264,                  !- N37
+    1.00,                    !- N38
+    1.00,                    !- N39
+    1.00,                    !- N40
+    1.00,                    !- N41
+    1.00,                    !- N42
+    1.110828252,             !- N43
+    1.090488436,             !- N44
+    1.013268253;             !- N45
+
+Table:Lookup,
+    Liebert Econophase EIR Func T,  !- Name
+    Liebert Econophase EIR Func T_IndependentVariableList,  !- Independent Variable List Name
+    ,                        !- Normalization Method
+    ,                        !- Normalization Divisor
+    0.03,                    !- Minimum Output
+    1.5,                     !- Maximum Output
+    Dimensionless,           !- Output Unit Type
+    ,                        !- External File Name
+    ,                        !- External File Column Number
+    ,                        !- External File Starting Row Number
+    0.042,                   !- Output Value 1
+    0.042,                   !- Output Value 2
+    0.084,                   !- N8
+    0.084,                   !- N9
+    0.2269,                  !- N10
+    0.2395,                  !- N11
+    0.311,                   !- N12
+    0.3697,                  !- N13
+    0.4454,                  !- N14
+    0.5462,                  !- N15
+    0.6723,                  !- N16
+    0.7227,                  !- N17
+    0.7773,                  !- N18
+    0.8193,                  !- N19
+    0.895,                   !- N20
+    1.0,                     !- N21
+    1.5,                     !- N22
+    0.042,                   !- N23
+    0.042,                   !- N24
+    0.084,                   !- N25
+    0.084,                   !- N26
+    0.2269,                  !- N27
+    0.2395,                  !- N28
+    0.311,                   !- N29
+    0.3697,                  !- N30
+    0.4454,                  !- N31
+    0.5462,                  !- N32
+    0.6723,                  !- N33
+    0.7227,                  !- N34
+    0.7773,                  !- N35
+    0.8193,                  !- N36
+    0.895,                   !- N37
+    1.0,                     !- N38
+    1.5;                     !- N39
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:VARIABLEDICTIONARY ===========
+
+Output:VariableDictionary,
+    IDF;                     !- Key Field
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:SURFACES:DRAWING ===========
+
+Output:Surfaces:Drawing,
+    DXF;                     !- Report Type
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:CONSTRUCTIONS ===========
+
+Output:Constructions,
+    Constructions;           !- Details Type 1
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:ENERGYMANAGEMENTSYSTEM ===========
+
+Output:EnergyManagementSystem,
+    Verbose,                 !- Actuator Availability Dictionary Reporting
+    Verbose,                 !- Internal Variable Availability Dictionary Reporting
+    Verbose;                 !- EMS Runtime Language Debug Output Level
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:TABLE:SUMMARYREPORTS ===========
+
+Output:Table:SummaryReports,
+    AllSummary;              !- Report 1 Name
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUTCONTROL:TABLE:STYLE ===========
+
+OutputControl:Table:Style,
+    HTML;                    !- Column Separator
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:VARIABLE ===========
+
+Output:Variable,
+    *,                       !- Key Value
+    Zone Mean Air Temperature,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    *,                       !- Key Value
+    Zone Mixing Current Density Volume Flow Rate,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    *,                       !- Key Value
+    Zone Mixing Mass Flow Rate,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    *,                       !- Key Value
+    Zone Mixing Sensible Heat Gain Energy,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    *,                       !- Key Value
+    Zone Mixing Sensible Heat Loss Energy,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Supply Outlet Node,      !- Key Value
+    System Node Standard Density Volume Flow Rate,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Supply Outlet Node,      !- Key Value
+    System Node Mass Flow Rate,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Cold Zone Inlet Node,    !- Key Value
+    System Node Standard Density Volume Flow Rate,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Environment,             !- Key Value
+    Site Outdoor Air Drybulb Temperature,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    *,                       !- Key Value
+    Zone Thermostat Cooling Setpoint Temperature,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Supply Outlet Node,      !- Key Value
+    System Node Temperature, !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Supply Outlet Node,      !- Key Value
+    System Node Setpoint Temperature,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Main Cooling Coil 1 Outlet Node,  !- Key Value
+    System Node Setpoint Temperature,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    Main Cooling Coil 1,     !- Key Value
+    Cooling Coil Electricity Rate,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    EC Plug Fan 1,           !- Key Value
+    Fan Electricity Rate,    !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    *,                       !- Key Value
+    CRAC total system Power, !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+Output:Variable,
+    *,                       !- Key Value
+    Dynamic CrossMixing Volume Flow Rate,  !- Variable Name
+    Timestep;                !- Reporting Frequency
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:METER ===========
+
+Output:Meter,
+    Electricity:HVAC,        !- Key Name
+    Timestep;                !- Reporting Frequency
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:METER:METERFILEONLY ===========
+
+Output:Meter:MeterFileOnly,
+    Electricity:Facility,    !- Key Name
+    monthly;                 !- Reporting Frequency
+
+Output:Meter:MeterFileOnly,
+    Electricity:HVAC,        !- Key Name
+    monthly;                 !- Reporting Frequency
+
+Output:Meter:MeterFileOnly,
+    Electricity:Facility,    !- Key Name
+    runperiod;               !- Reporting Frequency
+
+Output:Meter:MeterFileOnly,
+    Electricity:HVAC,        !- Key Name
+    runperiod;               !- Reporting Frequency
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:SQLITE ===========
+
+Output:SQLite,
+    Simple;                  !- Option Type
+
+
+!-   ===========  ALL OBJECTS IN CLASS: OUTPUT:DIAGNOSTICS ===========
+
+Output:Diagnostics,
+    DisplayExtraWarnings;    !- Key 1
+
