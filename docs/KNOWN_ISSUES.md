@@ -26,28 +26,6 @@ Last reviewed: 2026-11-19.
 
 ---
 
-## 1. Parquet sink → native SIGSEGV in a federate process  (HIGH)
-
-Any scenario with `memory_config.sink: parquet` crashes a federate with a bare `SIGSEGV`
-(exit code `-11`, `error 6 in libstdc++.so.6.0.34`, dmesg-confirmed) — no Python traceback.
-The identical scenario with `sink: json` completes cleanly. Reproduced on 4 unrelated
-scenarios (`rc_building_parquet_test`, `m2_interface_outbound_smoke_test_parquet`,
-`fmu_feedthrough_test`, `stress_multi_building_parquet`) and 2 combo scenarios.
-
-- Crash correlates with the async parquet writer path: `src/utils/async_storage.py`
-  (`AsyncStorageWriter`) + `src/utils/parquet_storage.py` (`ParquetStorageWriter`, pyarrow
-  `ParquetWriter`). Seen both at writer-thread startup (`weather_csv_reader` federate log empty
-  → crash at import/thread spawn) and at close/finalize (interface federate crashes right after
-  its last step, no finalize log line).
-- `import pyarrow` / `import helics` (separately and together) work fine → not a missing package.
-  Most likely a native-library interaction (Arrow C++ vs HELICS bundled libs) that only triggers
-  when the writer thread runs inside a federate subprocess.
-- The user reports parquet working elsewhere — so this may be specific to this machine's
-  pyarrow / libstdc++ build. Worth pinning the pyarrow + libstdc++ versions where it works vs here.
-- Unit tests `tests/test_parquet_storage.py` / `tests/test_async_storage.py` pass — the schema/
-  writer logic is fine in-process; the crash is in the federate-subprocess runtime.
-- **Workaround:** use `sink: json`.
-
 ## 2. zmq auto-port allocation ignores the paired `port+1`  (MEDIUM)
 
 `ScenarioManager._get_n_available_tcp_ports()` hands out N single free ports, but a `zmq`
@@ -89,28 +67,15 @@ Two independent concepts share the code: the RL **episode reset** and the model'
 `docs/changes_reports/model_reset_redesign_plan.md`, design context:
 `docs/future_and_TODOs/fmu_horizon_and_reset_followups.md`). What is left:
 
-- `parallel_execution` never propagates a reset to its worker processes (F5); `RL_Federate`
-  has its own loop and does no horizon handling.
+- `RL_Federate` has its own loop and does no horizon handling.
 - Horizon restart is per model (`BaseModel._step`), so models with different horizons restart
   out of phase (the federate only warns).
 - After a full/rolling reset the federate publishes `init_state.outputs` for one tick instead of
   the values at the new restart instant (CSV: row 0; FMU: `TBuilding` at its default)
-  (`fmu_horizon_and_reset_followups.md` §6).
+  (`fmu_horizon_and_reset_followups.md` §5).
 - The last EnergyPlus slave of a run ends with `Socket communication received error value "-1"`
   in its `.err` (terminated by `finalize` without its closing handshake); its own `.csv`/`.eso`
   are not written. Model outputs are unaffected. Pre-existing.
-
-## 6. `tests/test_scenario_manager_remote.py` — 2 tests broken  (LOW, test-only)
-
-`TestRemoteFederates::test_verify_and_deploy_called_for_each_machine` and the preflight-failure
-test next to it both die with
-`AttributeError: 'types.SimpleNamespace' object has no attribute 'scenario_name'` at
-`src/core/ScenarioManager.py:895` (`self.logger_system.scenario_name`): the fake config the tests build no longer carries every
-attribute the deploy path reads. Pre-existing on `main`, unrelated to the distributed feature
-itself (the real `distributed_demo` scenario passes).
-
-- **Fix:** add `scenario_name` (and whatever else has been added since) to the test's
-  `SimpleNamespace`, or build the fake config from the real dataclass.
 
 ## 7. Loading `helics` before `libstdc++` → SIGSEGV in torch / ray  (LOW, mitigated, environment)
 
@@ -188,7 +153,7 @@ Every distributed scenario — including the localhost-as-remote ones in the reg
 (`distributed_demo`, `distributed_multifederation_test`, `combo_dist_parallel`) — needs
 passwordless SSH from the manager to each machine, **including `127.0.0.1`**. On a fresh machine
 this is not set up and the run aborts with `Host key verification failed` or a password refusal
-(`BatchMode=yes`). Seen on `eclab-cloud1`, 2026-11-19.
+(`BatchMode=yes`). Seen on `eclab-cloud1`, 2026-11-19; fixed there on 2026-11-20 (dedicated key `~/.ssh/cosim_localhost` + `Host 127.0.0.1` entry in `~/.ssh/config`).
 
 - **Fix per machine:** follow [Distributed Deployment → Adding a machine](user_guide/distributed_deployment.md#adding-a-machine-checklist).
 - Loopback "remotes" now reuse the manager's interpreter, and local FMU paths in `catalog.yaml`
@@ -196,3 +161,11 @@ this is not set up and the run aborts with `Host key verification failed` or a p
 - Still machine-specific: the `python:` paths of the real cloud machines in
   `distributed_demo_multi`, `benchmark_scale_distributed*`, `cs_s4c_shard_*` (only run with
   `RUN_CLOUD=1`; check them when the remote machines change).
+
+## 14. EnergyPlus FMU scenarios hang when `energyplus` is not on PATH  (MEDIUM, machine setup)
+
+The `BUI0.fmu` shells out to an `energyplus` executable found on `PATH` and then waits on a socket
+for it. If it is missing (as on a fresh `eclab-cloud1`) the FMU federate idles in `accept()` until the
+suite's 240 s timeout, with no error message and no child process. Fix: install EnergyPlus 23.1.0 and
+put it on `PATH` (verified without root: unpack the NREL Linux tarball in `~/opt` and prefix `PATH`).
+The hostname/IPv6 theory recorded earlier was wrong (a shim giving `127.0.0.1` did not help).

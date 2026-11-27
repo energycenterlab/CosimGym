@@ -82,8 +82,14 @@ def _worker_loop(conn, build_spec, entity_ids):
         if msg is None:
             break
 
-        ts, in_shard = msg
         try:
+            if msg[0] == 'reset':  # ('reset', mode, rel_ts_target, span_ticks); ts is an int, so no clash
+                _, mode, rel_ts_target, span_ticks = msg
+                for model in models.values():
+                    model._reset(mode=mode, rel_ts_target=rel_ts_target, span_ticks=span_ticks)
+                conn.send('__ack__')
+                continue
+            ts, in_shard = msg
             out = {}
             for entity_id, model in models.items():
                 out[entity_id] = model._step(ts, in_shard.get(entity_id, {}))
@@ -216,6 +222,35 @@ class ParallelModelExecutor:
                 raise RuntimeError(f"ParallelModelExecutor: worker (pid={proc.pid}) raised: {result[1]}")
             merged.update(result)
         return merged
+
+    def reset(self, mode, rel_ts_target, span_ticks):
+        """Forward a model reset to every worker and wait for all acks (keeps the
+        pipes in step with `step()`)."""
+        if not self._started:
+            raise RuntimeError("ParallelModelExecutor.reset() called before start()")
+
+        for conn in self._parent_conns:
+            try:
+                conn.send(('reset', mode, rel_ts_target, span_ticks))
+            except (BrokenPipeError, OSError) as exc:
+                self.close()
+                raise RuntimeError(f"ParallelModelExecutor: worker pipe broken while sending reset: {exc}")
+
+        for proc, conn in zip(self._workers, self._parent_conns):
+            try:
+                result = conn.recv()
+            except (EOFError, BrokenPipeError, OSError) as exc:
+                self.close()
+                raise RuntimeError(
+                    f"ParallelModelExecutor: worker (pid={proc.pid}) died or closed its "
+                    f"pipe while resetting: {exc}"
+                )
+            if isinstance(result, tuple) and len(result) == 2 and result[0] == '__error__':
+                self.close()
+                raise RuntimeError(f"ParallelModelExecutor: worker (pid={proc.pid}) raised on reset: {result[1]}")
+            if result != '__ack__':
+                self.close()
+                raise RuntimeError(f"ParallelModelExecutor: unexpected reply to reset from worker (pid={proc.pid})")
 
     def close(self):
         """Idempotent, escalating shutdown: sentinel -> join -> terminate -> join -> kill.

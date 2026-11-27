@@ -105,8 +105,7 @@ class BaseFMUModel(BaseModel):
         self._eplus = False
 
         # How many slaves have been instantiated so far (0 before the first
-        # ``initialize``). Each restart gets its own output subdir so successive
-        # instances do not overwrite each other's files.
+        # ``initialize``). Restarts reuse the same output dir (see _resolve_fmu_workdir).
         self._instance_count = 0
         # FMI start / stop time of the live slave (seconds on the FMU's own clock).
         self._fmi_start = 0.0
@@ -318,11 +317,10 @@ class BaseFMUModel(BaseModel):
         if base is None:
             base = Path('logs').resolve()
 
+        # One directory for the whole run: a restart overwrites the previous slave's
+        # Output_EPExport_<instance> (the old slave is already freed), so hundreds of
+        # episodes do not leave hundreds of directories.
         workdir = base / 'fmu_output'
-        if self._instance_count:
-            # Second and later slaves write to their own subdir; the first keeps
-            # the historical path so existing result layouts are unchanged.
-            workdir = workdir / f"restart_{self._instance_count}"
         workdir.mkdir(parents=True, exist_ok=True)
         return workdir
 

@@ -37,6 +37,10 @@ Docker and Python both read `src/.env`; an exported environment variable wins ov
 Distributed runs (and the regression suite's distributed scenarios) also need passwordless SSH,
 including to this machine itself → [Adding a machine (checklist)](user_guide/distributed_deployment.md#adding-a-machine-checklist).
 
+EnergyPlus FMU scenarios (`bui0_*`, `fmu_*`, and their regression-suite entries) also need the
+`energyplus` executable (23.1.0) on `PATH`, otherwise they hang until timeout →
+[Installation → pre-requisites](Installation_Setup.md#pre-requisites), [Known Issues §14](KNOWN_ISSUES.md).
+
 ## 2. Services (Docker)
 
 `src/docker-compose.yaml` starts: **Redis** (config + model catalog store — required),
@@ -92,7 +96,7 @@ ssh -L 8052:localhost:8052 <you>@<server>   # view a server's dashboard from you
 | **Regression suite** (pre-merge gate) | `conda run -n cosim_gym python tests/regression_suite.py` | services up + SSH to `127.0.0.1` |
 | Suite + real remote machines | `RUN_CLOUD=1 conda run -n cosim_gym python tests/regression_suite.py` | the cloud machines reachable |
 
-The regression suite runs pytest, then ~37 scenarios (one per feature + feature combinations),
+The regression suite runs pytest, then ~44 scenarios (one per feature + feature combinations),
 each **shortened on a temporary copy** (1 simulated hour, 2 RL episodes, auto ports) so your
 YAML files are never touched. Reading the result:
 

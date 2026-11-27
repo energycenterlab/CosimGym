@@ -53,7 +53,7 @@ def _fake_manager(config, tmp_path) -> ScenarioManager:
     mgr = object.__new__(ScenarioManager)
     mgr.config = config
     mgr.logger = logging.getLogger('test_scenario_manager_remote')
-    mgr.logger_system = SimpleNamespace(scenario_log_dir=Path(tmp_path))
+    mgr.logger_system = SimpleNamespace(scenario_log_dir=Path(tmp_path), scenario_name="test", run_timestamp="t0")
     mgr.remote_executors = {}
     return mgr
 

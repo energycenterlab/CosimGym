@@ -19,14 +19,14 @@
 >    limit, RL or not) and the RL episode reset are independent; see
 >    `docs/user_guide/fmu_models.md` §4.
 > 3. **Mechanisms no longer in the code.** `local_ts` / `ts_shift` / `reposition` /
->    `_reposition_backend`, `BaseFederate._reset_on_horizon`, the replay with recorded input
->    history and the two-snapshot scheme described below were removed or replaced by the
->    commits after `fdf7575` (now `rel_ts` and `BaseModel.local_time(mode=…)`), and the
->    refactor is unfinished — defects in `docs/KNOWN_ISSUES.md` §5 (the old §7 was removed in F1). The test and
->    regression counts quoted in §5 (38/38 scenarios, 313 tests) describe the state before that
->    refactor, not today.
+>    `_reposition_backend`, `BaseFederate._reset_on_horizon`, `BaseModel.local_time(mode=…)`, the
+>    replay with recorded input history, the two-snapshot scheme and the `fmu_output/restart_<n>/`
+>    directories described below were removed. The reset is now one mechanism
+>    (`BaseModel._reset`, relative clock `rel_ts`) — see `model_reset_redesign_changes.md`.
+>    Remaining defects: `docs/KNOWN_ISSUES.md` §5. The test and regression counts quoted in §5
+>    (38/38 scenarios, 313 tests) describe the state before the refactor, not today.
 > 4. Measurements that stand independent of the premise: the teardown cost (§6 "Measured
->    cost", since reduced to ~0.1 s per teardown — follow-ups §5), the `noSetFMUStatePriorToCurrentPoint` fix (bug 1) and the
+>    cost", since reduced to ~0.1 s per teardown), the `noSetFMUStatePriorToCurrentPoint` fix (bug 1) and the
 >    whole-day constraint.
 
 Change note for the work adding automatic restart of models that cannot run for

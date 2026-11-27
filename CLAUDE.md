@@ -78,6 +78,13 @@ commands, config defaults, catalog format, file layout of results):
    refactors and bug fixes do **not** earn a CLAUDE.md edit. Keep this file dense.
 3. Add a scenario (and where relevant a combination) to `tests/regression_suite.py` — it
    is the living feature contract.
+4. **`docs/developer_guide.md` is the single home for dev/deploy command guides.** Any
+   change that affects a command, Makefile target, env var, port, setup or deployment step
+   — or any time the user asks you to write down "how to do X" for development or
+   deployment — goes there, not in a new file or only in chat. When you touch it, verify
+   consistency: run or dry-check the commands where feasible, and cross-check against the
+   code/Makefile and against `docs/Installation_Setup.md`, `docs/user_guide/distributed_deployment.md`
+   and the Setup section of this file; fix any disagreement in the same task.
 
 ### Handoff routine (every session)
 
@@ -194,7 +201,7 @@ Scenario catalogues: `src/scenarios/scenario_tests.md`, `src/scenarios/paper_cas
 **Prerequisites:** Conda, Docker, Docker Compose **v2** (`docker compose` plugin — verify
 `docker compose version` reports `v2.x`; legacy `docker-compose` v1 rejects the Compose
 Spec file), Python 3.12. Shared server without sudo: install the Compose v2 plugin into
-your home only. Full instructions: [Installation & Setup](docs/Installation_Setup.md).
+your home only. EnergyPlus 23.1.0 on `PATH` is needed only for FMU scenarios (`bui0_*`, `fmu_*`). Full instructions: [Installation & Setup](docs/Installation_Setup.md).
 
 ```bash
 docker compose -f src/docker-compose.yaml up -d   # Redis + MinIO + Mosquitto — required

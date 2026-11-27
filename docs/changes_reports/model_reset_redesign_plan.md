@@ -1,4 +1,4 @@
-**STATUS: IN PROGRESS** — F0, F1, F2, F3, F4 DONE (2026-10-26). Next: F5, then F6.
+**STATUS: DONE** — F0–F6 (F6: 2026-11-19). Verified incl. E+ restarts (`bui0_setpoint_DQN_rolling`). Full suite run: only known failures (distributed scenarios need ssh, §13). Report: `model_reset_redesign_changes.md`.
 
 # Piano — Obiettivo 1: refactor del reset (BaseModel → FMU)
 
@@ -88,8 +88,8 @@ Regole comuni a ogni fase:
 | **F2** unità + span + pulizia orizzonte scenario — **DONE** | §2: conversione/validazione in ScenarioManager, `rl_config` per federate, launcher, span dal federate, `_track_episodes`, rimozione `simulation_horizon` & co. Elenco scenari rifiutati → chiedere all'utente come correggerli | `ScenarioManager.py`, `federate_launcher.py`, `BaseFederate.py`, `config_dataclasses.py` | unit test conversione/errore; scenari RL esistenti validi partono; `general.md` aggiornato |
 | **F3** CSV — **DONE** | §5: riga da `rel_ts`, `max_sim_time` derivato, `WeatherCSVReader(BaseCSVReader)` | `base_csv_reader.py`, `weather_csv_reader.py` | unit test cursore/wrap/rolling; scenario con weather parte |
 | **F4** FMU — **DONE** | §4 completo + catalogo `fmu_engine` + `fmu_catalog_register.py --engine`; elimina `test_fmu_state_snapshot.py`, aggiorna `test_fmu_horizon_detection.py` | `base_FMU_model.py`, `catalog.yaml`, `fmu_catalog_register.py` | `bui0_fmu_test`, `fmu_horizon_smoketest`, smoke E+ rolling breve con `.eio` alla data attesa; `fmu_models.md` aggiornato |
-| **F5** parallel — TODO | §3 | `parallel_executor.py`, `BaseFederate.py` | unit test executor reset con modello dummy |
-| **F6** chiusura — TODO | `tests/test_model_reset.py` consolidato, 2 scenari regression (go-ahead prima della run completa), docs restanti, KNOWN_ISSUES §5, followups (auto-discovery engine), changes report, plan → DONE | tests, docs | gate regression verde (salvo KNOWN_FAIL) |
+| **F5** parallel — **DONE** | §3 | `parallel_executor.py`, `BaseFederate.py` | unit test executor reset con modello dummy |
+| **F6** chiusura — DONE (vedi report) | `tests/test_model_reset.py` consolidato, 2 scenari regression (go-ahead prima della run completa), docs restanti, KNOWN_ISSUES §5, followups (auto-discovery engine), changes report, plan → DONE | tests, docs | gate regression verde (salvo KNOWN_FAIL) |
 
 **Chiarimenti emersi in F1** (precisano il design, non riaprono decisioni):
 - Convenzione `rel_time` = quella di `state.time`: durante uno step indica la *fine* dello step, `start + (rel_ts+1)·period` (con `rel_ts` 0-based, incrementato dopo `step()`); senza reset `rel_time == time`. Subito dopo un reset a `T`: `rel_time = start + T·period`. Per F4: lo startTime FMU è `start + rel_ts·period` (inizio step), non `rel_time`.
@@ -123,6 +123,14 @@ Regole comuni a ogni fase:
 - Scenari: `bui0_fmu_test`, `fmu_horizon_smoketest`, `bui0_setpoint_DQN`, `rc_building_test_base`, `bui_hp_DQN_rollingreset` passano. Smoke E+ rolling (copia temporanea: window 2 giorni, period 1 giorno, 3 episodi + test, INFO): `.eio` `Environment` = 01/01, 01/03, 01/05, 01/07 (giorni 0, 2, 4, 6), ogni slave copre 24 h; run di 4 giorni in 12 s, teardown ~0.1 s (followups §5 risolto).
 - Rimasto, vedi KNOWN_ISSUES §5: l'ultimo slave E+ finisce con errore socket `-1` in `.err` (già così prima); un tick pubblica `init_state` dopo il reset (ora anche per FMU); `fmu_output/restart_<n>/` si moltiplica con gli episodi (da decidere con l'autore; dettagli in `fmu_horizon_and_reset_followups.md` §5).
 - Scenari `cs_*` rifiutati (F2) spostati in `src/scenarios/to_review_rolling_window/` con README.
+
+**Fatto in F5:**
+- `parallel_executor`: messaggio `('reset', mode, rel_ts_target, span_ticks)` nel `_worker_loop` (riconosciuto da `msg[0] == 'reset'` prima dell'unpack `(ts, in_shard)`), risposta `'__ack__'`, stesso schema errore di `step`; `ParallelModelExecutor.reset(...)` attende l'ack di **tutti** i worker (pipe sempre allineate), errore/ack inatteso → `close()` + `RuntimeError`.
+- **Deviazione dal piano:** `BaseFederate._reset` in modo parallel inoltra il reset **solo ai worker**, non alle copie main: queste non fanno mai step e servono solo per chiavi/parametri/`init_state`; resettarle riavvierebbe a ogni episodio un'istanza FMU inutile nel processo principale. `_next_span()` calcolato una volta sola.
+- `initial_span_ticks` arriva ai worker (iniettato in `model_configs` prima del build spec).
+- Test (in `tests/test_model_reset.py`, niente file nuovo): reset raggiunge tutti i worker e le pipe restano allineate, errore nel reset di un worker chiude l'executor, il federate inoltra ai worker e non alle copie main. Docs: `federate.md`, KNOWN_ISSUES §5 (voce parallel tolta).
+- Baseline pytest su eclab-cloud1 prima di F5: 311 passati, 2 falliti (i 2 noti di KNOWN_ISSUES §6, `test_scenario_manager_remote.py`), 2 skip. Dopo F5: 306 passati (suite senza quei test remote), 2 skip.
+- Non verificato: scenario parallel+reset con RL reale (F6, richiede docker).
 
 Dipendenze: F1 → F2 → (F3, F4, F5 indipendenti fra loro) → F6.
 

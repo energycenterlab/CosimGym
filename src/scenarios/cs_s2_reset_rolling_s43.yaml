@@ -28,7 +28,7 @@ reinforcement_learning_config:
     reward: models.model_catalog.RL_agents.reward_functions.building_heatpump_comfort
     reset:
       mode: rolling
-      rolling_window: 10
+      rolling_window: 15
   agent:
     model_name: rl_simple_SACsb3
     backend: stable_baselines3

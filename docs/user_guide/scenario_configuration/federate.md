@@ -253,6 +253,7 @@ By default a federate steps its `n_instances` model instances **sequentially** e
 
 - **Processes, not threads** — the target models are pure-Python (GIL-bound), so threads give no speedup. Workers rebuild their model shard from config (live model objects aren't picklable).
 - **When it helps** — only when per-instance `step()` is genuinely CPU-heavy. For cheap steps, inter-process overhead can outweigh the gain (measured: speedup climbs as step cost grows, toward the worker-count ceiling). Light models (e.g. `rc_building`) see little/no benefit.
+- **Resets** — an RL-training episode reset (`full` / `rolling`) is forwarded to every worker as a `('reset', mode, rel_ts_target, span_ticks)` message and acknowledged before the next tick; the horizon restart already happens inside the workers' own `step`. The main process's model copies are *not* reset (they never step; they only serve keys, parameters and `init_state`).
 - **Cleanup** — workers are `daemon` processes shut down on every exit path (normal end, exception, SIGINT/SIGTERM) via an escalating `close()` (sentinel → join → terminate → kill) plus `atexit`/signal handlers. No orphan processes.
 - **Not supported with** (raises `NotImplementedError`): `override_enabled: true` (digital-twin param/output overrides act on the main process's non-stepping model copies) and `type: rl` federates.
 

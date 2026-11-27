@@ -1,15 +1,16 @@
-# Building + Heat Pump + SAC RL Agent + Weather Reader Co-simulation Scenario
-# Paper case study S2 (Part A) — RL control, SAC agent (PID → RL swap).
+# COMBO parallel_execution + RL rolling reset: weather reader has 2 instances on 2 workers; a reset must reach both.
 #
 # Data flow:
-#   weather  → T_ext          → heatpump, building
-#   heatpump → Q_heat         → building
-#   building → T_indoor       → (RL observation)
-#   RL agent → modulation     → heatpump (action)
+#   weather_federate  → T_ext          → heatpump_federate, building_federate
+#   pid_federate      → modulation     → heatpump_federate
+#   heatpump_federate → Q_heat         → building_federate
+#   building_federate → T_indoor       → pid_federate
+#
+#   Setpoint is embedded as a parameter in the PID model (T_setpoint = 20 °C).
 
 version: "1.0.0"
-name: "cs_s4b_sac_s42_rolling"
-scenario_description: "Paper case study S4b: building thermal model controlled by a SAC RL agent from stable-baselines3, with real weather data from CSV."
+name: "combo_parallel_rl_rollingreset"
+scenario_description: "Building thermal model controlled by a DQN RL agent, with real weather data from CSV."
 
 start_time: "2024-01-01T00:00:00"
 end_time: "2024-01-02T00:00:00"
@@ -20,7 +21,6 @@ memory_config:
   attrs: ["T_indoor", "T_ext", "Q_heat", "P_elec", "COP", "modulation"]
 
 reinforcement_learning_config:
-  seed: 42
   environment:
     observations:
       federation_1.weather.0.T_ext:
@@ -29,27 +29,32 @@ reinforcement_learning_config:
         causality: next_step
         reset_default: 18.0
     actions:
-      federation_1.heatpump.0.modulation: null
+      federation_1.heatpump.0.modulation:
+        space: discrete
+        bins: 10
     reward: models.model_catalog.RL_agents.reward_functions.building_heatpump_comfort
     reset:
       mode: rolling
       rolling_window: 10
   agent:
-    model_name: rl_simple_SACsb3
-    backend: stable_baselines3
-    algorithm: SAC
+    model_name: rl_simple_DQN
+    backend: custom_torch
+    algorithm: DQN
     hyperparameters:
       gamma: 0.99
       batch_size: 64
       learning_rate: 0.001
-      train_frequency: 100
-      gradient_steps: 1
     params:
       gradient_clip: 10.0
-      target_update_interval: 5
+      target_update_interval: 1000
+      exploration:
+        strategy: epsilon_greedy
+        initial_epsilon: 1.0
+        final_epsilon: 0.05
+        epsilon_decay_steps: 100000
       replay_buffer:
-        buffer_size: 100000
-        prefill_steps: 2880
+        buffer_size: 1000000
+        prefill_steps: 10000
   run:
     train:
       episodes: 100
@@ -60,18 +65,20 @@ reinforcement_learning_config:
       deterministic: true
   experiment:
     checkpoint:
-      best: best_sac_sb3_model.pth
+      best: best_combo_parallel_rl.pth
 federations:
   federation_1:
     broker_config:
       core_type: "tcp"
+      port: 23404
       host: "localhost"
       federates: 3
       log_level: ERROR
 
     federate_configs:
 
-      # -----------------------------------------------------------------------
+  
+     # -----------------------------------------------------------------------
       # Weather federate – streams T_ext from CSV
       # -----------------------------------------------------------------------
       weather:
@@ -82,7 +89,7 @@ federations:
         core_type: "tcp"
 
         timing_configs:
-          real_period: 900   # 15-min weather_TO.csv cadence (1 CSV row per step)
+          real_period: 60   # one CSV row per 60 s sim-step
         flags:
           terminate_on_error: true
           wait_for_current_time_update: false
@@ -97,14 +104,14 @@ federations:
 
         model_configs:
           instantiation:
-            model_name: "weather_csv_reader"
-            n_instances: 1
+            model_name: "base_csv_reader"
+            n_instances: 2
             prefix: "weather"
-            parallel_execution: false
+            parallel_execution: true
+            max_parallel_workers: 2
 
           parameters:
-            csv_path: "resources/weather_TO.csv"  # relative to model script dir
-            column: "T_ext"
+            csv_path: "model_catalog/physical_models/resources/weather_TO.csv"  # relative to model script dir
             skip_rows: 0
 
           init_state:

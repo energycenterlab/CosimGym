@@ -8,8 +8,8 @@
 #   RL agent → modulation     → heatpump (action)
 
 version: "1.0.0"
-name: "cs_s2_reset_rolling"
-scenario_description: "Paper case study S2 (Part B): reset-strategy benchmark, mode=rolling (window=10) — SAC RL agent, otherwise identical to cs_s2_sac.yaml."
+name: "cs_s4b_sac_s42_rolling"
+scenario_description: "Paper case study S4b: building thermal model controlled by a SAC RL agent from stable-baselines3, with real weather data from CSV."
 
 start_time: "2024-01-01T00:00:00"
 end_time: "2024-01-02T00:00:00"
@@ -33,7 +33,7 @@ reinforcement_learning_config:
     reward: models.model_catalog.RL_agents.reward_functions.building_heatpump_comfort
     reset:
       mode: rolling
-      rolling_window: 10
+      rolling_window: 15
   agent:
     model_name: rl_simple_SACsb3
     backend: stable_baselines3

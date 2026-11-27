@@ -183,6 +183,7 @@ def make_federate(reset_type, ts, rolling_window=None, reset_length=10, mode='tr
     fed.n_resets_train = n_resets_train
     fed.stop_time = stop_time
     fed.published = 0
+    fed.parallel_executor = None
     fed._publish_init_state = lambda: setattr(fed, 'published', fed.published + 1)
     model = make_model()
     run(model, 1, ts)
@@ -326,3 +327,68 @@ def test_energyplus_rolling_window_must_be_whole_days():
     assert reset_in_federate_ticks({'rolling_window': 144}, 600, 600, 'f', rolling_window_unit=86400) == {'rolling_window': 144}
     with pytest.raises(ValueError, match='EnergyPlus'):
         reset_in_federate_ticks({'rolling_window': 100}, 600, 600, 'f', rolling_window_unit=86400)
+
+
+# --- parallel_execution: resets reach the worker processes -----------------------------
+
+class ParProbe(Probe):
+    """Reports its relative clock and span through the outputs; fails a reset on request."""
+
+    def step(self):
+        self.state.outputs['rel_ts'] = self.state.rel_ts
+        self.state.outputs['span'] = self.span_ticks
+
+    def reset(self, mode='full'):
+        if self.user_defined_configs.get('fail_reset'):
+            raise RuntimeError('reset boom')
+
+
+# shortcut: module_path 'test_model_reset' resolves only because pytest's default import mode
+# puts tests/ on sys.path (inherited by spawned workers); breaks with --import-mode=importlib.
+def _executor(**user_defined):
+    from core.parallel_executor import ParallelModelExecutor
+    m = make_model()
+    m.metadata.class_name, m.metadata.module_path = 'ParProbe', 'test_model_reset'
+    config = SimpleNamespace(
+        user_defined=user_defined, inputs=[], outputs=[], parameters={}, init_state={},
+        start_time=START.isoformat(), real_period=PERIOD,
+    )
+    spec = ('test_model_reset', 'ParProbe', m.metadata, config)
+    ex = ParallelModelExecutor(spec, ['f.0', 'f.1'], 2, logging.getLogger('test'))
+    ex.start()
+    return ex
+
+
+def test_parallel_reset_reaches_every_worker_and_stays_in_step():
+    ex = _executor()
+    try:
+        assert ex.step(0, {})['f.0']['rel_ts'] == 0
+        ex.step(1, {})
+        ex.reset('rolling', 40, 10)
+        out = ex.step(2, {})
+        assert {k: (v['rel_ts'], v['span']) for k, v in out.items()} == {'f.0': (40, 10), 'f.1': (40, 10)}
+        assert ex.step(3, {})['f.1']['rel_ts'] == 41          # pipes still aligned after the ack
+        ex.reset('full', 0, None)
+        assert ex.step(4, {})['f.0']['rel_ts'] == 0
+    finally:
+        ex.close()
+
+
+def test_parallel_reset_error_in_a_worker_closes_the_executor():
+    import pytest
+    ex = _executor(fail_reset=True)
+    try:
+        ex.step(0, {})
+        with pytest.raises(RuntimeError, match='reset boom'):
+            ex.reset('full', 0, None)
+        assert ex._closed
+    finally:
+        ex.close()
+
+
+def test_federate_reset_goes_to_the_workers_not_the_main_copies():
+    fed, model = make_federate('rolling', 10, rolling_window=5, n_resets_train=2)
+    calls = []
+    fed.parallel_executor = SimpleNamespace(reset=lambda *a: calls.append(a))
+    fed._reset()
+    assert calls == [('rolling', 5, 10)] and model.hook_calls == [] and fed.published == 1

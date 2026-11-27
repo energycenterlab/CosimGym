@@ -66,6 +66,8 @@ timing_configs:
 
 ## 3. EnergyPlus FMUs: defined stop time
 
+EnergyPlus FMUs also need the `energyplus` executable on `PATH` at run time ([Installation](../Installation_Setup.md)).
+
 FMUs generated from EnergyPlus IDF files (`idf-to-fmu-export-prep`) require a **defined stop time**. `BaseFMUModel` derives it automatically from the scenario `start_time`/`end_time` and passes it to `setupExperiment` (FMI 2.0) / `enterInitializationMode` (FMI 3.0). If the stop time is left undefined, EnergyPlus clamps it to 0 and the second `doStep` fails with `fmi2Error`. The stop time is the span until the next restart (end of the scenario, or the next RL reset), rounded **up to whole days** and never past the end of the RunPeriod.
 
 An EnergyPlus FMU's calendar lives in the IDF inside the FMU. The FMU clock counts seconds from 1 January of the scenario's start year; `BaseFMUModel` starts the slave at the model's current position on its horizon window (`horizon_pos_s`, see [§4](#4-simulation-horizon-and-restart)). A scenario whose `start_time` differs from the FMU's RunPeriod begin date has the building simulating a different calendar date than the scenario says; every model is still at the same *elapsed* simulated time.
@@ -86,7 +88,7 @@ Two things are called "reset" or "restart" in CosimGym. They are **independent c
 
 The horizon restart is an edge case. It only matters when a scenario (or a training run) lasts longer than a model's limit, and the normal answer is to **choose models whose limit covers the whole scenario**. It is a safety net, not a feature to design studies around.
 
-**Mechanics.** Every restart (RL `full` / `rolling` reset, or horizon) is the same operation: terminate and free the slave, then instantiate a new one whose start time is the model's current position on its horizon window and whose stop time covers the span to the next restart (the federate tells the model that span). Nothing is saved or replayed, so a rolling reset costs one instantiation (~0.5 s for BUI0), independent of where the episode starts. The model's relative clock is not folded back at the horizon (after December comes the next January), only the slave restarts at the window origin; the weekday of the model can therefore differ from a schedule feeder's after a wrap. Each slave writes into its own `fmu_output/restart_<n>/` directory.
+**Mechanics.** Every restart (RL `full` / `rolling` reset, or horizon) is the same operation: terminate and free the slave, then instantiate a new one whose start time is the model's current position on its horizon window and whose stop time covers the span to the next restart (the federate tells the model that span). Nothing is saved or replayed, so a rolling reset costs one instantiation (~0.5 s for BUI0), independent of where the episode starts. The model's relative clock is not folded back at the horizon (after December comes the next January), only the slave restarts at the window origin; the weekday of the model can therefore differ from a schedule feeder's after a wrap. All slaves of a run write into the same `fmu_output/` directory: a restart overwrites the previous slave's `Output_EPExport_<instance>` folder (the old slave is already freed), so only the last restart's `.eio`/`.csv` are kept.
 
 ### Declaring the limit
 

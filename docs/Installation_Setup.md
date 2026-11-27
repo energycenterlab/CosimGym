@@ -26,6 +26,10 @@ cd CosimGym
   > docker compose version   # verify v2.x
   > ```
 
+- **EnergyPlus 23.1.0** *(only for EnergyPlus FMU scenarios: `bui0_*`, `fmu_*`)*: the `energyplus` executable must be on
+  `PATH`. Without it the FMU federate waits silently on its socket until timeout ([Known Issues §14](KNOWN_ISSUES.md)).
+  No-root install: unpack the NREL Linux release tarball under `~/opt` and prefix `PATH` with its folder.
+
 1.  **Create Conda Environment**:
     ```bash
     conda env create -f environment.yml

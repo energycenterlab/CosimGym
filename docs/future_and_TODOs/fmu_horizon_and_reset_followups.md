@@ -56,13 +56,7 @@ RL. Options: reject a horizon-declaring model with `parallel_execution`, or give
 executor a reset entry point that tells every worker to reset. `RL_Federate` has its own
 run loop and does no horizon handling; same class of gap.
 
-## 5. One `fmu_output/restart_<n>/` directory per EnergyPlus restart
-
-Each slave writes its own `fmu_output/restart_<n>/` directory, so hundreds of episodes mean
-hundreds of directories; reusing one directory per model instance is an open choice. (The
-restart *cost* is solved: instances are bounded to the span they need, ~0.1 s per teardown.)
-
-## 6. After a rolling reset one tick publishes the initial state
+## 5. After a rolling reset one tick publishes the initial state
 
 `BaseFederate._reset` (full and rolling) calls `_publish_init_state`, which sends
 `init_state.outputs`. For a clock-driven model that is not the value at the restart instant:
@@ -71,7 +65,7 @@ its default `TBuilding`. The correct value is published from the first step afte
 so the agent sees one wrong observation per reset. Possible fix: after `_reset`, let the model
 fill `state.outputs` for the new `rel_ts` before the publish.
 
-## 7. E+ FMU auto-discovery of the engine
+## 6. E+ FMU auto-discovery of the engine
 
 `user_defined.fmu_engine: energyplus` is set by hand (`fmu_catalog_register.py --engine`). The
 register script could read `generationTool` from `modelDescription.xml`

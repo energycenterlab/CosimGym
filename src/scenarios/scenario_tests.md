@@ -61,3 +61,22 @@ demo test with high computational model in several parallel processes under the 
 parallelization of modle instances where it is convenient because the model step method used is high computation demand
 ### Working
 - YES
+
+## combo_parallel_rl_rollingreset
+bui_hp rolling-reset DQN scenario whose weather federate runs 2 instances on 2 `parallel_execution` workers.
+### tested features
+A rolling reset reaches every worker (ack on each pipe) and the run completes.
+### Working
+- YES (federate log: `rolling reset #1/#2` at relative ticks 10/20)
+
+## bui0_setpoint_DQN_rolling
+BUI0 EnergyPlus FMU + DQN with `reset.mode: rolling`, window = 1 day (144 x 600 s), 4 train episodes.
+### tested features
+E+ restart at midnight on each rolling reset; one shared `fmu_output/` per run.
+### Working
+- YES on eclab-cloud1 with E+ 23.1.0 on `PATH` (KNOWN_ISSUES §14): 4 episodes, one shared `fmu_output/`, last slave starts 3 Jan (start day advances).
+
+## cs_s2_reset_rolling
+Case study S2 with `rolling_window: 15` (900 s = weather `real_period`).
+### Working
+- YES (suite-shortened copy; the original 10 is refused by the divisibility check)

@@ -1094,8 +1094,15 @@ class BaseFederate():
             return
         self.logger.info(f"Performing {self.reset_type} reset #{self.reset_count} of federate {self.name} (relative tick {target})")
         self._publish_init_state()
+        span = self._next_span()
+        if self.parallel_executor is not None:
+            # The models really step in the workers; the main copies only serve
+            # keys/parameters/init_state, so resetting them would just restart
+            # a useless FMU instance per episode.
+            self.parallel_executor.reset(self.reset_type, target, span)
+            return
         for entity in self.entities:
-            entity['object']._reset(mode=self.reset_type, rel_ts_target=target, span_ticks=self._next_span())
+            entity['object']._reset(mode=self.reset_type, rel_ts_target=target, span_ticks=span)
 
     def _track_episodes(self):
         self.episode_count += 1

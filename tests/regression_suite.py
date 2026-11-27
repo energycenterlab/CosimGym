@@ -71,9 +71,11 @@ SCENARIOS = [
     ("RL building SAC",        "bui_hp_SAC"),
     ("RL rolling-reset DQN",   "bui_hp_DQN_rollingreset"),
     ("RL rolling-reset SAC",   "bui_hp_SAC_rollingreset"),
+    ("RL rolling-reset 900s",  "cs_s2_reset_rolling"),
     ("FMU (EnergyPlus)",       "bui0_fmu_test"),
     ("FMU horizon restart",    "fmu_horizon_smoketest"),
     ("FMU + RL DQN",           "bui0_setpoint_DQN"),
+    ("FMU + RL rolling DQN",   "bui0_setpoint_DQN_rolling"),
     ("FMU + RL SAC",           "bui0_setpoint_SAC"),
     ("FMU + RL heating DQN",   "bui0_heatingpower_DQN"),
 ]
@@ -84,15 +86,12 @@ COMBOS = [
     ("DIST + PARALLEL",        "combo_dist_parallel"),
     ("MULTIFED + PARALLEL",    "combo_multifed_parallel"),
     ("PARALLEL + GRID",        "multi_building_grid_test"),
+    ("PARALLEL + RL rolling",  "combo_parallel_rl_rollingreset"),
 ]
 
 # --- tracked framework/env bugs: run, expect FAIL (xfail) --------------------
 # Fixing these is a *framework code* change, out of scope for a scenario-only pass.
 KNOWN_FAIL = {
-    "rc_building_parquet_test":               "parquet sink -> native libstdc++ SIGSEGV (json twin passes)",
-    "m2_interface_outbound_smoke_test_parquet": "parquet sink -> native libstdc++ SIGSEGV (json twin passes)",
-    "fmu_feedthrough_test":                   "parquet sink -> native libstdc++ SIGSEGV (json twin passes)",
-    "stress_multi_building_parquet":          "parquet sink -> native libstdc++ SIGSEGV (json twin passes)",
     "pv_batt_DQN":                            "zmq auto-port alloc ignores port+1 -> 2-broker RL collision",
     "pv_batt_SAC":                            "zmq auto-port alloc ignores port+1 -> 2-broker RL collision",
     "simple_test_rlagent":                    "RL_Simple_Agent catalog model is a non-functional skeleton (env_step missing)",
@@ -128,14 +127,23 @@ def _shorten(d, name):
     # an FMU-RL run needs real_period*episode_length to stay a whole-day multiple.
     rl = d.get("reinforcement_learning_config")
     if rl:
+        # Shortest episode >= 20 agent steps that is a whole number of every federate's
+        # real_period (ScenarioManager rejects the scenario otherwise; agent period = fastest federate).
+        periods = [f["timing_configs"]["real_period"]
+                   for fed in (d.get("federations") or {}).values()
+                   for f in (fed.get("federate_configs") or {}).values()
+                   if isinstance((f.get("timing_configs") or {}).get("real_period"), int)]
+        cap = 20
+        while periods and any((cap * min(periods)) % p for p in periods):
+            cap += 1
         run = rl.get("run") or {}
         for phase in ("train", "eval", "test"):
             blk = run.get(phase)
             if isinstance(blk, dict):
                 if "episodes" in blk:
                     blk["episodes"] = 2 if phase == "train" else 1
-                if not is_fmu and isinstance(blk.get("episode_length"), int) and blk["episode_length"] > 20:
-                    blk["episode_length"] = 20
+                if not is_fmu and isinstance(blk.get("episode_length"), int) and blk["episode_length"] > cap:
+                    blk["episode_length"] = cap
         exp = rl.setdefault("experiment", {}) or {}
         rl["experiment"] = exp
         ckpt = exp.setdefault("checkpoint", {}) or {}
